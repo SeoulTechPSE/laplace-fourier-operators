@@ -1,0 +1,22 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# experiment outputs
+runs/
+*.pt
+*.ckpt
+*.npz
+*.h5
+wandb/
+
+# quarto outputs
+docs/*.html
+docs/*.pdf
+docs/*_files/
+docs/.quarto/
+
+.DS_Store

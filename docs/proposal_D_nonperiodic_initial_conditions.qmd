@@ -1,0 +1,166 @@
+---
+title: "Proposal (D): Laplace Neural Operators for Non-Periodic Inputs and Parametric Initial Conditions"
+author: "Kee-Youn Yoo"
+date: 2026-10-22
+format:
+  pdf:
+    toc: true
+    papersize: a4
+    geometry: margin=22mm
+  html:
+    toc: true
+    toc-depth: 3
+    embed-resources: true
+---
+
+## 1. Overview
+
+This project removes two implicit assumptions that remain in Laplace neural operators: periodicity of the input, and implicit handling of initial conditions. LNO is known for handling transient responses, but it computes the Laplace transform of the input through a Fourier series, so it still assumes a periodic extension on the input side. Initial conditions, moreover, enter only as part of the input signal rather than as a separate input.
+
+Two methods are proposed:
+
+1. **Non-periodic input representation:** replace the Fourier basis with Chebyshev or Legendre bases, or with exponential-integrator recursion, to compute the convolution of the input with the exponential kernel exactly.
+2. **Explicit initial-condition input:** add a separate path that maps initial conditions to per-pole homogeneous-solution coefficients. This generalizes to initial conditions not seen in training, and uses the semigroup property to stabilize long rollouts.
+
+The planned duration is 12 months. Results will appear as a standalone paper or be integrated as components of Proposal (A). In particular, extending the Cahn–Hilliard application of (A) to non-periodic droplet domains requires this work first.
+
+## 2. Problem Statement: Input-Side Periodicity and Initial-Condition Handling
+
+Both problems reduce accuracy in the most common situations in process and physical applications: step inputs and non-zero initial states.
+
+### 2.1 Input-side periodicity
+
+LNO expands the input on $[0,T]$ as a Fourier series $u(t) = \sum_\ell \alpha_\ell e^{i\omega_\ell t}$ and then computes the transient coefficients as
+
+$$
+\gamma_n = \beta_n \sum_{\ell=-L}^{L} \frac{\alpha_\ell}{\mu_n - i\omega_\ell}
+$$ {#eq-gamma}
+
+If the input's endpoint values differ ($u(0) \neq u(T)$), the periodic extension has a discontinuity and $\alpha_\ell$ decays only as $O(1/\ell)$. This causes:
+
+- Gibbs oscillations at both ends of the output from the truncated sum.
+- Slow convergence of the series for $\gamma_n$, which contaminates the transient coefficients themselves.
+- Steps and ramps, the most common inputs in process engineering, fall exactly into this case.
+
+FNO mitigates this with zero-padding, but results depend on the padding length and the fix is not fundamental.
+
+### 2.2 Implicit handling of initial conditions
+
+The solution of a linear system is the sum of a homogeneous solution driven by the initial state (first term) and a forced solution driven by the input (second term):
+
+$$
+y(t) = \sum_n c_n(x_0)\,e^{\mu_n t} + \sum_n \beta_n \int_0^t e^{\mu_n (t-\tau)}u(\tau)\,d\tau
+$$ {#eq-ic-split}
+
+In the current LNO, initial conditions are mixed into the input signal. Generalization to initial conditions not in the training data therefore depends entirely on data coverage. Because the homogeneous and forced solutions, which share the same poles, are not structurally separated, rollouts that pass the end state of one prediction as the initial condition of the next may also be inconsistent.
+
+## 3. Objectives and Research Questions
+
+The goal is an accurate Laplace-type neural operator that keeps pole interpretability under non-periodic inputs and arbitrary initial conditions.
+
+- **RQ1 (input representation).** Among Chebyshev/Legendre projection, windowing, and exponential-integrator recursion, which representation most improves endpoint error and the accuracy of the transient coefficients? How do computational cost and resolution invariance change?
+- **RQ2 (initial-condition generalization).** How much does a path mapping initial conditions to homogeneous-solution coefficients reduce error for initial conditions outside the training distribution?
+- **RQ3 (rollout consistency).** Does using the semigroup property $G(t+s) = G(t)\circ G(s)$ as a regularizer reduce error accumulation in long rollouts?
+
+## 4. Method 1: Non-Periodic Input Representation
+
+Convolution with an exponential kernel has a closed form for polynomial and piecewise-polynomial inputs. The pole–residue structure can therefore be kept without any periodic extension.
+
+| Representation | Response computation | Advantages | Drawbacks |
+|---|---|---|---|
+| Fourier (original LNO) | closed form, FFT | fast, simple | Gibbs effects at endpoint discontinuities |
+| Fourier + padding/windowing | closed form, FFT | drops into existing code | residual leakage, sensitive to padding length |
+| Chebyshev projection | coefficients by DCT; exponential × polynomial integrals by recursion | non-periodic; spectral accuracy for smooth inputs | numerical stability of the recursion at high degree must be checked |
+| Legendre projection | recursion for exponential × Legendre integrals | orthogonality makes coefficients easy to interpret; links to HiPPO and LMU | fast transforms are more awkward than for Chebyshev |
+| Exponential-integrator recursion (ZOH/FOH) | $x_{j+1} = e^{\mu\Delta}x_j + (\text{integral term})$ | exact, causal, O($N_t$) | accuracy depends on the input interpolation order |
+
+: Candidate input representations {#tbl-representations}
+
+**Proposed configuration.** The default path uses Chebyshev projection; for non-uniform or very long time grids it switches to exponential-integrator recursion. In both paths $\mu_n$ and $\beta_n$ are continuous-time parameters, so they can be evaluated unchanged when $\Delta$ changes, preserving resolution invariance.
+
+**Point to verify.** Exponential-integrator recursion is essentially the discretization used in diagonal SSMs (S4D and similar). The performance difference between the two families will therefore be analyzed from the viewpoint "Laplace neural operator = SSM with spatial coupling".
+
+## 5. Method 2: Initial Conditions as an Explicit Input
+
+A separate encoder maps the initial condition to per-pole homogeneous-solution coefficients $c_n$, which share their poles with the forced solution. The map $c_n(x_0)$ is either a linear functional $\langle p_n, x_0\rangle$ or a nonlinear encoder $E_\theta(x_0)_n$.
+
+$$
+y(t) = \sum_n c_n(x_0)\,e^{\mu_n t} + \sum_n \beta_n \int_0^t e^{\mu_n(t-\tau)}u(\tau)\,d\tau
+$$ {#eq-ic-encoder}
+
+**Extension to PDEs.** Applying a spatial Fourier transform to the initial field $u_0(x)$ gives a homogeneous solution $\hat u_0(k)\,e^{\mu_n(k)t}$ for each mode. Combined with the wavenumber-dependent poles of Proposal (A), the initial-condition path therefore needs almost no extra trainable parameters.
+
+**Semigroup consistency.** The linear homogeneous solution satisfies $e^{\mu(t+s)} = e^{\mu t}\,e^{\mu s}$. This is used to:
+
+1. Structurally support rollouts that pass the end state of one window as the initial condition of the next.
+2. Apply a semigroup regularizer that penalizes $\lVert G(t+s)[x_0] - G(s)[G(t)[x_0]]\rVert$ during training, including for nonlinear models.
+
+**Defining the output state.** Passing the initial condition to the next window requires recovering the "state" from the output. For process problems with partial observation, two options are compared: using a few delayed outputs as the state (delay coordinates) and a latent state.
+
+## 6. Experimental Design and Metrics
+
+Inputs and initial conditions are split into in-distribution and out-of-distribution sets, so that the effects of non-periodicity and initial-condition generalization are measured separately.
+
+### 6.1 Problems and input families
+
+| Problem | Input family | Initial-condition family |
+|---|---|---|
+| FOPDT / SOPDT | steps, ramps, PRBS, chirps | random deviations from steady state |
+| Duffing oscillator | random smooth signals with mismatched endpoints | random position and velocity (including out-of-range) |
+| Diffusion + time-varying boundary/source | time-varying boundary values, step sources | random initial fields (GRF) |
+| Euler–Bernoulli beam | impulse and step loads | non-zero initial displacement and velocity |
+
+: Problems, input families, and initial-condition families {#tbl-problems}
+
+### 6.2 Baselines
+
+LNO v1 and v2, FNO (with and without padding), diagonal SSMs (S4D family), and ablations removing each component of the proposed model.
+
+### 6.3 Metrics
+
+- **Endpoint error:** relative error over the first and last 5% of the window
+- **Gibbs overshoot:** maximum overshoot error in the step response
+- **Overall accuracy:** relative L2 error
+- **Initial-condition generalization:** error increase for initial conditions outside the training range
+- **Semigroup consistency error:** $\lVert G(t+s) - G(s)\circ G(t)\rVert$
+- **Rollout stability:** error curve for continuous rollout up to 10× the training window
+- **Cost:** training and inference time per representation
+
+## 7. Timeline, Expected Impact, and Risks
+
+The first six months cover non-periodic input representation and the last six cover initial conditions and rollout. Results from the first half feed directly into the implementation of Proposal (A).
+
+**Timeline**
+
+1. **Months 1–3:** implement baselines, generate input and initial-condition families, quantify endpoint error of the Fourier path
+2. **Months 4–6:** implement and compare Chebyshev, Legendre, and exponential-integrator paths (RQ1) → integrate into (A)
+3. **Months 7–9:** initial-condition encoder, PDE extension, out-of-distribution generalization experiments (RQ2)
+4. **Months 10–12:** semigroup regularization and long rollouts (RQ3); write and submit the paper
+
+**Expected impact**
+
+- Guarantees the accuracy of Laplace-type neural operators in the basic situations of process dynamics: step and ramp inputs and non-zero initial states.
+- Provides the foundation for extending operator learning to non-periodic domains such as droplets.
+- Offers a single framework that unifies Laplace neural operators and SSMs.
+
+**Risks and mitigation**
+
+| Risk | Mitigation |
+|---|---|
+| Small difference from padded FNO | focus on metrics that padding cannot address in principle: endpoint error, initial-condition generalization, rollout |
+| Numerical instability of high-degree polynomial recursion | cap the degree, split into sub-intervals (piecewise Chebyshev), fall back to exponential-integrator recursion |
+| Questions about novelty relative to SSMs | present spatially coupled poles (Proposal (A)) and pole interpretability as the difference |
+| Contribution too small for a standalone paper | integrate as a component of (A) |
+
+: Risks and mitigation {#tbl-risks}
+
+## 8. References
+
+1. Cao, Q., Goswami, S., Karniadakis, G. E. LNO: Laplace Neural Operator for Solving Differential Equations. [arXiv:2303.10528](https://arxiv.org/abs/2303.10528); code on [GitHub](https://github.com/qianyingcao/Laplace-Neural-Operator)
+2. Li, Z. et al. Fourier Neural Operator for Parametric Partial Differential Equations. ICLR 2021. [arXiv:2010.08895](https://arxiv.org/abs/2010.08895)
+3. Gu, A., Goel, K., Ré, C. Efficiently Modeling Long Sequences with Structured State Spaces (S4). ICLR 2022. [arXiv:2111.00396](https://arxiv.org/abs/2111.00396)
+4. Gu, A. et al. HiPPO: Recurrent Memory with Optimal Polynomial Projections. NeurIPS 2020. [arXiv:2008.07669](https://arxiv.org/abs/2008.07669)
+5. Voelker, A., Kajić, I., Eliasmith, C. Legendre Memory Units: Continuous-Time Representation in Recurrent Neural Networks. NeurIPS 2019.
+6. Hochbruck, M., Ostermann, A. Exponential integrators. Acta Numerica 19, 209 (2010).
+7. Trefethen, L. N. Approximation Theory and Approximation Practice. SIAM (2013).
+8. State-space models are accurate and efficient neural operators for dynamical systems. [arXiv:2409.03231](https://arxiv.org/pdf/2409.03231)

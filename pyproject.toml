@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lfo"
+version = "0.0.1"
+description = "Laplace-Fourier neural operators: wavenumber-dependent poles, identifiability, non-periodic inputs"
+authors = [{ name = "Kee-Youn Yoo", email = "kyyoo@seoultech.ac.kr" }]
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "torch>=2.1",
+    "neuraloperator>=2.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7", "matplotlib>=3.7"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

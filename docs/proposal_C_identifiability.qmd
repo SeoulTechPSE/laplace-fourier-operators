@@ -1,0 +1,170 @@
+---
+title: "Proposal (C): Identifiability of Dual-Branch Laplace–Fourier Neural Operators"
+author: "Kee-Youn Yoo"
+date: 2026-10-22
+format:
+  pdf:
+    toc: true
+    papersize: a4
+    geometry: margin=22mm
+  html:
+    toc: true
+    toc-depth: 3
+    embed-resources: true
+---
+
+## 1. Overview
+
+This project tests, theoretically and experimentally, whether the poles learned by neural operators with parallel transient (pole–residue) and steady (Fourier multiplier) branches are truly physical poles. LNO v2, ALNO, and LFNO all claim interpretability through this split. If the two branches can take over each other's role, that claim does not hold.
+
+The project has three parts:
+
+1. **Diagnosis:** audit the poles learned by existing models on linear problems with known true poles.
+2. **Theory:** state the conditions under which the decomposition is unique (identifiability conditions) in the language of system identification.
+3. **Remedy:** propose structural constraints and regularizers that restore identifiability with minimal loss of accuracy.
+
+The planned duration is 12 months, with one paper combining the theory and the audit. It also serves as groundwork for the interpretability claims of Proposal (A).
+
+## 2. Problem Statement: Non-identifiability of the Two Branches
+
+In the original LNO, the steady and transient responses come from the same transfer function $K(s)$, so they are tied together. ALNO and LFNO replace the steady branch with a free multiplier unrelated to the poles. This removes the tie, and several decompositions may then explain the same input–output data.
+
+**The tie in the original LNO.** In a causal linear time-invariant system, the frequency response $K(i\omega)$ and the poles belong to one rational function:
+
+$$
+\hat v(t) = \sum_{\ell} K(i\omega_\ell)\,\alpha_\ell\,e^{i\omega_\ell t} + \sum_n \gamma_n e^{\mu_n t},
+\qquad K(s) = \sum_n \frac{\beta_n}{s-\mu_n},
+\quad \gamma_n = \beta_n \sum_\ell \frac{\alpha_\ell}{\mu_n - i\omega_\ell}
+$$ {#eq-tied}
+
+**After untying.** Here R is a free parameter unrelated to the poles:
+
+$$
+\hat v(t) = \sum_{\ell} R(\omega_\ell)\,\alpha_\ell\,e^{i\omega_\ell t} + \sum_n \gamma_n e^{\mu_n t}
+$$ {#eq-untied}
+
+Non-identifiability can then arise in three ways:
+
+1. **Steady absorbs transient:** on a finite window $[0,T]$, $e^{\mu t}$ has a Fourier series with coefficients proportional to $1/(\mu - i\omega_\ell)$. With enough modes, R can represent much of the transient.
+2. **Transient absorbs steady:** a pole with $\operatorname{Re}\mu \approx 0$ and $\operatorname{Im}\mu \approx \omega_\ell$ effectively represents a steady oscillation.
+3. **Redundancy inside the pole branch:** permutation of poles, "dead poles" with near-zero residue, and cancellation between nearby pole pairs.
+
+As a result, the learned $\mu_n$ may vary from seed to seed even when accuracy is good. This directly contradicts the claim that the poles represent physical time scales. We have not found work that checks this quantitatively (to be re-checked at project start).
+
+## 3. Objectives and Research Questions
+
+The aim is to provide conditions, diagnostic tools, and training methods that answer the question: when are the poles of a dual-branch neural operator physically interpretable?
+
+- **RQ1 (audit).** On linear problems with known true poles, how closely do the poles learned by LNO v1/v2, ALNO, and LFNO match the truth, and how large is the seed-to-seed variance?
+- **RQ2 (conditions).** For a linear time-invariant system with a finite observation window and discrete sampling, what sufficient conditions (input richness, number of poles, mode truncation) make the decomposition unique?
+- **RQ3 (remedies).** Which structural constraints or regularizers restore identifiability, and how much accuracy do they cost?
+- **RQ4 (nonlinear extension).** What practical indicators can diagnose, after training, how trustworthy the pole interpretation of a nonlinear model is?
+
+## 4. Theory: Identifiability Conditions
+
+The theory starts by reducing pole learning in a neural operator to a classical system-identification problem (recovery of exponential sums, persistent-excitation conditions). The statements below are hypotheses to be proven; they will be developed for a single linear layer in the first half of the project.
+
+### 4.1 Setting
+
+True system: $K^*(s) = \sum_n \beta_n^*/(s-\mu_n^*)$ (plus an analytic remainder $D(s)$), zero initial conditions, observation window $[0,T]$, $N_t$ time samples. Training data are an input set $\{u^{(j)}\}$ with corresponding outputs. The set of model parameters $\Theta = (\mu, \beta, R)$ producing the same outputs is called the non-identifiable set.
+
+### 4.2 Hypotheses
+
+- **H1 (non-identifiability).** If R is free on all truncated modes, then for any $\varepsilon > 0$ there exist $(\mu', \beta', R')$ different from the truth that reproduce the training-window outputs to within $\varepsilon$. The minimum of the loss alone does not determine the poles.
+- **H2 (identifiability under the tie).** If R is tied to $K_{\mu,\beta}(i\omega)$ (as in the original LNO), the input set satisfies a persistent-excitation condition with at least $2N$ distinct frequencies, and the poles are distinct, then the poles are unique up to permutation. This has the same structure as uniqueness in Prony and matrix-pencil recovery of exponential sums.
+- **H3 (partial tie).** If $R = K_{\mu,\beta}(i\omega) + R_{\mathrm{res}}$ with a bound $\delta$ on the size of $R_{\mathrm{res}}$, then the pole error grows in proportion to $\delta$. A single parameter $\delta$ thus controls the trade-off between accuracy and interpretability.
+
+### 4.3 Analysis tools
+
+- **Local identifiability:** rank of the output Jacobian with respect to parameters; condition number of the Fisher information matrix
+- **Practical identifiability:** flatness of the profile likelihood for each pole
+- **Lower bounds:** compare learned results against the Cramér–Rao bound for pole estimation at each noise level
+- **Causality condition:** for a causal stable system, the real and imaginary parts of the frequency response are linked by the Hilbert transform (Kramers–Kronig), so the degree to which $R_{\mathrm{res}}$ violates this serves as an index of non-physicality
+
+## 5. Methods: Structural Constraints and Regularization
+
+The central remedy is to re-tie the steady branch to the poles, with an adjustable strength.
+
+| Technique | Description | Non-identifiability path targeted |
+|---|---|---|
+| Consistency regularization | add $\lambda_c\lVert R(\omega) - K_{\mu,\beta}(i\omega)\rVert^2$ to the loss, or reparameterize $R = K_{\mu,\beta}(i\omega) + R_{\mathrm{res}}$ with $\lVert R_{\mathrm{res}}\rVert \le \delta$ | steady absorbs transient |
+| Causality regularization | penalize Kramers–Kronig violation of $R_{\mathrm{res}}$ | non-physical frequency response |
+| Branch orthogonalization | penalize correlation between the two branch outputs on training data | mixing of branch roles |
+| Pole sparsification | group lasso on residues $\beta_n$; merge nearby pole pairs | dead poles, duplicate poles |
+| Pole placement constraint | $\operatorname{Re}\mu < -\varepsilon$ to block imitation of steady oscillation (when no physical steady oscillation exists) | transient absorbs steady |
+| Multi-seed ensembles | report pole variance as uncertainty | diagnostic |
+
+: Remedies and the failure modes they target {#tbl-remedies}
+
+**Diagnostic for nonlinear models (RQ4).** Inject small-amplitude perturbations into the trained nonlinear operator, measure the effective transfer function, and extract poles with vector fitting. Agreement between these "linear-probe poles" and the $\mu_n$ stored in the layer, and their stability across seeds, serve as reliability indicators.
+
+## 6. Experimental Design and Metrics
+
+Experiments start with synthetic linear systems whose true poles are known exactly, and extend to nonlinear systems whose poles are known through linearization.
+
+### 6.1 Problems
+
+| Problem | True poles | Factors varied |
+|---|---|---|
+| Synthetic LTI systems | $N^* = 1$–$6$, mix of real and complex poles | pole spacing, proximity to the imaginary axis |
+| FOPDT / SOPDT | $-1/\tau$ (+ delay $\theta$) | with or without delay |
+| Diffusion (1D) | $-Dk^2$ (per mode) | observation window T |
+| Euler–Bernoulli beam | $\pm i c k^2$ | with or without damping |
+| Duffing oscillator | linearized poles at equilibrium | amplitude (strength of nonlinearity) |
+
+: Test problems {#tbl-problems}
+
+### 6.2 Experiment sets
+
+1. **E1 audit:** train the four existing models as published and compare their poles with the truth (RQ1).
+2. **E2 data richness:** vary the number of input frequencies and the window T to test the persistent-excitation condition of H2 (RQ2).
+3. **E3 remedies:** apply the techniques of Section 5 individually and in combination (RQ3).
+4. **E4 noise:** compare pole errors with the Cramér–Rao bound at each output-noise level.
+5. **E5 nonlinear diagnosis:** on Duffing, measure agreement between linear-probe poles and layer poles (RQ4).
+
+### 6.3 Metrics
+
+- **Pole error:** $|\mu_n - \mu_n^*| / |\mu_n^*|$ after Hungarian matching
+- **Residue error:** $|\beta_n - \beta_n^*| / |\beta_n^*|$ for matched poles
+- **Seed variance:** standard deviation of matched poles over 10 seeds
+- **Branch energy ratio:** difference between the fraction of output explained by the transient branch and its true value
+- **Accuracy:** relative L2 error, time-extrapolation error
+- **Trade-off curve:** accuracy vs. pole error as a function of $\delta$ (or $\lambda_c$)
+
+## 7. Timeline, Expected Impact, and Risks
+
+The goal is to submit one paper combining the audit and the linear theory within 12 months. The audit (E1) is placed first so that it alone can support a workshop presentation.
+
+**Timeline**
+
+1. **Months 1–3:** implement the four existing models, generate synthetic LTI data, run the E1 audit → workshop submission possible
+2. **Months 4–6:** formulate and prove H1 and H2; E2 data-richness experiments
+3. **Months 7–9:** implement the remedies of Section 5; E3 and E4 experiments; H3 trade-off curves
+4. **Months 10–12:** E5 nonlinear diagnosis; write and submit the paper; release code
+
+**Expected impact**
+
+- Provides verification criteria (pole error, seed variance, probe agreement) that papers on dual-branch neural operators should meet when claiming interpretability.
+- Applies directly to the wavenumber-dependent pole model of Proposal (A), supporting the credibility of its dispersion-relation recovery.
+- Links neural operators with system-identification theory, and can also be used as teaching material in process control.
+
+**Risks and mitigation**
+
+| Risk | Mitigation |
+|---|---|
+| E1 shows that existing models recover the true poles well | shift the contribution to characterizing when this happens (data richness, etc.); identifying the conditions is more useful than a negative result |
+| Theory for nonlinear, multilayer models is hard | restrict theory to a single linear layer; treat nonlinear models with probe-based empirical diagnostics |
+| Pushback from the authors of existing models | use the original code and settings as closely as possible and publish reproduction details |
+
+: Risks and mitigation {#tbl-risks}
+
+## 8. References
+
+1. Cao, Q., Goswami, S., Karniadakis, G. E. LNO: Laplace Neural Operator for Solving Differential Equations. [arXiv:2303.10528](https://arxiv.org/abs/2303.10528); code on [GitHub](https://github.com/qianyingcao/Laplace-Neural-Operator)
+2. Kim, H. et al. Physics-Informed Laplace Neural Operator for Solving Partial Differential Equations. [arXiv:2602.12706](https://www.arxiv.org/abs/2602.12706) (2026)
+3. Ha, J., Yoon, S., Lee, D. LFNO: Bridging Laplace and Fourier via Transient-Steady Decomposition. [arXiv:2606.07601](https://papers.cool/arxiv/2606.07601) (2026)
+4. Best of Both Worlds: Bridging Laplace and Fourier for Generalizable and Efficient Operator Learning. [NeurIPS 2025](https://neurips.cc/virtual/2025/122846)
+5. Ljung, L. System Identification: Theory for the User, 2nd ed. Prentice Hall (1999).
+6. Hua, Y., Sarkar, T. K. Matrix pencil method for estimating parameters of exponentially damped/undamped sinusoids in noise. IEEE Trans. ASSP 38, 814 (1990).
+7. Gustavsen, B., Semlyen, A. Rational approximation of frequency domain responses by vector fitting. IEEE Trans. Power Delivery 14, 1052 (1999).
+8. Raue, A. et al. Structural and practical identifiability analysis of partially observed dynamical models by exploiting the profile likelihood. Bioinformatics 25, 1923 (2009).
