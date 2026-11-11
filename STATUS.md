@@ -24,6 +24,33 @@ Each session appends one entry using the template at the bottom.
 
 ## Log
 
+### 2026-11-12 — Shared foundation (S1): check against the published LNO paper
+
+- Done: compared with the published version (Nature Machine Intelligence 6, 631–640,
+  2024; Fig. 2, Table 3) and the matching code archive (commit `c61c8fc`).
+  `experiments/foundation/paper_comparison.md` updated.
+- Results:
+  - Code archive `c61c8fc` = our reference `78c64ef` in code and data (README and
+    `note.txt` differ only). No re-runs needed.
+  - LNO, published vs ours (ood): Duffing c=0 ≈0.24 vs 0.216 ± 0.068;
+    Diffusion ≈1.2e-3 vs 1.33e-3 ± 1.5e-4. **Reproduced in both cases.**
+  - FNO, published vs ours: Duffing ≈0.52 vs 0.895 (ours worse); Diffusion ≈7.5e-3
+    vs 4.55e-3 (ours better). LNO/FNO factor on Diffusion: ≈6× published, ≈3× ours.
+  - **Correction** to the earlier entry today: the "≈25× better than the paper's
+    FNO on Diffusion" remark compared with the arXiv value (≈0.12), which the
+    published version replaced. Against the published value our FNO is in line.
+  - **Parameter counts:** the published LNO counts (797 Duffing, 2,641 Diffusion)
+    are the real-valued weights only; the complex pole/residue weights are omitted.
+    With complex entries counted twice: 1,821 and 14,929 (2.3× and 5.7× larger).
+- Decisions: month-4 gate "reproduce the original LNO results" is **met** for
+  Duffing c=0 and Diffusion, checked against the published version. We count
+  complex parameters as two real parameters (`lfo.training.count_params`) and state
+  this wherever we compare with published sizes.
+- Problems / open questions: NMI Supplementary Information not yet checked
+  (architectures for the FNO baselines, whether FNO counts include complex weights).
+  The uploaded PDF file name says pages 231–240; the PDF itself says 631–640.
+- Next: v2 on Burgers (both splits); remaining 1D/2D examples.
+
 ### 2026-11-12 — Shared foundation (S1): report both ood and iid splits
 
 - Done:
