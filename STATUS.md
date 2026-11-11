@@ -24,6 +24,39 @@ Each session appends one entry using the template at the bottom.
 
 ## Log
 
+### 2026-11-12 — Shared foundation (S1): report both ood and iid splits
+
+- Done:
+  - `lfo.data.lno_bench`: shared loader for the original LNO data with
+    `split="ood"` (original) and `split="iid"` (380 samples pooled, re-split
+    200/50/130, stratified by forcing family, split seed 0). Tests in
+    `tests/test_lno_bench.py` (26/26 pass).
+  - `reproduce_lno.py --split`; results now under `results/ood/` and `results/iid/`
+    (earlier results moved to `results/ood/`, checkpoints to `runs/foundation/ood/`).
+  - iid runs: Duffing c=0 and Diffusion × LNO/FNO/TFNO × 3 seeds.
+- Results (test rel. L2, 3 seeds; `experiments/foundation/paper_comparison.md`):
+
+  | case | split | LNO | FNO | TFNO |
+  |---|---|---|---|---|
+  | Duffing c=0 | ood | **0.216 ± 0.068** | 0.895 ± 0.037 | 1.007 ± 0.054 |
+  | Duffing c=0 | iid | 0.243 ± 0.038 | **0.181 ± 0.006** | 0.219 ± 0.015 |
+  | Diffusion | ood | **1.33e-3 ± 1.5e-4** | 4.55e-3 ± 1.4e-3 | 9.45e-3 ± 9.5e-3 |
+  | Diffusion | iid | 1.78e-3 ± 2.2e-4 | 7.02e-4 ± 1.9e-5 | **6.42e-4 ± 2.3e-4** |
+
+  **The ranking flips with the split.** LNO is split-insensitive; FNO/TFNO gain
+  5–15× in-distribution and beat LNO there. LNO's published advantage is an
+  out-of-distribution advantage.
+- Decisions:
+  - **Every benchmark on the original LNO data is reported on both splits**
+    (`ood` and `iid`); added to CLAUDE.md conventions. The iid split is a re-split
+    of the original samples (no new data), so the two differ only in the split.
+- Problems / open questions:
+  - Implication for (A): the wavenumber-pole operator must be judged on both
+    axes, OOD robustness (LNO's strength) and iid accuracy (FNO's strength).
+  - Implication for (C): the dual-branch question (does the free steady branch
+    absorb the poles?) may look different under ood vs iid training.
+- Next: v2 on Burgers (both splits); remaining 1D/2D examples; published LNO version.
+
 ### 2026-11-12 — Shared foundation (S1): comparison with published values
 
 - Done: read LNO (arXiv v2), SSM-operator, LFNO, PILNO papers (`~/references/`, not

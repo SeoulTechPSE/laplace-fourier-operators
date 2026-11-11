@@ -1,7 +1,7 @@
 # Reproduction vs. published values
 
-Test relative L2 error. Ours: 3 seeds, mean ± std (`results/summary.md`,
-`results/diag_duffing/`). Published values were read from the papers in
+Test relative L2 error. Ours: 3 seeds, mean ± std (`results/ood/summary.md`,
+`results/ood/diag_duffing/`). Published values were read from the papers in
 `~/references/` (not committed).
 
 ## Duffing c = 0 (original out-of-distribution split: train A·sin 5t, test A·e^{-0.05t}·sin 5t)
@@ -35,6 +35,23 @@ Test relative L2 error. Ours: 3 seeds, mean ± std (`results/summary.md`,
 
 **Verdict:** LNO reproduced. Our budget-matched FNO is about 25× better than the
 paper's FNO. The LNO-over-FNO factor is about 3× in our setup, not 100×.
+
+## Both splits (ours, 3 seeds, test rel. L2)
+
+`ood` = original split; `iid` = same 380 samples re-split at random (`lfo.data.lno_bench`).
+
+| case | split | LNO | FNO | TFNO |
+|---|---|---|---|---|
+| Duffing c=0 | ood | **0.216 ± 0.068** | 0.895 ± 0.037 | 1.007 ± 0.054 |
+| Duffing c=0 | iid | 0.243 ± 0.038 | **0.181 ± 0.006** | 0.219 ± 0.015 |
+| Diffusion | ood | **1.33e-3 ± 1.5e-4** | 4.55e-3 ± 1.4e-3 | 9.45e-3 ± 9.5e-3 |
+| Diffusion | iid | 1.78e-3 ± 2.2e-4 | 7.02e-4 ± 1.9e-5 | **6.42e-4 ± 2.3e-4** |
+
+LNO's error is nearly the same on both splits; FNO/TFNO improve by 5× (Duffing)
+and 6–15× (Diffusion) when the test inputs come from the training distribution.
+The LNO advantage reported in the original paper is an out-of-distribution
+advantage; in-distribution, the budget-matched FNO/TFNO are better. This agrees
+in direction with LFNO's in-distribution results.
 
 ## Not comparable
 

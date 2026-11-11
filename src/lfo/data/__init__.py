@@ -1,4 +1,4 @@
 """Data generators: synthetic LTI systems, PDE solvers, process models."""
-from . import lti
+from . import lno_bench, lti
 
-__all__ = ["lti"]
+__all__ = ["lno_bench", "lti"]

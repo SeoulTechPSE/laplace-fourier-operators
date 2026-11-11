@@ -9,16 +9,28 @@ original LNO results", month 4).
 |---|---|
 | Original code (reference only, not imported) | `runs/ref/LNO`, github.com/qianyingcao/Laplace-Neural-Operator @ `78c64ef` |
 | Original data | `/srv/data/lno_drive` (shared) or `runs/data/lno_drive` |
+| Data loader, ood/iid splits | `lfo.data.lno_bench` |
 | Ported models | `lfo.models.lno` (`LNO1d`, `LNO2d`, `LNO2dV2`) |
 | Original optimizer and loss | `lfo.training` (`ComplexAdam`, `relative_l2_loss`) |
 | Port = original, bit for bit | `tests/test_lno.py` (needs `runs/ref/LNO` and CUDA) |
 | Reproduction script | `reproduce_lno.py` |
-| Per-run results, summary | `results/*.json`, `results/summary.md` |
+| Per-run results, summary | `results/<split>/*.json`, `results/<split>/summary.md` |
+| Comparison with papers | `paper_comparison.md` |
 
 ```bash
 python experiments/foundation/reproduce_lno.py --case duffing_c0 diffusion --model lno fno tfno --seeds 0 1 2
-python experiments/foundation/reproduce_lno.py --summarize
+python experiments/foundation/reproduce_lno.py --split iid --case duffing_c0 diffusion --model lno fno tfno --seeds 0 1 2
+python experiments/foundation/reproduce_lno.py --summarize               # or --split iid
 ```
+
+Every result is reported on two splits (`lfo.data.lno_bench`):
+
+- `ood`: the original split. Train and test use different forcing families
+  (e.g. Duffing: train A·sin 5t, test A·e^{-0.05t}·sin 5t), so it measures
+  out-of-distribution generalisation.
+- `iid`: the same 380 samples pooled and re-split at random (200/50/130,
+  stratified by forcing family, split seed 0), so train and test share a
+  distribution.
 
 Protocol: every model is trained with the original case settings (epochs, batch
 size, learning rate, StepLR, `ComplexAdam` with weight decay 1e-4, relative-L2

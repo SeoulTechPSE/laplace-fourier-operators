@@ -48,6 +48,8 @@ docs/               research plans (Quarto .qmd) and figures
   a `STATUS.md` decision entry.
 - Poles are complex tensors; real-valued outputs require conjugate-symmetric poles
   and residues.
+- Benchmarks built on the original LNO data are reported on both splits, `ood` (original)
+  and `iid` (re-split); see `lfo.data.lno_bench`.
 - Every reported number: same parameter budget across models, ≥ 3 seeds,
   mean ± standard deviation.
 - Experiment outputs (checkpoints, large arrays) go in `runs/` (git-ignored).
