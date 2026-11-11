@@ -34,6 +34,7 @@ src/lfo/            shared package (import as `lfo`)
   data/             data generators (synthetic LTI, PDE solvers, process models)
   metrics/          shared metrics: relative L2, pole matching, dispersion error
 experiments/A|C|D/  per-project experiment scripts, configs, and notes
+experiments/foundation/  shared-foundation work (LNO reproduction, baselines)
 tests/              pytest tests for shared code
 docs/               research plans (Quarto .qmd) and figures
 ```
