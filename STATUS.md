@@ -24,6 +24,46 @@ Each session appends one entry using the template at the bottom.
 
 ## Log
 
+### 2026-11-12 — Shared foundation (S1): why FNO fails on Duffing
+
+- Done: data inspection; per-amplitude error analysis; FNO ablation on Duffing c=0
+  (3 seeds each; `experiments/foundation/results/diag_duffing/`). `reproduce_lno.py`
+  gained `--fno-kwargs`, `--budget`, `--tag`, and stores per-sample test errors.
+- Results:
+  - **The Duffing data is an extrapolation benchmark by design.** All 200 training
+    inputs are one waveform scaled in amplitude (0.05–10; pairwise shape correlation
+    1.000). All 130 test inputs are a *different* single waveform (decaying envelope;
+    correlation 0.959 with the training shape). Validation = test family.
+  - FNO ablation, test rel. L2 (mean ± std, 3 seeds):
+
+    | variant | params | train L2 | test L2 |
+    |---|---|---|---|
+    | LNO (reference) | 1821 | 0.21 | 0.216 ± 0.068 |
+    | FNO base | 1804 | 0.17 | 0.895 ± 0.037 |
+    | no positional embedding | 1794 | 0.18 | 0.995 ± 0.14 |
+    | domain padding 0.25 | 1804 | 0.20 | 0.979 ± 0.14 |
+    | no pos. emb. + padding | 1794 | 0.20 | 0.828 ± 0.18 |
+    | budget 20k | 20008 | 0.09 | 0.963 ± 0.14 |
+    | budget 20k + no pos. emb. + padding | 19974 | 0.09 | 0.785 ± 0.070 |
+
+    Budget, positional embedding, and padding are ruled out as the main cause;
+    together they help only slightly. FNO fits the training family but has no
+    structural prior that carries over to a new input waveform.
+  - Error by input amplitude (3-seed mean; bins 0–1, 1–3, 3–6, 6–10):
+    LNO test 0.15/0.12/0.22/0.31, LNO train 0.11/0.06/0.08/**0.49**;
+    FNO test 0.39/0.60/0.96/1.22, FNO train 0.16/0.07/0.10/0.29.
+    The original 1-layer LNO is nearly linear: it generalises across waveforms but
+    cannot fit the strongly nonlinear regime even on training data.
+- Decisions: FNO's Duffing gap is a property of the benchmark (single-waveform
+  training set), not a bug in our setup. Report it as such; when FNO numbers are
+  quoted for Duffing, state the train/test waveform split.
+- Problems / open questions:
+  - Relevant to (C) E5 and (D): the per-amplitude LNO train error shows where
+    the linear pole layer stops explaining Duffing.
+  - neuraloperator checkpoints need `torch.load(..., weights_only=False)` and the
+    `_metadata` key removed before `load_state_dict` (torch 2.6).
+- Next: paper values (papers to be uploaded); v2 on Burgers; remaining examples.
+
 ### 2026-11-12 — Shared foundation (S1): LNO port and first reproduction
 
 - Done:

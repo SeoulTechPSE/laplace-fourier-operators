@@ -90,19 +90,19 @@ class ChannelFirst(nn.Module):
         return torch.movedim(self.net(x), 1, -1)
 
 
-def _neuralop(name: str, dim: int, modes: int, hidden: int) -> nn.Module:
+def _neuralop(name: str, dim: int, modes: int, hidden: int, **extra) -> nn.Module:
     from neuralop.models import FNO, TFNO
     cls = {"fno": FNO, "tfno": TFNO}[name]
     return ChannelFirst(cls(n_modes=(modes,) * dim, in_channels=1, out_channels=1,
-                            hidden_channels=hidden, n_layers=4))
+                            hidden_channels=hidden, n_layers=4, **extra))
 
 
-def match_budget(name: str, case: Case, budget: int):
+def match_budget(name: str, case: Case, budget: int, **extra):
     """(modes, hidden) of a 4-layer FNO/TFNO whose parameter count is closest to `budget`."""
     best = None
     for modes in case.fno_modes:
         for hidden in range(2, 65):
-            n = count_params(_neuralop(name, case.dim, modes, hidden))
+            n = count_params(_neuralop(name, case.dim, modes, hidden, **extra))
             if best is None or abs(n - budget) < abs(best[2] - budget):
                 best = (modes, hidden, n)
             if n > 2 * budget:
@@ -110,15 +110,20 @@ def match_budget(name: str, case: Case, budget: int):
     return best
 
 
-def build(model: str, case: Case, grids: dict):
+def build(model: str, case: Case, grids: dict, fno_extra: dict | None = None, budget: int | None = None):
+    """Build the model. For FNO/TFNO, `fno_extra` is passed to the neuraloperator
+    constructor (e.g. positional_embedding=None, domain_padding=0.25) and `budget`
+    overrides the target parameter count (default: the LNO's)."""
     if case.dim == 1:
         lno = LNO1d(t=grids["t"], **case.lno_kwargs)
     else:
         lno = LNO2d(x=grids["x"], t=grids["t"], **case.lno_kwargs)
     if model == "lno":
         return lno, dict(case.lno_kwargs)
-    modes, hidden, _ = match_budget(model, case, count_params(lno))
-    return _neuralop(model, case.dim, modes, hidden), dict(n_modes=modes, hidden_channels=hidden, n_layers=4)
+    extra = dict(fno_extra or {})
+    modes, hidden, _ = match_budget(model, case, budget or count_params(lno), **extra)
+    return (_neuralop(model, case.dim, modes, hidden, **extra),
+            dict(n_modes=modes, hidden_channels=hidden, n_layers=4, **extra))
 
 
 # ------------------------------------------------------------------ train
@@ -137,7 +142,7 @@ def run(case_name: str, model_name: str, seed: int, args) -> dict:
     device = torch.device(args.device)
     split, grids = load(case, args.data_root)
     seed_everything(seed)
-    model, hparams = build(model_name, case, grids)
+    model, hparams = build(model_name, case, grids, json.loads(args.fno_kwargs), args.budget)
     model = model.to(device)
     n_params = count_params(model)
 
@@ -172,22 +177,25 @@ def run(case_name: str, model_name: str, seed: int, args) -> dict:
     result = dict(case=case_name, model=model_name, seed=seed, epochs=epochs, n_params=n_params,
                   hparams=hparams, train_time_s=round(train_time, 1),
                   test_rel_l2=float(np.mean(test)), test_rel_l2_std_over_samples=float(np.std(test)),
-                  vali_rel_l2=history[-1]["vali_l2"], history=history,
+                  vali_rel_l2=history[-1]["vali_l2"], history=history, tag=args.tag,
+                  test_rel_l2_per_sample=[round(float(e), 6) for e in test],
                   torch=torch.__version__, device=torch.cuda.get_device_name() if device.type == "cuda" else "cpu")
 
-    ckpt = ROOT / "runs" / "foundation" / case_name / model_name / f"seed{seed}.pt"
+    out = RESULTS / args.tag if args.tag else RESULTS
+    ckpt = ROOT / "runs" / "foundation" / (args.tag or "") / case_name / model_name / f"seed{seed}.pt"
     ckpt.parent.mkdir(parents=True, exist_ok=True)
     torch.save(model.state_dict(), ckpt)
-    RESULTS.mkdir(parents=True, exist_ok=True)
-    (RESULTS / f"{case_name}_{model_name}_seed{seed}.json").write_text(json.dumps(result, indent=1))
+    out.mkdir(parents=True, exist_ok=True)
+    (out / f"{case_name}_{model_name}_seed{seed}.json").write_text(json.dumps(result, indent=1))
     print(f"[{case_name}/{model_name}/s{seed}] test rel L2 = {result['test_rel_l2']:.4e} "
           f"({n_params} params, {train_time:.0f} s)", flush=True)
     return result
 
 
-def summarize() -> str:
+def summarize(tag: str = "") -> str:
+    results = RESULTS / tag if tag else RESULTS
     rows = {}
-    for f in sorted(RESULTS.glob("*_seed*.json")):
+    for f in sorted(results.glob("*_seed*.json")):
         r = json.loads(f.read_text())
         rows.setdefault((r["case"], r["model"]), []).append(r)
     lines = ["| case | model | params | seeds | test rel. L2 (mean ± std) | train time (s) |",
@@ -197,7 +205,7 @@ def summarize() -> str:
         tt = np.mean([r["train_time_s"] for r in rs])
         lines.append(f"| {c} | {m} | {rs[0]['n_params']} | {len(rs)} | {e.mean():.3e} ± {e.std(ddof=1) if len(e) > 1 else 0:.1e} | {tt:.0f} |")
     table = "\n".join(lines)
-    (RESULTS / "summary.md").write_text(
+    (results / "summary.md").write_text(
         "# LNO reproduction summary\n\nGenerated by `reproduce_lno.py --summarize`. "
         "Std is the sample std over seeds (ddof=1).\n\n" + table + "\n")
     return table
@@ -213,13 +221,17 @@ def main():
     p.add_argument("--data-root", default=None)
     p.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     p.add_argument("--summarize", action="store_true", help="only print/write the summary table")
+    p.add_argument("--fno-kwargs", default="{}",
+                   help='JSON passed to the FNO/TFNO constructor, e.g. \'{"positional_embedding": null}\'')
+    p.add_argument("--budget", type=int, default=None, help="FNO/TFNO target parameter count (default: LNO's)")
+    p.add_argument("--tag", default="", help="write results to results/<tag>/ (for ablations)")
     args = p.parse_args()
     if not args.summarize:
         for c in args.case:
             for m in args.model:
                 for s in args.seeds:
                     run(c, m, s, args)
-    print(summarize())
+    print(summarize(args.tag))
 
 
 if __name__ == "__main__":
