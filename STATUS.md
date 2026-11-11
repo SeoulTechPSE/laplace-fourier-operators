@@ -24,6 +24,25 @@ Each session appends one entry using the template at the bottom.
 
 ## Log
 
+### 2026-11-12 — Shared foundation (S1): comparison with published values
+
+- Done: read LNO (arXiv v2), SSM-operator, LFNO, PILNO papers (`~/references/`, not
+  committed); comparison in `experiments/foundation/paper_comparison.md`.
+- Results:
+  - Duffing c=0 LNO: ours 0.216 ± 0.068 vs LNO paper ≈0.24 ± 0.03 (Fig. 3, read from
+    plot) and SSM paper 0.260 ± 0.033. **Reproduced.**
+  - Diffusion LNO: ours 1.33e-3 vs paper ≈0 on the plot (<0.005). **Reproduced.**
+  - FNO on Duffing is also poor in the papers (≈0.77 LNO paper; 0.59 SSM paper, 10k
+    epochs), confirming the out-of-distribution split as the cause.
+  - On Diffusion, our budget-matched FNO (4.5e-3) is ≈25× better than the LNO
+    paper's FNO (≈0.12). The published LNO-vs-FNO gap on this case is not reproduced.
+  - LFNO regenerated its own in-distribution datasets; its numbers are not comparable.
+- Decisions: month-4 gate "reproduce original LNO results" is met for Duffing c=0 and
+  Diffusion (pending a check against the published version and SI).
+- Next: check published version of the LNO paper when available; v2 on Burgers;
+  remaining 1D/2D examples; decide whether (C)/(D) also use an in-distribution split
+  like LFNO, in addition to the original OOD split.
+
 ### 2026-11-12 — Shared foundation (S1): why FNO fails on Duffing
 
 - Done: data inspection; per-amplitude error analysis; FNO ablation on Duffing c=0
