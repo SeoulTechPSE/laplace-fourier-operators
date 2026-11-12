@@ -11,6 +11,7 @@ original LNO results", month 4).
 | Original data | `/srv/data/lno_drive` (shared) or `runs/data/lno_drive` |
 | Data loader, ood/iid splits | `lfo.data.lno_bench` |
 | Ported models | `lfo.models.lno` (`LNO1d`, `LNO2d`, `LNO2dV2`) |
+| Re-implemented models (no public code) | `lfo.models.hybrid` (`ALNO1d`, `LFNO1d`); tests in `tests/test_hybrid.py` |
 | Original optimizer and loss | `lfo.training` (`ComplexAdam`, `relative_l2_loss`) |
 | Port = original, bit for bit | `tests/test_lno.py` (needs `runs/ref/LNO` and CUDA) |
 | Reproduction script | `reproduce_lno.py` |

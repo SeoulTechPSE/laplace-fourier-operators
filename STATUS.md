@@ -20,9 +20,55 @@ Each session appends one entry using the template at the bottom.
 ## Open decisions
 
 - [ ] Staffing (affects schedule adjustments in `docs/integrated_schedule_ACD.qmd`, Section 4)
-- [ ] Whether ALNO / LFNO code is public, or must be re-implemented
+- [x] Whether ALNO / LFNO code is public: **not public** (2026-11-12); both re-implemented in `lfo.models.hybrid`
+- [ ] Whether to ask the LFNO authors to confirm the layer arrangement (our reconstruction matches their parameter count)
 
 ## Log
+
+### 2026-11-12 — Shared foundation (S1): ALNO and LFNO re-implemented (1D)
+
+- Done:
+  - Code availability: no public code for ALNO/PILNO (arXiv:2602.12706) or LFNO
+    (arXiv:2606.07601): no link in the papers; nothing on the authors' GitHub
+    accounts, the LFNO lab page or GitHub search.
+  - `lfo.models.hybrid`: `PoleResidueTS1d` (textbook pole-residue layer with separate
+    transient and steady outputs, `poles()` for the audit), `SpectralConv1d`,
+    `ALNO1d`, `LFNO1d`. `tests/test_hybrid.py` (7 tests; full suite 34/34 pass).
+  - ALNO = PILNO Eq. (15) per layer: pole-residue transient + free FNO multiplier.
+    It is the SI's "advanced LNO" (= our `LNO2dV2`), but written per layer instead
+    of the original code's two parallel stacks.
+  - LFNO = Eq. (7): steady coefficients from the same poles, then mixed by R on the
+    lowest modes. The paper does not say how its 6 layers are arranged; with
+    4 pole-residue layers, R on the first 2, and 4 W, our model has **exactly the
+    published 3,417 parameters** (paper counts complex entries once). Reconstruction,
+    not confirmed by the authors.
+- Results:
+  - Tests: one-channel layer = original LNO v1 layer; with the true poles the layer
+    gives the exact LTI response for a periodic input (rel. error < 1e-2).
+  - Initialisation matters. Duffing c=0, iid, 300 epochs, 1 seed, test rel. L2:
+
+    | setting | ALNO (7,001) | LFNO (5,977) |
+    |---|---|---|
+    | original LNO pole init, no norm | 0.93 (no training) | 1.02 (diverges) |
+    | stable pole init | 0.167 | 0.190 |
+    | InstanceNorm (as `LNO2dV2`) | 0.221 | 0.359 |
+    | both | 0.128 | 0.388 |
+
+    (LNO v1 under the same 300-epoch run: 0.309.) Sanity checks only, not reported results.
+- Decisions:
+  - Default `pole_init="stable"` (Re mu = -exp(U[log 1/T, log 10/T]), Im mu ~ U[0, pi/(4 dt)]),
+    `norm=False`: no normalisation between layers keeps learned poles interpretable for (C).
+  - New re-implementations use the textbook pole-residue contraction (no second channel
+    mixing); the LNO port keeps the original quirk.
+- Problems / open questions:
+  - Neither paper states its initialisation; the (C) audit should report pole recovery
+    under both initialisations, since the init may decide which poles are found.
+  - LFNO's published numbers use its own regenerated data (not comparable); ALNO has no
+    published ODE results. So neither model can be checked against published values.
+  - 2D versions of ALNO/LFNO not implemented (not needed for E1).
+- Next: (C) E1 audit setup: LTI datasets from `lfo.data.lti`, train LNO v1, ALNO, LFNO
+  (and LNO v2 as a 1D variant if needed) at matched budget, ≥ 3 seeds, compare learned poles
+  with `lfo.metrics.match_poles` / `pole_error` / `seed_spread`.
 
 ### 2026-11-12 — Shared foundation (S1): Burgers with LNO v2, both splits
 
