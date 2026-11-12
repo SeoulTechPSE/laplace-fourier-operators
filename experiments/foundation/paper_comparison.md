@@ -143,3 +143,54 @@ in direction with LFNO's in-distribution results.
 - NMI Supplementary Information checked (Tables S2, S5, S8).
 - Our FNO uses the original LNO training protocol (1000 epochs, relative-L2 loss);
   the SSM paper trained FNO for 10k epochs with MSE, which may explain 0.59 vs 0.79.
+
+## LFNO: implementation details in the two versions
+
+Sources: NeurIPS 2025 ML4PS workshop paper ("Best of Both Worlds", Appendix C,
+Table 2) and arXiv:2606.07601 v1 (Appendix A, Tables 6–7). Neither gives the
+initialisation or the exact layer arrangement.
+
+| setting (Duffing / ODE) | workshop Table 2 | arXiv Table 6 | our sanity runs |
+|---|---|---|---|
+| layers | 6 | 6 | 4 pole-residue + 2 R (= 6) |
+| width / modes | 4 / 16 | 4 / 16 | 4 / 16 |
+| batch | 64 | 64 | 20 (LNO protocol) / 64 |
+| lr | 0.002 | 0.0025 | 0.002 / paper value |
+| weight decay | 0.01 | 0.02 | 1e-4 / paper value |
+| StepLR step, gamma | 100, 0.8 | 100, 0.85 | 100, 0.5 / paper value |
+| activation | relu | relu | relu |
+| optimizer | Adam | Adam | ComplexAdam / torch Adam |
+| epochs | 6,200 (Duffing c=0) | 5,000, early stopping | 300 / 1,000 |
+
+PDE (Beam) in the workshop: width 16, 8 modes, batch 200, other settings as Duffing.
+arXiv PDEs: width 16, 4 modes, batch 50, lr 0.002, wd 1e-4, gamma 0.8. In the arXiv
+version FNO and LNO are trained with the same settings as LFNO (so LNO uses wd 0.02,
+not the original 1e-4).
+
+Observations:
+
+- The 6 layers are consistent with our reconstruction (4 transient + 2 steady), and the
+  arXiv parameter count (Table 7: 3,417, ODE setting) is matched exactly.
+- Order inside the steady layer: the workshop text applies R first and then computes
+  the residues lambda_l; the arXiv text and Fig. 1(b) compute lambda_l first and then
+  apply R (Eq. 5). With channel matrices the two differ. We follow the arXiv version.
+- The workshop version calls R "non-linear" and mentions "a learnable nonlinearity" in
+  the steady component; Eqs. (5)-(8) are linear in lambda. We apply the activation
+  between layers only.
+- Duffing c=0 numbers differ between versions: LFNO 0.1288 (workshop) vs 0.0518 (arXiv);
+  FNO 0.9998 (workshop) vs 0.0726 (arXiv). The workshop used the original LNO data
+  (FNO fails on the ood split, as in our runs: 0.895); the arXiv version regenerated
+  aligned data (f = A e^{-0.05t} sin 5t in all splits). LNO is 0.2014 in both tables,
+  although the data changed.
+- Paper protocol with our model (Duffing c=0, iid, 1,000 epochs, 1 seed, test rel. L2):
+
+  | protocol | `pole_init="lno"` | `pole_init="stable"` |
+  |---|---|---|
+  | workshop (lr 0.002, wd 0.01, gamma 0.8) | 1.000 (no training) | 0.185 |
+  | arXiv (lr 0.0025, wd 0.02, gamma 0.85) | 0.995 (no training) | 0.260 |
+
+  The large weight decay does not rescue the original LNO initialisation, so the
+  authors' code must differ from our reconstruction in initialisation, normalisation or
+  layer arrangement. With the stable init, about half of the learned poles end with
+  Re mu > 0 (all start with Re mu < 0): coupled L2 decay pulls poles toward the
+  origin and nothing keeps them stable. Relevant to the (C) audit.

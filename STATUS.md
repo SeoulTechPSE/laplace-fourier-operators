@@ -21,9 +21,32 @@ Each session appends one entry using the template at the bottom.
 
 - [ ] Staffing (affects schedule adjustments in `docs/integrated_schedule_ACD.qmd`, Section 4)
 - [x] Whether ALNO / LFNO code is public: **not public** (2026-11-12); both re-implemented in `lfo.models.hybrid`
-- [ ] Whether to ask the LFNO authors to confirm the layer arrangement (our reconstruction matches their parameter count)
+- [x] Ask the LFNO authors? **No** (2026-11-12): paper not formally published; use the reconstruction and document it
 
 ## Log
+
+### 2026-11-12 — Shared foundation (S1): LFNO implementation details reviewed
+
+- Done: compared the LFNO workshop paper (NeurIPS 2025 ML4PS, Appendix C Table 2) with
+  arXiv:2606.07601 (Appendix A Tables 6–7); LFNO trained with both papers' protocols.
+  Details in `experiments/foundation/paper_comparison.md` (section "LFNO").
+- Results:
+  - Both versions: 6 layers, width 4, 16 modes, relu, batch 64 for ODEs; consistent with
+    our 4 + 2 reconstruction. Weight decay 0.01 (workshop) / 0.02 (arXiv), 100–200× LNO's.
+  - The two versions order the steady layer differently (workshop: R then lambda; arXiv:
+    lambda then R). We follow arXiv.
+  - Paper protocols do not make the original LNO pole init trainable (test ≈ 1.0); with
+    the stable init, test 0.185 (workshop protocol) and 0.260 (arXiv), 1,000 epochs, 1 seed.
+  - With the stable init ≈ 50% of learned poles end unstable (Re mu > 0).
+- Decisions: the LFNO authors will not be contacted (paper not formally published).
+  Keep the reconstruction; state in any paper that LFNO is re-implemented, list
+  the unspecified choices (init, layer arrangement, steady-layer order).
+- Problems / open questions:
+  - For (C) E1: train LFNO with its published protocol (Adam, wd 0.01–0.02) as well as the
+    common protocol; the weight decay acts on the poles and may decide pole recovery.
+  - Unstable learned poles: decide whether E1 reports them as-is (yes, for the audit) and
+    whether (A) needs a stability parameterisation (Re mu = -softplus).
+- Next: (C) E1 audit setup.
 
 ### 2026-11-12 — Shared foundation (S1): ALNO and LFNO re-implemented (1D)
 
