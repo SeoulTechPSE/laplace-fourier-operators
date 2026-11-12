@@ -1,0 +1,92 @@
+{
+ "setting": "deep",
+ "system": "p2",
+ "model": "lfno",
+ "init": "stable",
+ "protocol": "common",
+ "seed": 2,
+ "config": {
+  "width": 4,
+  "k": 16,
+  "params": 5977,
+  "target": 5977
+ },
+ "params": 5977,
+ "seconds": 199.3,
+ "test_rel_l2": NaN,
+ "diverged": true,
+ "oracle_rel_l2": 0.000843234418425709,
+ "history": [
+  [
+   1,
+   1.0233494758605957,
+   0.9991996884346008
+  ],
+  [
+   100,
+   0.06259806901216507,
+   0.055233459919691086
+  ],
+  [
+   200,
+   0.027828992716968058,
+   0.024479232728481293
+  ],
+  [
+   300,
+   NaN,
+   NaN
+  ],
+  [
+   400,
+   NaN,
+   NaN
+  ],
+  [
+   500,
+   NaN,
+   NaN
+  ],
+  [
+   600,
+   NaN,
+   NaN
+  ],
+  [
+   700,
+   NaN,
+   NaN
+  ],
+  [
+   800,
+   NaN,
+   NaN
+  ],
+  [
+   900,
+   NaN,
+   NaN
+  ],
+  [
+   1000,
+   NaN,
+   NaN
+  ]
+ ],
+ "true_poles": [
+  [
+   -0.5,
+   2.0
+  ]
+ ],
+ "pole_error": null,
+ "pole_error_mean": null,
+ "unstable_fraction": NaN,
+ "n_learned_poles": 1024,
+ "closest_poles": [
+  [
+   1e+30,
+   0.0
+  ]
+ ]
+}

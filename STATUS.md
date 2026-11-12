@@ -8,7 +8,7 @@ Each session appends one entry using the template at the bottom.
 | Work package | Months | Status | Gate |
 |---|---|---|---|
 | Shared foundation | 1–4 | nearly done: LNO v1/v2 reproduced (gate met), ALNO/LFNO 1D re-implemented; LTI/PDE/process generators partly | reproduce original LNO results (month 4) — **met** |
-| (C) Pole audit of existing models | 3–5 | **next** (E1) | — |
+| (C) Pole audit of existing models | 3–5 | **in progress**: E1 first full run done (585 runs) | — |
 | (D) Non-periodic input representation | 4–8 | not started | differs from padded FNO? (month 8) |
 | (A) Pole layer and linear validation | 5–10 | not started | dispersion relations recovered (month 10) |
 | (C) Identifiability theory and remedies | 6–12 | not started | — |
@@ -23,38 +23,79 @@ Each session appends one entry using the template at the bottom.
 - [x] Whether ALNO / LFNO code is public: **not public** (2026-11-12); both re-implemented in `lfo.models.hybrid`
 - [x] Ask the LFNO authors? **No** (2026-11-12): paper not formally published; use the reconstruction and document it
 
-## Handoff (2026-11-12) — start here in the next session
+## Handoff (2026-11-12, after E1 first run) — start here in the next session
 
-Next work package: **(C) E1 audit** (`docs/proposal_C_identifiability.qmd`, E1 / RQ1):
-train the existing models on linear problems with known poles and compare learned
-poles with the truth, ≥ 3 seeds.
+Work package continues: **(C) E1 audit**. Script, conventions and results:
+`experiments/C/e1_audit/` (`README.md`, `results/summary.md`). Reproduce with the
+commands in the README (≈ 1 h on the RTX 4090 with 6–12 parallel processes).
 
-Suggested steps:
+Suggested next steps (in order):
 
-1. `experiments/C/e1_audit.py`: LTI datasets from `lfo.data.lti` (`random_poles`,
-   `response`; inputs `step`, `ramp`, `prbs`, `smooth_random`), a few true-pole sets
-   (e.g. 2, 4, 6 poles; real and complex pairs), fixed time grid.
-2. Models: `LNO1d` (v1, original quirks), `ALNO1d`, `LFNO1d`; LNO v2 exists only in 2D
-   (`LNO2dV2`) — a 1D v2 is `ALNO1d` with parallel stacks; decide whether it is needed.
-   Use a single-channel / 1-layer setting too, where poles are directly comparable.
-3. Protocols: common (ComplexAdam lr 0.002, wd 1e-4) and, for LFNO, its paper protocol
-   (Adam, wd 0.01–0.02, batch 64, gamma 0.8/0.85). Both pole inits (`"lno"`, `"stable"`).
-4. Metrics only from `lfo.metrics` (`match_poles`, `pole_error`, `residue_error`,
-   `seed_spread`); learned poles via `model.poles()` (hybrid) or `conv0.weights_pole` (LNO1d).
-5. Results: small JSON/summary in `experiments/C/results/`, checkpoints in `runs/C/`.
+1. Per-pole breakdown: which true poles fail (slow real pole −0.2? the lightly damped
+   pair?) — data is in the per-run JSONs (`pole_error` per true pole).
+2. Separate optimisation from identifiability for the tied layer: band init with more
+   epochs / multi-start; check whether good-fit/wrong-pole minima (p6, test 1e-2, pole
+   error 0.37) are local minima or near-equivalent pole sets.
+3. Untied models without the truncation floor: steady modes 64 (floor 4e-3) to see
+   whether ALNO/LFNO poles drift once the steady branch can fit the full response (H1).
+4. Weight decay on poles: LFNO protocol with wd only on non-pole parameters (warm start).
+5. Deep setting: LNO v1 at its published size (width 4, 16 poles, 1.8k params) — at the
+   matched 5.9k budget it does not train from the original init.
+6. Then E2 (data richness) per plan.
 
 Things to know:
 
 - Environment: `.venv` (Python 3.12, torch 2.6, neuraloperator 2.0), RTX 4090; `pytest` 34/34.
 - Data: `/srv/data/lno_drive` (LNO originals); reference code `runs/ref/LNO`; papers in
-  `~/references/` (not committed; includes the LFNO workshop PDF).
-- LNO v2 Burgers is slow (≈ 35 min/run alone); 8 parallel runs on the GPU worked.
-- With the original LNO pole init, deep ALNO/LFNO stacks do not train; default is
-  `pole_init="stable"`. About half of learned LFNO poles end unstable (Re mu > 0).
+  `~/references/` (not committed).
 - Every result: matched parameter budget, ≥ 3 seeds, mean ± std, `ood` and `iid` on LNO data.
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-12 — (C) E1 audit: first full run, layer and deep settings
+
+- Done:
+  - `experiments/C/e1_audit/e1_audit.py`: three fixed LTI systems (`p2`, `p4`, `p6`),
+    T = 20, n_t = 1024, inputs step/ramp/PRBS/smooth (200/50/100, data seed 0).
+    Settings `layer` (one single-channel pole-residue layer: tied = LNO v1, alno, lfno;
+    n_poles = number of true poles) and `deep` (LNO1d port, ALNO1d, LFNO1d at the LFNO
+    paper budget, 5,927–5,977 params). Protocols `common` (ComplexAdam, original LNO 1D)
+    and `lfno_paper` (Adam, wd 0.01; LFNO only). Inits `lno`, `stable`; layer setting
+    also `band` and `warm` (E1-only diagnostics, defined in the script).
+  - 585 runs: layer 10 seeds (480), deep 5 seeds (105). `results/summary.md`, README.
+- Results (details and numbers: `experiments/C/e1_audit/README.md`):
+  - Oracle floors: tied layer ≈ 1e-3; ALNO/LFNO layer with true K(iω) on 16 steady modes
+    4.4e-2–6.1e-2 (mode truncation; 4e-3 with 64 modes).
+  - With the published inits **no model recovers the poles, the tied layer included**:
+    `lno` init keeps 90–100 % of poles unstable (outputs blow up); `stable` init leaves
+    poles far away (relative error 5–15). Deep models with the `lno` init do not train.
+  - Deep, `stable`: ALNO/LFNO are accurate (test 1.5–3e-2) but even the closest pooled
+    poles are off by 0.08–0.12 (p2) and 0.35–0.41 (p4, p6), with small seed spread.
+  - LFNO deep diverges mid-training in 10/30 `stable` runs; with its paper protocol
+    59–63 % of its poles end unstable.
+  - Warm start: tied converges to the truth (0.007/0.024/0.042); ALNO/LFNO stay near
+    (0.05–0.13) at the truncation floor; with LFNO's wd 0.01 the poles drift (up to 0.49).
+  - Band init: good fit with wrong poles, also for the tied layer (p6: test 1.2e-2,
+    pole error 0.37).
+- Decisions:
+  - Pole matching convention for E1 (script-level, `lfo.metrics` unchanged): fold learned
+    and true poles to Im ≥ 0, one true pole per conjugate pair, complex-pair reference
+    residue 2β (outputs are Re(...), so one learned pole can carry a pair).
+  - No separate 1D LNO v2: one v2 layer equals the ALNO layer; deep v2 = ALNO stacks.
+  - Unstable learned poles are reported as they are. Diverged runs (non-finite weights)
+    are counted and excluded from the statistics; their pole metrics are stored as null.
+  - Deep-setting pole error = closest pooled poles (optimistic bound), stated as such.
+- Problems / open questions:
+  - First obstacle is optimisation (init, weight decay, instability), not yet
+    dual-branch non-identifiability. The audit therefore needs the warm/band diagnostics
+    to separate the two; this shapes the E1 paper message.
+  - My first `warm` init (complex factor on mu) made lightly damped poles unstable;
+    fixed (Re and Im jittered separately) and re-run before reporting.
+  - LNO v1 at the 5.9k matched budget does not train from its original init, although
+    the published 1.8k Duffing configuration does; check at the published size.
+- Next: per-pole breakdown; tied-layer multi-start; ALNO/LFNO with 64 steady modes;
+  pole-excluded weight decay; then E2.
 
 ### 2026-11-12 — Shared foundation (S1): LFNO implementation details reviewed
 
