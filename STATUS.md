@@ -7,8 +7,8 @@ Each session appends one entry using the template at the bottom.
 
 | Work package | Months | Status | Gate |
 |---|---|---|---|
-| Shared foundation | 1–4 | in progress | reproduce original LNO results (month 4) |
-| (C) Pole audit of existing models | 3–5 | not started | — |
+| Shared foundation | 1–4 | nearly done: LNO v1/v2 reproduced (gate met), ALNO/LFNO 1D re-implemented; LTI/PDE/process generators partly | reproduce original LNO results (month 4) — **met** |
+| (C) Pole audit of existing models | 3–5 | **next** (E1) | — |
 | (D) Non-periodic input representation | 4–8 | not started | differs from padded FNO? (month 8) |
 | (A) Pole layer and linear validation | 5–10 | not started | dispersion relations recovered (month 10) |
 | (C) Identifiability theory and remedies | 6–12 | not started | — |
@@ -22,6 +22,37 @@ Each session appends one entry using the template at the bottom.
 - [ ] Staffing (affects schedule adjustments in `docs/integrated_schedule_ACD.qmd`, Section 4)
 - [x] Whether ALNO / LFNO code is public: **not public** (2026-11-12); both re-implemented in `lfo.models.hybrid`
 - [x] Ask the LFNO authors? **No** (2026-11-12): paper not formally published; use the reconstruction and document it
+
+## Handoff (2026-11-12) — start here in the next session
+
+Next work package: **(C) E1 audit** (`docs/proposal_C_identifiability.qmd`, E1 / RQ1):
+train the existing models on linear problems with known poles and compare learned
+poles with the truth, ≥ 3 seeds.
+
+Suggested steps:
+
+1. `experiments/C/e1_audit.py`: LTI datasets from `lfo.data.lti` (`random_poles`,
+   `response`; inputs `step`, `ramp`, `prbs`, `smooth_random`), a few true-pole sets
+   (e.g. 2, 4, 6 poles; real and complex pairs), fixed time grid.
+2. Models: `LNO1d` (v1, original quirks), `ALNO1d`, `LFNO1d`; LNO v2 exists only in 2D
+   (`LNO2dV2`) — a 1D v2 is `ALNO1d` with parallel stacks; decide whether it is needed.
+   Use a single-channel / 1-layer setting too, where poles are directly comparable.
+3. Protocols: common (ComplexAdam lr 0.002, wd 1e-4) and, for LFNO, its paper protocol
+   (Adam, wd 0.01–0.02, batch 64, gamma 0.8/0.85). Both pole inits (`"lno"`, `"stable"`).
+4. Metrics only from `lfo.metrics` (`match_poles`, `pole_error`, `residue_error`,
+   `seed_spread`); learned poles via `model.poles()` (hybrid) or `conv0.weights_pole` (LNO1d).
+5. Results: small JSON/summary in `experiments/C/results/`, checkpoints in `runs/C/`.
+
+Things to know:
+
+- Environment: `.venv` (Python 3.12, torch 2.6, neuraloperator 2.0), RTX 4090; `pytest` 34/34.
+- Data: `/srv/data/lno_drive` (LNO originals); reference code `runs/ref/LNO`; papers in
+  `~/references/` (not committed; includes the LFNO workshop PDF).
+- LNO v2 Burgers is slow (≈ 35 min/run alone); 8 parallel runs on the GPU worked.
+- With the original LNO pole init, deep ALNO/LFNO stacks do not train; default is
+  `pole_init="stable"`. About half of learned LFNO poles end unstable (Re mu > 0).
+- Every result: matched parameter budget, ≥ 3 seeds, mean ± std, `ood` and `iid` on LNO data.
+- Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
 
