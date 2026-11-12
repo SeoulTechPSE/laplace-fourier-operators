@@ -21,6 +21,7 @@ Each session appends one entry using the template at the bottom.
 
 - [ ] Staffing (affects schedule adjustments in `docs/integrated_schedule_ACD.qmd`, Section 4)
 - [x] Whether ALNO / LFNO code is public: **not public** (2026-11-12); both re-implemented in `lfo.models.hybrid`
+- [ ] E1 paper: reported set; deep "closest pooled pole" in main text; waive the budget rule for the minimal layer setting? (`experiments/C/e1_audit/E1_report.md`)
 - [x] Ask the LFNO authors? **No** (2026-11-12): paper not formally published; use the reconstruction and document it
 
 ## Handoff (2026-11-12, after E1 first run) — start here in the next session
@@ -33,8 +34,9 @@ Suggested next steps (in order):
 
 1. ~~Per-pole breakdown~~, ~~pole-lr ×10 control~~, ~~practical identifiability~~ done
    (README sections). E1 now has its three-part message (see the 2026-11-13 log entries).
-2. Write the E1 summary for the workshop paper (figures: travel vs budget; per-pole
-   recovery; p6 profile of −2). Decide which runs are the reported set.
+2. ~~E1 summary~~ drafted: `experiments/C/e1_audit/E1_report.md` (3 figures). Open:
+   the reported set, deep "closest pooled pole" in the main text, budget rule for the
+   layer setting (report section "Open decisions").
 3. E2 (data richness) can start from `identifiability.py`: vary input families (fast
    content), window T and grid, and track profiled e of the fast real poles.
 4. Optional E1 extras: log-parameterised decay rate; untied models with 64 steady modes
@@ -49,6 +51,16 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-13 — (C) E1 audit: draft summary and figures
+
+- Done: `experiments/C/e1_audit/E1_report.md` (question, setup, three-part message,
+  main-number table, limitations, open decisions); `figures.py` → `figures/fig1_travel`,
+  `fig2_recovery`, `fig3_profile` (.png, .pdf).
+- Results: no new runs; 900 reported runs (720 layer, 180 deep).
+- Decisions: none final; three decisions for the paper are listed in the report and
+  under "Open decisions".
+- Next: settle the open decisions; E2 from `identifiability.py`.
 
 ### 2026-11-13 — (C) E1 audit: practical identifiability of the true poles
 

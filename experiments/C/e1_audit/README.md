@@ -4,6 +4,8 @@ Plan: `docs/proposal_C_identifiability.qmd`, RQ1 and Section 6.2 (E1).
 Question: on LTI systems with known poles, how close are the poles learned by
 LNO v1, ALNO (= LNO v2 per layer) and LFNO to the truth, and how much do they vary over seeds?
 
+Report draft: `E1_report.md` (figures: `figures.py` → `figures/`).
+
 Script: `e1_audit.py` (full description in its docstring). Results: `results/<setting>/*.json`
 (one per run) and `results/summary.md`; checkpoints in `runs/C/e1_audit/`.
 
