@@ -24,6 +24,43 @@ Each session appends one entry using the template at the bottom.
 
 ## Log
 
+### 2026-11-12 — Shared foundation (S1): Burgers with LNO v2, both splits
+
+- Done:
+  - `reproduce_lno.py`: case `burgers` (`LNO2dV2`, original `2D_Burger/main.py` settings:
+    lr 0.01, batch 10, 1000 epochs, StepLR 100/0.5, `torch.optim.Adam`). New `Case` fields
+    `optimizer`, `lno`, `input_stride`. Low-to-high resolution: every model reads every
+    2nd input point (32 × 25) and predicts on 64 × 50; FNO/TFNO via neuraloperator
+    `output_shape` ("FNO with IDFT").
+  - `lfo.data.lno_bench`: docstring generalised (sizes per case; Burgers note);
+    `tests/test_lno_bench.py` Burgers test (27/27 pass).
+  - LNO v2, FNO, TFNO × 3 seeds × ood/iid (`results/<split>/burgers_*.json`).
+- Results (test rel. L2, 3 seeds; `experiments/foundation/paper_comparison.md`):
+
+  | split | LNO v2 (120,514) | FNO (120,444) | TFNO (119,614) |
+  |---|---|---|---|
+  | ood | 5.39e-2 ± 4.5e-4 | 2.59e-2 ± 3.7e-4 | **1.88e-2 ± 6.5e-5** |
+  | iid | 5.31e-2 ± 1.0e-3 | 2.69e-2 ± 2.0e-4 | **1.78e-2 ± 8.2e-4** |
+
+  - **LNO v2 reproduced** against SI Table S2 (5.31e-2 ± 1.79e-4): +1.5%.
+  - Our budget-matched 4-layer FNO/TFNO are 2–3× better than LNO v2 and than the
+    published FNO with IDFT (5.32e-2, architecture not given in the SI).
+  - The Burgers data is in-distribution already (one random-field family for all
+    splits); ood and iid agree, as expected.
+- Decisions:
+  - Month-4 gate "reproduce the original LNO results" is met for Duffing c=0,
+    Diffusion and Burgers (v2).
+  - Each case uses the original script's optimizer (`ComplexAdam` for v1 cases,
+    `torch.optim.Adam` for Burgers).
+- Problems / open questions:
+  - LNO v1 on Burgers (SI 9.15e-2) not reproduced: no original script or hyperparameters.
+  - LNO v2 is slow (≈ 2.1 s/epoch alone, 35 min per run; 3.5–4× FNO/TFNO).
+  - For (A)/(C): on Burgers the free-Fourier models beat the dual-branch v2 at equal
+    budget; v2's steady branch is itself FNO-like, so which branch carries the
+    prediction is a direct question for the (C) audit.
+- Next: ALNO/LFNO code availability and implementation (needed for (C) E1, hand-off
+  month 4); remaining 1D/2D examples only as needed by (C) E1.
+
 ### 2026-11-12 — Shared foundation (S1): LNO paper Supplementary Information
 
 - Done: read the NMI Supplementary Information (Tables S2, S5, S8);

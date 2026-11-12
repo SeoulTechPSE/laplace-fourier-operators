@@ -76,17 +76,43 @@ Our FNO/TFNO are 4-layer `neuraloperator` models (CLAUDE.md: baselines come from
 `neuraloperator`), so they differ from the published 1-layer FNO in architecture
 as well as size.
 
-## Burgers (v2, for the next step)
+## Burgers (v2)
 
-SI Table S2 (Burgers, low-to-high resolution: input 32 points in x, output 64 × 50;
-5 runs): LNO 9.15e-2 ± 6.99e-4, **advanced LNO (v2) 5.31e-2 ± 1.79e-4**,
-FNO with IDFT 5.32e-2 ± 3.05e-4. SI Table S5: v2 uses 4 layers, width 16,
-modes 4×4, lr 0.01, batch 10, sin, 1000 epochs, which matches the original
-`2D_Burger/main.py`. These are the reproduction targets for `LNO2dV2`.
+SI Table S2 (Burgers, low-to-high resolution: input u0(x) on 32 of 64 points,
+output u(x, t) on 64 × 50; 5 runs): LNO 9.15e-2 ± 6.99e-4, **advanced LNO (v2)
+5.31e-2 ± 1.79e-4**, FNO with IDFT 5.32e-2 ± 3.05e-4. SI Table S5: v2 uses
+4 layers, width 16, modes 4×4, lr 0.01, batch 10, sin, 1000 epochs, which matches
+the original `2D_Burger/main.py`.
+
+Ours (`reproduce_lno.py --case burgers`, 3 seeds, test rel. L2, mean ± std):
+
+| split | LNO v2 (120,514) | FNO (120,444) | TFNO (119,614) |
+|---|---|---|---|
+| ood | 5.39e-2 ± 4.5e-4 | 2.59e-2 ± 3.7e-4 | **1.88e-2 ± 6.5e-5** |
+| iid | 5.31e-2 ± 1.0e-3 | 2.69e-2 ± 2.0e-4 | **1.78e-2 ± 8.2e-4** |
+
+- **LNO v2 reproduced**: 5.39e-2 vs published 5.31e-2 (+1.5%, about 4 published
+  standard deviations; within our seed spread on iid).
+- Protocol as the original: `torch.optim.Adam` (not `ComplexAdam`), weight decay
+  1e-4, relative-L2 loss, StepLR 100/0.5. Input points with both indices odd are
+  zeroed as in the original; the models read every 2nd point in x and t only
+  (u0 is constant along t), so this has no effect.
+- FNO/TFNO (4-layer `neuraloperator`, budget-matched) read the same 32 × 25
+  input and evaluate the last inverse DFT on the full 64 × 50 grid
+  (`output_shape`), i.e. an "FNO with IDFT". They are 2.0× (FNO) and 2.9× (TFNO)
+  better than LNO v2 and than the published FNO with IDFT (5.32e-2). The SI does not
+  give the published FNO-with-IDFT architecture, so the gap cannot be attributed.
+- The Burgers data has one initial-condition family (Gaussian random field) in
+  all splits: the original split is already in-distribution (nearest-neighbour
+  distance test→train 0.64 vs train→train 0.62). As expected, ood and iid agree.
+- LNO v1 on Burgers (9.15e-2) is not reproduced: the original code has no v1
+  Burgers script and the SI gives no v1 hyperparameters for it.
+- Cost: LNO v2 ≈ 2.1 s/epoch alone on the RTX 4090 (≈ 35 min per run), FNO
+  ≈ 0.6 s, TFNO ≈ 0.9 s; with 8 runs sharing the GPU, LNO took 2.8 h per run.
 
 ## Both splits (ours, 3 seeds, test rel. L2)
 
-`ood` = original split; `iid` = same 380 samples re-split at random (`lfo.data.lno_bench`).
+`ood` = original split; `iid` = same samples re-split at random (`lfo.data.lno_bench`).
 
 | case | split | LNO | FNO | TFNO |
 |---|---|---|---|---|

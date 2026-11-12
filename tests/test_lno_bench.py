@@ -49,3 +49,14 @@ def test_2d_case_shapes():
     data, grids = lno_bench.load_case("2D_Diffusion", "iid")
     assert data["train"][0].shape == (200, 50, 50, 1) and data["train"][1].shape == (200, 50, 50)
     assert set(grids) == {"x", "t"}
+
+
+@pytest.mark.skipif(not _have("2D_Burger"), reason="LNO data not available")
+def test_burgers_shapes_and_iid_sizes():
+    ood, grids = lno_bench.load_case("2D_Burger", "ood")
+    iid, _ = lno_bench.load_case("2D_Burger", "iid")
+    assert ood["train"][0].shape == (800, 64, 50, 1) and ood["test"][1].shape == (100, 64, 50)
+    assert grids["x"].shape == (1, 64) and grids["t"].shape == (1, 50)
+    assert {p: len(iid[p][0]) for p in iid} == {"train": 800, "vali": 100, "test": 100}
+    pool = lambda d: np.sort(np.concatenate([d[p][1].numpy()[:, 10, 10] for p in ("train", "vali", "test")]))
+    assert np.array_equal(pool(ood), pool(iid))

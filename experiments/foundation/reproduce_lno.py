@@ -5,8 +5,9 @@ Usage:
     python experiments/foundation/reproduce_lno.py --summarize
 
 Training protocol for every model follows the original LNO scripts for the case
-(epochs, batch size, learning rate, StepLR schedule, ComplexAdam with weight decay
-1e-4, relative-L2 training loss). FNO/TFNO come from `neuraloperator`; their
+(epochs, batch size, learning rate, StepLR schedule, optimizer with weight decay
+1e-4, relative-L2 training loss). The optimizer is the original's: ComplexAdam
+for the v1 cases, torch.optim.Adam for Burgers (v2). FNO/TFNO come from `neuraloperator`; their
 hidden width and number of Fourier modes are chosen to match the LNO parameter
 count as closely as possible (see `match_budget`).
 
@@ -27,7 +28,7 @@ import torch.nn as nn
 
 from lfo.data import lno_bench
 from lfo.metrics import relative_l2
-from lfo.models import LNO1d, LNO2d
+from lfo.models import LNO1d, LNO2d, LNO2dV2
 from lfo.training import ComplexAdam, count_params, relative_l2_loss, seed_everything
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -44,6 +45,9 @@ class Case:
     step_size: int = 100
     gamma: float = 0.5
     weight_decay: float = 1e-4
+    optimizer: str = "complex_adam"  # "complex_adam" (original Adam.py) or "adam" (torch.optim.Adam)
+    lno: str = "v1"                  # "v1": LNO1d/LNO2d, "v2": LNO2dV2
+    input_stride: int = 1            # >1: low-to-high resolution (models see the input every `input_stride` points)
     lno_kwargs: dict = None
     fno_modes: tuple = ()          # candidate Fourier mode counts per axis for FNO/TFNO
     paper_note: str = ""
@@ -56,13 +60,27 @@ CASES = {
     "diffusion": Case("2D_Diffusion", dim=2, batch_size=50,
                       lno_kwargs=dict(width=16, modes1=4, modes2=4, transient_sign=1.0),
                       fno_modes=(4, 6, 8, 12, 16)),
+    # Example 10 (SI Tables S2, S5), original 2D_Burger/main.py: input u0(x) on 32 points
+    # (every 2nd of 64; the t axis is constant), output u(x, t) on 64 x 50.
+    "burgers": Case("2D_Burger", dim=2, batch_size=10, lr=0.01, optimizer="adam", lno="v2", input_stride=2,
+                    lno_kwargs=dict(width1=16, width2=16, width3=16, modes11=4, modes12=4, modes21=4, modes22=4),
+                    fno_modes=(4, 6, 8, 12)),
 }
 
 
 # ------------------------------------------------------------------ data
 def load(case: Case, root: str | None, split: str = "ood"):
-    """Original LNO data via lfo.data.lno_bench ("ood": original split, "iid": re-split)."""
-    return lno_bench.load_case(case.folder, split=split, root=root)
+    """Original LNO data via lfo.data.lno_bench ("ood": original split, "iid": re-split).
+
+    For low-to-high cases the input points the original script zeroes (both
+    indices odd) are zeroed here too; models only read every `input_stride`-th
+    point, so this does not change any result and keeps the inputs identical.
+    """
+    data, grids = lno_bench.load_case(case.folder, split=split, root=root)
+    if case.input_stride > 1:
+        for f, _ in data.values():
+            f[:, 1::2, 1::2] = 0
+    return data, grids
 
 
 # ----------------------------------------------------------------- models
@@ -73,16 +91,28 @@ class ChannelFirst(nn.Module):
         super().__init__()
         self.net = net
 
+    def __init__(self, net: nn.Module, input_stride: int = 1):
+        super().__init__()
+        self.net = net
+        self.input_stride = input_stride
+
     def forward(self, x):
         x = torch.movedim(x, -1, 1)
-        return torch.movedim(self.net(x), 1, -1)
+        s = self.input_stride
+        if s == 1:
+            return torch.movedim(self.net(x), 1, -1)
+        # low-to-high: read every s-th point, evaluate the last inverse DFT on the full grid
+        # (the "FNO with IDFT" baseline of the LNO paper)
+        out_shape = tuple(x.shape[2:])
+        sl = (slice(None), slice(None)) + (slice(None, None, s),) * (x.ndim - 2)
+        return torch.movedim(self.net(x[sl], output_shape=out_shape), 1, -1)
 
 
-def _neuralop(name: str, dim: int, modes: int, hidden: int, **extra) -> nn.Module:
+def _neuralop(name: str, dim: int, modes: int, hidden: int, input_stride: int = 1, **extra) -> nn.Module:
     from neuralop.models import FNO, TFNO
     cls = {"fno": FNO, "tfno": TFNO}[name]
     return ChannelFirst(cls(n_modes=(modes,) * dim, in_channels=1, out_channels=1,
-                            hidden_channels=hidden, n_layers=4, **extra))
+                            hidden_channels=hidden, n_layers=4, **extra), input_stride)
 
 
 def match_budget(name: str, case: Case, budget: int, **extra):
@@ -90,7 +120,7 @@ def match_budget(name: str, case: Case, budget: int, **extra):
     best = None
     for modes in case.fno_modes:
         for hidden in range(2, 65):
-            n = count_params(_neuralop(name, case.dim, modes, hidden, **extra))
+            n = count_params(_neuralop(name, case.dim, modes, hidden, case.input_stride, **extra))
             if best is None or abs(n - budget) < abs(best[2] - budget):
                 best = (modes, hidden, n)
             if n > 2 * budget:
@@ -102,7 +132,9 @@ def build(model: str, case: Case, grids: dict, fno_extra: dict | None = None, bu
     """Build the model. For FNO/TFNO, `fno_extra` is passed to the neuraloperator
     constructor (e.g. positional_embedding=None, domain_padding=0.25) and `budget`
     overrides the target parameter count (default: the LNO's)."""
-    if case.dim == 1:
+    if case.lno == "v2":
+        lno = LNO2dV2(x=grids["x"], t=grids["t"], stride=case.input_stride, **case.lno_kwargs)
+    elif case.dim == 1:
         lno = LNO1d(t=grids["t"], **case.lno_kwargs)
     else:
         lno = LNO2d(x=grids["x"], t=grids["t"], **case.lno_kwargs)
@@ -110,8 +142,8 @@ def build(model: str, case: Case, grids: dict, fno_extra: dict | None = None, bu
         return lno, dict(case.lno_kwargs)
     extra = dict(fno_extra or {})
     modes, hidden, _ = match_budget(model, case, budget or count_params(lno), **extra)
-    return (_neuralop(model, case.dim, modes, hidden, **extra),
-            dict(n_modes=modes, hidden_channels=hidden, n_layers=4, **extra))
+    return (_neuralop(model, case.dim, modes, hidden, case.input_stride, **extra),
+            dict(n_modes=modes, hidden_channels=hidden, n_layers=4, input_stride=case.input_stride, **extra))
 
 
 # ------------------------------------------------------------------ train
@@ -137,7 +169,8 @@ def run(case_name: str, model_name: str, seed: int, args) -> dict:
     (xtr, ytr), (xva, yva), (xte, yte) = split["train"], split["vali"], split["test"]
     loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(xtr, ytr),
                                          batch_size=case.batch_size, shuffle=True)
-    opt = ComplexAdam(model.parameters(), lr=case.lr, weight_decay=case.weight_decay)
+    opt_cls = {"complex_adam": ComplexAdam, "adam": torch.optim.Adam}[case.optimizer]
+    opt = opt_cls(model.parameters(), lr=case.lr, weight_decay=case.weight_decay)
     sched = torch.optim.lr_scheduler.StepLR(opt, step_size=case.step_size, gamma=case.gamma)
     epochs = args.epochs or case.epochs
 

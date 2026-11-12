@@ -5,14 +5,18 @@ out-of-distribution benchmark: training inputs come from one forcing family
 (e.g. A sin 5t) and validation/test inputs from another (A e^{-0.05t} sin 5t).
 We report every result on two splits (STATUS.md decision, 2026-11-12):
 
-``"ood"``  the original split (train 200 / vali 50 / test 130), unchanged.
-``"iid"``  the same 380 samples pooled and re-split at random with the same
-           sizes, stratified so each split has the same share of both forcing
-           families. Train and test then come from the same distribution.
-           The split is fixed by ``split_seed`` (default 0), independent of the
-           model seed.
+``"ood"``  the original split (e.g. train 200 / vali 50 / test 130), unchanged.
+``"iid"``  the same samples pooled and re-split at random with the same
+           sizes, stratified so each split has the same share of the original
+           train samples and the original vali/test samples. Train and test
+           then come from the same distribution. The split is fixed by
+           ``split_seed`` (default 0), independent of the model seed.
 
 Only the split differs between the two; samples and grids are identical.
+
+Exception: in ``2D_Burger`` (800 / 100 / 100) all initial conditions come from
+one random-field family, so its original split is already in-distribution and
+``"iid"`` is only a different random re-split of it.
 """
 from __future__ import annotations
 
