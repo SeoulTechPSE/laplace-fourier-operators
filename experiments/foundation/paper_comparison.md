@@ -24,7 +24,7 @@ arXiv: linear axis, about ±0.01). The code archive matching the paper
 | SSM paper | LNO (Large: 16 ch, 8 modes) | 6,737 | 10k ep, MSE | 0.999 ± 0.099 |
 | Ours | FNO, budget-matched | 1,804 | original | 0.895 ± 0.037 |
 | Ours | FNO, 20k, no pos. emb., padding | 19,974 | original | 0.785 ± 0.070 |
-| LNO paper, NMI (Fig. 2, Table 3) | FNO | 5,505 as reported | original | ≈ 0.52 |
+| LNO paper, NMI (Fig. 2, Table 3) | FNO (1 layer, width 32, 16 modes) | 5,505 as reported (38,273 incl. complex) | original | ≈ 0.52 |
 | LNO paper, arXiv (Fig. 3) | FNO (4 layers, width 128, 1025 modes) | not given | original | ≈ 0.77 |
 | SSM paper | FNO (3 layers, 32 ch, 8 modes) | 27,873 | 10k ep, MSE, linear LR decay | 0.590 ± 0.065 |
 | SSM paper | Mamba | 19,233 | 10k ep | 0.445 ± 0.230 |
@@ -44,7 +44,7 @@ is worse than the NMI FNO (0.52).
 | LNO paper, NMI (Fig. 2) | LNO | 2,641 as reported (14,929 incl. complex) | ≈ 1.2e-3 (1.0–1.4e-3) |
 | LNO paper, arXiv (Fig. 3) | LNO | — | ≈ 0 on the plot (< 0.005) |
 | Ours | FNO, budget-matched | 15,877 | 4.55e-3 ± 1.4e-3 |
-| LNO paper, NMI (Fig. 2, Table 3) | FNO | 2,641 as reported | ≈ 7.5e-3 |
+| LNO paper, NMI (Fig. 2, Table 3) | FNO (1 layer, width 16, 4×4 modes) | 2,641 as reported (19,025 incl. complex) | ≈ 7.5e-3 |
 | LNO paper, NMI | CNO / U-Net | — | ≈ 6.9e-3 / ≈ 4.7e-3 |
 | LNO paper, arXiv (Fig. 3) | FNO (4 layers, width 64, modes 41×13) | — | ≈ 0.12 |
 
@@ -55,13 +55,34 @@ The arXiv FNO value (≈0.12) was replaced in the published version, so the earl
 
 ## Parameter counts in the LNO paper
 
-NMI Table 3 lists the LNO at 797 (Duffing) and 2,641 (Diffusion) parameters. These
-equal the counts of the **real-valued** weights only (fc0, w0, fc1, fc2); the complex
-pole and residue weights (512 and 6,144 complex entries) are left out. Counting a
-complex entry as two real parameters (`lfo.training.count_params`) gives 1,821 and
-14,929. The published "LNO is smaller than FNO" comparison therefore understates
-the LNO size by 2.3× (Duffing) and 5.7× (Diffusion). Whether the FNO counts in
-Table 3 include FNO's complex spectral weights cannot be told from the paper.
+NMI Table 3 counts **real-valued weights only**, for both LNO and FNO; complex
+weights (LNO poles/residues, FNO spectral weights) are left out. Verified by
+recomputing the reported numbers from the architectures in SI Table S8
+(the published FNO is a 1-layer classic FNO with sin activation, not the
+4-layer FNO of arXiv Table A.1):
+
+| case | model (SI Table S8) | reported | real-only (recomputed) | complex entries | total real dof |
+|---|---|---|---|---|---|
+| Duffing c=0 | LNO: 1 layer, width 4, 16 poles | 797 | 797 | 512 | **1,821** |
+| Duffing c=0 | FNO: 1 layer, width 32, 16 modes, input f + grid | 5,505 | 5,505 | 16,384 | **38,273** |
+| Diffusion | LNO: 1 layer, width 16, 4×4 poles | 2,641 | 2,641 | 6,144 | **14,929** |
+| Diffusion | FNO: 1 layer, width 16, 4×4 modes | 2,641 | 2,641 | 8,192 | **19,025** |
+
+So the published Duffing FNO is about 21× larger than the LNO, not 7×; on
+Diffusion the FNO is 1.3× larger, not equal. We count a complex entry as two real
+parameters (`lfo.training.count_params`) and match budgets on that count.
+
+Our FNO/TFNO are 4-layer `neuraloperator` models (CLAUDE.md: baselines come from
+`neuraloperator`), so they differ from the published 1-layer FNO in architecture
+as well as size.
+
+## Burgers (v2, for the next step)
+
+SI Table S2 (Burgers, low-to-high resolution: input 32 points in x, output 64 × 50;
+5 runs): LNO 9.15e-2 ± 6.99e-4, **advanced LNO (v2) 5.31e-2 ± 1.79e-4**,
+FNO with IDFT 5.32e-2 ± 3.05e-4. SI Table S5: v2 uses 4 layers, width 16,
+modes 4×4, lr 0.01, batch 10, sin, 1000 epochs, which matches the original
+`2D_Burger/main.py`. These are the reproduction targets for `LNO2dV2`.
 
 ## Both splits (ours, 3 seeds, test rel. L2)
 
@@ -93,7 +114,6 @@ in direction with LFNO's in-distribution results.
 ## Caveats
 
 - Published values for the LNO paper come from plots.
-- The NMI Supplementary Information (architectures, data generation) has not been
-  checked yet.
+- NMI Supplementary Information checked (Tables S2, S5, S8).
 - Our FNO uses the original LNO training protocol (1000 epochs, relative-L2 loss);
   the SSM paper trained FNO for 10k epochs with MSE, which may explain 0.59 vs 0.79.

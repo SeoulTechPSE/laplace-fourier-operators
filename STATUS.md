@@ -24,6 +24,24 @@ Each session appends one entry using the template at the bottom.
 
 ## Log
 
+### 2026-11-12 — Shared foundation (S1): LNO paper Supplementary Information
+
+- Done: read the NMI Supplementary Information (Tables S2, S5, S8);
+  `experiments/foundation/paper_comparison.md` updated.
+- Results:
+  - Published FNO baselines (SI Table S8) are **1-layer** classic FNOs (Duffing:
+    width 32, 16 modes; Diffusion: width 16, 4×4 modes), unlike arXiv Table A.1.
+  - NMI Table 3 parameter counts omit complex weights for **both** LNO and FNO
+    (recomputed exactly from Table S8). Total real dof: Duffing LNO 1,821 vs FNO
+    38,273 (21×); Diffusion LNO 14,929 vs FNO 19,025 (1.3×).
+  - Burgers targets (SI Table S2, low-to-high resolution): LNO v1 9.15e-2,
+    advanced LNO (v2) 5.31e-2 ± 1.79e-4, FNO with IDFT 5.32e-2. v2 hyperparameters
+    (Table S5) match the original `2D_Burger/main.py`.
+- Decisions: closes the open question of the previous entry: published parameter
+  comparisons understate model sizes; we keep counting complex entries twice.
+- Next: reproduce Burgers with `LNO2dV2` against SI Table S2 (both splits);
+  remaining 1D/2D examples.
+
 ### 2026-11-12 — Shared foundation (S1): check against the published LNO paper
 
 - Done: compared with the published version (Nature Machine Intelligence 6, 631–640,
