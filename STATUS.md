@@ -31,16 +31,16 @@ commands in the README (≈ 1 h on the RTX 4090 with 6–12 parallel processes).
 
 Suggested next steps (in order):
 
-1. ~~Per-pole breakdown~~ done (`per_pole.py`): pole travel is capped by Σ lr × steps.
-2. Pole travel remedy as an E1 control (script-level, not yet `lfo.models`): pole-specific
-   learning rate or log-parameterised decay rate / frequency; re-run `stable` and deep.
-   This tells whether the "accurate but wrong poles" of the deep models survive once the
-   poles can move.
-3. Tied layer, band init: multi-start / longer runs on the real-pole local minima (p4, p6).
-4. Untied models without the truncation floor: steady modes 64 (H1).
-5. Weight decay excluded from the poles (LFNO protocol, warm start).
-6. Deep LNO v1 at its published size (1.8k params).
-7. Then E2 (data richness) per plan.
+1. ~~Per-pole breakdown~~ and ~~pole-lr ×10 control~~ done: the travel bound explains the
+   frequency failure, not the real-pole failure (README, "Control").
+2. Practical identifiability of fast real poles: output sensitivity / Fisher information
+   per pole for p4, p6 (single tied layer); profile likelihood along Re of −1, −2.
+   This links E1 to H2 and E2 (window T, input richness).
+3. Log-parameterised decay rate (Re mu = −exp(a)) as an alternative to the pole lr
+   multiplier (LFNO was destabilised by ×10).
+4. Untied models without the truncation floor (steady modes 64, H1); weight decay
+   excluded from the poles; deep LNO v1 at its published size.
+5. Then E2 (data richness) per plan.
 
 Things to know:
 
@@ -51,6 +51,25 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-13 — (C) E1 audit: pole learning-rate control
+
+- Done: `e1_audit.py --pole-lr-mult` (poles get m × lr; label `<protocol>+plr<m>`;
+  `per_pole.py` budget accounts for it). 315 runs with m = 10: layer (`stable`, `band`,
+  10 seeds) and deep (LNO v1 `lno`, ALNO `lno`/`stable`, LFNO `stable` both protocols, 5 seeds).
+- Results (`experiments/C/e1_audit/README.md`, section "Control"):
+  - Travel saturation 35–92 % → 0 %; poles move ΔIm ≈ −15 to −20.
+  - Layer `stable` tied pole error 5.4/14.8/6.4 → 0.04/1.6/0.83, test 0.29/0.64/0.23 →
+    0.021/0.065/0.023. Deep ALNO pole error 0.12/0.35/0.38 → 0.05/0.23/0.32, test unchanged.
+  - Complex pairs found (deep 80–100 %); **fast real poles −1, −2 still 0 %** everywhere
+    except warm start; deep decay rates do not move (ΔRe ≈ +0.02).
+  - LNO v1 deep (`lno` init) starts to train (test 0.5–0.8); LFNO becomes less stable.
+- Decisions: E1 message is two-part — (i) under published protocols the poles are
+  limited by the learning-rate travel bound (frequency); (ii) independently of that,
+  fast real poles are not identified although the fit is good (practical
+  identifiability). Part (ii) is the bridge to H2/E2.
+- Next: per-pole Fisher information / profile likelihood for the tied layer; log decay
+  parameterisation.
 
 ### 2026-11-12 — (C) E1 audit: per-pole breakdown and pole travel
 

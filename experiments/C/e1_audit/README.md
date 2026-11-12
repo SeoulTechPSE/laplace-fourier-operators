@@ -80,3 +80,35 @@ initial poles shifted by a bounded amount, so the audit mostly measures the
 initialisation and the learning-rate schedule. Pole parameterisation (e.g. log decay
 rate, pole-specific learning rate) is a prerequisite for any interpretability claim, and
 a design input for (A).
+
+## Control: pole learning rate × 10 (2026-11-13)
+
+`--pole-lr-mult 10` (runs labelled `<protocol>+plr10`): the poles get 10 × lr, all else
+unchanged, so the travel bound rises from 4.0 to 40 (3.6 → 36 for `lfno_paper`).
+Layer 10 seeds, deep 5 seeds; same systems, data and inits (`stable`, `band`; deep LNO v1 `lno`).
+
+| | baseline → plr10 |
+|---|---|
+| Travel saturation (≥ 90 % of the bound) | 35–92 % → **0 %**; poles now move ΔIm ≈ −15 to −20 (deep, layer `stable`) |
+| Layer `stable`, pole error | tied 5.4 / 14.8 / 6.4 → **0.04 / 1.6 / 0.83** (p2/p4/p6); ALNO, LFNO similar trend |
+| Layer `stable`, test rel. L2 | tied 0.29 / 0.64 / 0.23 → 0.021 / 0.065 / 0.023 |
+| Deep ALNO `stable` | test unchanged (≈ 1.6e-2); pole error 0.12 / 0.35 / 0.38 → 0.05 / 0.23 / 0.32 |
+| Deep complex pairs | recovered 80–100 % (closest pooled pole) |
+| **Fast real poles −1, −2** | **still 0 %** in every setting except the warm start; matched poles stay at Re ≈ −0.5 (deep ΔRe of all poles ≈ +0.02: decay rates do not move even with budget) |
+| Slow real pole −0.2 | deep 20–60 % recovered (was 20–25 %) |
+| Deep LNO v1, `lno` init | starts to train: test 0.88 / 0.99 / 0.96 → 0.49 / 0.82 / 0.61 |
+| Deep LFNO | less stable: test spread grows (p2 common 0.26 ± 0.34; p6 `lfno_paper` 0.86 ± 1.4), unstable fraction up |
+
+Reading:
+
+1. The travel bound explains the **frequency** failure of the published protocols: once
+   the poles can move, oscillatory poles are found, in the layer and (as closest pooled
+   poles) in the deep models.
+2. It does **not** explain the **real-pole** failure. Fast decays (−1, −2) are never
+   identified from generic starts, although the models fit the data (tied p6: test 8e-3
+   with −2 missing; deep ALNO 1.6e-2). Their content is carried by other poles and, in the
+   deep models, by the rest of the network. A fast decay contributes little output energy
+   on [0, 20], so the loss is insensitive to it — a practical-identifiability question
+   (Fisher information / profile likelihood; plan Section 4.3, E2).
+3. Raising the pole learning rate alone destabilises LFNO; a parameterisation (e.g. log
+   decay rate) is the cleaner remedy to test next.

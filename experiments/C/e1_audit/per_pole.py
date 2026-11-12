@@ -59,9 +59,11 @@ def matched(r):
 
 def travel_budget(protocol: str) -> float:
     """Upper bound on Adam travel: sum over epochs of lr(epoch) * optimizer steps per epoch."""
-    p = E.PROTOCOLS[protocol]
+    base, _, plr = protocol.partition("+plr")
+    p = E.PROTOCOLS[base]
+    mult = float(plr) if plr else 1.0
     steps = -(-E.N_TRAIN // p["batch_size"])
-    return sum(p["lr"] * p["gamma"] ** (ep // p["step_size"]) * steps for ep in range(p["epochs"]))
+    return mult * sum(p["lr"] * p["gamma"] ** (ep // p["step_size"]) * steps for ep in range(p["epochs"]))
 
 
 def _initial_mu(r) -> np.ndarray:

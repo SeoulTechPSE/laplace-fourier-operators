@@ -32,6 +32,10 @@ band) and ``warm`` (truth + 20 % noise). They separate optimisation failure from
 non-identifiability: published inits answer "what do the models learn as used";
 ``warm`` answers "is the truth a stable point of training".
 
+Control (``--pole-lr-mult m``): the poles get learning rate m * lr, everything else
+unchanged. Under Adam the total pole travel is bounded by about sum(lr * steps)
+(4.0 for ``common``); m = 10 raises it to 40. Runs are labelled ``<protocol>+plr<m>``.
+
 Pole conventions. Outputs are Re(sum gamma_n e^{mu_n t}), so one learned complex pole
 can represent a conjugate pair. Before matching, learned and true poles are folded
 to Im >= 0 and the true set is reduced to one pole per pair. For the residue error
@@ -230,13 +234,26 @@ def layer_init(model: "Layer1", init: str, mu_true, beta_true, rng: np.random.Ge
 
 # ---- training -------------------------------------------------------------------
 
-def train(model, data, proto: dict, device):
+POLE_PARAMS = ("pr.mu", ".mu", "weights_pole")
+
+
+def param_groups(model, lr: float, pole_lr_mult: float):
+    """Poles (``*.mu``, LNO port ``weights_pole``) get lr * pole_lr_mult; everything else lr."""
+    poles, rest = [], []
+    for name, p in model.named_parameters():
+        (poles if name.endswith(POLE_PARAMS) else rest).append(p)
+    return [dict(params=poles, lr=lr * pole_lr_mult), dict(params=rest, lr=lr)]
+
+
+def train(model, data, proto: dict, device, pole_lr_mult: float = 1.0):
     (xtr, ytr), (xva, yva) = data["train"], data["vali"]
     xtr, ytr, xva, yva = (a.to(device)[..., None] for a in (xtr, ytr, xva, yva))
     if proto["optimizer"] == "complex_adam":
-        opt = ComplexAdam(model.parameters(), lr=proto["lr"], weight_decay=proto["weight_decay"])
+        opt = ComplexAdam(param_groups(model, proto["lr"], pole_lr_mult), lr=proto["lr"],
+                          weight_decay=proto["weight_decay"])
     else:
-        opt = torch.optim.Adam(model.parameters(), lr=proto["lr"], weight_decay=proto["weight_decay"])
+        opt = torch.optim.Adam(param_groups(model, proto["lr"], pole_lr_mult), lr=proto["lr"],
+                               weight_decay=proto["weight_decay"])
     sch = torch.optim.lr_scheduler.StepLR(opt, proto["step_size"], proto["gamma"])
     bs, n = proto["batch_size"], xtr.shape[0]
     hist = []
@@ -275,7 +292,11 @@ def oracle_error(data, t, mu, beta) -> float:
 
 # ---- one run --------------------------------------------------------------------
 
-def run(setting, system, kind, init, protocol, seed, device, n_poles=None):
+def protocol_label(protocol: str, pole_lr_mult: float) -> str:
+    return protocol if pole_lr_mult == 1 else f"{protocol}+plr{pole_lr_mult:g}"
+
+
+def run(setting, system, kind, init, protocol, seed, device, n_poles=None, pole_lr_mult=1.0):
     data, t, mu_true, beta_true = make_data(system)
     seed_everything(seed)
     if setting == "layer":
@@ -290,7 +311,7 @@ def run(setting, system, kind, init, protocol, seed, device, n_poles=None):
     model.to(device)
     proto = PROTOCOLS[protocol]
     t0 = time.time()
-    hist = train(model, data, proto, device)
+    hist = train(model, data, proto, device, pole_lr_mult)
     secs = time.time() - t0
     xte, yte = (a.to(device)[..., None] for a in data["test"])
     test = evaluate(model, xte, yte)
@@ -304,7 +325,8 @@ def run(setting, system, kind, init, protocol, seed, device, n_poles=None):
     if mf.size == 0:
         mf, bf = np.full(1, 1e30 + 0j), np.zeros(1, complex)   # no usable pole: error 1e30 relative, flagged diverged
     res = dict(
-        setting=setting, system=system, model=kind, init=init, protocol=protocol, seed=seed,
+        setting=setting, system=system, model=kind, init=init, seed=seed,
+        protocol=protocol_label(protocol, pole_lr_mult), base_protocol=protocol, pole_lr_mult=pole_lr_mult,
         config=cfg, params=count_params(model), seconds=round(secs, 1),
         test_rel_l2=test, diverged=bool(diverged), oracle_rel_l2=oracle_error(data, t, mu_true, beta_true),
         history=hist,
@@ -335,7 +357,7 @@ def run(setting, system, kind, init, protocol, seed, device, n_poles=None):
         for k in ("pole_error", "pole_error_mean", "residue_error"):
             if k in res:
                 res[k] = None
-    name = f"{system}_{kind}_{init}_{protocol}_s{seed}"
+    name = f"{system}_{kind}_{init}_{protocol_label(protocol, pole_lr_mult)}_s{seed}"
     if n_poles:
         name += f"_n{n_poles}"
     out_dir = RESULTS / setting
@@ -411,6 +433,8 @@ def main():
     ap.add_argument("--protocol", nargs="+", default=["common"])
     ap.add_argument("--seeds", nargs="+", type=int, default=[0, 1, 2])
     ap.add_argument("--n-poles", type=int, default=None, help="layer setting: override the number of learned poles")
+    ap.add_argument("--pole-lr-mult", type=float, default=1.0,
+                    help="learning-rate multiplier for the poles only (E1 control: pole travel budget)")
     ap.add_argument("--epochs", type=int, default=None, help="override (smoke tests only)")
     ap.add_argument("--summarize", action="store_true")
     a = ap.parse_args()
@@ -430,7 +454,7 @@ def main():
             raise SystemExit("band/warm inits are defined for the layer setting only")
         if kind == "lno_v1" and init != "lno":
             continue            # the LNO port has only the original initialisation
-        run(a.setting, system, kind, init, protocol, seed, device, a.n_poles)
+        run(a.setting, system, kind, init, protocol, seed, device, a.n_poles, a.pole_lr_mult)
 
 
 if __name__ == "__main__":
