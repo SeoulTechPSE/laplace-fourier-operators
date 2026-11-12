@@ -31,17 +31,16 @@ commands in the README (≈ 1 h on the RTX 4090 with 6–12 parallel processes).
 
 Suggested next steps (in order):
 
-1. Per-pole breakdown: which true poles fail (slow real pole −0.2? the lightly damped
-   pair?) — data is in the per-run JSONs (`pole_error` per true pole).
-2. Separate optimisation from identifiability for the tied layer: band init with more
-   epochs / multi-start; check whether good-fit/wrong-pole minima (p6, test 1e-2, pole
-   error 0.37) are local minima or near-equivalent pole sets.
-3. Untied models without the truncation floor: steady modes 64 (floor 4e-3) to see
-   whether ALNO/LFNO poles drift once the steady branch can fit the full response (H1).
-4. Weight decay on poles: LFNO protocol with wd only on non-pole parameters (warm start).
-5. Deep setting: LNO v1 at its published size (width 4, 16 poles, 1.8k params) — at the
-   matched 5.9k budget it does not train from the original init.
-6. Then E2 (data richness) per plan.
+1. ~~Per-pole breakdown~~ done (`per_pole.py`): pole travel is capped by Σ lr × steps.
+2. Pole travel remedy as an E1 control (script-level, not yet `lfo.models`): pole-specific
+   learning rate or log-parameterised decay rate / frequency; re-run `stable` and deep.
+   This tells whether the "accurate but wrong poles" of the deep models survive once the
+   poles can move.
+3. Tied layer, band init: multi-start / longer runs on the real-pole local minima (p4, p6).
+4. Untied models without the truncation floor: steady modes 64 (H1).
+5. Weight decay excluded from the poles (LFNO protocol, warm start).
+6. Deep LNO v1 at its published size (1.8k params).
+7. Then E2 (data richness) per plan.
 
 Things to know:
 
@@ -52,6 +51,29 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-12 — (C) E1 audit: per-pole breakdown and pole travel
+
+- Done: `experiments/C/e1_audit/per_pole.py` → `results/per_pole.md` / `.json`: per true
+  pole median error, recovery fraction (error < 0.1), signed ΔRe/ΔIm; pole travel
+  |mu_final − mu_init| from initial poles rebuilt from the seeds and the checkpoints.
+- Results (README section "Per-pole breakdown and pole travel"):
+  - **Pole travel is bounded by the learning-rate schedule**: Adam moves ≈ lr per step,
+    Σ lr × steps = 4.0 (`common`), 3.6 (`lfno_paper`). With the `stable` init 35–92 % of
+    poles (layer) and 63–82 % (deep) reach ≥ 90 % of that bound; deep poles move
+    ΔIm ≈ −3.9 with ΔRe ≈ 0. The `stable` init starts at |mu| ≈ 20, the band is Im ≤ 4,
+    so the poles cannot get there. This explains the published-init failure.
+  - Deep poles keep their initial decay rates (< 0.3 % below Re = −0.5); fast real poles
+    −1, −2 are never recovered. Lightly damped pairs are recovered (100 %).
+  - Band init (travel 0.3–0.9, not budget-limited): real poles still fail (0 %) — local
+    minima, matched poles ≈ −0.5 with spurious Im.
+  - Weight decay 0.01 (LFNO protocol) shrinks real poles toward 0 from a warm start.
+- Decisions: E1 conclusions under the published protocols are stated as "poles ≈ init
+  + bounded drift"; any interpretability claim needs a pole parameterisation or
+  learning rate that lets poles move (also a design input for (A)).
+- Problems / open questions: the travel bound is approximate (Adam's early steps can
+  exceed lr slightly: layer max 5.0 vs 4.0).
+- Next: E1 control with pole-specific learning rate / log parameterisation.
 
 ### 2026-11-12 — (C) E1 audit: first full run, layer and deep settings
 

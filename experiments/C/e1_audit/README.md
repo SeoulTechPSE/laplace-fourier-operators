@@ -59,3 +59,24 @@ Reading: in this audit the first obstacle is optimisation (initialisation, weigh
 decay, instability), before dual-branch non-identifiability. With a warm start the tied
 layer identifies the truth (consistent with H2), the untied ones stay close but are
 limited by truncation; from generic starts all models reach good-fit/wrong-pole minima.
+
+## Per-pole breakdown and pole travel (2026-11-12)
+
+`per_pole.py` → `results/per_pole.md` (per true pole: median error, fraction recovered
+with error < 0.1, signed ΔRe/ΔIm; plus pole travel from the reconstructed initial poles).
+
+| finding | evidence |
+|---|---|
+| **Pole travel is capped by the learning-rate schedule.** Adam moves a parameter ≈ lr per step, so Σ lr × steps bounds travel: 4.0 (`common`), 3.6 (`lfno_paper`) | `stable` init: median travel 3.1–3.9, 35–92 % of poles at ≥ 90 % of the budget; deep: 63–82 %, ΔIm ≈ −3.9 with ΔRe ≈ 0 — the poles move down in frequency at full speed for the whole run and stop where the budget ends |
+| Hence the published-init failure: `stable` starts at \|μ\| ≈ 20 (Im up to 40 rad/s), the band is Im ≤ 4 | layer pole error 5–15; ΔIm of matched poles +2 to +22 |
+| Deep poles keep their initial decay rates | of 768–1,024 pooled poles, < 0.3 % have Re < −0.5 (init range [−0.5, −0.05]); the fast real poles −1, −2 are never recovered (0 %) |
+| Lightly damped complex pairs are the easy case | −0.3+4i, −0.4+3i: 100 % recovered in deep `stable` (closest pooled pole), 70–100 % with band init |
+| Real poles fail in band init (not budget-limited: travel 0.3–0.9) | −1, −2: 0 % recovered, matched pole ≈ −0.5 ± 0.1–0.9i; slow −0.2: matched with spurious Im ≈ 0.2 |
+| Weight decay shrinks poles toward 0 | warm + `lfno_paper`: −1 → ΔRe +0.57, −2 → +1.72 (0 % recovered), while `common` keeps them (50–70 %) |
+| Untied warm start: fast real poles drift slower | ALNO/LFNO warm: −1, −2 recovered 20–70 % with ΔRe +0.1–0.2; tied warm 70–100 % |
+
+Reading: under the published protocols the "learned" poles of the deep models are their
+initial poles shifted by a bounded amount, so the audit mostly measures the
+initialisation and the learning-rate schedule. Pole parameterisation (e.g. log decay
+rate, pole-specific learning rate) is a prerequisite for any interpretability claim, and
+a design input for (A).
