@@ -112,3 +112,28 @@ Reading:
    (Fisher information / profile likelihood; plan Section 4.3, E2).
 3. Raising the pole learning rate alone destabilises LFNO; a parameterisation (e.g. log
    decay rate) is the cleaner remedy to test next.
+
+## Practical identifiability of the true poles (2026-11-13)
+
+`identifiability.py` → `results/identifiability.md` / `.json`. Tied layer in minimal form
+(one slot per conjugate pair), float64 (agrees with `PoleResidueTS1d` to 2e-7), E1 training
+inputs, error e = RMS relative L2. Local: Gauss–Newton at the truth, error caused by a
+10 % change of one parameter with the others fixed or re-fitted ("profiled"). Profile:
+Re μ of one pole fixed at c × truth, all else re-fitted with L-BFGS from the truth.
+
+| finding | evidence |
+|---|---|
+| **Fast real poles are practically non-identifiable in p6** | 10 % change of −1 / −2, profiled: e = 4.9e-4 / 1.6e-4 — below the representation floor (8.2e-4); fixed: 7.6e-2 / 3.4e-2, i.e. the other poles compensate 150–200× |
+| The loss is flat along Re of −2 over a factor 6 | profile, Re μ from −1 to −6: e ≤ 2.1e-3 (truth 8.2e-4); −1 from −0.25 to −1.25: e ≤ 3.3e-3. Both below the E1 test errors of good-fit runs (≈ 8e-3) |
+| In p4 the real poles are weakly identifiable | −1 profiled 6.3e-3 (fixed 1.6e-1); profile not monotone (c = 0.25 lower than 0.5: second basin) |
+| Frequencies are always well identified | Im μ of every complex pole: profiled e ≈ 1e-2 – 9e-2 for 10 %; profiles of complex Re μ are sharp |
+| Conditioning degrades with the number of poles | cond(F) = 47 (p2), 3.9e4 (p4), 6.8e6 (p6) |
+| A real pole sits at a flat point in Im μ | first-order sensitivity to Im μ and Im β is zero at Im μ = 0 — consistent with the spurious Im ≈ 0.2 of learned real poles |
+
+Reading: the real-pole failure of E1 is not an optimisation artefact. With these inputs
+and window, the data do not determine the fast decays: the other poles reproduce
+their effect to within the discretisation floor of the layer itself. This is the
+practical-identifiability side of H2 — unique in principle (warm start converges), flat
+in practice. Which input/window changes restore it (fast-content inputs, more samples
+near t = 0, finer grid) is the E2 question.
+Note: one profile point failed (p4, −0.2, c = 3: L-BFGS returned nan).

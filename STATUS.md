@@ -31,16 +31,14 @@ commands in the README (≈ 1 h on the RTX 4090 with 6–12 parallel processes).
 
 Suggested next steps (in order):
 
-1. ~~Per-pole breakdown~~ and ~~pole-lr ×10 control~~ done: the travel bound explains the
-   frequency failure, not the real-pole failure (README, "Control").
-2. Practical identifiability of fast real poles: output sensitivity / Fisher information
-   per pole for p4, p6 (single tied layer); profile likelihood along Re of −1, −2.
-   This links E1 to H2 and E2 (window T, input richness).
-3. Log-parameterised decay rate (Re mu = −exp(a)) as an alternative to the pole lr
-   multiplier (LFNO was destabilised by ×10).
-4. Untied models without the truncation floor (steady modes 64, H1); weight decay
-   excluded from the poles; deep LNO v1 at its published size.
-5. Then E2 (data richness) per plan.
+1. ~~Per-pole breakdown~~, ~~pole-lr ×10 control~~, ~~practical identifiability~~ done
+   (README sections). E1 now has its three-part message (see the 2026-11-13 log entries).
+2. Write the E1 summary for the workshop paper (figures: travel vs budget; per-pole
+   recovery; p6 profile of −2). Decide which runs are the reported set.
+3. E2 (data richness) can start from `identifiability.py`: vary input families (fast
+   content), window T and grid, and track profiled e of the fast real poles.
+4. Optional E1 extras: log-parameterised decay rate; untied models with 64 steady modes
+   (H1); weight decay excluded from poles; deep LNO v1 at its published size.
 
 Things to know:
 
@@ -51,6 +49,27 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-13 — (C) E1 audit: practical identifiability of the true poles
+
+- Done: `experiments/C/e1_audit/identifiability.py` → `results/identifiability.md` / `.json`:
+  tied layer in minimal form, float64 (= `PoleResidueTS1d` to 2e-7); Gauss–Newton
+  sensitivity at the truth (fixed vs profiled) and nonlinear profiles of Re mu (L-BFGS).
+- Results:
+  - p6: a 10 % change of the real poles −1 / −2, with the rest re-fitted, costs
+    e = 4.9e-4 / 1.6e-4, below the layer's own floor (8.2e-4). Profile of −2: e ≤ 2.1e-3
+    for Re mu anywhere in [−6, −1]. The fast decays are practically non-identifiable.
+  - p4: real poles weakly identifiable (profiled 6.3e-3 for −1), second basin in the profile.
+  - Frequencies (Im mu) are well identified in all systems; cond(F) 47 / 3.9e4 / 6.8e6.
+  - A real pole has zero first-order sensitivity to Im mu (explains spurious Im ≈ 0.2).
+- Decisions: E1 message, three parts: (i) published protocols: poles limited by the
+  learning-rate travel bound; (ii) with the bound lifted, frequencies are found;
+  (iii) fast real poles remain unidentified because the data do not determine them
+  (practical identifiability), not because of optimisation. (iii) hands over to E2.
+- Problems / open questions: one profile point failed (p4, −0.2, c = 3: nan).
+  Local analysis is at the truth only; the good-fit/wrong-pole minima found in training
+  were not analysed individually.
+- Next: E1 summary for the workshop paper; E2 starting from `identifiability.py`.
 
 ### 2026-11-13 — (C) E1 audit: pole learning-rate control
 
