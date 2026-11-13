@@ -1,0 +1,14 @@
+# E2: truth-free single-slot restarts after the polish, noise-aware rule (E4)
+
+Every polished run (seeds 10-29) gets up to 3 rounds of single-slot moves (residue 0, 300-iteration screen, noise-aware rule: in the noise regime (S ≤ 2 n_s n_t σ̂²) minimise S and accept if S falls ≥ 13.28 σ̂², otherwise accept if training loss falls ≥ 1 %, then full polish). Before = after the polish (e2_polish.py). Best of 5: lowest validation loss in groups of 5 consecutive seeds. η̂: noise level estimated from the training outputs (median over runs); noise regime: runs that used the noise-aware test.
+
+| condition | variant | runs | η̂ | noise regime | runs moved | train/oracle (median) | test rel. L2 (median) | all (single) | best of 5: all | per pole recovered | s per run |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| p4_ms16_T20_n1e-3 | damp8_ms | 20 | 0.001 | 17 | 20 | 2.10 → 1.96 | 7.3e-04 → 5.4e-04 | 80% → 100% | 4/4 → 4/4 | -0.4+3i 100% → 100%, -1 95% → 100%, -0.2 80% → 100% | 321 |
+| p4_ms16_T20_n1e-2 | damp8_ms | 20 | 0.01 | 20 | 16 | 17.03 → 17.01 | 7.4e-04 → 5.6e-04 | 65% → 100% | 4/4 → 4/4 | -0.4+3i 100% → 100%, -1 80% → 100%, -0.2 80% → 100% | 853 |
+| p6_ms16_T80_N4096_n1e-3 | damp8_ms | 20 | 0.001 | 16 | 19 | 18.23 → 18.04 | 1.5e-04 → 5.4e-05 | 55% → 85% | 4/4 → 4/4 | -0.5+1.5i 100% → 100%, -0.3+4i 100% → 100%, -1 70% → 100%, -2 60% → 85% | 1318 |
+| p6_ms16_T80_N4096_n1e-2 | damp8_ms | 20 | 0.01 | 20 | 19 | 180.14 → 180.05 | 3.0e-04 → 6.1e-05 | 50% → 100% | 4/4 → 4/4 | -0.5+1.5i 100% → 100%, -0.3+4i 100% → 100%, -1 70% → 100%, -2 50% → 100% | 1154 |
+| p4_ms16_T20_n1e-1 | damp8_ms | 20 | 0.099 | 20 | 14 | 168.96 → 168.92 | 2.1e-03 → 1.1e-03 | 45% → 65% | 4/4 → 4/4 | -0.4+3i 100% → 100%, -1 60% → 75%, -0.2 80% → 90% | 767 |
+| p4_ms16_T20_n3e-1 | damp8_ms | 20 | 0.29 | 20 | 18 | 488.07 → 488.01 | 4.9e-03 → 2.7e-03 | 45% → 55% | 2/4 → 3/4 | -0.4+3i 100% → 100%, -1 70% → 75%, -0.2 60% → 70% | 728 |
+| p6_ms16_T80_N4096_n1e-1 | damp8_ms | 20 | 0.099 | 20 | 19 | 1792.01 → 1791.65 | 1.8e-03 → 2.3e-04 | 5% → 45% | 0/4 → 3/4 | -0.5+1.5i 100% → 100%, -0.3+4i 100% → 100%, -1 20% → 100%, -2 5% → 45% | 748 |
+| p6_ms16_T80_N4096_n3e-1 | damp8_ms | 20 | 0.29 | 20 | 20 | 5174.67 → 5174.08 | 3.3e-03 → 8.0e-04 | 0% → 15% | 0/4 → 1/4 | -0.5+1.5i 100% → 100%, -0.3+4i 100% → 100%, -1 10% → 35%, -2 0% → 20% | 605 |

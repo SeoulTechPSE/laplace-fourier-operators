@@ -13,13 +13,13 @@ families) make the poles practically identifiable, and does training then recove
 | `e2_richness.py` | phase 1: local identifiability of the tied layer at the truth, over 46 data configurations (p4, p6) | `results/e2_richness.md` / `.json` |
 | `e2_grid.py` | phase 1b: the phase-1 analysis over the time step dt = 20/N, N = 256–8192 | `results/e2_grid.md` / `.json` |
 | `e2_select.py` | best of 5 by validation loss on independent seeds 10–59 | `results/e2_select.md` / `.json` |
-| `e2_rescue.py` | truth-free single-slot restarts of polished runs | `results/e2_rescue/*.json`, `results/e2_rescue.md` |
-| `e2_floor.py` | floor certificate without the truth: estimated floor + consensus poles | `results/e2_floor.md` / `.json` |
+| `e2_rescue.py` | truth-free single-slot restarts of polished runs; `--rule noise`: noise-aware acceptance (E4) | `results/e2_rescue{,_na}/*.json`, `results/e2_rescue{,_na}.md` |
+| `e2_floor.py` | floor certificate without the truth: estimated floor + consensus poles; ratio and χ² (noise) rules | `results/e2_floor.md` / `.json` |
 | `e2_polish.py` | L-BFGS-B polish of saved Adam checkpoints (paired before/after), floor-certificate table | `results/e2_polish/*.json`, `results/e2_polish.md` |
-| `e2_noise.py` | E4: pole error under output noise vs the Cramér–Rao bound of the minimal-form layer | `results/e2_noise.md` / `.json` |
+| `e2_noise.py` | E4: pole error under output noise vs the Cramér–Rao bound of the minimal-form layer, both restart rules | `results/e2_noise.md` / `.json` |
 | `e2_figures.py` | figures: recovery by recipe stage; noise vs CRB | `results/figures/fig_e2_stages.png`, `fig_e4_noise.png` |
 | `e3_deep.py` | E3 deep first pass: bounded slots in full ALNO / LFNO stacks | `results/e3_deep/*.json`, `results/e3_deep.md` |
-| `e2_train.py` | phase 2: train the E1 tied layer on selected configurations, 10 seeds; `--variant` controls (warm, no spare slot, real-constrained slots) | `results/e2_train/*.json`, `results/e2_train.md` |
+| `e2_train.py` | phase 2: train the E1 tied layer on selected configurations, 10 seeds; `--variant` controls (warm, no spare slot, real-constrained slots); E3 steady branches and partial ties (`*_alno`, `*_lfno`, `*_pt*` conditions) | `results/e2_train/*.json`, `results/e2_train.md` |
 
 ```
 python experiments/C/theory/e2_richness.py                  # < 1 min (CPU)
@@ -592,7 +592,55 @@ mode truncation: 1.7e-3 (p4) and 9.8e-4 (p6), against 5.9e-4 and 5.6e-5 for the 
 - Reading: the steady branch's truncation error sets a floor above which slow real
   decays are traded with the steady part. This is H1 in the layer setting. Remedies to
   test: a partial tie (R = K + R_res with a small R_res), more modes, or a weight on
-  the transient branch.
+  the transient branch. The partial tie is tested in the next section.
+
+## E3, layer setting: partial tie (H3)
+
+`PartialTie` in `e2_train.py`. The steady branch is the tied layer's steady part K(x)
+(set by the poles, over the full band) plus a bounded untied residual on the lowest modes
+(64 on p4, 256 on p6), |R_res| < δ per mode (δ z / (1 + |z|)), starting at 0:
+
+- `alno_pt`: steady = irfft(K(x) + R_res x̂)
+- `lfno_pt`: steady = irfft((1 + R_res) K(x)), i.e. LFNO's R = 1 + R_res
+
+The truth has R_res = 0, so the oracle is the tied layer's (5.9e-4 on p4, 5.6e-5 on p6),
+and δ = 0 is the tied layer. Same recipe as above (`damp8_ms` → polish → restarts, seeds
+10–29). δ = 0.3 on p4; δ = 0.03 and 0.3 on p6 fine.
+
+| condition | model | train/oracle (median) | test (median) | all poles (single) | per pole | certified: all recovered |
+|---|---|---|---|---|---|---|
+| p4 | tied | 0.86 | 5.4e-4 | 90 % | −0.4+3i 100, −1 100, −0.2 90 | 18/20 |
+| p4 | ALNO untied | 0.90 * | 1.6e-3 | 75 % | 100, 80, 95 | 15/20 |
+| p4 | ALNO pt, δ = 0.3 | 0.75 | 4.7e-4 | 95 % | 100, 95, 100 | 19/20 |
+| p4 | LFNO untied | 0.98 * | 1.8e-3 | 65 % | 100, 70, 65 | 11/15 |
+| p4 | LFNO pt, δ = 0.3 | 0.80 | 5.0e-4 | 85 % | 100, 90, 95 | 17/20 |
+| p6 fine | tied | 0.93 | 5.2e-5 | 90 % | −0.5+1.5i 100, −0.3+4i 100, −1 90, −2 100 | 18/20 |
+| p6 fine | ALNO untied | 2.60 * | 2.5e-3 | 15 % | 100, 100, 35, 15 | 0/3 |
+| p6 fine | ALNO pt, δ = 0.03 | 3.21 | 1.8e-4 | 10 % | 100, 100, 75, 10 | 1/11 |
+| p6 fine | ALNO pt, δ = 0.3 | 1.22 | 7.2e-5 | 30 % | 100, 100, 80, 30 | 6/15 |
+| p6 fine | LFNO untied | 6.74 * | 6.4e-3 | 15 % | 100, 100, 85, 15 | 1/4 |
+| p6 fine | LFNO pt, δ = 0.03 | 3.04 | 1.7e-4 | 20 % | 100, 100, 85, 20 | 1/10 |
+| p6 fine | LFNO pt, δ = 0.3 | 2.99 | 1.7e-4 | 15 % | 100, 100, 60, 15 | 3/7 |
+
+\* against the untied oracle (1.7e-3 on p4, 9.8e-4 on p6); the partial-tie rows are
+against the tied oracle. (full tables: `results/e2_rescue.md`, `results/e2_floor.md`)
+
+- **The partial tie removes the truncation floor.** Test errors drop to the tied layer's
+  level: 4.7–5.0e-4 on p4 (untied 1.6–1.8e-3) and 0.7–1.8e-4 on p6 (untied 2.5–6.4e-3).
+- **On p4 it restores recovery (H3 holds in the weak setting).** ALNO 75 → 95 %, LFNO
+  65 → 85 %, against 90 % for the tied layer. The runs are at the floor (0.75–0.80 × the
+  tied oracle) and the certificate identifies all three poles in 4/4 groups with no false
+  pole.
+- **On p6 it does not: the runs stop above the floor.** All poles 10–30 %, against 15 %
+  untied and 90 % tied. The complex pairs are found in every run, −1 in 60–85 %, −2 in
+  10–30 %. The runs stay 1.2–3.2 × above the tied oracle. Restarts move 13–18 of 20 runs but
+  close little of the gap (ALNO δ = 0.3: 3.12 → 1.22; LFNO δ = 0.03: 3.06 → 3.04). The tied
+  layer on the same data goes 3.50 → 0.93.
+- **δ = 0.3 is better than δ = 0.03 for ALNO** (30 vs 10 %, 1.22 vs 3.21 × the oracle).
+  A small residual does not make the problem easier. Reading: the obstacle on p6 is
+  optimisation, and the residual changes the landscape that the restarts search, more than
+  it changes what is identifiable. The certified-and-recovered counts are small (1–6 runs),
+  so the δ comparison is weak.
 
 ## E4: pole error under output noise vs the Cramér–Rao bound
 
@@ -631,12 +679,60 @@ Jacobian of the normalised residual), as a relative error.
     enter the consensus (5 on p6 at η ≥ 0.1).
   - Restarts: they accept a move only if it lowers the loss by ≥ 1 %. With the loss at
     the noise level no move qualifies (0/20 runs moved at η ≥ 0.1).
-  - Both need thresholds on the excess loss over the noise level (estimated, for example,
-    from the validation residual), not on the ratio.
+  - Both need thresholds on the excess loss over the noise level, not on the ratio
+    (second pass below).
 - Caveats:
   - The CRB is for the minimal form with known order and an unbiased estimator. The
     8-slot model has spare slots and a relative-L2 loss, so the bound is optimistic for it.
   - There are 4 noise draws per η.
+
+## E4, second pass: noise-aware restarts and certificate
+
+`e2_rescue.py --rule noise`, `e2_floor.py` (rule `noise`). Everything uses the training
+outputs only.
+
+- The noise variance per normalised output sample, σ̂², comes from 6th-order differences of
+  the training outputs. The band-limited signal cancels and white noise does not. η̂ is
+  within 1 % of η at every η (and ≈ 1e-8 without noise).
+- S is the sum of squared normalised residuals. A run is in the noise regime if
+  S ≤ 2 n_s n_t σ̂².
+- Restarts: in the noise regime the screen minimises S and accepts a move if S falls by
+  ≥ χ²₄(0.99) σ̂² = 13.3 σ̂² (likelihood-ratio test for the 4 real parameters of one slot).
+  Otherwise the 1 % ratio rule applies.
+- Certificate: in the noise regime a run is certified if S − S_min ≤ χ²_p(0.99) σ̂², with p
+  the number of real parameters of the layer and S_min the lowest S in the group.
+
+| system | η | runs moved: ratio / noise | all poles (single): ratio → noise | real poles recovered (noise rule) | certified: all recovered (noise) | consensus real poles (noise) | false |
+|---|---|---|---|---|---|---|---|
+| p4 | 1e-3 | 16 / 20 | 100 → 100 % | −1 100, −0.2 100 | 5/5 | 1/4, 1/4 | 0 |
+| p4 | 1e-2 | 2 / 16 | 70 → 100 % | 100, 100 | 20/20 | 4/4, 4/4 | 0 |
+| p4 | 1e-1 | 0 / 14 | 45 → 65 % | 75, 90 | 13/20 | 2/4, 4/4 | 1 |
+| p4 | 3e-1 | 0 / 18 | 45 → 55 % | 75, 70 | 11/20 | 3/4, 2/4 | 2 |
+| p6 fine | 1e-3 | 10 / 19 | 85 → 85 % | −1 100, −2 85 | 6/6 | 2/4, 2/4 | 0 |
+| p6 fine | 1e-2 | 4 / 19 | 70 → 100 % | 100, 100 | 19/19 | 4/4, 4/4 | 0 |
+| p6 fine | 1e-1 | 0 / 19 | 5 → 45 % | 100, 45 | 9/20 | 4/4, 0/4 | 1 |
+| p6 fine | 3e-1 | 0 / 20 | 0 → 15 % | 35, 20 | 3/20 | 0/4, 0/4 | 3 |
+
+(full tables: `results/e2_rescue_na.md`, `results/e2_floor.md`, `results/e2_noise.md`)
+
+- **The noise-aware restarts work where the ratio rule stalled.** At η ≥ 0.1 the ratio rule
+  moved 0 runs. The noise rule moves 14–20 of 20, and single-run recovery rises at every
+  η ≥ 1e-2. At η = 1e-2 every run recovers every pole on both systems (100 %, from 70 %).
+- **At η = 0.1 on p6, −1 and −2 now separate.** −1 is recovered in 20/20 runs (from 4/20),
+  −2 in 9/20 (from 1/20). The consensus contains −1.00 in 4/4 groups and no longer merges
+  the two decays at −0.68. It still misses −2 in 4/4 groups.
+- **The χ² certificate is honest at moderate noise and too strict at low noise.**
+  - At η = 1e-2 it certifies 19–20 runs, all correct, with no false pole.
+  - At η = 0.1 it certifies all 20 runs on p6, of which 9 recover −2. The data do not
+    reject the wrong −2 at the 99 % level of the joint test, so −2 is not identified at
+    this η by this test. The consensus then omits −2 rather than reporting a wrong value.
+  - At η = 1e-3 it certifies only 5–6 runs. The spread of S between correct runs is set by
+    the optimiser, not by the noise, and exceeds χ²_p σ̂². At low noise the ratio rule is the
+    better test; a combined rule would take the looser of the two.
+- **Errors stay far above the CRB.** For example, on p6 at η = 1e-2 the single-run errors
+  are 4.6e-3 / 3.5e-4 / 2.8e-2 / 3.5e-2 against a CRB of 4.1e-5 / 5.9e-6 / 7.2e-4 / 2.1e-3,
+  about 15–110 ×. The noise rule lowers the errors (p6, −2 at η = 0.1: 0.63 → 0.16), but
+  the gap to the bound remains.
 
 ## E3, deep setting: first pass
 
@@ -678,13 +774,13 @@ dead; NaN and dead runs count as not recovered.)
 
 ## Next
 
-- E3 layer: a partial tie R = K + R_res (small R_res) or more modes, to remove the trade
-  between the steady branch and slow real decays (H3); re-run p6 ALNO / LFNO.
-- E4: a noise-aware certificate and restart rule. Estimate the noise level, then use
-  thresholds on the excess loss (or a χ² test) in place of the 1.5 × ratio and the 1 %
-  acceptance. Check whether the restarts then separate −1 and −2 at η = 0.1.
-- E4: why the errors are far above the CRB at small η (bias of the spare slots?); compare
-  with a minimal-form fit started at the consensus.
+- E3 layer, p6: the partial-tie runs stop 1.2–3.2 × above the floor. Try restarts that also
+  reset R_res, more rounds, or a δ schedule (start tied, δ = 0, then release).
+- E4: a combined certificate (the looser of the ratio and χ² tests), so that low-noise
+  groups are not under-certified; per-pole confidence intervals from the profile of S,
+  to state which poles the data identify at a given η.
+- E4: why the errors are far above the CRB (bias of the spare slots?); compare with a
+  minimal-form fit started at the consensus.
 - E3 deep: linear-probe poles of trained deep models (RQ4); the dead-start LFNO runs
   (bounded, loss 1.0 from epoch 1).
 - Back to the E1 data (step / ramp / PRBS / smooth, T = 20): which poles the consensus

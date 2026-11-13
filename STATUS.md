@@ -11,7 +11,7 @@ Each session appends one entry using the template at the bottom.
 | (C) Pole audit of existing models | 3–5 | **in progress**: E1 done, draft report (`E1_report.md`, updated with E2); paper decisions open | — |
 | (D) Non-periodic input representation | 4–8 | not started | differs from padded FNO? (month 8) |
 | (A) Pole layer and linear validation | 5–10 | not started | dispersion relations recovered (month 10) |
-| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO), E4 noise vs CRB, E3 deep first pass done (`experiments/C/theory/`) | — |
+| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie), E4 noise vs CRB (noise-aware restarts and certificate), E3 deep first pass done (`experiments/C/theory/`) | — |
 | (A) Application 1: process dynamics | 11–16 | not started | — |
 | (D) Initial conditions and rollout | 13–19 | not started | — |
 | (A) Application 2: Cahn–Hilliard | 17–22 | not started | recover k_c, k_max (month 20) |
@@ -48,8 +48,11 @@ Suggested next steps (in order):
    5 runs (`e2_floor.py`) reports all p6 poles in 4/4 groups with no false pole. Carried to
    ALNO / LFNO, noise and deep (2026-11-13 log): the steady branch costs the slow real poles
    (p6 −2 100 → 15 %), noise errors are 10–2400 × the CRB and the certificate certifies every
-   noisy run, deep stacks recover no real pole. Next: partial tie R = K + R_res (H3);
-   noise-aware certificate / restart thresholds; linear-probe poles for deep (RQ4); E1 data.
+   noisy run, deep stacks recover no real pole. Partial tie R = K + R_res (2026-11-14) brings
+   p4 back to the tied level (ALNO 95 %) but not p6 (≤ 30 %, runs above the floor);
+   noise-aware restarts / χ² certificate give 100 % at η = 1e-2 and separate −1 / −2 at
+   η = 0.1 (−2 still 9/20). Next: p6 partial tie optimisation; combined certificate;
+   linear-probe poles for deep (RQ4); E1 data.
 4. Optional E1 extras: log-parameterised decay rate; untied models with 64 steady modes
    (H1); weight decay excluded from poles; deep LNO v1 at its published size.
 
@@ -62,6 +65,34 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-14 — (C) E3 partial tie (H3) and E4 noise-aware restarts / certificate
+
+- Done: `PartialTie` in `e2_train.py` (steady = K(x) over the full band + bounded untied
+  residual |R_res| < δ on the low modes; ALNO and LFNO forms; oracle = tied layer) on p4
+  (δ = 0.3) and p6 fine (δ = 0.03, 0.3); 120 runs (seeds 10–29, Adam → polish → restarts).
+  Noise-aware rule (`e2_rescue.py --rule noise`): σ̂² from 6th-order differences of the
+  training outputs, χ²₄(0.99) σ̂² acceptance on S in the noise regime; χ²_p(0.99) σ̂²
+  certificate in `e2_floor.py`; 160 restarted noisy runs. `e2_noise.py` reports both
+  rules. README sections "E3, layer setting: partial tie (H3)" and "E4, second pass".
+- Results:
+  - Partial tie removes the truncation floor (test p4 4.7–5.0e-4, p6 0.7–1.8e-4, at the
+    tied level). p4 recovery back to tied level (ALNO 75 → 95 %, LFNO 65 → 85 %; tied 90 %),
+    certificate 4/4 groups, no false pole. p6 not: all poles 10–30 % (untied 15 %, tied
+    90 %); runs stop 1.2–3.2 × above the tied oracle and restarts close little. δ = 0.3
+    better than 0.03 for ALNO (30 vs 10 %).
+  - Noise-aware restarts move 14–20 of 20 runs at every η (ratio rule: 0 at η ≥ 0.1). All
+    poles at η = 1e-2: 100 % on both systems (from 70 %); p6 η = 0.1: 5 → 45 %, −1 4/20 → 20/20,
+    −2 1/20 → 9/20; −1 and −2 no longer merge in the consensus (−1.00 in 4/4 groups; −2
+    missing). p6 η = 0.3: 0 → 15 %.
+  - χ² certificate: η = 1e-2 certifies 19–20 runs, all correct, no false pole; η = 0.1
+    certifies all 20 p6 runs (the data do not reject the wrong −2 at 99 %), consensus omits
+    −2; η = 1e-3 certifies only 5–6 runs (optimiser spread > χ²_p σ̂²). Errors still
+    15–110 × the CRB at η = 1e-2.
+- Decisions: none.
+- Next: p6 partial tie stuck above the floor (restarts that reset R_res, δ schedule from
+  0); combined certificate (looser of ratio / χ²) and per-pole profile intervals; CRB gap;
+  linear-probe poles for deep (RQ4); E1 data.
 
 ### 2026-11-13 — (C) E3 / E4: recipe with a steady branch, under noise, in deep stacks
 

@@ -11,7 +11,9 @@ trace bound E|mu_hat - mu|^2 >= CRB(Re mu) + CRB(Im mu) gives the relative error
 
 Compared with the RMS relative error of (a) single runs after polish + restarts and
 (b) the truth-free consensus pole of each group of 5 runs (one noise draw per group;
-e2_floor.py). Runs and groups at eta = 0 are the reference.
+e2_floor.py). Runs and groups at eta = 0 are the reference. Two restart rules: the ratio rule
+(e2_rescue.py; consensus over runs certified by the ratio rule) and the noise-aware rule
+(e2_rescue.py --rule noise; consensus over runs certified by the chi-square rule).
 
     python experiments/C/theory/e2_noise.py      # writes results/e2_noise.md (+ .json)
 """
@@ -34,6 +36,7 @@ ETAS = (0.0, 1e-3, 1e-2, 1e-1, 3e-1)
 SYSTEMS = {s: (base, {eta: f"{base}_n{tag}" for eta, tag in ((1e-3, "1e-3"), (1e-2, "1e-2"), (1e-1, "1e-1"), (3e-1, "3e-1"))})
            for s, base in (("p4", "p4_ms16_T20"), ("p6", "p6_ms16_T80_N4096"))}
 VARIANT = "damp8_ms"
+RULES = (("ratio rule", "e2_rescue", "rescue", "ratio"), ("noise-aware rule", "e2_rescue_na", "rescue_na", "noise"))
 
 
 def crb_unit(cond):
@@ -54,19 +57,20 @@ def crb_unit(cond):
     return dict(poles=[[float(z.real), float(z.imag)] for z in m], unit=out, n_t=int(t.numel()))
 
 
-def run_errors(cond):
+def run_errors(cond, src="e2_rescue"):
     """Signed-free relative pole errors per run (after restarts), matched as in pole_error."""
     rs = []
     for s in range(10, 30):
-        f = T.R.RESULTS / "e2_rescue" / f"{T.run_name(cond, VARIANT, s)}.json"
+        f = T.R.RESULTS / src / f"{T.run_name(cond, VARIANT, s)}.json"
         if f.exists():
             rs.append(json.loads(f.read_text())["after"]["pole_error"])
     return np.array(rs)
 
 
-def consensus_errors(cond, true):
+def consensus_errors(cond, true, stage="rescue", rule="ratio"):
     floor = json.loads((T.R.RESULTS / "e2_floor.json").read_text())
-    rows = [a for a in floor if a.get("stage") == "rescue" and a.get("cond") == cond and a.get("variant") == VARIANT]
+    rows = [a for a in floor if a.get("stage") == stage and a.get("rule") == rule and a.get("cond") == cond
+            and a.get("variant") == VARIANT]
     if not rows:
         return None
     errs = []
@@ -88,29 +92,32 @@ def main():
     for system, (base, noisy) in SYSTEMS.items():
         cr = crb_unit(base)
         true = [complex(*z) for z in cr["poles"]]
-        lines += [f"## {system} (n_t = {cr['n_t']})", "",
-                  "| η | " + " | ".join(f"{lab(z)}: single / consensus / CRB, recovered" for z in cr["poles"]) + " |",
-                  "|---|" + "---|" * len(true)]
-        for eta in ETAS:
-            cond = base if eta == 0 else noisy[eta]
-            pe = run_errors(cond)
-            ce = consensus_errors(cond, true)
-            crb = [u * eta / np.sqrt(cr["n_t"]) for u in cr["unit"]]
-            cells = []
-            for j in range(len(true)):
-                if pe.size == 0:
-                    cells.append("–")
-                    continue
-                single = float(np.sqrt(np.mean(pe[:, j] ** 2)))
-                cons = (float(np.sqrt(np.mean(ce[:, j] ** 2))) if ce is not None and np.isfinite(ce[:, j]).all()
-                        else (f"∞ ({int(np.sum(~np.isfinite(ce[:, j])))}/{len(ce)} missing)" if ce is not None else "–"))
-                cs = f"{cons:.1e}" if isinstance(cons, float) else cons
-                cells.append(f"{single:.1e} / {cs} / {crb[j]:.1e}, {np.mean(pe[:, j] < T.RECOVERED):.0%}")
-            lines.append(f"| {eta:g} | " + " | ".join(cells) + " |")
-            out.append(dict(system=system, eta=eta, cond=cond, crb=crb, runs=int(len(pe)),
-                            single_rms=None if pe.size == 0 else np.sqrt(np.mean(pe ** 2, 0)).tolist(),
-                            consensus=None if ce is None else ce.tolist()))
-        lines.append("")
+        for rname, src, stage, rule in RULES:
+            lines += [f"## {system} (n_t = {cr['n_t']}), {rname}", "",
+                      "| η | " + " | ".join(f"{lab(z)}: single / consensus / CRB, recovered" for z in cr["poles"]) + " |",
+                      "|---|" + "---|" * len(true)]
+            for eta in ETAS:
+                cond = base if eta == 0 else noisy[eta]
+                # no noise: the noise-aware rule reduces to the ratio rule
+                key = ("e2_rescue", "rescue", "ratio") if eta == 0 else (src, stage, rule)
+                pe = run_errors(cond, key[0])
+                ce = consensus_errors(cond, true, *key[1:])
+                crb = [u * eta / np.sqrt(cr["n_t"]) for u in cr["unit"]]
+                cells = []
+                for j in range(len(true)):
+                    if pe.size == 0:
+                        cells.append("–")
+                        continue
+                    single = float(np.sqrt(np.mean(pe[:, j] ** 2)))
+                    cons = (float(np.sqrt(np.mean(ce[:, j] ** 2))) if ce is not None and np.isfinite(ce[:, j]).all()
+                            else (f"∞ ({int(np.sum(~np.isfinite(ce[:, j])))}/{len(ce)} missing)" if ce is not None else "–"))
+                    cs = f"{cons:.1e}" if isinstance(cons, float) else cons
+                    cells.append(f"{single:.1e} / {cs} / {crb[j]:.1e}, {np.mean(pe[:, j] < T.RECOVERED):.0%}")
+                lines.append(f"| {eta:g} | " + " | ".join(cells) + " |")
+                out.append(dict(system=system, rule=rname, eta=eta, cond=cond, crb=crb, runs=int(len(pe)),
+                                single_rms=None if pe.size == 0 else np.sqrt(np.mean(pe ** 2, 0)).tolist(),
+                                consensus=None if ce is None else ce.tolist()))
+            lines.append("")
     (T.R.RESULTS / "e2_noise.json").write_text(json.dumps(out, indent=1, default=float))
     (T.R.RESULTS / "e2_noise.md").write_text("\n".join(lines))
     print("\n".join(lines))

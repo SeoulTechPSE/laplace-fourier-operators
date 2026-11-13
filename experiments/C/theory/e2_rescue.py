@@ -14,13 +14,24 @@ each polished run is given single-slot moves, without using the truth:
 
 Every run is treated the same, whether or not it is at the floor; only training loss is used.
 
+Noise-aware rule (``--rule noise``, E4): with output noise the training loss of every run sits at
+the noise level, and a 1 % fall is out of reach. The noise variance per normalised output sample,
+sigma^2, is then estimated from the training outputs alone (6th-order differences: the band-limited
+signal cancels, white noise does not; ``noise_var``), and the loss is measured as the sum of
+squared normalised residuals S. A run is in the noise regime when S <= 2 x the noise
+expectation n_s n_t sigma^2. There, the screen picks the candidate with the lowest S and accepts it
+if S falls by >= chi2_4(0.99) sigma^2 (a likelihood-ratio test for the 4 real parameters a move
+changes). Outside the noise regime the ratio rule above applies unchanged.
+
     python experiments/C/theory/e2_rescue.py --cond p6_ms16_T80_N4096 --variant damp8_ms --seeds 10 11
-    python experiments/C/theory/e2_rescue.py --summarize      # writes results/e2_rescue.md
+    python experiments/C/theory/e2_rescue.py --cond p6_ms16_T80_N4096_n1e-1 --variant damp8_ms --rule noise
+    python experiments/C/theory/e2_rescue.py --summarize      # writes results/e2_rescue{,_na}.md
 """
 from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 import time
 from pathlib import Path
@@ -34,7 +45,10 @@ import e2_polish as P  # noqa: E402
 
 T, E = P.T, P.E
 OUT = T.R.RESULTS / "e2_rescue"
+OUT_NA = T.R.RESULTS / "e2_rescue_na"
 ROUNDS, SCREEN_ITERS, ACCEPT = 3, 300, 0.99
+NOISE_REGIME, CHI2_MOVE = 2.0, 13.28                     # chi2_4(0.99)
+DIFF = 6                                                 # difference order of the noise estimator
 REAL_GRID = -np.geomspace(0.05, 5.0, 8)
 IMAG_GRID = np.geomspace(0.3, 5.0, 8)
 
@@ -44,6 +58,24 @@ def train_loss(model, data, device):
     with torch.no_grad():
         model.eval()
         return float(P.relative_l2_loss(model(xtr), ytr))
+
+
+def noise_var(y):
+    """sigma^2: noise variance per element of the normalised outputs y_i / ||y_i||, estimated from
+    DIFF-th differences (white noise: variance x C(2 DIFF, DIFF); a smooth signal: ~ (omega dt)^(2 DIFF))."""
+    y = y.double()
+    d = torch.diff(y, n=DIFF, dim=1)
+    v = d.pow(2).mean(1) / math.comb(2 * DIFF, DIFF)
+    return float((v / y.pow(2).sum(1)).mean())
+
+
+def sse(model, data, device):
+    """S = sum_i ||y_hat_i - y_i||^2 / ||y_i||^2 over the training set (float64)."""
+    xtr, ytr = (a.to(device)[..., None] for a in data["train"])
+    with torch.no_grad():
+        model.eval()
+        r = (model(xtr) - ytr).double()[..., 0]
+        return float((r.pow(2).sum(1) / ytr.double()[..., 0].pow(2).sum(1)).sum())
 
 
 def set_slot(model, j, mu_new):
@@ -73,7 +105,7 @@ def candidates(model):
             yield j, complex(z)
 
 
-def run(cond, variant, seed, device):
+def run(cond, variant, seed, device, rule="ratio"):
     name = T.run_name(cond, variant, seed)
     ck = T.RUNS / f"{name}_lbfgs.pt"
     if not ck.exists():
@@ -87,34 +119,46 @@ def run(cond, variant, seed, device):
     t0 = time.time()
     before = P.score(model, data, mu_true, beta_true, device)
     loss = train_loss(model, data, device)
-    loss0, moves = loss, []
+    sig2 = noise_var(data["train"][1])
+    n_s, n_t = data["train"][1].shape
+    S = sse(model, data, device)
+    noisy = rule == "noise" and S <= NOISE_REGIME * n_s * n_t * sig2
+    # criterion to minimise and the acceptance test of a move
+    crit = (lambda: sse(model, data, device)) if noisy else (lambda: train_loss(model, data, device))
+    accept = (lambda new, old: old - new >= CHI2_MOVE * sig2) if noisy else (lambda new, old: new <= ACCEPT * old)
+    loss0, S0, moves = loss, S, []
+    cur = crit()
     for rnd in range(ROUNDS):
         state = {k: v.clone() for k, v in model.state_dict().items()}
-        best = (loss, None, None)
+        best = (cur, None, None)
         for j, z in candidates(model):
             model.load_state_dict(state)
             set_slot(model, j, z)
             P.polish(model, data, device, maxiter=SCREEN_ITERS)
-            lj = train_loss(model, data, device)
-            if lj < best[0]:
-                best = (lj, j, z, {k: v.clone() for k, v in model.state_dict().items()})
-        if best[1] is None or best[0] > ACCEPT * loss:
+            cj = crit()
+            if cj < best[0]:
+                best = (cj, j, z, {k: v.clone() for k, v in model.state_dict().items()})
+        if best[1] is None or not accept(best[0], cur):
             model.load_state_dict(state)
             break
         model.load_state_dict(best[3])
         P.polish(model, data, device)
-        new = train_loss(model, data, device)
-        moves.append(dict(round=rnd + 1, slot=int(best[1]), to=[best[2].real, best[2].imag], loss_before=loss,
-                          loss_after=new))
-        loss = new
+        new = crit()
+        moves.append(dict(round=rnd + 1, slot=int(best[1]), to=[best[2].real, best[2].imag], crit_before=cur,
+                          crit_after=new, loss_after=train_loss(model, data, device)))
+        cur = new
+    loss = train_loss(model, data, device)
     after = P.score(model, data, mu_true, beta_true, device)
     res = dict(cond=cond, variant=variant, seed=seed, system=system, n_per_20=N, seconds=round(time.time() - t0, 1),
                oracle_rel_l2=json.loads((P.OUT / f"{name}.json").read_text())["oracle_rel_l2"],
                true_poles=[[float(z.real), float(z.imag)] for z in E.true_folded(mu_true, beta_true)[0]],
-               train_before=loss0, train_after=loss, moves=moves, before=before, after=after)
-    OUT.mkdir(parents=True, exist_ok=True)
-    (OUT / f"{name}.json").write_text(json.dumps(res, indent=1))
-    torch.save(model.state_dict(), T.RUNS / f"{name}_rescue.pt")
+               train_before=loss0, train_after=loss, moves=moves, before=before, after=after, rule=rule,
+               noise_regime=bool(noisy), sigma2=sig2, eta_hat=float(np.sqrt(n_t * sig2)), sse_before=S0,
+               sse_after=sse(model, data, device))
+    out = OUT_NA if rule == "noise" else OUT
+    out.mkdir(parents=True, exist_ok=True)
+    (out / f"{name}.json").write_text(json.dumps(res, indent=1))
+    torch.save(model.state_dict(), T.RUNS / f"{name}_rescue{'_na' if rule == 'noise' else ''}.pt")
     r3 = lambda pe: pe and [round(x, 3) for x in pe]
     print(f"{name}: train/oracle {loss0 / res['oracle_rel_l2']:.2f} -> {loss / res['oracle_rel_l2']:.2f}, "
           f"moves {len(moves)}, pole_err {r3(before['pole_error'])} -> {r3(after['pole_error'])} ({res['seconds']:.0f}s)",
@@ -129,21 +173,34 @@ CASES = [("p4_ms16_T20", "mixed_off_ms"), ("p4_ms16_T20", "damp8_ms"),
          ("p4_ms16_T20_n1e-3", "damp8_ms"), ("p4_ms16_T20_n1e-2", "damp8_ms"),
          ("p6_ms16_T80_N4096_n1e-3", "damp8_ms"), ("p6_ms16_T80_N4096_n1e-2", "damp8_ms"),
          ("p4_ms16_T20_n1e-1", "damp8_ms"), ("p4_ms16_T20_n3e-1", "damp8_ms"),
-         ("p6_ms16_T80_N4096_n1e-1", "damp8_ms"), ("p6_ms16_T80_N4096_n3e-1", "damp8_ms")]
+         ("p6_ms16_T80_N4096_n1e-1", "damp8_ms"), ("p6_ms16_T80_N4096_n3e-1", "damp8_ms"),
+         ("p4_ms16_T20_alno_pt03", "damp8_ms"), ("p4_ms16_T20_lfno_pt03", "damp8_ms"),
+         ("p6_ms16_T80_N4096_alno_pt003", "damp8_ms"), ("p6_ms16_T80_N4096_alno_pt03", "damp8_ms"),
+         ("p6_ms16_T80_N4096_lfno_pt003", "damp8_ms"), ("p6_ms16_T80_N4096_lfno_pt03", "damp8_ms")]
 
 
 def summarize():
-    rs = [json.loads(f.read_text()) for f in sorted(OUT.glob("*.json"))]
+    table(OUT, "e2_rescue", "accept if training loss falls ≥ 1 %")
+    table(OUT_NA, "e2_rescue_na", f"noise-aware rule: in the noise regime (S ≤ {NOISE_REGIME:g} n_s n_t σ̂²) "
+          f"minimise S and accept if S falls ≥ {CHI2_MOVE} σ̂², otherwise accept if training loss falls ≥ 1 %")
+
+
+def table(src, stem, rule):
+    rs = [json.loads(f.read_text()) for f in sorted(src.glob("*.json"))]
+    if not rs:
+        return
+    na = src == OUT_NA
     lab = lambda z: f"{z[0]:+g}{z[1]:+g}i" if z[1] else f"{z[0]:+g}"
     ok = lambda s: max(s["pole_error"]) < T.RECOVERED
-    lines = ["# E2: truth-free single-slot restarts after the polish", "",
+    lines = ["# E2: truth-free single-slot restarts after the polish" + (", noise-aware rule (E4)" if na else ""), "",
              f"Every polished run (seeds 10-29) gets up to {ROUNDS} rounds of single-slot moves (residue 0, "
-             f"{SCREEN_ITERS}-iteration screen, accept if training loss falls ≥ 1 %, then full polish). "
+             f"{SCREEN_ITERS}-iteration screen, {rule}, then full polish). "
              "Before = after the polish (e2_polish.py). Best of 5: lowest validation loss in groups of 5 "
-             "consecutive seeds.", "",
-             "| condition | variant | runs | runs moved | train/oracle (median) | test rel. L2 (median) | all (single) | "
+             "consecutive seeds." + (" η̂: noise level estimated from the training outputs (median over runs); "
+                                     "noise regime: runs that used the noise-aware test." if na else ""), "",
+             "| condition | variant | runs | " + ("η̂ | noise regime | " if na else "") + "runs moved | train/oracle (median) | test rel. L2 (median) | all (single) | "
              "best of 5: all | per pole recovered | s per run |",
-             "|---|---|---|---|---|---|---|---|---|---|"]
+             "|---|---|---|---|---|---|---|---|---|---|" + ("---|---|" if na else "")]
     out = []
     for cond, variant in CASES:
         g = sorted((r for r in rs if r["cond"] == cond and r["variant"] == variant), key=lambda r: r["seed"])
@@ -160,14 +217,15 @@ def summarize():
                              per_pole=(np.array([r[when]["pole_error"] for r in g]) < T.RECOVERED).mean(0).tolist())
         b, a = row["before"], row["after"]
         pp = ", ".join(f"{lab(z)} {x:.0%} → {y:.0%}" for z, x, y in zip(g[0]["true_poles"], b["per_pole"], a["per_pole"]))
-        lines.append(f"| {cond} | {variant} | {len(g)} | {row['moved']} | {b['ratio']:.2f} → {a['ratio']:.2f} | "
+        extra = (f"{np.median([r['eta_hat'] for r in g]):.2g} | {sum(r['noise_regime'] for r in g)} | " if na else "")
+        lines.append(f"| {cond} | {variant} | {len(g)} | {extra}{row['moved']} | {b['ratio']:.2f} → {a['ratio']:.2f} | "
                      f"{b['test']:.1e} → {a['test']:.1e} | {b['single']:.0%} → {a['single']:.0%} | "
                      f"{b['best'][0]}/{b['best'][1]} → {a['best'][0]}/{a['best'][1]} | {pp} | "
                      f"{np.median([r['seconds'] for r in g]):.0f} |")
         out.append(row)
     lines.append("")
-    (T.R.RESULTS / "e2_rescue.json").write_text(json.dumps(out, indent=1))
-    (T.R.RESULTS / "e2_rescue.md").write_text("\n".join(lines))
+    (T.R.RESULTS / f"{stem}.json").write_text(json.dumps(out, indent=1))
+    (T.R.RESULTS / f"{stem}.md").write_text("\n".join(lines))
     print("\n".join(lines))
 
 
@@ -176,6 +234,7 @@ def main():
     ap.add_argument("--cond", nargs="+")
     ap.add_argument("--variant", nargs="+")
     ap.add_argument("--seeds", nargs="+", type=int, default=list(range(10, 30)))
+    ap.add_argument("--rule", choices=("ratio", "noise"), default="ratio")
     ap.add_argument("--summarize", action="store_true")
     a = ap.parse_args()
     if a.summarize:
@@ -184,7 +243,7 @@ def main():
     for c in a.cond:
         for v in a.variant:
             for s in a.seeds:
-                run(c, v, s, device)
+                run(c, v, s, device, a.rule)
 
 
 if __name__ == "__main__":

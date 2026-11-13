@@ -151,6 +151,42 @@ class ImagMask(torch.nn.Module):
     def forward(self, mu):
         return torch.complex(mu.real, mu.imag * self.mask)
 
+class Bounded(torch.nn.Module):
+    """Complex multiplier with modulus < delta: delta z / (1 + |z|)."""
+
+    def __init__(self, delta):
+        super().__init__()
+        self.delta = delta
+
+    def forward(self, z):
+        return self.delta * z / (1 + torch.sqrt(z.real ** 2 + z.imag ** 2 + 1e-12))
+
+
+class PartialTie(E.Layer1):
+    """Steady branch tied to the poles over the full band, plus a bounded untied residual on
+    the lowest ``modes`` rfft modes (H3: R = K + R_res):
+
+      alno_pt   steady = irfft(K(x) + R_res x_hat)        R_res free per mode, |R_res| < delta
+      lfno_pt   steady = irfft((1 + R_res) K(x))          LFNO's R = 1 + R_res, |R_res| < delta
+
+    K(x) = the tied layer's steady coefficients. R_res starts at 0 and the truth has R_res = 0,
+    so the oracle is the tied layer's. delta = 0 is the tied layer; delta -> inf on all modes
+    approaches the untied branch (ALNO: R_res replaces K's role)."""
+
+    def __init__(self, kind, n_poles, t, pole_init, modes, delta):
+        super().__init__(kind.removesuffix("_pt"), n_poles, t, pole_init, modes)
+        with torch.no_grad():
+            self.spec.weight.zero_()
+        torch.nn.utils.parametrize.register_parametrization(self.spec, "weight", Bounded(delta))
+
+    def branches(self, x):
+        n = x.size(-1)
+        K = self.pr.steady_coeffs(x)
+        res = self.spec.mix(torch.fft.rfft(x) if self.kind == "alno" else K)
+        c = torch.cat([K[..., :self.modes] + res, K[..., self.modes:]], -1)
+        return self.pr.transient(x), torch.fft.irfft(c, n=n)
+
+
 # name -> (system, family, T, K)
 CONDITIONS = {
     "p4_e1_T20": ("p4", "e1", 20.0, 0),            # E1 data: real poles predicted non-identifiable
@@ -167,6 +203,11 @@ CONDITIONS = {
     "p4_ms16_T20_lfno": ("p4", "multisine", 20.0, 16, 1024, dict(kind="lfno", modes=64)),
     "p6_ms16_T80_N4096_alno": ("p6", "multisine", 80.0, 16, 4096, dict(kind="alno", modes=256)),
     "p6_ms16_T80_N4096_lfno": ("p6", "multisine", 80.0, 16, 4096, dict(kind="lfno", modes=256)),
+    # H3: partial tie R = K + R_res, |R_res| < delta (absolute for ALNO, relative to K for LFNO)
+    **{f"p6_ms16_T80_N4096_{k}_pt{tag}": ("p6", "multisine", 80.0, 16, 4096, dict(kind=f"{k}_pt", modes=256, delta=d))
+       for k in ("alno", "lfno") for d, tag in ((0.03, "003"), (0.3, "03"))},
+    **{f"p4_ms16_T20_{k}_pt03": ("p4", "multisine", 20.0, 16, 1024, dict(kind=f"{k}_pt", modes=64, delta=0.3))
+       for k in ("alno", "lfno")},
     # E4: output noise on train and validation (test clean), relative L2 eta per sample
     "p4_ms16_T20_n1e-3": ("p4", "multisine", 20.0, 16, 1024, dict(noise=1e-3)),
     "p4_ms16_T20_n1e-2": ("p4", "multisine", 20.0, 16, 1024, dict(noise=1e-2)),
@@ -189,7 +230,7 @@ def unpack(cond):
 def extras(cond):
     """kind (tied / alno / lfno), steady modes, output noise level of a condition."""
     c = CONDITIONS[cond]
-    return dict(dict(kind="tied", modes=E.MODES, noise=0.0), **(c[5] if len(c) > 5 else {}))
+    return dict(dict(kind="tied", modes=E.MODES, noise=0.0, delta=None), **(c[5] if len(c) > 5 else {}))
 
 
 def make_splits(system, family, T, K, N=N_DEFAULT, noise=0.0, noise_seed=0):
@@ -219,7 +260,7 @@ def setup(cond, seed):
 
 def build_for(cond, variant, seed, t, mu_true, beta_true):
     x = extras(cond)
-    return build(variant, mu_true, beta_true, t, seed, kind=x["kind"], modes=x["modes"])
+    return build(variant, mu_true, beta_true, t, seed, kind=x["kind"], modes=x["modes"], delta=x["delta"])
 
 
 @torch.no_grad()
@@ -227,7 +268,7 @@ def oracle_for(cond, data, t, mu_true, beta_true):
     """Test error of the true poles in this layer kind; untied steady branches set to their
     tied value on the kept modes (ALNO: weight = tied steady coefficient; LFNO: R = 1)."""
     x = extras(cond)
-    if x["kind"] == "tied":
+    if x["kind"] == "tied" or x["kind"].endswith("_pt"):          # partial tie: truth has R_res = 0
         return E.oracle_error(data, t, mu_true, beta_true)
     m = E.Layer1(x["kind"], mu_true.size, t, "stable", x["modes"])
     m.pr.mu.copy_(torch.tensor(mu_true, dtype=torch.cfloat).reshape(1, 1, -1))
@@ -356,7 +397,7 @@ def make_splitter(events):
     return split
 
 
-def build(variant, mu_true, beta_true, t, seed, kind="tied", modes=None):
+def build(variant, mu_true, beta_true, t, seed, kind="tied", modes=None, delta=None):
     full = variant
     variant = base_variant(variant)
     n_real = int(np.sum(mu_true.imag == 0))
@@ -366,7 +407,8 @@ def build(variant, mu_true, beta_true, t, seed, kind="tied", modes=None):
          "wide": n_pairs + 1 + 2 * n_real, "mixed": n_pairs + 1 + 2 * n_real,
          "mixed_off": n_pairs + 1 + 2 * n_real, "few": n_pairs + 1 + n_real + 1,
          "fixed8": N_GENERIC, "gate8": N_GENERIC, "bound8": N_GENERIC, "damp8": N_GENERIC, "damp8w": N_GENERIC}.get(variant, mu_true.size)
-    model = E.Layer1(kind, n, t, "stable", modes or E.MODES)
+    model = (PartialTie(kind, n, t, "stable", modes, delta) if kind.endswith("_pt")
+             else E.Layer1(kind, n, t, "stable", modes or E.MODES))
     rng = np.random.default_rng(seed)
     E.layer_init(model, "warm" if variant == "warm" else "band", mu_true, beta_true, rng)
     if any(full.removesuffix("_ms").endswith(sfx) for sfx in ("_l1", "_l1s", "_prune")):
@@ -479,7 +521,7 @@ def run(cond: str, seed: int, device, variant: str = "base"):
     mf, _ = E.fold(mu_l, beta_l)
     pe = None if diverged else pole_error(mf, mt, reduce="none").tolist()
     res = dict(cond=cond, variant=variant, config=cfg, system=system, family=family, T=T, K=K, seed=seed, n_t=int(t.size),
-               model=extras(cond)["kind"], modes=extras(cond)["modes"], noise=extras(cond)["noise"], init="warm" if variant == "warm" else "band", protocol=f"{PROTOCOL}+plr{PLR:g}", params=count_params(model),
+               model=extras(cond)["kind"], modes=extras(cond)["modes"], noise=extras(cond)["noise"], delta=extras(cond)["delta"], init="warm" if variant == "warm" else "band", protocol=f"{PROTOCOL}+plr{PLR:g}", params=count_params(model),
                seconds=round(secs, 1), test_rel_l2=test, diverged=bool(diverged), history=hist,
                oracle_rel_l2=oracle_for(cond, data, t, mu_true, beta_true),
                true_poles=[[float(z.real), float(z.imag)] for z in mt], pole_error=pe,
