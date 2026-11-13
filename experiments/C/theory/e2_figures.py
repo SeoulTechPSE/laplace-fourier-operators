@@ -1,7 +1,11 @@
-"""(C) E2 figure: all-pole recovery of the prior-free recipe by stage (Adam, + L-BFGS polish,
-+ single-slot restarts), `damp8_ms`, seeds 10-29. Style as experiments/C/e1_audit/figures.py.
+"""(C) E2 / E4 figures, style as experiments/C/e1_audit/figures.py.
 
-    python experiments/C/theory/e2_figures.py      # writes results/figures/fig_e2_stages.png (+ .pdf)
+  fig_e2_stages  all-pole recovery of the prior-free recipe by stage (Adam, + L-BFGS polish,
+                 + single-slot restarts), `damp8_ms`, seeds 10-29
+  fig_e4_noise   RMS relative pole error of single runs vs output noise eta, with the
+                 minimal-form Cramer-Rao bound (from results/e2_noise.json)
+
+    python experiments/C/theory/e2_figures.py      # writes results/figures/fig_e2_stages.png, fig_e4_noise.png (+ .pdf)
 """
 from __future__ import annotations
 
@@ -38,7 +42,41 @@ def rates(cond):
     return [np.mean([ok(p) for p in st]) for st in (adam, pol, res)]
 
 
+POLES = {"p4": ["-0.4+3i", "-1", "-0.2"], "p6": ["-0.5+1.5i", "-0.3+4i", "-1", "-2"]}
+# categorical slots in fixed order; a pole keeps its colour in both panels (-1)
+POLE_C = {"-0.4+3i": "#2a78d6", "-0.5+1.5i": "#2a78d6", "-0.3+4i": "#e87ba4", "-1": "#1baf7a",
+          "-0.2": "#eb6834", "-2": "#eda100"}
+NUDGE = {("p4", "-1"): -7, ("p4", "-0.2"): 6}                # label offsets (points) where end values coincide
+
+
+def noise_figure():
+    rows = json.loads((RES / "e2_noise.json").read_text())
+    fig, axes = plt.subplots(1, 2, figsize=(7.2, 3.0), sharey=True)
+    for ax, system in zip(axes, ("p4", "p6")):
+        g = sorted((r for r in rows if r["system"] == system and r["eta"] > 0), key=lambda r: r["eta"])
+        eta = np.array([r["eta"] for r in g])
+        single, crb = np.array([r["single_rms"] for r in g]), np.array([r["crb"] for r in g])
+        ax.axhline(TOL, color=INK2, lw=0.8, ls=":")
+        for j, lab in enumerate(POLES[system]):
+            c = POLE_C[lab]
+            ax.plot(eta, single[:, j], color=c, lw=2, marker="o", ms=4.5, mec="white", mew=1.0)
+            ax.plot(eta, crb[:, j], color=c, lw=1.2, ls="--")
+            ax.annotate(lab, (eta[-1], single[-1, j]), xytext=(5, NUDGE.get((system, lab), 0)), textcoords="offset points", fontsize=7.5,
+                        color=INK, va="center")
+        ax.set_xscale("log"); ax.set_yscale("log")
+        ax.set_xlim(7e-4, 0.8)
+        ax.set_xlabel("output noise η (relative L2 per sample)")
+        ax.set_title(system, fontsize=9, color=INK, loc="left")
+    axes[0].set_ylabel("RMS relative pole error")
+    fig.suptitle("solid: single runs (20 per point)   dashed: Cramér–Rao bound   dotted: recovery threshold 0.1",
+                 fontsize=8, color=INK2, x=0.08, ha="left", y=1.0)
+    FIG.mkdir(parents=True, exist_ok=True)
+    for ext in ("png", "pdf"):
+        fig.savefig(FIG / f"fig_e4_noise.{ext}", dpi=220)
+
+
 def main():
+    noise_figure()
     r = np.array([rates(c) for c, _ in CONDS])
     fig, ax = plt.subplots(figsize=(6.2, 3.0))
     x, w = np.arange(len(CONDS)), 0.26

@@ -35,7 +35,13 @@ CERT, K, AGREE, MERGE, WEIGHT = 1.5, 5, 2 / 3, 0.1, 0.02
 SEEDS = range(10, 30)
 CASES = [("p4_ms16_T20", "mixed_off_ms"), ("p4_ms16_T20", "damp8_ms"),
          ("p6_ms16_T80", "mixed_off_ms"), ("p6_ms16_T80", "damp8_ms"),
-         ("p6_ms16_T80_N4096", "mixed_off_ms"), ("p6_ms16_T80_N4096", "damp8_ms")]
+         ("p6_ms16_T80_N4096", "mixed_off_ms"), ("p6_ms16_T80_N4096", "damp8_ms"),
+         ("p4_ms16_T20_alno", "damp8_ms"), ("p4_ms16_T20_lfno", "damp8_ms"),
+         ("p6_ms16_T80_N4096_alno", "damp8_ms"), ("p6_ms16_T80_N4096_lfno", "damp8_ms"),
+         ("p4_ms16_T20_n1e-3", "damp8_ms"), ("p4_ms16_T20_n1e-2", "damp8_ms"),
+         ("p6_ms16_T80_N4096_n1e-3", "damp8_ms"), ("p6_ms16_T80_N4096_n1e-2", "damp8_ms"),
+         ("p4_ms16_T20_n1e-1", "damp8_ms"), ("p4_ms16_T20_n3e-1", "damp8_ms"),
+         ("p6_ms16_T80_N4096_n1e-1", "damp8_ms"), ("p6_ms16_T80_N4096_n3e-1", "damp8_ms")]
 STAGES = {"polish": (P.OUT, "_lbfgs"), "rescue": (T.R.RESULTS / "e2_rescue", "_rescue")}
 
 
@@ -85,7 +91,7 @@ def load(stage, cond, variant):
         r = json.loads(f.read_text())
         mu_true, beta_true = (np.array(a, dtype=complex) for a in E.SYSTEMS[system])
         t = np.arange(int(round(Tw / (20.0 / N)))) * (20.0 / N)
-        model, _ = T.build(variant, mu_true, beta_true, t, s)
+        model, _ = T.build_for(cond, variant, s, t, mu_true, beta_true)
         model.load_state_dict(torch.load(ck, map_location="cpu"))
         mu, beta = (a.detach().numpy() for a in model.pole_sets())
         rs.append(dict(seed=s, train=r["train_after"], oracle=r["oracle_rel_l2"],

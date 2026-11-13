@@ -1,0 +1,98 @@
+{
+ "kind": "lfno",
+ "variant": "plr10",
+ "seed": 3,
+ "cond": "p4_ms16_T20",
+ "config": {
+  "width": 4,
+  "k": 16,
+  "params": 5977,
+  "target": 5977
+ },
+ "params": 5977,
+ "seconds": 923.2,
+ "test_rel_l2": NaN,
+ "test_rel_l2_adam": NaN,
+ "history": [
+  [
+   1,
+   0.9988683342933655,
+   1.0048174858093262
+  ],
+  [
+   100,
+   0.07611275389790535,
+   0.059841468930244446
+  ],
+  [
+   200,
+   NaN,
+   NaN
+  ],
+  [
+   300,
+   NaN,
+   NaN
+  ],
+  [
+   400,
+   NaN,
+   NaN
+  ],
+  [
+   500,
+   NaN,
+   NaN
+  ],
+  [
+   600,
+   NaN,
+   NaN
+  ],
+  [
+   700,
+   NaN,
+   NaN
+  ],
+  [
+   800,
+   NaN,
+   NaN
+  ],
+  [
+   900,
+   NaN,
+   NaN
+  ],
+  [
+   1000,
+   NaN,
+   NaN
+  ]
+ ],
+ "polish": {},
+ "oracle_rel_l2": 0.0005882757250219584,
+ "true_poles": [
+  [
+   -0.4,
+   3.0
+  ],
+  [
+   -1.0,
+   0.0
+  ],
+  [
+   -0.2,
+   0.0
+  ]
+ ],
+ "n_poles": 1024,
+ "n_weighted": 0,
+ "unstable_fraction": NaN,
+ "pole_error_pooled": [
+  1.0,
+  1.0,
+  1.0
+ ],
+ "pole_error_weighted": null
+}

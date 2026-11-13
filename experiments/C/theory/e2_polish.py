@@ -42,7 +42,12 @@ CASES = [("p4_ms16_T20", "mixed_off_ms", SEL), ("p6_ms16_T80", "mixed_off_ms", S
          ("p4_ms16_T20", "bound8_ms", OLD), ("p6_ms16_T80", "bound8_ms", OLD),
          ("p4_ms16_T20", "damp8_ms", NEW), ("p6_ms16_T80", "damp8_ms", NEW),
          ("p4_ms16_T20", "damp8w_ms", NEW), ("p6_ms16_T80", "damp8w_ms", NEW),
-         ("p6_ms16_T80_N4096", "damp8_ms", NEW)]
+         ("p6_ms16_T80_N4096", "damp8_ms", NEW)] + [
+    (c, "damp8_ms", NEW) for c in ("p4_ms16_T20_alno", "p4_ms16_T20_lfno", "p6_ms16_T80_N4096_alno",
+                                   "p6_ms16_T80_N4096_lfno", "p4_ms16_T20_n1e-3", "p4_ms16_T20_n1e-2",
+                                   "p6_ms16_T80_N4096_n1e-3", "p6_ms16_T80_N4096_n1e-2",
+                                   "p4_ms16_T20_n1e-1", "p4_ms16_T20_n3e-1", "p6_ms16_T80_N4096_n1e-1",
+                                   "p6_ms16_T80_N4096_n3e-1")]
 
 
 def score(model, data, mu_true, beta_true, device):
@@ -107,9 +112,8 @@ def run(cond, variant, seed, device):
         print(f"skip {name}: no checkpoint", flush=True)
         return
     system, family, Tw, Kk, N = T.unpack(cond)
-    data, t = T.make_splits(system, family, Tw, Kk, N)
-    mu_true, beta_true = (np.array(a, dtype=complex) for a in E.SYSTEMS[system])
-    model, _ = T.build(variant, mu_true, beta_true, t, seed)
+    data, t, mu_true, beta_true = T.setup(cond, seed)
+    model, _ = T.build_for(cond, variant, seed, t, mu_true, beta_true)
     model.load_state_dict(torch.load(ck, map_location="cpu"))
     model.to(device)
     t0 = time.time()

@@ -16,6 +16,9 @@ families) make the poles practically identifiable, and does training then recove
 | `e2_rescue.py` | truth-free single-slot restarts of polished runs | `results/e2_rescue/*.json`, `results/e2_rescue.md` |
 | `e2_floor.py` | floor certificate without the truth: estimated floor + consensus poles | `results/e2_floor.md` / `.json` |
 | `e2_polish.py` | L-BFGS-B polish of saved Adam checkpoints (paired before/after), floor-certificate table | `results/e2_polish/*.json`, `results/e2_polish.md` |
+| `e2_noise.py` | E4: pole error under output noise vs the Cramér–Rao bound of the minimal-form layer | `results/e2_noise.md` / `.json` |
+| `e2_figures.py` | figures: recovery by recipe stage; noise vs CRB | `results/figures/fig_e2_stages.png`, `fig_e4_noise.png` |
+| `e3_deep.py` | E3 deep first pass: bounded slots in full ALNO / LFNO stacks | `results/e3_deep/*.json`, `results/e3_deep.md` |
 | `e2_train.py` | phase 2: train the E1 tied layer on selected configurations, 10 seeds; `--variant` controls (warm, no spare slot, real-constrained slots) | `results/e2_train/*.json`, `results/e2_train.md` |
 
 ```
@@ -552,12 +555,138 @@ single-slot restarts → in groups of 5, floor estimate and consensus poles → 
 until the consensus is stable (checked here on two grids only). On rich data this recovers all poles of p4 and p6, with no
 use of the true poles.
 
+## E3, layer setting: the recipe with a steady branch (ALNO / LFNO)
+
+Same recipe (`damp8_ms` → polish → restarts, seeds 10–29), but the tied layer gets the
+steady branch of ALNO (FFT branch, its own spectral weights) or LFNO (R per mode). Modes:
+64 on p4 (dt = 20/1024) and 256 on p6 (dt = 20/4096), i.e. a steady band of about 20 rad/s,
+twice the multisine band. Oracle = true poles and residues, with the steady weights set to
+the tied layer's steady coefficients (ALNO) or R = 1 (LFNO). The oracle error is set by the
+mode truncation: 1.7e-3 (p4) and 9.8e-4 (p6), against 5.9e-4 and 5.6e-5 for the tied layer.
+
+| condition | model | train/oracle (median) | test (median) | all poles (single) | per pole | runs at floor (< 1.5 ×): all recovered |
+|---|---|---|---|---|---|---|
+| p4 | tied | 0.86 | 5.4e-4 | 90 % | −0.4+3i 100, −1 100, −0.2 90 | 18/20 |
+| p4 | ALNO | 0.90 | 1.6e-3 | 75 % | 100, 80, 95 | 15/20 |
+| p4 | LFNO | 0.98 | 1.8e-3 | 65 % | 100, 70, 65 | 11/15 |
+| p6 fine | tied | 0.93 | 5.2e-5 | 90 % | −0.5+1.5i 100, −0.3+4i 100, −1 90, −2 100 | 18/20 |
+| p6 fine | ALNO | 2.60 | 2.5e-3 | 15 % | 100, 100, 35, 15 | 0/3 |
+| p6 fine | LFNO | 6.74 | 6.4e-3 | 15 % | 100, 100, 85, 15 | 1/4 |
+
+(full tables: `results/e2_rescue.md`, `results/e2_floor.md`)
+
+- **The steady branch costs the real poles, not the complex ones.** The complex pairs are
+  recovered in every run with either branch. On p4 the real poles drop from 90–100 % to
+  65–95 %; on p6 −2 drops from 100 % to 15 %.
+- **On p4 the failures sit at the floor (H1, weak form).** All 20 ALNO runs are within
+  1.5 × of the oracle and 5 of them still miss a real pole. Loss alone cannot tell
+  these runs from the correct ones: the truncation error (1.7e-3) is larger than what a
+  shifted slow decay costs.
+- **On p6 it is both optimisation and identifiability.** Most runs stay 2–7 × above the
+  oracle (restarts move 1/20 ALNO runs, 16/20 LFNO runs, but do not close the gap). The few
+  runs at the floor also miss −1 / −2: ALNO seed 10 is at 1.07 × the oracle with its four
+  real slots at −0.55 to −0.69 instead of −1 and −2.
+- **The certificate does not report wrong poles here, but reports little.** On p6 the
+  consensus never contains −1 or −2 (0/4 groups, both models), because few runs are
+  certified. On p4 ALNO it contains −1 in 3/4 groups and −0.2 in 4/4, with no false pole.
+- Reading: the steady branch's truncation error sets a floor above which slow real
+  decays are traded with the steady part. This is H1 in the layer setting. Remedies to
+  test: a partial tie (R = K + R_res with a small R_res), more modes, or a weight on
+  the transient branch.
+
+## E4: pole error under output noise vs the Cramér–Rao bound
+
+`e2_noise.py`. Gaussian noise on the training and validation outputs, per sample with
+relative L2 norm η; the test set stays clean. One noise draw per group of 5 seeds. CRB:
+trace bound for the minimal-form tied layer at the truth (Fisher information from the
+Jacobian of the normalised residual), as a relative error.
+
+![noise vs CRB](results/figures/fig_e4_noise.png)
+
+| system | η | all poles (single) | complex poles | real poles recovered | certified runs | consensus: real poles found | false |
+|---|---|---|---|---|---|---|---|
+| p4 | 0 | 90 % | 100 % | −1 100, −0.2 90 | 20/20 | 4/4, 3/4 | 0 |
+| p4 | 1e-3 | 100 % | 100 % | 100, 100 | 20/20 | 4/4, 4/4 | 0 |
+| p4 | 1e-2 | 70 % | 100 % | 90, 80 | 20/20 | 4/4, 4/4 | 2 |
+| p4 | 1e-1 | 45 % | 100 % | 60, 80 | 20/20 | 2/4, 3/4 | 2 |
+| p4 | 3e-1 | 45 % | 100 % | 70, 60 | 20/20 | 2/4, 3/4 | 2 |
+| p6 fine | 0 | 90 % | 100 % | −1 90, −2 100 | 20/20 | 4/4, 4/4 | 0 |
+| p6 fine | 1e-3 | 85 % | 100 % | 100, 85 | 20/20 | 4/4, 2/4 | 0 |
+| p6 fine | 1e-2 | 70 % | 100 % | 85, 70 | 20/20 | 4/4, 3/4 | 1 |
+| p6 fine | 1e-1 | 5 % | 100 % | 20, 5 | 20/20 | 0/4, 0/4 | 5 |
+| p6 fine | 3e-1 | 0 % | 100 % | 10, 0 | 20/20 | 0/4, 0/4 | 5 |
+
+(errors per pole with the CRB: `results/e2_noise.md`)
+
+- **Errors are 10–2400 × the CRB.** The bound is far below the errors at every η. At
+  η ≤ 1e-3 the error equals the noise-free error (the bias of the 8-slot fit), so it
+  does not grow with η. The gap is smallest for −2 at η = 0.3 (0.72 vs 0.064).
+- **The information is there; the fit does not use it.** At η = 0.1 the CRB of −2 is 2 %,
+  but only 1 of 20 runs is within 10 %. At η ≥ 0.1 the p6 consensus merges −1 and −2 into
+  one decay at about −0.68 (4/4 groups).
+- **The complex poles are robust:** 100 % at every η up to 0.3, with errors ≤ 5 %.
+- **The truth-free steps break down under noise.**
+  - Certificate: every run is certified at every η > 0, because the training loss of every
+    run is at the noise level. The 1.5 × threshold then separates nothing, and false poles
+    enter the consensus (5 on p6 at η ≥ 0.1).
+  - Restarts: they accept a move only if it lowers the loss by ≥ 1 %. With the loss at
+    the noise level no move qualifies (0/20 runs moved at η ≥ 0.1).
+  - Both need thresholds on the excess loss over the noise level (estimated, for example,
+    from the validation residual), not on the ratio.
+- Caveats:
+  - The CRB is for the minimal form with known order and an unbiased estimator. The
+    8-slot model has spare slots and a relative-L2 loss, so the bound is optimistic for it.
+  - There are 4 noise draws per η.
+
+## E3, deep setting: first pass
+
+`e3_deep.py`. The E1 deep models (ALNO / LFNO, 5,977 parameters, four layers) are trained
+on the E2 rich data (p4, multisine16, T = 20) with E1's best protocol (`common` + pole lr
+× 10), 5 seeds. The `plr10` variant is the E1 setting. In `bounded`, every layer and
+channel pair has half of its slots real (log grid on [−5, −0.05]) and the other half
+complex with the `damp8` bounds, followed by an L-BFGS polish; all poles keep a decay of
+≥ 0.01. Weighted = slots with ≥ 2 % of their layer's impulse-response weight.
+
+| model | variant | NaN / dead | test rel. L2 (final) | slots weighted / all | −0.4+3i pooled / weighted | −1 | −0.2 |
+|---|---|---|---|---|---|---|---|
+| ALNO | plr10 | 0 / 0 | 9.9e-3 ± 4.8e-4 | 22 / 768 | 100 / 40 % | 0 / 0 % | 0 / 0 % |
+| ALNO | bounded | 0 / 0 | 9.5e-3 ± 1.1e-3 | 9 / 768 | 100 / 80 % | 0 / 0 % | 100 / 0 % |
+| LFNO | plr10 | 2 / 0 | 9.6e-3 ± 7.9e-4 | 4 / 1024 | 60 / 0 % | 0 / 0 % | 0 / 0 % |
+| LFNO | bounded | 0 / 3 | 1.7e-2 ± 7.1e-3 | 29 / 1024 | 40 / 40 % | 40 / 0 % | 40 / 0 % |
+
+(full table: `results/e3_deep.md`; test error is the mean over runs that are not NaN or
+dead; NaN and dead runs count as not recovered.)
+
+- **In the deep stack the recipe does not recover the real poles.** With the weighted
+  metric no real pole is found in any run, with either design. The bounded design only
+  makes the complex pair more reliable (ALNO 40 → 80 %). The pooled 100 % for −0.2 is the
+  real grid covering [−5, −0.05], not recovery (the pooled metric is vacuous with dense real
+  slots).
+- **The deep models are far from the floor.** Their test errors are about 1e-2, against
+  5.9e-4 for the tied-layer oracle, and the polish halves the ALNO bounded error but does
+  not close the gap.
+- **LFNO has a singular failure mode.** The steady response β / (iω − μ) is singular at
+  μ = iω.
+  - In 2 of 5 `plr10` runs a pole reached μ ≈ 0 (|μ| ~ 1e-21 in layer 4 by epoch 121) and
+    training went to NaN.
+  - The first `bounded` version allowed decay 0 on real slots and went to NaN in 5/5 runs.
+    The decay floor of 0.01 removed that, but 3 of 5 runs then stayed at loss 1.0 (output
+    near 0) from the start.
+- Reading: poles of a deep stack are not the system's poles one-to-one (E1 finding 2); the
+  slot-level recipe does not change that. The next step for the deep setting is reading the
+  poles off a linear probe of the trained network (RQ4), not off its slots.
+
 ## Next
 
-- Carry the recipe to ALNO / LFNO (steady branch present) and to the deep setting (E3/E4);
-  in the deep setting the consensus is over channels and layers as well as runs.
-- Noise in the outputs: the certificate and the consensus under additive noise (the
-  floor is then the noise level).
+- E3 layer: a partial tie R = K + R_res (small R_res) or more modes, to remove the trade
+  between the steady branch and slow real decays (H3); re-run p6 ALNO / LFNO.
+- E4: a noise-aware certificate and restart rule. Estimate the noise level, then use
+  thresholds on the excess loss (or a χ² test) in place of the 1.5 × ratio and the 1 %
+  acceptance. Check whether the restarts then separate −1 and −2 at η = 0.1.
+- E4: why the errors are far above the CRB at small η (bias of the spare slots?); compare
+  with a minimal-form fit started at the consensus.
+- E3 deep: linear-probe poles of trained deep models (RQ4); the dead-start LFNO runs
+  (bounded, loss 1.0 from epoch 1).
 - Back to the E1 data (step / ramp / PRBS / smooth, T = 20): which poles the consensus
   reports there, as the truth-free version of E1 finding 3.
 - More groups for the best-of-5 rates; c sensitivity between 0.35 and 0.7.

@@ -11,7 +11,7 @@ Each session appends one entry using the template at the bottom.
 | (C) Pole audit of existing models | 3–5 | **in progress**: E1 done, draft report (`E1_report.md`, updated with E2); paper decisions open | — |
 | (D) Non-periodic input representation | 4–8 | not started | differs from padded FNO? (month 8) |
 | (A) Pole layer and linear validation | 5–10 | not started | dispersion relations recovered (month 10) |
-| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done (`experiments/C/theory/`) | — |
+| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO), E4 noise vs CRB, E3 deep first pass done (`experiments/C/theory/`) | — |
 | (A) Application 1: process dynamics | 11–16 | not started | — |
 | (D) Initial conditions and rollout | 13–19 | not started | — |
 | (A) Application 2: Cahn–Hilliard | 17–22 | not started | recover k_c, k_max (month 20) |
@@ -45,8 +45,11 @@ Suggested next steps (in order):
    damping bound (`damp8`, |Re μ| < 0.5 |Im μ|) and an L-BFGS polish gives a prior-free
    recipe. Truth-free single-slot restarts (`e2_rescue.py`) then bring the runs to the floor:
    p6 (dt = 20/4096) 90 % single, −2 in 20/20. A truth-free floor estimate + consensus over
-   5 runs (`e2_floor.py`) reports all p6 poles in 4/4 groups with no false pole. Next: carry
-   the recipe to ALNO / LFNO / deep (E3/E4); noise; E1 data.
+   5 runs (`e2_floor.py`) reports all p6 poles in 4/4 groups with no false pole. Carried to
+   ALNO / LFNO, noise and deep (2026-11-13 log): the steady branch costs the slow real poles
+   (p6 −2 100 → 15 %), noise errors are 10–2400 × the CRB and the certificate certifies every
+   noisy run, deep stacks recover no real pole. Next: partial tie R = K + R_res (H3);
+   noise-aware certificate / restart thresholds; linear-probe poles for deep (RQ4); E1 data.
 4. Optional E1 extras: log-parameterised decay rate; untied models with 64 steady modes
    (H1); weight decay excluded from poles; deep LNO v1 at its published size.
 
@@ -59,6 +62,32 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-13 — (C) E3 / E4: recipe with a steady branch, under noise, in deep stacks
+
+- Done: `e2_train.py` conditions with the ALNO / LFNO steady branch (64 / 256 modes) and
+  with output noise η = 1e-3 … 3e-1 (train / validation only, one draw per group of 5);
+  `e2_noise.py` (CRB of the minimal-form layer, single-run and consensus errors);
+  `e3_deep.py` (bounded slots in the E1 deep models); noise figure in `e2_figures.py`.
+  240 layer runs (12 conditions × 20 seeds, Adam → polish → restarts) and 20 deep runs.
+  README sections "E3, layer setting", "E4", "E3, deep setting"; web page updated (v5).
+- Results:
+  - Steady branch: complex pairs 100 % throughout. All poles p4 90 → 75 % (ALNO) / 65 %
+    (LFNO), with the ALNO failures at the floor (oracle error 1.7e-3 from mode truncation);
+    p6 fine 90 → 15 % (both), −2 100 → 15 %, most runs 2–7 × above the oracle.
+  - Noise: all poles p6 85 / 70 / 5 / 0 % at η = 1e-3 / 1e-2 / 1e-1 / 3e-1; complex poles
+    100 % at every η. Errors 10–2400 × the CRB (flat at the noise-free bias for η ≤ 1e-3).
+    At η ≥ 0.1 the consensus merges −1 and −2 into ≈ −0.68; every noisy run is certified
+    and restarts move no run (thresholds are ratios of a loss at the noise level).
+  - Deep (p4, 5 seeds): no real pole recovered by the weighted metric with either design;
+    bounded raises the complex pair 40 → 80 % (ALNO). Test ≈ 1e-2 vs tied oracle 5.9e-4.
+- Bug found and fixed: in LFNO a slot pole at μ → 0 makes β / (iω − μ) singular at ω = 0
+  (NaN in 2/5 `plr10` runs and in 5/5 runs of the first bounded version). Bounded slots now
+  keep decay ≥ 0.01; 3/5 LFNO bounded runs then stay at loss 1.0 (open).
+- Decisions: none. Deep pooled metric marked vacuous for dense real slots.
+- Next: partial tie R = K + R_res on p6 ALNO / LFNO (H3); noise-aware certificate and
+  restart rule (excess loss over an estimated noise level); linear-probe poles for deep
+  (RQ4); LFNO dead starts; E1 data.
 
 ### 2026-11-13 — (C) E2: truth-free restarts and floor certificate; web page updated
 

@@ -162,7 +162,22 @@ CONDITIONS = {
     "p6_e1_T20": ("p6", "e1", 20.0, 0),
     "p6_ms16_T80": ("p6", "multisine", 80.0, 16),  # richest p6 data: pairs identifiable, real poles not
     "p6_ms16_T80_N4096": ("p6", "multisine", 80.0, 16, 4096),  # dt = 20/4096: -1 identifiable (ratio 11.6)
+    # E3: untied steady branch (layer setting), steady band 2 pi M / T = 20 rad/s (input band 0.1-10 rad/s)
+    "p4_ms16_T20_alno": ("p4", "multisine", 20.0, 16, 1024, dict(kind="alno", modes=64)),
+    "p4_ms16_T20_lfno": ("p4", "multisine", 20.0, 16, 1024, dict(kind="lfno", modes=64)),
+    "p6_ms16_T80_N4096_alno": ("p6", "multisine", 80.0, 16, 4096, dict(kind="alno", modes=256)),
+    "p6_ms16_T80_N4096_lfno": ("p6", "multisine", 80.0, 16, 4096, dict(kind="lfno", modes=256)),
+    # E4: output noise on train and validation (test clean), relative L2 eta per sample
+    "p4_ms16_T20_n1e-3": ("p4", "multisine", 20.0, 16, 1024, dict(noise=1e-3)),
+    "p4_ms16_T20_n1e-2": ("p4", "multisine", 20.0, 16, 1024, dict(noise=1e-2)),
+    "p6_ms16_T80_N4096_n1e-3": ("p6", "multisine", 80.0, 16, 4096, dict(noise=1e-3)),
+    "p6_ms16_T80_N4096_n1e-2": ("p6", "multisine", 80.0, 16, 4096, dict(noise=1e-2)),
+    "p4_ms16_T20_n1e-1": ("p4", "multisine", 20.0, 16, 1024, dict(noise=1e-1)),
+    "p4_ms16_T20_n3e-1": ("p4", "multisine", 20.0, 16, 1024, dict(noise=3e-1)),
+    "p6_ms16_T80_N4096_n1e-1": ("p6", "multisine", 80.0, 16, 4096, dict(noise=1e-1)),
+    "p6_ms16_T80_N4096_n3e-1": ("p6", "multisine", 80.0, 16, 4096, dict(noise=3e-1)),
 }
+NOISE_GROUP = 5                                     # runs s, s' with s // 5 == s' // 5 share one noise draw
 N_DEFAULT = 1024                                    # grid: dt = 20 / N (5th entry of a condition, optional)
 
 
@@ -171,14 +186,60 @@ def unpack(cond):
     return (*c[:4], c[4] if len(c) > 4 else N_DEFAULT)
 
 
-def make_splits(system, family, T, K, N=N_DEFAULT):
+def extras(cond):
+    """kind (tied / alno / lfno), steady modes, output noise level of a condition."""
+    c = CONDITIONS[cond]
+    return dict(dict(kind="tied", modes=E.MODES, noise=0.0), **(c[5] if len(c) > 5 else {}))
+
+
+def make_splits(system, family, T, K, N=N_DEFAULT, noise=0.0, noise_seed=0):
+    """noise > 0: white Gaussian noise on the train and validation outputs, per sample with
+    relative L2 norm ``noise`` (std noise * ||y_i|| / sqrt(n_t)); the test outputs stay clean."""
     R.DT = 20.0 / N
     f = lambda a: a.to(torch.float32)
     splits = {}
-    for name, seed, n in (("train", 0, 200), ("vali", 1, 50), ("test", 2, 100)):
+    for i, (name, seed, n) in enumerate((("train", 0, 200), ("vali", 1, 50), ("test", 2, 100))):
         t, u, y, _, _ = R.make(system, family, T, K, seed=seed)
-        splits[name] = (f(u[:n]), f(y[:n]))
+        u, y = u[:n], y[:n]
+        if noise > 0 and name != "test":
+            g = torch.Generator().manual_seed(10_000 + 10 * noise_seed + i)
+            y = y + noise * y.norm(dim=1, keepdim=True) / np.sqrt(y.shape[1]) * torch.randn(y.shape, generator=g,
+                                                                                           dtype=y.dtype)
+        splits[name] = (f(u), f(y))
     return splits, t.numpy()
+
+
+def setup(cond, seed):
+    """Data, time grid and true system of a run (noise draw shared by groups of NOISE_GROUP seeds)."""
+    system, family, T, K, N = unpack(cond)
+    data, t = make_splits(system, family, T, K, N, extras(cond)["noise"], seed // NOISE_GROUP)
+    mu_true, beta_true = (np.array(a, dtype=complex) for a in E.SYSTEMS[system])
+    return data, t, mu_true, beta_true
+
+
+def build_for(cond, variant, seed, t, mu_true, beta_true):
+    x = extras(cond)
+    return build(variant, mu_true, beta_true, t, seed, kind=x["kind"], modes=x["modes"])
+
+
+@torch.no_grad()
+def oracle_for(cond, data, t, mu_true, beta_true):
+    """Test error of the true poles in this layer kind; untied steady branches set to their
+    tied value on the kept modes (ALNO: weight = tied steady coefficient; LFNO: R = 1)."""
+    x = extras(cond)
+    if x["kind"] == "tied":
+        return E.oracle_error(data, t, mu_true, beta_true)
+    m = E.Layer1(x["kind"], mu_true.size, t, "stable", x["modes"])
+    m.pr.mu.copy_(torch.tensor(mu_true, dtype=torch.cfloat).reshape(1, 1, -1))
+    m.pr.beta.copy_(torch.tensor(beta_true, dtype=torch.cfloat).reshape(1, 1, -1))
+    if x["kind"] == "alno":
+        imp = torch.zeros(1, 1, t.size)
+        imp[..., 0] = 1.0                                   # rfft(impulse) = 1: steady coeffs = multiplier
+        m.spec.weight.copy_(m.pr.steady_coeffs(imp, x["modes"])[0][None])
+    else:
+        m.spec.weight.copy_(torch.ones_like(m.spec.weight))
+    xte, yte = (a[..., None] for a in data["test"])
+    return E.evaluate(m, xte, yte)
 
 
 def predicted(system, family, T, K, N=N_DEFAULT):
@@ -295,7 +356,7 @@ def make_splitter(events):
     return split
 
 
-def build(variant, mu_true, beta_true, t, seed):
+def build(variant, mu_true, beta_true, t, seed, kind="tied", modes=None):
     full = variant
     variant = base_variant(variant)
     n_real = int(np.sum(mu_true.imag == 0))
@@ -305,7 +366,7 @@ def build(variant, mu_true, beta_true, t, seed):
          "wide": n_pairs + 1 + 2 * n_real, "mixed": n_pairs + 1 + 2 * n_real,
          "mixed_off": n_pairs + 1 + 2 * n_real, "few": n_pairs + 1 + n_real + 1,
          "fixed8": N_GENERIC, "gate8": N_GENERIC, "bound8": N_GENERIC, "damp8": N_GENERIC, "damp8w": N_GENERIC}.get(variant, mu_true.size)
-    model = E.Layer1("tied", n, t, "stable")
+    model = E.Layer1(kind, n, t, "stable", modes or E.MODES)
     rng = np.random.default_rng(seed)
     E.layer_init(model, "warm" if variant == "warm" else "band", mu_true, beta_true, rng)
     if any(full.removesuffix("_ms").endswith(sfx) for sfx in ("_l1", "_l1s", "_prune")):
@@ -384,8 +445,7 @@ def run_name(cond, variant, seed):
 
 def run(cond: str, seed: int, device, variant: str = "base"):
     system, family, T, K, N = unpack(cond)
-    data, t = make_splits(system, family, T, K, N)
-    mu_true, beta_true = (np.array(a, dtype=complex) for a in E.SYSTEMS[system])
+    data, t, mu_true, beta_true = setup(cond, seed)
     t0 = time.time()
     xprune = data["train"][0][:50].to(device)[..., None]
     if variant.endswith("_ms"):
@@ -393,7 +453,7 @@ def run(cond: str, seed: int, device, variant: str = "base"):
         cands = []
         for c in range(MS_CANDIDATES):
             seed_everything(100 * seed + c)
-            m, cfg = build(variant, mu_true, beta_true, t, 100 * seed + c)
+            m, cfg = build_for(cond, variant, 100 * seed + c, t, mu_true, beta_true)
             m.to(device)
             h = E.train(m, data, screen, device, PLR, **remedy(variant, [], xprune))
             cands.append((h[-1][2] if np.isfinite(h[-1][2]) else np.inf, c, m))
@@ -403,7 +463,7 @@ def run(cond: str, seed: int, device, variant: str = "base"):
         seed_everything(seed)
     else:
         seed_everything(seed)
-        model, cfg = build(variant, mu_true, beta_true, t, seed)
+        model, cfg = build_for(cond, variant, seed, t, mu_true, beta_true)
         model.to(device)
     events = []
     hist = E.train(model, data, E.PROTOCOLS[PROTOCOL], device, PLR, **remedy(variant, events, xprune))
@@ -419,9 +479,9 @@ def run(cond: str, seed: int, device, variant: str = "base"):
     mf, _ = E.fold(mu_l, beta_l)
     pe = None if diverged else pole_error(mf, mt, reduce="none").tolist()
     res = dict(cond=cond, variant=variant, config=cfg, system=system, family=family, T=T, K=K, seed=seed, n_t=int(t.size),
-               model="tied", init="warm" if variant == "warm" else "band", protocol=f"{PROTOCOL}+plr{PLR:g}", params=count_params(model),
+               model=extras(cond)["kind"], modes=extras(cond)["modes"], noise=extras(cond)["noise"], init="warm" if variant == "warm" else "band", protocol=f"{PROTOCOL}+plr{PLR:g}", params=count_params(model),
                seconds=round(secs, 1), test_rel_l2=test, diverged=bool(diverged), history=hist,
-               oracle_rel_l2=E.oracle_error(data, t, mu_true, beta_true),
+               oracle_rel_l2=oracle_for(cond, data, t, mu_true, beta_true),
                true_poles=[[float(z.real), float(z.imag)] for z in mt], pole_error=pe,
                pole_error_mean=None if pe is None else float(np.mean(pe)),
                learned_poles=[[float(z.real), float(z.imag)] for z in mu_l],
