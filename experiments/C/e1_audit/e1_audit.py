@@ -245,7 +245,9 @@ def param_groups(model, lr: float, pole_lr_mult: float):
     return [dict(params=poles, lr=lr * pole_lr_mult), dict(params=rest, lr=lr)]
 
 
-def train(model, data, proto: dict, device, pole_lr_mult: float = 1.0):
+def train(model, data, proto: dict, device, pole_lr_mult: float = 1.0, penalty=None, hook=None):
+    """penalty(model, epoch) -> scalar added to the loss; hook(model, epoch) after each epoch
+    (both optional, used by the E2 remedies; E1 runs use neither)."""
     (xtr, ytr), (xva, yva) = data["train"], data["vali"]
     xtr, ytr, xva, yva = (a.to(device)[..., None] for a in (xtr, ytr, xva, yva))
     if proto["optimizer"] == "complex_adam":
@@ -265,10 +267,12 @@ def train(model, data, proto: dict, device, pole_lr_mult: float = 1.0):
             idx = perm[i:i + bs]
             opt.zero_grad()
             loss = relative_l2_loss(model(xtr[idx]), ytr[idx])
-            loss.backward()
+            (loss + penalty(model, ep) if penalty is not None else loss).backward()
             opt.step()
             tot += loss.item() * idx.numel()
         sch.step()
+        if hook is not None:
+            hook(model, ep)
         if (ep + 1) % 100 == 0 or ep == 0:
             hist.append((ep + 1, tot / n, evaluate(model, xva, yva)))
     return hist

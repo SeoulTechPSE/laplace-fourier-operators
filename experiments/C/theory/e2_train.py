@@ -31,6 +31,12 @@ Remedies (E2 -> E3/E4 candidates):
               residue, and Adam turns any small gradient into a step of about lr.
   mixed_off   mixed with the real grid shifted by half a log step (k = 4: 0.11, 0.50, 2.3, 10.7),
               a control: the unshifted grid (0.05, 0.23, 1.08, 5) lies close to p4's -0.2 and -1
+  *_rep       real slots repel in log|Re|: + lambda(ep) sum_{i<j} exp(-(d_i - d_j)^2 / (2 sigma^2)),
+              d = log|Re mu|, lambda = 1e-2 decaying linearly to 0 at epoch 600, sigma = 0.15
+              (the true -1, -2 are 4.6 sigma apart)
+  *_split     at epochs 150 and 300, each pair of real slots within 10 % is merged (residues added,
+              output nearly unchanged) and the freed slot moved, with residue 0, to the point of
+              the log grid on [-5, -0.05] farthest from all real slots
   *_ms        multi-start: 8 candidate inits (seeds 100 * seed + c) trained 100 epochs each,
               the best on validation continues with the full protocol (1000 epochs, fresh optimiser)
 The real constraint is a parametrisation of ``pr.mu`` (Im multiplied by a 0/1 mask), applied
@@ -63,8 +69,12 @@ OUT = R.RESULTS / "e2_train"
 RUNS = E.ROOT / "runs" / "C" / "e2"
 PROTOCOL, PLR = "common", 10.0
 RECOVERED = 0.1
-VARIANTS = ("base", "warm", "free_min", "real_spare", "real_min", "wide", "mixed", "base_ms", "mixed_ms", "mixed_off", "mixed_off_ms")
+VARIANTS = ("base", "warm", "free_min", "real_spare", "real_min", "wide", "mixed", "base_ms", "mixed_ms", "mixed_off", "mixed_off_ms",
+            "mixed_off_rep", "mixed_off_rep_ms", "mixed_off_split", "mixed_off_split_ms")
 MS_CANDIDATES, MS_EPOCHS = 8, 100
+REP_LAMBDA, REP_SIGMA, REP_EPOCHS = 1e-2, 0.15, 600       # repulsion weight (annealed to 0), width in log|Re|
+SPLIT_EPOCHS, SPLIT_TOL = (150, 300), 0.1                 # coalescence check: |log(Re_i / Re_j)| < 0.1
+GRID = np.log(np.geomspace(0.05, 5.0, 200))               # candidate log|Re| for a split slot
 E.POLE_PARAMS = E.POLE_PARAMS + ("mu.original",)     # parametrised pr.mu still gets the pole lr
 
 
@@ -112,8 +122,52 @@ def predicted(system, family, T, K):
     return None
 
 
+def base_variant(variant):
+    return variant.removesuffix("_ms").removesuffix("_rep").removesuffix("_split")
+
+
+def real_slots(model):
+    """Indices of the real-constrained slots (Im mask 0), empty if none."""
+    if not torch.nn.utils.parametrize.is_parametrized(model.pr, "mu"):
+        return torch.empty(0, dtype=torch.long)
+    return (model.pr.parametrizations.mu[0].mask.flatten() == 0).nonzero().flatten()
+
+
+def repulsion(model, ep):
+    lam = REP_LAMBDA * max(0.0, 1 - ep / REP_EPOCHS)
+    idx = real_slots(model)
+    if lam == 0 or idx.numel() < 2:
+        return 0.0
+    d = torch.log((-model.pr.mu.flatten()[idx].real).clamp_min(1e-3))
+    diff = d[:, None] - d[None, :]
+    iu = torch.triu_indices(d.numel(), d.numel(), 1)
+    return lam * torch.exp(-diff[iu[0], iu[1]] ** 2 / (2 * REP_SIGMA ** 2)).sum()
+
+
+def make_splitter(events):
+    @torch.no_grad()
+    def split(model, ep):
+        if ep + 1 not in SPLIT_EPOCHS:
+            return
+        idx = real_slots(model).tolist()
+        orig = model.pr.parametrizations.mu.original      # (1, 1, n); real slots: Im is masked anyway
+        beta = model.pr.beta
+        for a in range(len(idx)):
+            for b in range(a + 1, len(idx)):
+                i, j = idx[a], idx[b]
+                ri, rj = -orig[0, 0, i].real, -orig[0, 0, j].real
+                if ri > 0 and rj > 0 and abs(float(torch.log(ri / rj))) < SPLIT_TOL:
+                    beta[0, 0, i] += beta[0, 0, j]
+                    beta[0, 0, j] = 0
+                    d = torch.log((-orig[0, 0, idx].real).clamp_min(1e-3)).cpu().numpy()
+                    new = GRID[np.argmax(np.min(np.abs(GRID[:, None] - d[None, :]), axis=1))]
+                    orig[0, 0, j] = torch.tensor(-np.exp(new), dtype=orig.dtype)
+                    events.append(dict(epoch=ep + 1, merged=[i, j], at=float(-ri), moved_to=float(-np.exp(new))))
+    return split
+
+
 def build(variant, mu_true, beta_true, t, seed):
-    variant = variant.removesuffix("_ms")
+    variant = base_variant(variant)
     n_real = int(np.sum(mu_true.imag == 0))
     n_folded = int(np.sum(mu_true.imag >= 0))
     n_pairs = n_folded - n_real
@@ -140,6 +194,15 @@ def build(variant, mu_true, beta_true, t, seed):
     return model, dict(n_poles=n, real_slots=n_real if variant.startswith("real") else 0)
 
 
+def remedy(variant, events):
+    v = variant.removesuffix("_ms")
+    if v.endswith("_rep"):
+        return dict(penalty=repulsion)
+    if v.endswith("_split"):
+        return dict(hook=make_splitter(events))
+    return {}
+
+
 def run_name(cond, variant, seed):
     return f"{cond}_s{seed}" if variant == "base" else f"{cond}_{variant}_s{seed}"
 
@@ -156,7 +219,7 @@ def run(cond: str, seed: int, device, variant: str = "base"):
             seed_everything(100 * seed + c)
             m, cfg = build(variant, mu_true, beta_true, t, 100 * seed + c)
             m.to(device)
-            h = E.train(m, data, screen, device, PLR)
+            h = E.train(m, data, screen, device, PLR, **remedy(variant, []))
             cands.append((h[-1][2] if np.isfinite(h[-1][2]) else np.inf, c, m))
         val, best, model = min(cands, key=lambda z: z[0])
         cfg = dict(cfg, ms_candidates=MS_CANDIDATES, ms_epochs=MS_EPOCHS, ms_best=best,
@@ -166,7 +229,10 @@ def run(cond: str, seed: int, device, variant: str = "base"):
         seed_everything(seed)
         model, cfg = build(variant, mu_true, beta_true, t, seed)
         model.to(device)
-    hist = E.train(model, data, E.PROTOCOLS[PROTOCOL], device, PLR)
+    events = []
+    hist = E.train(model, data, E.PROTOCOLS[PROTOCOL], device, PLR, **remedy(variant, events))
+    if events:
+        cfg = dict(cfg, split_events=events)
     secs = time.time() - t0
     xte, yte = (a.to(device)[..., None] for a in data["test"])
     test = E.evaluate(model, xte, yte)

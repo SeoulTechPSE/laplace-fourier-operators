@@ -39,7 +39,8 @@ Suggested next steps (in order):
    layer setting (report section "Open decisions").
 3. E2 phases 1–2, controls and first remedies done (`experiments/C/theory/README.md`):
    mixed init with real-constrained slots + multi-start recovers 40–70 % of the real
-   poles. Next: coalescence remedies, learned real gate, p6 grid-resolution sweep.
+   poles; repulsion / split remove coalescence but not the failures (now bracketing).
+   Next: residue sparsity + pruning, fewer real slots, learned real gate, p6 grid sweep.
 4. Optional E1 extras: log-parameterised decay rate; untied models with 64 steady modes
    (H1); weight decay excluded from poles; deep LNO v1 at its published size.
 
@@ -52,6 +53,22 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-13 — (C) E2: second remedies (repulsion, split) against coalescing real slots
+
+- Done: `e2_train.py` variants `mixed_off_rep(_ms)` (annealed log-space repulsion between
+  real slots) and `mixed_off_split(_ms)` (merge slots within 10 %, move the freed slot);
+  `e1_audit.train` gained optional `penalty` / `hook` (E1 behaviour unchanged). 80 runs
+  (p4 multisine16, p6 multisine16 T = 80; 10 seeds). README section "Remedies (second round)".
+- Results:
+  - Coalescence removed (11 / 9 coalesced pairs over 10 seeds → 0–2), but recovery not
+    improved: p4 −1 / −0.2 40–60 % / 40–70 %, p6 −1 / −2 30–60 % / 40–50 %, all within
+    seed noise of `mixed_off_ms` (60 / 70, 50 / 40).
+  - Failures now bracket the true pole with two real slots (p4: −0.05 / −0.31 around
+    −0.2) at near-oracle test error (split + multi-start: 9.6e-4 / 5.8e-4).
+- Decisions: neither remedy adopted; the remaining problem is redundancy of the spare
+  real slots, not their separation.
+- Next: residue sparsity + pruning with re-fit; fewer real slots; p6 grid-resolution sweep.
 
 ### 2026-11-13 — (C) E2: first remedies for the unrecovered real poles
 

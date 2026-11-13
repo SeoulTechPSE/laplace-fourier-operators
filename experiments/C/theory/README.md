@@ -184,11 +184,49 @@ Findings:
 4. Remaining failure: real slots coalescing (e.g. three slots at −1.17) instead of one
    moving to −0.2 or −2. Candidates: repulsion / minimum-separation penalty, prune-and-split.
 
+## Remedies (second round): against coalescing real slots
+
+Variants on top of `mixed_off` (shifted grid), with and without multi-start; 80 runs,
+10 seeds, none diverged. `*_rep`: repulsion between real slots in log|Re μ|,
+λ Σ exp(−Δ²/2σ²), σ = 0.15, λ = 1e-2 annealed linearly to 0 at epoch 600. `*_split`: at
+epochs 150 and 300, real slots within 10 % are merged (residues added) and the freed slot
+is moved, residue 0, to the grid point farthest from the other real slots (0–3 splits per
+run). `e1_audit.train` got optional `penalty` / `hook` arguments for this (unused by E1).
+
+| system | variant | test rel. L2 | −1 | −0.2 or −2 | slots coalesced at end (pairs, 10 seeds) |
+|---|---|---|---|---|---|
+| p4 | mixed_off_ms | 1.4e-3 ± 1.2e-3 | 60 % / 0.11 | 70 % / 0.09 | 11 |
+| p4 | mixed_off_rep | 5.6e-2 ± 1.0e-1 | 60 % / 0.12 | 0 % / 0.42 | – |
+| p4 | mixed_off_rep_ms | 2.0e-3 ± 1.3e-3 | 60 % / 0.11 | 40 % / 0.17 | 0 |
+| p4 | mixed_off_split | 2.8e-3 ± 1.8e-3 | 40 % / 0.14 | 10 % / 0.33 | – |
+| p4 | mixed_off_split_ms | 9.6e-4 ± 4.6e-4 | 40 % / 0.16 | 70 % / 0.15 | 2 |
+| p6 | mixed_off_ms | 5.6e-4 ± 1.9e-4 | 50 % / 0.11 | 40 % / 0.14 | 9 |
+| p6 | mixed_off_rep | 2.6e-3 ± 2.5e-3 | 70 % / 0.09 | 50 % / 0.10 | – |
+| p6 | mixed_off_rep_ms | 8.3e-4 ± 3.1e-4 | 60 % / 0.09 | 50 % / 0.13 | 2 |
+| p6 | mixed_off_split | 2.6e-3 ± 2.4e-3 | 20 % / 0.20 | 70 % / 0.12 | – |
+| p6 | mixed_off_split_ms | 5.8e-4 ± 2.2e-4 | 30 % / 0.14 | 40 % / 0.15 | 2 |
+
+Findings:
+
+1. **Both remedies remove the coalescence** (11 / 9 coalesced pairs over 10 seeds →
+   0–2), **but recovery does not improve**: all rows are within seed noise of
+   `mixed_off_ms` (binomial s.e. ≈ 15 % at 10 seeds). One p4 `rep` seed diverged in
+   loss (test 0.3; the penalty while active disturbs the fit), hence the large mean.
+2. **The failure moves from coalescence to bracketing.** Failed runs now have the real
+   slots spread out, with two slots on either side of a true pole, e.g. p4:
+   −0.05 / −0.31 around −0.2 and −1.1 / −1.58 around −1; p6: −0.72 / −2.06 around −1 / −2.
+   With 2 × as many real slots as real poles, the spare slots do not die out but share
+   the decay with a neighbour. Test error stays near the oracle (9.6e-4 / 5.8e-4 with
+   split + multi-start): these are good-fit, wrong-pole solutions.
+3. Hence the redundant real slots are the remaining problem: a remedy needs to remove
+   them (residue sparsity / pruning) or use fewer of them, not to separate them.
+
 ## Next
 
 - ~~Separate the causes for p4~~ done (controls above).
-- ~~Mixed init / multi-start~~ done (section above). Next remedies against coalescence:
-  separation penalty between real slots, prune-and-split; pruning spare slots for reporting.
+- ~~Mixed init / multi-start~~, ~~repulsion / split~~ done (sections above). Next: remove
+  redundant real slots: residue sparsity (L1 on |β|, annealed) + pruning with re-fit;
+  fewer real slots (1 × real count + 1 spare).
 - The real constraint needs to know how many slots should be real; a learned gate
   (Im μ = g · Im μ̃) would remove that prior.
 - p6: phase-1 sweep over grid resolution (dt, n_t) to see whether a lower floor exposes −1, −2.
