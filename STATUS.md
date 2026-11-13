@@ -39,9 +39,9 @@ Suggested next steps (in order):
    layer setting (report section "Open decisions").
 3. E2 phases 1–2, controls and first remedies done (`experiments/C/theory/README.md`):
    mixed init with real-constrained slots + multi-start recovers 40–70 % of the real
-   poles; repulsion / split / sparsity do not add. p4 = optimisation limit (best of 5 by
-   validation ≈ 95 %), p6 −1/−2 = identifiability limit. Next: confirm best-of-5
-   independently, learned real gate, p6 grid-resolution sweep.
+   poles; repulsion / split / sparsity do not add. Best of 5 by validation loss
+   (independent check): all poles 8/10 (p4), 7/10 (p6). Next: learned real gate,
+   p6 grid-resolution sweep.
 4. Optional E1 extras: log-parameterised decay rate; untied models with 64 steady modes
    (H1); weight decay excluded from poles; deep LNO v1 at its published size.
 
@@ -54,6 +54,28 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-13 — (C) E2: best-of-5 selection checked on independent runs; p6 claim revised
+
+- Done: 100 new `mixed_off_ms` runs (seeds 10–59, p4 multisine16 and p6 multisine16
+  T = 80); `experiments/C/theory/e2_select.py` (10 disjoint groups of 5 per system,
+  lowest validation loss selected) → `results/e2_select.md` / `.json`. README section
+  "Best of 5 by validation loss: independent check".
+- Results:
+  - p4: all poles recovered: single run 38 %, best of 5 **8/10** (bootstrap estimate was
+    95 %); in all 8 groups with a good run the selection picked it. Spearman(val loss,
+    pole error) +0.84.
+  - p6: single 32 %, best of 5 **7/10**; Spearman +0.24. The previous entry's p6 claim
+    (selection lowers recovery 10 → 0 %, "identifiability limit") was a 10-seed artefact.
+- Decisions: E2 conclusion revised: from generic inits recovery is limited by optimisation
+  in both systems; recipe = mixed real-constrained init + multi-start + best of 5 by
+  validation loss. p6's fast real poles are weakly identifiable (phase-1 ratio < 2, weak
+  loss–pole link), not shown to be non-identifiable. Previous log entry's p6 decision
+  superseded.
+- Problems / open questions: 10 groups give wide intervals (8/10: 44–97 %); the recipe
+  still uses the true number of real poles.
+- Next: learned real gate (no prior on the real-pole count); p6 grid-resolution sweep;
+  then E1 report / paper text with the E2 results.
 
 ### 2026-11-13 — (C) E2: third remedies (sparsity, pruning, fewer slots); two kinds of limit
 

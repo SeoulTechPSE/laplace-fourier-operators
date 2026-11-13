@@ -11,6 +11,7 @@ families) make the poles practically identifiable, and does training then recove
 | script | what | output |
 |---|---|---|
 | `e2_richness.py` | phase 1: local identifiability of the tied layer at the truth, over 46 data configurations (p4, p6) | `results/e2_richness.md` / `.json` |
+| `e2_select.py` | best of 5 by validation loss on independent seeds 10–59 | `results/e2_select.md` / `.json` |
 | `e2_train.py` | phase 2: train the E1 tied layer on selected configurations, 10 seeds; `--variant` controls (warm, no spare slot, real-constrained slots) | `results/e2_train/*.json`, `results/e2_train.md` |
 
 ```
@@ -257,23 +258,51 @@ No variant is better than the reference beyond seed noise; pruning rarely fires
   (bootstrap from the 10 seeds, 2,000 draws): `mixed_off_ms` all poles recovered in
   50 % (k = 1), 84 % (k = 3), 95 % (k = 5); `mixed_off_l1s_ms` 50 / 88 / 98 %;
   `mixed_off` (no multi-start) 24 / 45 / 61 %.
-- **p6: the wrong-pole solutions fit as well or better**; validation selection makes
-  recovery worse (10 → 0 %). This is the practical non-identifiability of phase 1
-  (ratios 1.8 / 0.6): at the floor, the data prefer other decay rates.
+- **p6: the wrong-pole solutions fit as well or better** on these 10 seeds; validation
+  selection made recovery worse (10 → 0 %). *Not confirmed by independent runs (next
+  section): this was a 10-seed artefact.*
 
-E2 conclusion. Two different limits, separable by the loss: (i) optimisation (p4):
-locally identifiable poles in a non-convex landscape; mixed real-constrained init +
-multi-start + selection by validation loss recovers them (≈ 95 % with 5 runs, an estimate
-from 10 seeds); (ii) identifiability (p6 −1, −2): good-fit wrong-pole solutions exist
-below the representation floor; no training remedy can fix this; it needs a lower floor
-(grid resolution) or different data.
+(The E2 conclusion drawn here from 10 seeds is revised in the next section.)
+
+## Best of 5 by validation loss: independent check
+
+`e2_select.py` → `results/e2_select.md` / `.json`. `mixed_off_ms`, new seeds 10–59 (multi-start
+candidates also new), 10 disjoint groups of 5 consecutive seeds per system; per group the
+lowest final validation loss is selected. 100 runs, none diverged.
+
+| system | single run: all poles recovered | best of 5: all recovered | per real pole, single → selected | Spearman(val loss, max pole error) |
+|---|---|---|---|---|
+| p4 | 38 % (19/50) | **80 % (8/10)** | −1 44 → 80 %, −0.2 58 → 100 % | +0.84 (seeds 0–9: +0.79) |
+| p6 | 32 % (16/50) | **70 % (7/10)** | −1 70 → 100 %, −2 32 → 70 % | +0.24 (seeds 0–9: +0.14) |
+
+Complex pairs: 100 % single and selected in both systems.
+
+- **p4: confirmed, but lower than the bootstrap estimate (95 %).** In every group with at
+  least one good run (8/10) the selection picked a good one. The two misses are groups
+  with no good run; their selected runs have −1 errors of 0.136 / 0.111 at oracle-level
+  test error (5.6–5.7e-4), with two real slots bracketing −1 (−1.14 / −0.79).
+- **p6: the 10-seed conclusion does not hold.** On seeds 0–9 1/10 runs recovered all
+  poles and selection picked a wrong one; on seeds 10–59 16/50 did and selection
+  recovers 7/10 groups. Validation loss carries less information about the poles than in
+  p4 (Spearman 0.24 vs 0.84): misses (−2 errors 0.12–0.41) reach test errors of
+  3.3–4.5e-4, overlapping the good runs (3.1–4.2e-4).
+- With 10 groups the rates have wide intervals (8/10: about 44–97 %; 7/10: 35–93 %,
+  Clopper–Pearson 95 %).
+
+**E2 conclusion (revised).** Rich data make all poles locally identifiable for p4, and
+the truth is a stable minimum (warm start). From generic inits, recovery is limited by
+optimisation: mixed real-constrained init + multi-start + best of 5 by validation loss
+recovers all p4 poles in 8/10 groups and all p6 poles in 7/10, from 0 % with the E1 recipe.
+p6's −1, −2 remain the harder case: phase-1 ratios < 2, weak link between loss and pole
+error, misses near the floor. Their identifiability is weak but not absent: we did not
+show they cannot be recovered.
 
 ## Next
 
 - ~~Separate the causes for p4~~ done (controls above).
 - ~~Mixed init / multi-start~~, ~~repulsion / split~~, ~~sparsity / pruning / fewer slots~~
-  done (sections above). Recommended recipe for p4-type limits: `mixed_off_ms` + best of
-  ≥ 5 runs by validation loss; verify with independent runs (not bootstrap).
+  done (sections above). Recipe: `mixed_off_ms` + best of 5 by validation loss
+  (independently checked: 8/10, 7/10). More groups would narrow the intervals.
 - The real constraint needs to know how many slots should be real; a learned gate
   (Im μ = g · Im μ̃) would remove that prior.
 - p6 (identifiability limit): phase-1 sweep over grid resolution (dt, n_t) to see whether a lower floor exposes −1, −2.
