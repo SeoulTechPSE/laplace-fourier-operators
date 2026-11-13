@@ -11,7 +11,7 @@ Each session appends one entry using the template at the bottom.
 | (C) Pole audit of existing models | 3–5 | **in progress**: E1 first full run done (585 runs) | — |
 | (D) Non-periodic input representation | 4–8 | not started | differs from padded FNO? (month 8) |
 | (A) Pole layer and linear validation | 5–10 | not started | dispersion relations recovered (month 10) |
-| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2 + controls done (`experiments/C/theory/`) | — |
+| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, first remedies done (`experiments/C/theory/`) | — |
 | (A) Application 1: process dynamics | 11–16 | not started | — |
 | (D) Initial conditions and rollout | 13–19 | not started | — |
 | (A) Application 2: Cahn–Hilliard | 17–22 | not started | recover k_c, k_max (month 20) |
@@ -37,9 +37,9 @@ Suggested next steps (in order):
 2. ~~E1 summary~~ drafted: `experiments/C/e1_audit/E1_report.md` (3 figures). Open:
    the reported set, deep "closest pooled pole" in the main text, budget rule for the
    layer setting (report section "Open decisions").
-3. E2 phases 1–2 and controls done (`experiments/C/theory/README.md`). Next: remedies
-   for wrong-assignment / coalescence minima (mixed init with spare slots, multi-start,
-   pruning); p6 grid-resolution sweep.
+3. E2 phases 1–2, controls and first remedies done (`experiments/C/theory/README.md`):
+   mixed init with real-constrained slots + multi-start recovers 40–70 % of the real
+   poles. Next: coalescence remedies, learned real gate, p6 grid-resolution sweep.
 4. Optional E1 extras: log-parameterised decay rate; untied models with 64 steady modes
    (H1); weight decay excluded from poles; deep LNO v1 at its published size.
 
@@ -52,6 +52,26 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-13 — (C) E2: first remedies for the unrecovered real poles
+
+- Done: `e2_train.py` variants `wide`, `mixed`, `mixed_off`, `base_ms`, `mixed_ms`,
+  `mixed_off_ms` (definitions in the script docstring); 160 runs (p4 E1 data and
+  multisine16, p6 multisine16 T = 80; 10 seeds). README section "Remedies (first round)".
+- Results:
+  - Mixed init (2 × real-pole count slots on a stratified log grid of Re, constrained
+    real, plus spare band slots) + multi-start: p4 −1 / −0.2 recovered 60 % / 70 %
+    (from 0 %), test 1.4e-3 (oracle 5.9e-4); p6 −1 / −2 50 % / 40 % (−2 from 0 %), test 5.6e-4.
+  - Same slot count without the constraint (`wide`) or multi-start alone: 0 % for the
+    real poles. A grid shifted away from the true poles gives the same results.
+  - Correction to E1: a real pole's loss is flat in Im μ only for a real residue;
+    with complex β a free slot leaves the real axis within a few Adam steps.
+  - E1 data (p4): no remedy helps (data limit).
+- Decisions: candidate remedy for E3/E4 = mixed init with real-constrained slots
+  (+ multi-start). Parameter count differs from base (6 vs 4 slots); `wide` is the
+  matched control.
+- Next: coalescence of real slots (separation penalty, prune-and-split); a learned
+  real gate instead of a fixed number of real slots; p6 grid-resolution sweep.
 
 ### 2026-11-13 — (C) E2: controls for the unrecovered real poles of p4
 

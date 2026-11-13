@@ -22,6 +22,17 @@ Variants (controls for the real poles; ``base`` is the setting above):
   free_min    n_poles = number of folded true poles (one slot per pair or real pole), all complex
   real_spare  as base, but as many slots as there are real true poles have Im mu fixed to 0
   real_min    free_min with the real-pole slots constrained real: the minimal form of phase 1
+Remedies (E2 -> E3/E4 candidates):
+  wide        n_poles = (complex pairs + 1) + 2 * (real poles) slots, all band init (slot-count control)
+  mixed       same slots as wide; (pairs + 1) band slots, 2 * (real poles) slots started on the real
+              axis with Re = -geomspace(0.05, 5) * exp(0.2 z) (stratified, so they cannot start
+              together) and constrained real (Im mask as in real_spare). Left free, such slots
+              leave the axis at once: d/d(Im mu) = -t Im(beta) e^{Re mu t} != 0 for a complex
+              residue, and Adam turns any small gradient into a step of about lr.
+  mixed_off   mixed with the real grid shifted by half a log step (k = 4: 0.11, 0.50, 2.3, 10.7),
+              a control: the unshifted grid (0.05, 0.23, 1.08, 5) lies close to p4's -0.2 and -1
+  *_ms        multi-start: 8 candidate inits (seeds 100 * seed + c) trained 100 epochs each,
+              the best on validation continues with the full protocol (1000 epochs, fresh optimiser)
 The real constraint is a parametrisation of ``pr.mu`` (Im multiplied by a 0/1 mask), applied
 after the init, so the constrained slots start on the real axis at the band init's Re.
 
@@ -52,7 +63,8 @@ OUT = R.RESULTS / "e2_train"
 RUNS = E.ROOT / "runs" / "C" / "e2"
 PROTOCOL, PLR = "common", 10.0
 RECOVERED = 0.1
-VARIANTS = ("base", "warm", "free_min", "real_spare", "real_min")
+VARIANTS = ("base", "warm", "free_min", "real_spare", "real_min", "wide", "mixed", "base_ms", "mixed_ms", "mixed_off", "mixed_off_ms")
+MS_CANDIDATES, MS_EPOCHS = 8, 100
 E.POLE_PARAMS = E.POLE_PARAMS + ("mu.original",)     # parametrised pr.mu still gets the pole lr
 
 
@@ -101,11 +113,26 @@ def predicted(system, family, T, K):
 
 
 def build(variant, mu_true, beta_true, t, seed):
+    variant = variant.removesuffix("_ms")
     n_real = int(np.sum(mu_true.imag == 0))
     n_folded = int(np.sum(mu_true.imag >= 0))
-    n = n_folded if variant in ("free_min", "real_min") else mu_true.size
+    n_pairs = n_folded - n_real
+    n = {"free_min": n_folded, "real_min": n_folded,
+         "wide": n_pairs + 1 + 2 * n_real, "mixed": n_pairs + 1 + 2 * n_real,
+         "mixed_off": n_pairs + 1 + 2 * n_real}.get(variant, mu_true.size)
     model = E.Layer1("tied", n, t, "stable")
-    E.layer_init(model, "warm" if variant == "warm" else "band", mu_true, beta_true, np.random.default_rng(seed))
+    rng = np.random.default_rng(seed)
+    E.layer_init(model, "warm" if variant == "warm" else "band", mu_true, beta_true, rng)
+    if variant in ("mixed", "mixed_off"):
+        k = 2 * n_real
+        shift = (5.0 / 0.05) ** (0.5 / (k - 1)) if variant == "mixed_off" else 1.0   # half a grid step
+        re = -np.geomspace(0.05, 5.0, k) * shift * np.exp(0.2 * rng.normal(size=k))
+        with torch.no_grad():
+            model.pr.mu[..., n - k:] = torch.tensor(re, dtype=torch.cfloat)
+        mask = torch.ones(n)
+        mask[n - k:] = 0
+        torch.nn.utils.parametrize.register_parametrization(model.pr, "mu", ImagMask(mask.reshape(1, 1, -1)))
+        return model, dict(n_poles=n, real_slots=k)
     if variant in ("real_spare", "real_min"):
         mask = torch.ones(n)
         mask[n - n_real:] = 0
@@ -121,10 +148,24 @@ def run(cond: str, seed: int, device, variant: str = "base"):
     system, family, T, K = CONDITIONS[cond]
     data, t = make_splits(system, family, T, K)
     mu_true, beta_true = (np.array(a, dtype=complex) for a in E.SYSTEMS[system])
-    seed_everything(seed)
-    model, cfg = build(variant, mu_true, beta_true, t, seed)
-    model.to(device)
     t0 = time.time()
+    if variant.endswith("_ms"):
+        screen = dict(E.PROTOCOLS[PROTOCOL], epochs=MS_EPOCHS)
+        cands = []
+        for c in range(MS_CANDIDATES):
+            seed_everything(100 * seed + c)
+            m, cfg = build(variant, mu_true, beta_true, t, 100 * seed + c)
+            m.to(device)
+            h = E.train(m, data, screen, device, PLR)
+            cands.append((h[-1][2] if np.isfinite(h[-1][2]) else np.inf, c, m))
+        val, best, model = min(cands, key=lambda z: z[0])
+        cfg = dict(cfg, ms_candidates=MS_CANDIDATES, ms_epochs=MS_EPOCHS, ms_best=best,
+                   ms_vals=sorted(float(z[0]) for z in cands))
+        seed_everything(seed)
+    else:
+        seed_everything(seed)
+        model, cfg = build(variant, mu_true, beta_true, t, seed)
+        model.to(device)
     hist = E.train(model, data, E.PROTOCOLS[PROTOCOL], device, PLR)
     secs = time.time() - t0
     xte, yte = (a.to(device)[..., None] for a in data["test"])

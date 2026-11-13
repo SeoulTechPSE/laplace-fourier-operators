@@ -132,9 +132,63 @@ and pole-coalescence minima, so recovery is an optimisation problem, not a data 
 for p4. Candidate remedies for E3/E4: inits on the real axis plus complex slots, spare
 slots with pruning, multi-start.
 
+## Remedies (first round): mixed init with real-constrained slots, multi-start
+
+`e2_train.py --variant` (160 runs, 10 seeds each, none diverged):
+`wide` (pairs + 1 + 2 × real slots, all band init, all free: slot-count control, same
+parameter count as `mixed`), `mixed` (same slots; 2 × real slots started on a stratified
+log grid of Re in [−5, −0.05] and **constrained real**, the rest band init), `mixed_off`
+(grid shifted by half a log step: 0.11 / 0.50 / 2.3 / 10.7, a control because the
+unshifted grid 0.05 / 0.23 / 1.08 / 5 lies near p4's −0.2 and −1), `*_ms` (multi-start:
+8 inits × 100 epochs, best on validation continues with the full 1000-epoch protocol;
+≈ 1.8 × the compute).
+
+Why constrained: a slot started on the real axis but left free leaves it within a few
+epochs, because d/d(Im μ) = −t Im(β) e^{Re μ t} ≠ 0 for a complex residue and Adam turns
+any small gradient into a step of ≈ lr. (E1's "zero first-order sensitivity to Im μ"
+holds only for a real residue.)
+
+Recovered fraction / pole error (multisine16 data):
+
+| system | variant | slots | test rel. L2 | −1 | −0.2 or −2 |
+|---|---|---|---|---|---|
+| p4 | base | 4 | 4.1e-3 ± 1.6e-3 | 0 % / 0.61 | −0.2: 0 % / 0.60 |
+| p4 | wide | 6 | 3.1e-3 ± 1.3e-3 | 0 % / 0.68 | 0 % / 0.76 |
+| p4 | base_ms | 4 | 3.8e-3 ± 1.9e-3 | 0 % / 0.56 | 0 % / 0.57 |
+| p4 | mixed | 6 | 4.2e-3 ± 3.5e-3 | 40 % / 0.21 | 0 % / 0.24 |
+| p4 | mixed_ms | 6 | 1.1e-3 ± 9.1e-4 | 60 % / 0.11 | 80 % / 0.06 |
+| p4 | mixed_off | 6 | 3.3e-3 ± 1.8e-3 | 40 % / 0.18 | 20 % / 0.23 |
+| p4 | **mixed_off_ms** | 6 | **1.4e-3 ± 1.2e-3** (oracle 5.9e-4) | **60 % / 0.11** | **70 % / 0.09** |
+| p6 T = 80 | base | 6 | 1.9e-3 ± 1.0e-3 | 10 % / 0.31 | −2: 0 % / 0.79 |
+| p6 T = 80 | wide | 7 | 1.8e-3 ± 1.1e-3 | 0 % / 0.41 | 0 % / 0.79 |
+| p6 T = 80 | base_ms | 6 | 6.2e-4 ± 1.6e-4 | 30 % / 0.24 | 0 % / 0.68 |
+| p6 T = 80 | mixed | 7 | 2.6e-3 ± 2.6e-3 | 40 % / 0.15 | 40 % / 0.18 |
+| p6 T = 80 | mixed_off | 7 | 2.9e-3 ± 2.7e-3 | 60 % / 0.12 | 60 % / 0.12 |
+| p6 T = 80 | **mixed_off_ms** | 7 | **5.6e-4 ± 1.9e-4** (oracle 4.0e-4) | **50 % / 0.11** | **40 % / 0.14** |
+
+Complex pairs: 90–100 % in all these rows. E1 data (p4): no remedy helps (real poles
+≤ 20 %, `mixed` loses the pair); the data limit applies there.
+
+Findings:
+
+1. **Real-constrained, stratified real slots are the active ingredient.** More slots
+   alone (`wide`, same parameter count as `mixed`) or multi-start alone (`base_ms`) recover
+   no real pole. `mixed` gives 40–60 %; with multi-start p4 reaches 60 / 70 % and test error
+   within 2–3 × of the oracle.
+2. **Not an artefact of the grid.** With the grid shifted away from the true poles
+   (`mixed_off`) the results are the same within seed noise. In p6 the slot that ends at
+   −2 travels there from −4 to −6.
+3. **p6's −2 is recovered in 40–60 % of runs from a generic init**, although its
+   phase-1 ratio is 0.6: phase 1 (ratio of a 10 % change) is conservative; with the
+   real constraint the remaining minima are shallow but the truth is still the best one.
+4. Remaining failure: real slots coalescing (e.g. three slots at −1.17) instead of one
+   moving to −0.2 or −2. Candidates: repulsion / minimum-separation penalty, prune-and-split.
+
 ## Next
 
 - ~~Separate the causes for p4~~ done (controls above).
-- Remedies for the wrong-assignment / coalescence minima: mixed inits (some slots on the
-  real axis, some in the band) with spare slots; multi-start; prune spare slots after training.
+- ~~Mixed init / multi-start~~ done (section above). Next remedies against coalescence:
+  separation penalty between real slots, prune-and-split; pruning spare slots for reporting.
+- The real constraint needs to know how many slots should be real; a learned gate
+  (Im μ = g · Im μ̃) would remove that prior.
 - p6: phase-1 sweep over grid resolution (dt, n_t) to see whether a lower floor exposes −1, −2.
