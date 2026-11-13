@@ -1,0 +1,96 @@
+# (C) Identifiability theory: E2, data richness
+
+Plan: `docs/proposal_C_identifiability.qmd`, RQ2 / H2 / E2. Builds on the E1 audit
+(`../e1_audit/`, especially `identifiability.py` and `E1_report.md`).
+
+Question: does richer data (more input frequencies, a longer window, other input
+families) make the poles practically identifiable, and does training then recover them?
+
+## Scripts
+
+| script | what | output |
+|---|---|---|
+| `e2_richness.py` | phase 1: local identifiability of the tied layer at the truth, over 46 data configurations (p4, p6) | `results/e2_richness.md` / `.json` |
+| `e2_train.py` | phase 2: train the E1 tied layer on selected configurations, 10 seeds | `results/e2_train/*.json`, `results/e2_train.md` |
+
+```
+python experiments/C/theory/e2_richness.py                  # < 1 min (CPU)
+python experiments/C/theory/e2_train.py --cond <name> --seeds 0 1 2 3 4   # ≈ 105 s per run on the 4090
+python experiments/C/theory/e2_train.py --summarize
+```
+Phase 2 was run as 16 parallel processes (8 conditions × 2 seed halves), ≈ 9 min.
+
+## Phase 1: local identifiability vs data
+
+Setup: the float64 tied layer in minimal form from `e1_audit/identifiability.py`
+(one slot per conjugate pair, **real poles constrained real**), at the true parameters;
+dt = 20/1024 fixed, T changes n_t; 200 samples, data seed 0. Per pole: ratio =
+profiled error of a 10 % change in Re μ (others re-fitted, linearised) / representation
+floor; ratio ≥ 10 = practically identifiable. The Jacobian is computed in forward mode
+(few parameters, many outputs); this needed `.conj()` → `torch.conj_physical` in
+`identifiability.py` (same values; the view form fails under forward AD). The E1
+numbers are reproduced (p6, E1 data: ratio 0.6 / 0.19 for −1 / −2).
+
+Results (`results/e2_richness.md`):
+
+- **p4: richer data make all poles identifiable.** E1 data (T = 20): 7.0 / 4.6 / 9.5
+  (pair, −1, −0.2). Multisine with K ≥ 6 frequencies: 11–24 / 10–15 / 18–26;
+  E1 data at T = 40: 18 / 11 / 30; multisine16 at T = 80: 46 / 30 / 65. PRBS alone:
+  19.5 / 9.7 / 13. Ramps alone: nothing (≤ 1.5). Short windows (T ≤ 10): real poles
+  not identifiable.
+- **p6: the fast real poles −1, −2 stay non-identifiable for every data change tried**
+  (max ratio 1.8 / 0.6, multisine16 at T = 80). The complex pairs become identifiable
+  with rich data (±4i from K ≥ 6; both at multisine16, T ≥ 40).
+- The floor (5e-4 to 2e-3) is the layer's DFT discretisation error and does not fall
+  with richer data; for p6 it, not the data, is what hides −1 and −2. Grid resolution
+  (dt, number of modes) is the untested variable.
+
+## Phase 2: training on the phase-1 configurations
+
+Setup: E1 `Layer1("tied")`, n_poles = 4 (p4) / 6 (p6) complex slots, `band` init with
+its T = 20 ranges for every T (same initial poles in rad/s), `common` + pole lr × 10,
+1000 epochs. Train = the 200 analysed samples (seed 0), validation 50 (seed 1), test
+100 (seed 2), same family. 8 conditions × 10 seeds = 80 runs, none diverged.
+
+Results (`results/e2_train.md`; ratio / recovered fraction / pole error):
+
+| condition | test rel. L2 | pair −0.4+3i | −1 | −0.2 |
+|---|---|---|---|---|
+| p4, E1 data, T = 20 | 4.5e-2 ± 2.3e-2 | 7.0 / 70 % / 0.09 | 4.6 / 0 % / 0.84 | 9.5 / 0 % / 0.97 |
+| p4, ramps | 1.1e-2 ± 3.3e-3 | 0.3 / 0 % / 0.28 | 0.4 / 0 % / 0.97 | 1.5 / 0 % / 1.26 |
+| p4, PRBS | 5.6e-3 ± 3.9e-3 | 19.5 / 100 % / 0.00 | 9.7 / 0 % / 0.62 | 13.0 / 0 % / 0.64 |
+| p4, multisine16, T = 20 | 4.1e-3 ± 1.6e-3 | 24.1 / 100 % / 0.00 | 13.9 / 0 % / 0.61 | 23.8 / 0 % / 0.60 |
+| p4, E1 data, T = 40 | 3.1e-2 ± 2.2e-2 | 18.2 / 70 % / 0.07 | 11.3 / 0 % / 0.76 | 30.0 / 0 % / 0.67 |
+| p4, multisine16, T = 40 | 7.4e-3 ± 8.1e-3 | 34.7 / 100 % / 0.01 | 21.9 / 0 % / 0.58 | 44.7 / 0 % / 0.48 |
+
+p6: E1 data: pairs 60 % / 100 %, −1 / −2 0 %; multisine16 at T = 80: pairs 80 % / 100 %,
+−1 10 %, −2 0 %; test error 9.4e-3 → 1.9e-3.
+
+Findings:
+
+1. **Where the data identify a complex pair, training finds it**: p4's pair goes from
+   70 % to 100 % recovered (error 0.09 → 0.00) with PRBS or multisine; test error falls
+   up to 10×.
+2. **Predicted-identifiable real poles are still not recovered (0 % in every p4
+   condition)**, although their error falls (0.84 / 0.97 → 0.58 / 0.48). The learned slots
+   that stand in for −1 and −0.2 stay complex: e.g. −0.82 + 0.61i and −0.23 + 0.13i
+   (multisine16, T = 20/40). Most of the pole error is the spurious Im part. Test error
+   stays 4–10× above the oracle, so training ends in a local minimum, not at the truth.
+3. The mismatch is in the parameterisation: phase 1 analyses the minimal form in which a
+   real pole has no Im parameter; the trained layer gives every slot a free Im μ (and p4
+   has one spare slot, 4 slots for 3 folded poles). A real decay can be approximated by a
+   slowly oscillating pair, and at Im = 0 the loss is flat in Im to first order (E1),
+   so nothing pulls the slot onto the real axis.
+4. p6 behaves as phase 1 predicts: pairs found, −1 / −2 not.
+
+So for p4, data richness is necessary but not sufficient: it removes the data
+limitation, and what remains is an optimisation / parameterisation limitation of
+complex slots for real poles. This qualifies E1's part (iii) ("the data cannot identify
+them") as stated for p6 only.
+
+## Next
+
+- Separate the two causes for p4: (a) warm start on rich data (is the truth stable?),
+  (b) a layer with real-constrained slots (as in phase 1), (c) n_poles = number of folded
+  poles (no spare slot).
+- p6: phase-1 sweep over grid resolution (dt, n_t) to see whether a lower floor exposes −1, −2.

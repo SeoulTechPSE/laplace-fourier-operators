@@ -11,7 +11,7 @@ Each session appends one entry using the template at the bottom.
 | (C) Pole audit of existing models | 3–5 | **in progress**: E1 first full run done (585 runs) | — |
 | (D) Non-periodic input representation | 4–8 | not started | differs from padded FNO? (month 8) |
 | (A) Pole layer and linear validation | 5–10 | not started | dispersion relations recovered (month 10) |
-| (C) Identifiability theory and remedies | 6–12 | not started | — |
+| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2 done (`experiments/C/theory/`) | — |
 | (A) Application 1: process dynamics | 11–16 | not started | — |
 | (D) Initial conditions and rollout | 13–19 | not started | — |
 | (A) Application 2: Cahn–Hilliard | 17–22 | not started | recover k_c, k_max (month 20) |
@@ -37,8 +37,9 @@ Suggested next steps (in order):
 2. ~~E1 summary~~ drafted: `experiments/C/e1_audit/E1_report.md` (3 figures). Open:
    the reported set, deep "closest pooled pole" in the main text, budget rule for the
    layer setting (report section "Open decisions").
-3. E2 (data richness) can start from `identifiability.py`: vary input families (fast
-   content), window T and grid, and track profiled e of the fast real poles.
+3. E2 phases 1–2 done (`experiments/C/theory/README.md`). Next in E2: separate
+   optimisation from parameterisation for p4's real poles (warm start on rich data,
+   real-constrained slots, no spare slot); p6 grid-resolution sweep.
 4. Optional E1 extras: log-parameterised decay rate; untied models with 64 steady modes
    (H1); weight decay excluded from poles; deep LNO v1 at its published size.
 
@@ -51,6 +52,33 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-13 — (C) E2: data richness, local identifiability and training check
+
+- Done: `experiments/C/theory/e2_richness.py` (phase 1: local identifiability of the
+  tied layer at the truth, 46 data configurations for p4 and p6: multisine K = 1–32,
+  window T = 5–80, six input families) and `e2_train.py` (phase 2: E1 tied layer,
+  band init, `common` + pole lr × 10, trained on 8 of these configurations, 10 seeds,
+  80 runs). `README.md` there. `e1_audit/identifiability.py`: `.conj()` →
+  `torch.conj_physical` so the Jacobian can use forward mode (same values; minutes → 0.4 s
+  per configuration).
+- Results:
+  - Phase 1, p4: richer data make all poles identifiable (ratio ≥ 10: multisine K ≥ 6,
+    E1 data at T ≥ 40, mostly PRBS); E1 data at T = 20 do not (7.0 / 4.6 / 9.5).
+  - Phase 1, p6: −1 / −2 stay non-identifiable under every data change (max ratio
+    1.8 / 0.6); the pairs become identifiable with rich data. The floor (DFT
+    discretisation) is the limit there.
+  - Phase 2: complex pairs follow the prediction (p4 pair 70 % → 100 % recovered,
+    test error up to 10× lower). p4's real poles: 0 % recovered in every condition,
+    although predicted identifiable; their slots stay complex (e.g. −0.82 + 0.61i for −1)
+    and test error stays 4–10× above the oracle (local minimum).
+- Decisions: E1 part (iii) holds for p6 (data/floor limit); for p4 the remaining
+  limitation is optimisation / parameterisation (free Im μ on every slot, spare slot),
+  not data. To be reflected in `E1_report.md` when the paper set is decided.
+- Problems / open questions: the first phase-1 run (reverse-mode Jacobian) timed out after
+  1 h without output; fixed as above, results saved incrementally now.
+- Next: p4 controls (warm start on rich data; real-constrained slots; n_poles = folded
+  count); p6 grid-resolution sweep.
 
 ### 2026-11-13 — (C) E1 audit: draft summary and figures
 

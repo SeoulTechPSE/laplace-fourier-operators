@@ -59,7 +59,7 @@ def layer_out(mu: torch.Tensor, beta: torch.Tensor, x: torch.Tensor, t: torch.Te
     tr = torch.real(gamma @ torch.exp(mu[:, None] * t[None, :].to(torch.complex128)))
     lam = alpha * H.sum(1)[None, :]
     pos = torch.arange(n // 2 + 1)
-    c = (lam[:, pos] + lam[:, (-pos) % n].conj()) / 2
+    c = (lam[:, pos] + torch.conj_physical(lam[:, (-pos) % n])) / 2
     return tr + torch.fft.irfft(c, n=n)
 
 
