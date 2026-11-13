@@ -13,7 +13,17 @@ Data: ``e2_richness.make`` (dt = 20/1024): train = the 200 samples analysed in p
 (data seed 0), validation 50 (seed 1), test 100 (seed 2), same family / K / T.
 
     python experiments/C/theory/e2_train.py --cond p4_e1_T20 p4_ms16_T20 --seeds 0 1 2
+    python experiments/C/theory/e2_train.py --cond p4_ms16_T20 --variant real_min warm --seeds 0 1 2
     python experiments/C/theory/e2_train.py --summarize
+
+Variants (controls for the real poles; ``base`` is the setting above):
+  base        n_poles = number of true poles (conjugates counted), all slots complex, band init
+  warm        as base, E1 ``warm`` init (truth, Re and Im each x (1 + 0.2 z))
+  free_min    n_poles = number of folded true poles (one slot per pair or real pole), all complex
+  real_spare  as base, but as many slots as there are real true poles have Im mu fixed to 0
+  real_min    free_min with the real-pole slots constrained real: the minimal form of phase 1
+The real constraint is a parametrisation of ``pr.mu`` (Im multiplied by a 0/1 mask), applied
+after the init, so the constrained slots start on the real axis at the band init's Re.
 
 Outputs: results/e2_train/<cond>_s<seed>.json (committed), results/e2_train.md,
 checkpoints in runs/C/e2/ (git-ignored).
@@ -28,6 +38,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
+import torch.nn.utils.parametrize  # noqa: F401
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
@@ -41,6 +52,19 @@ OUT = R.RESULTS / "e2_train"
 RUNS = E.ROOT / "runs" / "C" / "e2"
 PROTOCOL, PLR = "common", 10.0
 RECOVERED = 0.1
+VARIANTS = ("base", "warm", "free_min", "real_spare", "real_min")
+E.POLE_PARAMS = E.POLE_PARAMS + ("mu.original",)     # parametrised pr.mu still gets the pole lr
+
+
+class ImagMask(torch.nn.Module):
+    """mu -> Re mu + i Im mu * mask: slots with mask 0 are real poles."""
+
+    def __init__(self, mask):
+        super().__init__()
+        self.register_buffer("mask", mask)
+
+    def forward(self, mu):
+        return torch.complex(mu.real, mu.imag * self.mask)
 
 # name -> (system, family, T, K)
 CONDITIONS = {
@@ -76,13 +100,29 @@ def predicted(system, family, T, K):
     return None
 
 
-def run(cond: str, seed: int, device):
+def build(variant, mu_true, beta_true, t, seed):
+    n_real = int(np.sum(mu_true.imag == 0))
+    n_folded = int(np.sum(mu_true.imag >= 0))
+    n = n_folded if variant in ("free_min", "real_min") else mu_true.size
+    model = E.Layer1("tied", n, t, "stable")
+    E.layer_init(model, "warm" if variant == "warm" else "band", mu_true, beta_true, np.random.default_rng(seed))
+    if variant in ("real_spare", "real_min"):
+        mask = torch.ones(n)
+        mask[n - n_real:] = 0
+        torch.nn.utils.parametrize.register_parametrization(model.pr, "mu", ImagMask(mask.reshape(1, 1, -1)))
+    return model, dict(n_poles=n, real_slots=n_real if variant.startswith("real") else 0)
+
+
+def run_name(cond, variant, seed):
+    return f"{cond}_s{seed}" if variant == "base" else f"{cond}_{variant}_s{seed}"
+
+
+def run(cond: str, seed: int, device, variant: str = "base"):
     system, family, T, K = CONDITIONS[cond]
     data, t = make_splits(system, family, T, K)
     mu_true, beta_true = (np.array(a, dtype=complex) for a in E.SYSTEMS[system])
     seed_everything(seed)
-    model = E.Layer1("tied", mu_true.size, t, "stable")
-    E.layer_init(model, "band", mu_true, beta_true, np.random.default_rng(seed))
+    model, cfg = build(variant, mu_true, beta_true, t, seed)
     model.to(device)
     t0 = time.time()
     hist = E.train(model, data, E.PROTOCOLS[PROTOCOL], device, PLR)
@@ -94,8 +134,8 @@ def run(cond: str, seed: int, device):
     diverged = not (np.isfinite(mu_l).all() and np.isfinite(test))
     mf, _ = E.fold(mu_l, beta_l)
     pe = None if diverged else pole_error(mf, mt, reduce="none").tolist()
-    res = dict(cond=cond, system=system, family=family, T=T, K=K, seed=seed, n_t=int(t.size),
-               model="tied", init="band", protocol=f"{PROTOCOL}+plr{PLR:g}", params=count_params(model),
+    res = dict(cond=cond, variant=variant, config=cfg, system=system, family=family, T=T, K=K, seed=seed, n_t=int(t.size),
+               model="tied", init="warm" if variant == "warm" else "band", protocol=f"{PROTOCOL}+plr{PLR:g}", params=count_params(model),
                seconds=round(secs, 1), test_rel_l2=test, diverged=bool(diverged), history=hist,
                oracle_rel_l2=E.oracle_error(data, t, mu_true, beta_true),
                true_poles=[[float(z.real), float(z.imag)] for z in mt], pole_error=pe,
@@ -103,30 +143,33 @@ def run(cond: str, seed: int, device):
                learned_poles=[[float(z.real), float(z.imag)] for z in mu_l],
                predicted=predicted(system, family, T, K))
     OUT.mkdir(parents=True, exist_ok=True)
-    (OUT / f"{cond}_s{seed}.json").write_text(json.dumps(res, indent=1))
+    (OUT / f"{run_name(cond, variant, seed)}.json").write_text(json.dumps(res, indent=1))
     RUNS.mkdir(parents=True, exist_ok=True)
-    torch.save(model.state_dict(), RUNS / f"{cond}_s{seed}.pt")
-    print(f"{cond} s{seed}: test {test:.2e} pole_err {pe and [round(x, 3) for x in pe]} ({secs:.0f}s)", flush=True)
+    torch.save(model.state_dict(), RUNS / f"{run_name(cond, variant, seed)}.pt")
+    print(f"{cond} {variant} s{seed}: test {test:.2e} pole_err {pe and [round(x, 3) for x in pe]} ({secs:.0f}s)", flush=True)
 
 
 def summarize():
     rs = [json.loads(f.read_text()) for f in sorted(OUT.glob("*.json"))]
+    for r in rs:
+        r.setdefault("variant", "base")
     lines = ["# E2 phase 2: training on the phase-1 data configurations", "",
              "Tied layer, band init, `common` + pole lr × 10, 1000 epochs. Per true pole: phase-1 ratio "
              f"(Re μ; **bold** ≥ {R.RATIO_OK:g} = predicted identifiable) / fraction of seeds recovering it "
              f"(relative pole error < {RECOVERED}) / mean ± std pole error. Diverged runs excluded.", ""]
     for system in ("p4", "p6"):
-        conds = [c for c in CONDITIONS if CONDITIONS[c][0] == system and any(r["cond"] == c for r in rs)]
+        conds = [(c, v) for c in CONDITIONS for v in VARIANTS
+                 if CONDITIONS[c][0] == system and any(r["cond"] == c and r["variant"] == v for r in rs)]
         if not conds:
             continue
         poles = next(r["true_poles"] for r in rs if r["system"] == system)
         labels = [f"{z[0]:+g}{z[1]:+g}i" if z[1] else f"{z[0]:+g}" for z in poles]
         keys = [f"{z[0]:+g}{z[1]:+g}i" for z in poles]
         lines += [f"## {system}", "",
-                  "| condition | n_t | seeds | test rel. L2 | oracle | " + " | ".join(labels) + " |",
-                  "|---|---|---|---|---|" + "---|" * len(poles)]
-        for c in conds:
-            g = [r for r in rs if r["cond"] == c]
+                  "| condition | variant | slots | n_t | seeds | test rel. L2 | oracle | " + " | ".join(labels) + " |",
+                  "|---|---|---|---|---|---|---|" + "---|" * len(poles)]
+        for c, v in conds:
+            g = [r for r in rs if r["cond"] == c and r["variant"] == v]
             ok = [r for r in g if not r["diverged"]]
             te = np.array([r["test_rel_l2"] for r in ok])
             pe = np.array([r["pole_error"] for r in ok])
@@ -137,7 +180,8 @@ def summarize():
                 qs = f"**{q:.1f}**" if q >= R.RATIO_OK else f"{q:.1f}"
                 cells.append(f"{qs} / {np.mean(pe[:, j] < RECOVERED):.0%} / {pe[:, j].mean():.2f} ± {pe[:, j].std():.2f}")
             div = f" ({len(g) - len(ok)} div.)" if len(g) > len(ok) else ""
-            lines.append(f"| {c} | {g[0]['n_t']} | {len(g)}{div} | {te.mean():.1e} ± {te.std():.1e} | "
+            slots = len(g[0]["learned_poles"])
+            lines.append(f"| {c} | {v} | {slots} | {g[0]['n_t']} | {len(g)}{div} | {te.mean():.1e} ± {te.std():.1e} | "
                          f"{g[0]['oracle_rel_l2']:.1e} | " + " | ".join(cells) + " |")
         lines.append("")
     (R.RESULTS / "e2_train.md").write_text("\n".join(lines))
@@ -147,6 +191,7 @@ def summarize():
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--cond", nargs="+", default=list(CONDITIONS))
+    ap.add_argument("--variant", nargs="+", default=["base"], choices=VARIANTS)
     ap.add_argument("--seeds", nargs="+", type=int, default=list(range(10)))
     ap.add_argument("--summarize", action="store_true")
     a = ap.parse_args()
@@ -154,8 +199,9 @@ def main():
         return summarize()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     for c in a.cond:
-        for s in a.seeds:
-            run(c, s, device)
+        for v in a.variant:
+            for s in a.seeds:
+                run(c, s, device, v)
 
 
 if __name__ == "__main__":

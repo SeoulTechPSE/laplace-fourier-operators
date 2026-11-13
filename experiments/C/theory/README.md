@@ -11,7 +11,7 @@ families) make the poles practically identifiable, and does training then recove
 | script | what | output |
 |---|---|---|
 | `e2_richness.py` | phase 1: local identifiability of the tied layer at the truth, over 46 data configurations (p4, p6) | `results/e2_richness.md` / `.json` |
-| `e2_train.py` | phase 2: train the E1 tied layer on selected configurations, 10 seeds | `results/e2_train/*.json`, `results/e2_train.md` |
+| `e2_train.py` | phase 2: train the E1 tied layer on selected configurations, 10 seeds; `--variant` controls (warm, no spare slot, real-constrained slots) | `results/e2_train/*.json`, `results/e2_train.md` |
 
 ```
 python experiments/C/theory/e2_richness.py                  # < 1 min (CPU)
@@ -88,9 +88,53 @@ limitation, and what remains is an optimisation / parameterisation limitation of
 complex slots for real poles. This qualifies E1's part (iii) ("the data cannot identify
 them") as stated for p6 only.
 
+## Phase 2 controls: optimisation or parameterisation?
+
+`e2_train.py --variant` (100 runs, 10 seeds each, none diverged): `warm` (E1 warm init),
+`free_min` (one complex slot per folded pole, no spare), `real_spare` (as base, two slots
+constrained real), `real_min` (the minimal form of phase 1: one complex + real-constrained
+slots). Real constraint = parametrisation of `pr.mu` with Im × 0/1 mask (pole lr × 10 still
+applied). Recovered fraction / pole error per true pole:
+
+| data | variant | slots | test rel. L2 | pair | −1 | −0.2 |
+|---|---|---|---|---|---|---|
+| p4 multisine16 | base | 4 | 4.1e-3 ± 1.6e-3 | 100 % / 0.00 | 0 % / 0.61 | 0 % / 0.60 |
+| p4 multisine16 | **warm** | 4 | **5.7e-4 ± 7e-5** (oracle 5.9e-4) | 100 % / 0.00 | **100 % / 0.01** | **100 % / 0.01** |
+| p4 multisine16 | free_min | 3 | 2.0e-2 ± 1.9e-2 | 90 % / 0.02 | 0 % / 1.26 | 0 % / 0.69 |
+| p4 multisine16 | real_spare | 4 | 1.2e-2 ± 2.2e-2 | 100 % / 0.01 | 20 % / 0.18 | 20 % / 0.25 |
+| p4 multisine16 | real_min | 3 | 2.9e-1 ± 9.4e-2 | 10 % / 1.09 | 10 % / 1.30 | 50 % / 0.18 |
+| p4 E1 data | warm | 4 | 2.4e-3 ± 2.4e-3 | 100 % / 0.01 | 80 % / 0.05 | 80 % / 0.04 |
+| p6 multisine16 T = 80 | warm | 6 | 4.3e-4 ± 2.4e-4 (oracle 4.0e-4) | 100 % / 100 % | 100 % / 0.02 | −2: 70 % / 0.08 |
+| p6 multisine16 T = 80 | real_min | 4 | 4.1e-2 ± 9.0e-2 | 90 % / 90 % | 30 % / 0.17 | −2: 0 % / 0.53 |
+
+(p4 E1-data rows for free_min / real_spare / real_min: all worse than base; `results/e2_train.md`.)
+
+Findings:
+
+1. **The truth is a stable, reachable-from-nearby minimum where phase 1 says so.**
+   Warm start on multisine16: all p4 poles recovered in 10/10 seeds, test error at the
+   oracle. On E1 data (ratios < 10) the warm start drifts away in 2/10 seeds. p6 even
+   recovers −1 (100 %) and −2 (70 %) from a warm start although their ratios are < 2:
+   locally stable but flat.
+2. **The failure from the band init is global: slots get the wrong assignment.** Typical
+   minima: the slow real pole −0.2 is taken by a complex slot (−0.25 + 0.05i) and the
+   remaining real slots coalesce (−1.15, −1.13: two slots on one decay). In `real_min`
+   the only complex slot goes to −0.2 in every seed and the ±3i pair is left unrepresented
+   (test 0.3); the inits differ, the wrong minimum is the same.
+3. **Real constraint helps, removing the spare slot hurts.** `real_spare` lowers the
+   real-pole error 0.6 → 0.2 (20 % recovered; one seed reaches the oracle);
+   the minimal forms (`free_min`, `real_min`) are worse than base: the spare slot is
+   what lets training escape wrong assignments.
+
+Revised E2 message: data richness makes the poles locally identifiable (phase 1, confirmed
+by the warm start), but from a generic init the tied layer's landscape has wrong-assignment
+and pole-coalescence minima, so recovery is an optimisation problem, not a data problem,
+for p4. Candidate remedies for E3/E4: inits on the real axis plus complex slots, spare
+slots with pruning, multi-start.
+
 ## Next
 
-- Separate the two causes for p4: (a) warm start on rich data (is the truth stable?),
-  (b) a layer with real-constrained slots (as in phase 1), (c) n_poles = number of folded
-  poles (no spare slot).
+- ~~Separate the causes for p4~~ done (controls above).
+- Remedies for the wrong-assignment / coalescence minima: mixed inits (some slots on the
+  real axis, some in the band) with spare slots; multi-start; prune spare slots after training.
 - p6: phase-1 sweep over grid resolution (dt, n_t) to see whether a lower floor exposes −1, −2.

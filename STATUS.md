@@ -11,7 +11,7 @@ Each session appends one entry using the template at the bottom.
 | (C) Pole audit of existing models | 3–5 | **in progress**: E1 first full run done (585 runs) | — |
 | (D) Non-periodic input representation | 4–8 | not started | differs from padded FNO? (month 8) |
 | (A) Pole layer and linear validation | 5–10 | not started | dispersion relations recovered (month 10) |
-| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2 done (`experiments/C/theory/`) | — |
+| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2 + controls done (`experiments/C/theory/`) | — |
 | (A) Application 1: process dynamics | 11–16 | not started | — |
 | (D) Initial conditions and rollout | 13–19 | not started | — |
 | (A) Application 2: Cahn–Hilliard | 17–22 | not started | recover k_c, k_max (month 20) |
@@ -37,9 +37,9 @@ Suggested next steps (in order):
 2. ~~E1 summary~~ drafted: `experiments/C/e1_audit/E1_report.md` (3 figures). Open:
    the reported set, deep "closest pooled pole" in the main text, budget rule for the
    layer setting (report section "Open decisions").
-3. E2 phases 1–2 done (`experiments/C/theory/README.md`). Next in E2: separate
-   optimisation from parameterisation for p4's real poles (warm start on rich data,
-   real-constrained slots, no spare slot); p6 grid-resolution sweep.
+3. E2 phases 1–2 and controls done (`experiments/C/theory/README.md`). Next: remedies
+   for wrong-assignment / coalescence minima (mixed init with spare slots, multi-start,
+   pruning); p6 grid-resolution sweep.
 4. Optional E1 extras: log-parameterised decay rate; untied models with 64 steady modes
    (H1); weight decay excluded from poles; deep LNO v1 at its published size.
 
@@ -52,6 +52,27 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-13 — (C) E2: controls for the unrecovered real poles of p4
+
+- Done: `e2_train.py --variant` (`warm`, `free_min`, `real_spare`, `real_min`; real
+  constraint = Im mask parametrisation of `pr.mu`). 100 runs: p4 on E1 data and
+  multisine16 × 4 variants, p6 multisine16 T = 80 × (`warm`, `real_min`), 10 seeds each.
+  README section "Phase 2 controls".
+- Results:
+  - Warm start on multisine16: p4 all poles 100 % recovered, test 5.7e-4 = oracle; p6 −1 100 %,
+    −2 70 %. On E1 data the warm start keeps the real poles in 8/10 seeds.
+  - From the band init the minima have wrong slot assignments: −0.2 taken by a complex
+    slot, the real slots coalescing (−1.15 / −1.13). Minimal form (`real_min`): the only
+    complex slot goes to −0.2 in every seed, the ±3i pair is lost (test 0.3).
+  - Real-constrained slots with a spare (`real_spare`): real-pole error 0.6 → 0.2, 20 %
+    recovered. Removing the spare slot makes things worse.
+- Decisions: E2 message: rich data make the poles locally identifiable (phase 1, warm
+  start), but recovery from generic inits fails at wrong-assignment / coalescence
+  minima, an optimisation problem (p4). p6's −1 / −2 remain data/floor-limited from
+  generic inits. This feeds E3/E4 remedies.
+- Next: remedies (mixed real/band init with spare slots, multi-start, pruning);
+  p6 grid-resolution sweep.
 
 ### 2026-11-13 — (C) E2: data richness, local identifiability and training check
 
