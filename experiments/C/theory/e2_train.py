@@ -50,6 +50,9 @@ Remedies (E2 -> E3/E4 candidates):
   gate8       as fixed8, but no slot is constrained: Im mu = sigmoid(a) Im mu~ with a learned gate
               logit a per slot (pole lr), a = -5 on the grid slots (start almost real: sigmoid = 0.007,
               Im mu~ from the band init, so |Im mu| <= 0.03) and +3 on the band slots; a slot becomes real if its gate closes
+  bound8      as fixed8, but the complex slots are bounded away from the real axis:
+              |Im mu| = 2 pi / T + |Im mu~| (at least one period in the window), so a slow decay
+              can only be taken by a real slot; still no use of the true pole count
   *_ms        multi-start: 8 candidate inits (seeds 100 * seed + c) trained 100 epochs each,
               the best on validation continues with the full protocol (1000 epochs, fresh optimiser)
 The real constraint is a parametrisation of ``pr.mu`` (Im multiplied by a 0/1 mask), applied
@@ -85,7 +88,7 @@ RECOVERED = 0.1
 VARIANTS = ("base", "warm", "free_min", "real_spare", "real_min", "wide", "mixed", "base_ms", "mixed_ms", "mixed_off", "mixed_off_ms",
             "mixed_off_rep", "mixed_off_rep_ms", "mixed_off_split", "mixed_off_split_ms",
             "mixed_off_l1", "mixed_off_l1_ms", "mixed_off_l1s_ms", "mixed_off_prune_ms", "few", "few_ms",
-            "fixed8", "fixed8_ms", "gate8", "gate8_ms")
+            "fixed8", "fixed8_ms", "gate8", "gate8_ms", "bound8", "bound8_ms")
 N_GENERIC, GATE_ON, GATE_OFF = 8, 3.0, -5.0               # prior-free variants: 8 slots; gate logits
 MS_CANDIDATES, MS_EPOCHS = 8, 100
 REP_LAMBDA, REP_SIGMA, REP_EPOCHS = 1e-2, 0.15, 600       # repulsion weight (annealed to 0), width in log|Re|
@@ -105,6 +108,18 @@ class ImagGate(torch.nn.Module):
 
     def forward(self, mu):
         return torch.complex(mu.real, mu.imag * torch.sigmoid(self.gate))
+
+
+class ImagFloor(torch.nn.Module):
+    """Real slots (mask 0): Im mu = 0; complex slots: Im mu = w_min + |Im mu~|."""
+
+    def __init__(self, mask, w_min):
+        super().__init__()
+        self.register_buffer("mask", mask)
+        self.w_min = w_min
+
+    def forward(self, mu):
+        return torch.complex(mu.real, self.mask * (self.w_min + mu.imag.abs()))
 
 
 class ImagMask(torch.nn.Module):
@@ -127,10 +142,18 @@ CONDITIONS = {
     "p4_ms16_T40": ("p4", "multisine", 40.0, 16),
     "p6_e1_T20": ("p6", "e1", 20.0, 0),
     "p6_ms16_T80": ("p6", "multisine", 80.0, 16),  # richest p6 data: pairs identifiable, real poles not
+    "p6_ms16_T80_N4096": ("p6", "multisine", 80.0, 16, 4096),  # dt = 20/4096: -1 identifiable (ratio 11.6)
 }
+N_DEFAULT = 1024                                    # grid: dt = 20 / N (5th entry of a condition, optional)
 
 
-def make_splits(system, family, T, K):
+def unpack(cond):
+    c = CONDITIONS[cond]
+    return (*c[:4], c[4] if len(c) > 4 else N_DEFAULT)
+
+
+def make_splits(system, family, T, K, N=N_DEFAULT):
+    R.DT = 20.0 / N
     f = lambda a: a.to(torch.float32)
     splits = {}
     for name, seed, n in (("train", 0, 200), ("vali", 1, 50), ("test", 2, 100)):
@@ -139,13 +162,13 @@ def make_splits(system, family, T, K):
     return splits, t.numpy()
 
 
-def predicted(system, family, T, K):
+def predicted(system, family, T, K, N=N_DEFAULT):
     """Phase-1 ratios for this configuration (Re mu, per true pole), if computed."""
-    path = R.RESULTS / "e2_richness.json"
+    path = R.RESULTS / ("e2_richness.json" if N == N_DEFAULT else "e2_grid.json")
     if not path.exists():
         return None
     for r in json.loads(path.read_text()):
-        if (r["system"], r["family"], r["T"], r["K"]) == (system, family, T, K):
+        if (r["system"], r["family"], r["T"], r["K"]) == (system, family, T, K) and r.get("n_per_20", N_DEFAULT) == N:
             return dict(floor=r["floor"], cond=r["cond"],
                         ratio={f"{p['pole'][0]:+g}{p['pole'][1]:+g}i": p["Re mu"]["ratio"] for p in r["poles"]})
     return None
@@ -262,23 +285,32 @@ def build(variant, mu_true, beta_true, t, seed):
     n = {"free_min": n_folded, "real_min": n_folded,
          "wide": n_pairs + 1 + 2 * n_real, "mixed": n_pairs + 1 + 2 * n_real,
          "mixed_off": n_pairs + 1 + 2 * n_real, "few": n_pairs + 1 + n_real + 1,
-         "fixed8": N_GENERIC, "gate8": N_GENERIC}.get(variant, mu_true.size)
+         "fixed8": N_GENERIC, "gate8": N_GENERIC, "bound8": N_GENERIC}.get(variant, mu_true.size)
     model = E.Layer1("tied", n, t, "stable")
     rng = np.random.default_rng(seed)
     E.layer_init(model, "warm" if variant == "warm" else "band", mu_true, beta_true, rng)
     if any(full.removesuffix("_ms").endswith(sfx) for sfx in ("_l1", "_l1s", "_prune")):
         torch.nn.utils.parametrize.register_parametrization(model.pr, "beta", Keep(n))
-    if variant in ("fixed8", "gate8"):
+    if variant in ("fixed8", "gate8", "bound8"):
         k = N_GENERIC // 2
         re = -np.exp(np.log(0.05) + (np.arange(k) + rng.uniform()) / k * np.log(100.0))
         with torch.no_grad():
             mu0 = model.pr.mu.clone()
             mu0[..., n - k:] = torch.complex(torch.tensor(re, dtype=torch.float32), mu0[..., n - k:].imag)
             model.pr.mu.copy_(mu0)
-        if variant == "fixed8":
+        if variant in ("fixed8", "bound8"):
             mask = torch.ones(n)
             mask[n - k:] = 0
-            torch.nn.utils.parametrize.register_parametrization(model.pr, "mu", ImagMask(mask.reshape(1, 1, -1)))
+            if variant == "bound8":
+                w_min = 2 * np.pi / (float(t[-1]) + float(t[1] - t[0]))
+                with torch.no_grad():                   # keep the band init's |Im| where possible
+                    mu0 = model.pr.mu.clone()
+                    mu0[..., :n - k] = torch.complex(mu0[..., :n - k].real, (mu0[..., :n - k].imag.abs() - w_min).clamp_min(0))
+                    model.pr.mu.copy_(mu0)
+                par = ImagFloor(mask.reshape(1, 1, -1), w_min)
+            else:
+                par = ImagMask(mask.reshape(1, 1, -1))
+            torch.nn.utils.parametrize.register_parametrization(model.pr, "mu", par)
         else:
             logits = torch.full((n,), GATE_ON)
             logits[n - k:] = GATE_OFF
@@ -323,8 +355,8 @@ def run_name(cond, variant, seed):
 
 
 def run(cond: str, seed: int, device, variant: str = "base"):
-    system, family, T, K = CONDITIONS[cond]
-    data, t = make_splits(system, family, T, K)
+    system, family, T, K, N = unpack(cond)
+    data, t = make_splits(system, family, T, K, N)
     mu_true, beta_true = (np.array(a, dtype=complex) for a in E.SYSTEMS[system])
     t0 = time.time()
     xprune = data["train"][0][:50].to(device)[..., None]
@@ -367,7 +399,7 @@ def run(cond: str, seed: int, device, variant: str = "base"):
                learned_poles=[[float(z.real), float(z.imag)] for z in mu_l],
                gates=(torch.sigmoid(model.pr.parametrizations.mu[0].gate).flatten().detach().cpu().numpy()[active].tolist()
                       if cfg.get("gate") else None),
-               predicted=predicted(system, family, T, K))
+               predicted=predicted(system, family, T, K, N), n_per_20=N)
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / f"{run_name(cond, variant, seed)}.json").write_text(json.dumps(res, indent=1))
     RUNS.mkdir(parents=True, exist_ok=True)

@@ -350,12 +350,56 @@ N = 256 … 8192, at fixed T (outputs exact, so only the layer's discretisation 
   change is visible above that level. Not tested: training on the fine grids
   (N = 4096 at T = 80 is n_t = 16,384, ≈ 4 × the run time).
 
+## Prior-free sizing, second try: complex slots bounded away from the real axis
+
+`bound8` (`e2_train.py`): as `fixed8` (8 slots: 4 real-constrained on a random-offset log
+grid, 4 complex), with the complex slots parameterised as |Im μ| = 2π/T + |Im μ̃| (at
+least one period in the window; 0.31 rad/s at T = 20, 0.079 at T = 80). 60 runs (`_ms` 20
+seeds = 4 groups, plain 10). References on the same group structure.
+
+| system | variant | test (median) | −1 | −0.2 or −2 | all poles | best of 5 | Spearman(val, error) |
+|---|---|---|---|---|---|---|---|
+| p4 | mixed_off_ms (truth-sized, seeds 10–29) | 1.3e-3 | 25 % | 65 % | 5/20 | 2/4 | +0.87 |
+| p4 | fixed8_ms | 1.5e-3 | 40 % | 25 % | 1/20 | 1/4 | +0.13 |
+| p4 | **bound8_ms** | 2.2e-3 | 30 % | 60 % | 4/20 | **3/4** | +0.69 |
+| p4 | bound8 | 6.8e-3 | 40 % | 10 % | 0/10 | – | +0.84 |
+| p6 | mixed_off_ms (truth-sized, seeds 10–29) | 5.6e-4 | 75 % | 30 % | 6/20 | 3/4 | +0.40 |
+| p6 | fixed8_ms | 8.4e-4 | 45 % | 15 % | 3/20 | 1/4 | +0.31 |
+| p6 | bound8_ms | 6.9e-4 | 50 % | 10 % | 2/20 | 0/4 | +0.10 |
+| p6 | bound8 | 2.5e-3 | 80 % | 0 % | 0/10 | – | +0.32 |
+
+- **p4: the bound restores the truth-sized result without the prior** (4/20 vs 5/20 single,
+  3/4 vs 2/4 best of 5) and brings back the link between validation loss and pole error
+  (Spearman 0.69 vs 0.13). Complex slots still sit at the bound with strong damping
+  (−0.75 + 0.31i) in some runs.
+- **p6: no gain.** The fast decay −2 is taken by strongly damped complex slots
+  (−1.10 + 1.93i, −2.21 + 1.38i, |Re| ≈ |Im|), while the real slots coalesce near −0.9.
+  A bound on |Im| alone does not stop a heavily damped oscillation from mimicking a fast
+  decay; the bound is also 4× lower at T = 80.
+- Candidate next: bound the damping of complex slots as well (|Re μ| ≤ c |Im μ|, a
+  minimum quality factor), so that fast decays can only be real.
+
+## Training on a finer grid (p6)
+
+`p6_ms16_T80_N4096` (multisine16, T = 80, dt = 20/4096, n_t = 16,384), `mixed_off_ms`,
+seeds 10–29 (20 runs, ≈ 6 min each), compared with the same seeds at dt = 20/1024.
+
+| dt | −1 | −2 | all poles | best of 5 | test (median) | oracle (floor) |
+|---|---|---|---|---|---|---|
+| 20/1024 | 75 % | 30 % | 6/20 | 3/4 | 5.6e-4 | 4.0e-4 |
+| 20/4096 | 85 % | 35 % | 7/20 | 4/4 | 4.2e-4 | 5.6e-5 |
+
+- Direction as phase 1b predicts (−1 ratio 11.6: slightly better; −2 ratio 4.0: unchanged),
+  but the differences are within seed noise.
+- **Training does not reach the lower floor**: test error stays at 4.2e-4, 7.5 × the
+  fine-grid oracle and near the coarse floor. The finer grid makes −1 distinguishable in
+  principle; the training protocol (1000 epochs, StepLR) does not converge to that
+  precision, so the gain is not realised.
+
 ## Next
 
-- ~~Separate the causes for p4~~, ~~remedies (three rounds)~~, ~~independent best-of-5
-  check~~, ~~learned gate~~ (does not work), ~~grid sweep~~ done (sections above).
-- Prior-free slot sizing: bound complex slots away from the real axis (|Im μ| ≥ 2π/T) with
-  a generous number of real and complex slots; check best-of-5 again.
-- Training on a fine grid for p6 (multisine16, T = 80, N = 4096): does −1 (ratio 11.6)
-  become recoverable, and −2 (4.0) not?
-- More groups for the best-of-5 rates (currently 10 per system).
+- Prior-free sizing: add a damping bound to the complex slots (|Re μ| ≤ c |Im μ|) on top of
+  the |Im μ| ≥ 2π/T bound (`bound8`); check p6 and best of 5 again.
+- Fine grids: a longer / second-order training phase (e.g. L-BFGS polish after Adam) to
+  reach the fine-grid floor, then re-check p6 −1 / −2.
+- More groups for the best-of-5 rates (currently 4–10 per system).

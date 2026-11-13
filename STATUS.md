@@ -41,8 +41,8 @@ Suggested next steps (in order):
    mixed init with real-constrained slots + multi-start recovers 40–70 % of the real
    poles; repulsion / split / sparsity do not add. Best of 5 by validation loss
    (independent check): all poles 8/10 (p4), 7/10 (p6). Learned gate and fixed 4 + 4
-   sizing fail (prior on the real-pole count still needed); grid sweep done. Next:
-   |Im μ| ≥ 2π/T for complex slots, fine-grid training for p6.
+   sizing fail; |Im μ| ≥ 2π/T on complex slots (`bound8`) works for p4, not p6. Fine-grid
+   training does not reach the lower floor. Next: damping bound, L-BFGS polish.
 4. Optional E1 extras: log-parameterised decay rate; untied models with 64 steady modes
    (H1); weight decay excluded from poles; deep LNO v1 at its published size.
 
@@ -55,6 +55,23 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-13 — (C) E2: complex-slot bound (prior-free) and fine-grid training; web page updated
+
+- Done: `e2_train.py` variant `bound8(_ms)` (8 slots, complex slots |Im μ| ≥ 2π/T) and
+  condition `p6_ms16_T80_N4096` (dt = 20/4096; `make_splits` takes N, `predicted` reads
+  `e2_grid.json`); 80 runs. README sections added. E1 web page republished with an E2 section.
+- Results:
+  - p4: `bound8_ms` matches the truth-sized recipe without the prior (all poles 4/20 single,
+    best of 5 3/4; truth-sized 5/20, 2/4); validation–pole-error link restored (0.69).
+  - p6: no gain (2/20, 0/4): strongly damped complex slots (|Re| ≈ |Im|) take −2.
+  - Fine grid (p6, `mixed_off_ms`, seeds 10–29): −1 75 → 85 %, −2 30 → 35 %, best of 5
+    3/4 → 4/4, within noise; test error 4.2e-4 stays 7.5 × above the fine-grid floor
+    (5.6e-5): training does not reach the precision the finer grid allows.
+- Decisions: the |Im| bound is a partial prior-free replacement for the slot-count
+  prior (works for p4, not p6).
+- Next: damping bound on complex slots; second-order polish (L-BFGS) to reach the fine-grid
+  floor; more best-of-5 groups.
 
 ### 2026-11-13 — (C) E2: prior-free slot sizing, grid resolution; E1 report updated
 
