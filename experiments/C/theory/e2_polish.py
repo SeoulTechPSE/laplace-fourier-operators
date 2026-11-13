@@ -58,7 +58,7 @@ def score(model, data, mu_true, beta_true, device):
                 learned_poles=[[float(z.real), float(z.imag)] for z in mu_l])
 
 
-def polish(model, data, device):
+def polish(model, data, device, maxiter=MAXITER):
     xtr, ytr = (a.to(device)[..., None] for a in data["train"])
     ps = [p for p in model.parameters() if p.requires_grad]
     real = [torch.view_as_real(p) if p.is_complex() else p for p in ps]
@@ -87,13 +87,13 @@ def polish(model, data, device):
     x, fx, nit, nfev, msgs = x0, 1.0, 0, 0, []
     for _ in range(RESTARTS):                              # restart after a line-search stall (float32 noise)
         res = minimize(f, x, jac=True, method="L-BFGS-B",
-                       options=dict(maxiter=MAXITER - nit, maxfun=2 * MAXITER, maxcor=HISTORY, ftol=0.0, gtol=0.0))
+                       options=dict(maxiter=maxiter - nit, maxfun=2 * maxiter, maxcor=HISTORY, ftol=0.0, gtol=0.0))
         nit, nfev = nit + int(res.nit), nfev + int(res.nfev)
         msgs.append(str(res.message))
         gain = fx - res.fun
         if res.fun < fx:
             x, fx = res.x, float(res.fun)
-        if nit >= MAXITER or gain < 1e-4:
+        if nit >= maxiter or gain < 1e-4:
             break
     put(x)
     return dict(train_before=loss0, train_after=fx * loss0, nit=nit, nfev=nfev, message=" | ".join(msgs))

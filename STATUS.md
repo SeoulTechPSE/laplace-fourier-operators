@@ -11,7 +11,7 @@ Each session appends one entry using the template at the bottom.
 | (C) Pole audit of existing models | 3–5 | **in progress**: E1 done, draft report (`E1_report.md`, updated with E2); paper decisions open | — |
 | (D) Non-periodic input representation | 4–8 | not started | differs from padded FNO? (month 8) |
 | (A) Pole layer and linear validation | 5–10 | not started | dispersion relations recovered (month 10) |
-| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound + L-BFGS polish) done (`experiments/C/theory/`) | — |
+| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done (`experiments/C/theory/`) | — |
 | (A) Application 1: process dynamics | 11–16 | not started | — |
 | (D) Initial conditions and rollout | 13–19 | not started | — |
 | (A) Application 2: Cahn–Hilliard | 17–22 | not started | recover k_c, k_max (month 20) |
@@ -43,9 +43,10 @@ Suggested next steps (in order):
    (independent check): all poles 8/10 (p4), 7/10 (p6). Learned gate and fixed 4 + 4
    sizing fail; |Im μ| ≥ 2π/T on complex slots (`bound8`) works for p4, not p6. Adding a
    damping bound (`damp8`, |Re μ| < 0.5 |Im μ|) and an L-BFGS polish gives a prior-free
-   recipe: p4 85 % single; p6 on the fine grid 50 % single, 3/4 best of 5 (= truth-sized).
-   On the fine grid reaching the floor certifies the poles (8/8). Next: estimate the floor
-   without the truth; carry the recipe to ALNO / LFNO / deep (E3/E4).
+   recipe. Truth-free single-slot restarts (`e2_rescue.py`) then bring the runs to the floor:
+   p6 (dt = 20/4096) 90 % single, −2 in 20/20. A truth-free floor estimate + consensus over
+   5 runs (`e2_floor.py`) reports all p6 poles in 4/4 groups with no false pole. Next: carry
+   the recipe to ALNO / LFNO / deep (E3/E4); noise; E1 data.
 4. Optional E1 extras: log-parameterised decay rate; untied models with 64 steady modes
    (H1); weight decay excluded from poles; deep LNO v1 at its published size.
 
@@ -58,6 +59,28 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-13 — (C) E2: truth-free restarts and floor certificate; web page updated
+
+- Done: `e2_rescue.py` (single-slot moves with residue 0 on a grid, 300-iteration L-BFGS
+  screen, accept at ≥ 1 % lower training loss, ≤ 3 rounds; 120 polished runs, seeds 10–29)
+  and `e2_floor.py` (floor estimate = lowest training loss in a group of 5; certified
+  = < 1.5 ×; consensus = effective poles shared by ≥ 2/3 of certified runs). README
+  sections added; E1/E2 web page republished (v3).
+- Results:
+  - Restarts: p6 dt = 20/4096 `damp8_ms` all poles 50 → 90 %, −2 50 → 100 %, train/oracle
+    3.5 → 0.93, test 5.2e-5 (oracle 5.6e-5); p4 truth-sized 65 → 95 %; p6 dt = 20/1024
+    `damp8_ms` 35 → 80 %, `mixed_off_ms` 40 → 35 % (a damped spare complex slot takes
+    part of −2).
+  - Certificate: after the restarts the estimate is 0.91 × the oracle on the fine grid and
+    the consensus has all four p6 poles in 4/4 groups with no false pole (`damp8_ms`).
+    After the polish alone it fails on the fine grid (usually one run per group near the floor).
+  - Correction to the previous entry: at dt = 20/1024 the oracle is not the floor of the
+    8-slot model (restarted runs reach 0.7 × the oracle). −2 is biased there (median error
+    0.054 vs 0.024 on the fine grid), not unidentifiable.
+- Decisions: the prior-free recipe is now 8 bounded slots + multi-start + Adam + polish +
+  restarts + consensus over 5 runs + dt refinement. Tolerances were set once, not tuned.
+- Next: ALNO / LFNO and the deep setting (E3/E4); output noise; the consensus on the E1 data.
 
 ### 2026-11-13 — (C) E2: damping-bounded complex slots and L-BFGS polish
 

@@ -13,6 +13,8 @@ families) make the poles practically identifiable, and does training then recove
 | `e2_richness.py` | phase 1: local identifiability of the tied layer at the truth, over 46 data configurations (p4, p6) | `results/e2_richness.md` / `.json` |
 | `e2_grid.py` | phase 1b: the phase-1 analysis over the time step dt = 20/N, N = 256–8192 | `results/e2_grid.md` / `.json` |
 | `e2_select.py` | best of 5 by validation loss on independent seeds 10–59 | `results/e2_select.md` / `.json` |
+| `e2_rescue.py` | truth-free single-slot restarts of polished runs | `results/e2_rescue/*.json`, `results/e2_rescue.md` |
+| `e2_floor.py` | floor certificate without the truth: estimated floor + consensus poles | `results/e2_floor.md` / `.json` |
 | `e2_polish.py` | L-BFGS-B polish of saved Adam checkpoints (paired before/after), floor-certificate table | `results/e2_polish/*.json`, `results/e2_polish.md` |
 | `e2_train.py` | phase 2: train the E1 tied layer on selected configurations, 10 seeds; `--variant` controls (warm, no spare slot, real-constrained slots) | `results/e2_train/*.json`, `results/e2_train.md` |
 
@@ -455,8 +457,11 @@ variants), binned by final training loss / oracle error:
   wrong basins.
 - **Fine grid + polish confirms phase 1b.** At dt = 20/4096 every run that reaches the
   floor recovers all four p6 poles (8/8), and the floor is reached only near the truth.
-  At dt = 20/1024 most runs reach the floor (53/70) but only 20 of them recover the poles.
-  There the loss cannot tell, exactly as the profiled ratios (−1: 1.8, −2: 0.6) predict.
+  At dt = 20/1024 most runs reach the oracle level (53/70) but only 20 of them recover the poles.
+  *Corrected by the restarts below:* the oracle is not the floor of the 8-slot model there.
+  Restarted runs go down to 0.7 × the oracle, and at that level `damp8` recovers −2 in
+  85 % of runs. The coarse grid biases −2 (median error 0.054, against 0.024 at
+  dt = 20/4096) rather than hiding it.
 - The remaining fine-grid failures are local minima (train/oracle 3–12): a damped spare
   complex slot holding −2 (truth-sized `mixed_off`, which has no damping bound), or
   coalesced real slots. A run's distance to the floor flags them without the truth.
@@ -466,13 +471,93 @@ variants), binned by final training loss / oracle error:
   multi-start, Adam, L-BFGS polish, a dt fine enough for the poles to be identifiable, and
   the floor ratio as a check.
 
+## Truth-free restarts after the polish
+
+`e2_rescue.py`: each polished run gets up to 3 rounds of single-slot moves. One slot is
+moved, with residue 0, to a grid point: real slots to Re ∈ −geomspace(0.05, 5, 8),
+complex slots to Im ∈ geomspace(0.3, 5, 8) with Re = −0.1 Im. Each candidate gets a
+300-iteration L-BFGS screen. The best candidate is accepted if training loss falls by
+≥ 1 %, then fully polished. Every run gets the same treatment and only the training loss
+is used. 120 runs (seeds 10–29), 5–7 min each with 12 processes in parallel.
+Before = after the polish.
+
+| condition | variant | train/oracle | test (median) | all poles | best of 5 | −1 | −2 (or −0.2) |
+|---|---|---|---|---|---|---|---|
+| p4 | mixed_off_ms | 0.90 → 0.86 | 5.7e-4 → 5.5e-4 | 65 → **95 %** | 3/4 → 4/4 | 65 → 95 % | 95 → 100 % |
+| p4 | damp8_ms | 1.11 → 0.86 | 6.9e-4 → 5.4e-4 | 85 → 90 % | 4/4 → 4/4 | 90 → 100 % | 90 → 90 % |
+| p6, dt 20/1024 | mixed_off_ms | 1.08 → 0.73 | 4.3e-4 → 2.9e-4 | 40 → 35 % | 2/4 → 0/4 | 80 → 95 % | 40 → 40 % |
+| p6, dt 20/1024 | damp8_ms | 0.93 → 0.72 | 3.7e-4 → 2.9e-4 | 35 → **80 %** | 2/4 → 4/4 | 60 → 90 % | 45 → 85 % |
+| p6, dt 20/4096 | mixed_off_ms | 5.03 → 0.92 | 2.8e-4 → 5.2e-5 | 45 → 80 % | 4/4 → 3/4 | 90 → 100 % | 45 → 80 % |
+| p6, dt 20/4096 | **damp8_ms** | 3.50 → 0.93 | 2.0e-4 → 5.2e-5 | 50 → **90 %** | 3/4 → **4/4** | 65 → 90 % | 50 → **100 %** |
+
+- **The restarts remove almost all local minima.** On the fine grid, training loss falls
+  from 3.5–5 × to 0.93 × the oracle (median), and test error reaches the oracle
+  (5.2e-5 vs 5.6e-5). With the damping bound, prior-free p6 now recovers every pole in
+  90 % of single runs and −2 in all 20.
+- **The damping bound matters most once the optimiser is good.** Without it
+  (`mixed_off_ms`, the truth-sized recipe) the restarts lower the loss further on the
+  coarse grid, but a damped spare complex slot (−2.40 + 0.73i, −1.27 + 0.31i) takes part
+  of −2 (35 % all poles). With it, the fast decay can only be real (80 %).
+- **On the coarse grid every restarted run ends at the same level** (0.67–0.77 × the
+  oracle). The extra slots fit the discretisation error of the truth (e.g. a slot at
+  −0.50 + 5.0i, at the band edge), so the minimum is below the oracle and shifted from it.
+  −2 is biased (median error 0.054 vs 0.024 on the fine grid) rather than unidentifiable.
+  The phase-1 ratio (0.6) measures this bias relative to a 10 % shift; it does not mean
+  the minimum is far from the truth.
+- Cost: 64 candidates × up to 3 rounds per run, 5–7 min with 12 processes on the 4090,
+  about as much as the Adam phase.
+
+## Floor certificate without the truth
+
+`e2_floor.py`, applied to groups of 5 runs (seeds 10–29). The floor estimate is the
+lowest training loss in the group, and runs within 1.5 × of it count as certified.
+Effective poles are the folded learned poles, with slots below 2 % of the summed
+impulse-response norm dropped and slots within 10 % merged. The consensus is the set of
+effective poles found, within 10 %, in ≥ 2/3 of the certified runs (≥ 2 runs needed). The
+truth is used only to score the consensus: per true pole, how many groups contain it, and
+how many consensus poles match no true pole ("false").
+
+| stage | condition | variant | estimate / oracle | certified: all recovered | complex pairs | −1 | −2 | false |
+|---|---|---|---|---|---|---|---|---|
+| polish | p6, dt 20/1024 | damp8_ms | 0.76 | 6/15 | 4/4, 4/4 | 4/4 | 3/4 | 1 |
+| polish | p6, dt 20/4096 | mixed_off_ms | 1.11 | 4/4 | 0/4, 0/4 | 0/4 | 0/4 | 0 |
+| polish | p6, dt 20/4096 | damp8_ms | 1.68 | 6/8 | 3/4, 3/4 | 3/4 | 2/4 | 1 |
+| restart | p4 | mixed_off_ms | 0.86 | 19/20 | 4/4 | 4/4 | 4/4 (−0.2) | 0 |
+| restart | p4 | damp8_ms | 0.85 | 18/20 | 4/4 | 4/4 | 3/4 (−0.2) | 0 |
+| restart | p6, dt 20/1024 | mixed_off_ms | 0.69 | 7/20 | 4/4, 4/4 | 4/4 | 1/4 | 0 |
+| restart | p6, dt 20/1024 | damp8_ms | 0.67 | 16/20 | 4/4, 4/4 | 4/4 | 3/4 | 2 |
+| restart | p6, dt 20/4096 | mixed_off_ms | 0.91 | 16/20 | 4/4, 4/4 | 4/4 | 4/4 | 1 |
+| restart | p6, dt 20/4096 | **damp8_ms** | 0.91 | 18/20 | 4/4, 4/4 | 4/4 | **4/4** | **0** |
+
+(full table: `results/e2_floor.md`)
+
+- **After the polish alone the certificate cannot be applied on the fine grid.** In a group
+  of 5, typically only the lowest-loss run is near the floor, so there is no consensus
+  (truth-sized: 0/4 groups). The estimate is also off (1.1–1.7 × the oracle).
+- **After the restarts it works without the truth.** All runs of a group reach the
+  same floor, the estimate is within 10 % of the oracle (0.91), and on the fine grid every
+  group's consensus contains all four p6 poles with no false pole (`damp8_ms`). The
+  consensus is the reported model: the poles that independent runs at the floor share.
+- On the coarse grid the estimate falls below the oracle (0.67–0.69). The consensus misses
+  −2 in one of four groups (`damp8_ms`) and adds false poles (pooled: −1.08 next to −0.98).
+  A truth-free way to choose the grid is to shrink dt until the consensus stops changing.
+  Here it changes from 20/1024 to 20/4096: −2 is found in every group and the false poles
+  vanish. A third grid would be needed to show that it has settled.
+- Tolerances (1.5 ×, 10 %, 2 %, 2/3) were set once and not tuned. The p4 and p6 results
+  come from the same settings.
+
+**Prior-free recipe, final form:** 8 slots (4 real on a random log grid, 4 complex with
+|Im μ| ≥ 2π/T and |Re μ| < 0.5 |Im μ|) → multi-start → Adam → L-BFGS polish →
+single-slot restarts → in groups of 5, floor estimate and consensus poles → refine dt
+until the consensus is stable (checked here on two grids only). On rich data this recovers all poles of p4 and p6, with no
+use of the true poles.
+
 ## Next
 
-- Floor certificate in practice: the oracle floor is unknown without the truth; estimate
-  it (e.g. from the lowest training loss over restarts, or from the dt-convergence of the
-  loss) and check whether "close to the floor" can still be decided.
-- Restarts from the polished point for runs far from the floor (e.g. re-initialise the
-  slot nearest a coalesced pair), then polish again.
-- More groups for the best-of-5 rates (currently 4–10 per system); c sensitivity between
-  0.35 and 0.7.
-- Carry the recipe (damping-bounded slots + polish) to ALNO / LFNO and the deep setting (E3/E4).
+- Carry the recipe to ALNO / LFNO (steady branch present) and to the deep setting (E3/E4);
+  in the deep setting the consensus is over channels and layers as well as runs.
+- Noise in the outputs: the certificate and the consensus under additive noise (the
+  floor is then the noise level).
+- Back to the E1 data (step / ramp / PRBS / smooth, T = 20): which poles the consensus
+  reports there, as the truth-free version of E1 finding 3.
+- More groups for the best-of-5 rates; c sensitivity between 0.35 and 0.7.
