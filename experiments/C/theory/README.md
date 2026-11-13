@@ -210,8 +210,9 @@ Findings:
 
 1. **Both remedies remove the coalescence** (11 / 9 coalesced pairs over 10 seeds →
    0–2), **but recovery does not improve**: all rows are within seed noise of
-   `mixed_off_ms` (binomial s.e. ≈ 15 % at 10 seeds). One p4 `rep` seed diverged in
-   loss (test 0.3; the penalty while active disturbs the fit), hence the large mean.
+   `mixed_off_ms` (binomial s.e. ≈ 15 % at 10 seeds). Two p4 `rep` seeds (2, 5) end
+   in a poor minimum (test 0.24 / 0.28, the ±3i pair lost; no divergence), hence the
+   large mean; the other eight reach 2.7e-3 to 7.9e-3.
 2. **The failure moves from coalescence to bracketing.** Failed runs now have the real
    slots spread out, with two slots on either side of a true pole, e.g. p4:
    −0.05 / −0.31 around −0.2 and −1.1 / −1.58 around −1; p6: −0.72 / −2.06 around −1 / −2.
