@@ -1,0 +1,27 @@
+# E2: L-BFGS polish after Adam
+
+Each Adam checkpoint polished with L-BFGS-B (full batch, data loss, ≤ 3000 iterations); before → after on the same runs. 'all' = every true pole within relative error 0.1. Best of 5: lowest validation loss in disjoint groups of 5 consecutive seeds (mixed_off_ms: seeds 10-59 as in e2_select; fine grid and damp8*: 10-29; bound8: 0-19, as trained). ρ = Spearman(validation loss, mean pole error) over runs.
+
+| condition | variant | runs | test rel. L2 | oracle | train/oracle ratio | all (single) | best of 5: all | ρ | per pole recovered |
+|---|---|---|---|---|---|---|---|---|---|
+| p4_ms16_T20 | mixed_off_ms | 50 | 1.5e-03 ± 1.0e-03 → 7.3e-04 ± 3.4e-04 | 5.9e-04 | 0.9 | 38% → 74% | 8/10 → 9/10 | +0.87 → +0.65 | -0.4+3i 100% → 100%, -1 44% → 76%, -0.2 58% → 90% |
+| p6_ms16_T80 | mixed_off_ms | 50 | 6.0e-04 ± 2.8e-04 → 4.7e-04 ± 1.3e-04 | 4.0e-04 | 1.1 | 32% → 38% | 7/10 → 6/10 | +0.32 → +0.56 | -0.5+1.5i 100% → 100%, -0.3+4i 100% → 100%, -1 70% → 76%, -2 32% → 38% |
+| p6_ms16_T80_N4096 | mixed_off_ms | 20 | 4.4e-04 ± 2.2e-04 → 3.0e-04 ± 1.8e-04 | 5.6e-05 | 5.0 | 35% → 45% | 4/4 → 4/4 | +0.62 → +0.72 | -0.5+1.5i 100% → 100%, -0.3+4i 100% → 100%, -1 85% → 90%, -2 35% → 45% |
+| p4_ms16_T20 | bound8_ms | 20 | 3.5e-03 ± 5.3e-03 → 2.5e-03 ± 5.4e-03 | 5.9e-04 | 1.1 | 20% → 35% | 3/4 → 2/4 | +0.76 → +0.55 | -0.4+3i 100% → 100%, -1 30% → 35%, -0.2 60% → 80% |
+| p6_ms16_T80 | bound8_ms | 20 | 9.5e-04 ± 5.7e-04 → 4.8e-04 ± 1.7e-04 | 4.0e-04 | 1.1 | 10% → 20% | 0/4 → 0/4 | +0.21 → +0.38 | -0.5+1.5i 100% → 100%, -0.3+4i 100% → 100%, -1 50% → 80%, -2 10% → 20% |
+| p4_ms16_T20 | damp8_ms | 20 | 1.7e-03 ± 8.1e-04 → 7.4e-04 ± 2.0e-04 | 5.9e-04 | 1.1 | 65% → 85% | 4/4 → 4/4 | +0.82 → +0.32 | -0.4+3i 100% → 100%, -1 70% → 90%, -0.2 75% → 90% |
+| p6_ms16_T80 | damp8_ms | 20 | 1.6e-03 ± 1.1e-03 → 6.9e-04 ± 6.7e-04 | 4.0e-04 | 0.9 | 15% → 35% | 1/4 → 2/4 | +0.62 → +0.61 | -0.5+1.5i 95% → 100%, -0.3+4i 100% → 100%, -1 55% → 60%, -2 20% → 45% |
+| p4_ms16_T20 | damp8w_ms | 20 | 2.8e-03 ± 2.0e-03 → 8.9e-04 ± 4.7e-04 | 5.9e-04 | 1.2 | 35% → 65% | 4/4 → 3/4 | +0.77 → +0.43 | -0.4+3i 100% → 100%, -1 45% → 75%, -0.2 50% → 80% |
+| p6_ms16_T80 | damp8w_ms | 20 | 1.3e-03 ± 6.7e-04 → 6.1e-04 ± 4.3e-04 | 4.0e-04 | 1.2 | 5% → 20% | 1/4 → 3/4 | +0.56 → +0.85 | -0.5+1.5i 100% → 100%, -0.3+4i 100% → 100%, -1 55% → 70%, -2 5% → 20% |
+| p6_ms16_T80_N4096 | damp8_ms | 20 | 1.6e-03 ± 1.1e-03 → 5.6e-04 ± 7.5e-04 | 5.6e-05 | 3.5 | 15% → 50% | 1/4 → 3/4 | +0.52 → +0.75 | -0.5+1.5i 95% → 100%, -0.3+4i 100% → 100%, -1 55% → 65%, -2 20% → 50% |
+
+train/oracle ratio: median final training loss after the polish / test oracle error (the oracle on the training set is of the same size).
+
+## p6: does reaching the floor certify the poles?
+
+All polished p6 multisine16 T = 80 runs (seeds 10-29, every variant above), binned by final training loss / oracle error; 'all' = every true pole recovered.
+
+| grid | train/oracle < 1.5 | 1.5–3 | ≥ 3 |
+|---|---|---|---|
+| dt = 20/1024 | 20/53 | 0/11 | 0/6 |
+| dt = 20/4096 | 8/8 | 5/6 | 6/26 |

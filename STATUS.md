@@ -11,7 +11,7 @@ Each session appends one entry using the template at the bottom.
 | (C) Pole audit of existing models | 3–5 | **in progress**: E1 done, draft report (`E1_report.md`, updated with E2); paper decisions open | — |
 | (D) Non-periodic input representation | 4–8 | not started | differs from padded FNO? (month 8) |
 | (A) Pole layer and linear validation | 5–10 | not started | dispersion relations recovered (month 10) |
-| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, first remedies done (`experiments/C/theory/`) | — |
+| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound + L-BFGS polish) done (`experiments/C/theory/`) | — |
 | (A) Application 1: process dynamics | 11–16 | not started | — |
 | (D) Initial conditions and rollout | 13–19 | not started | — |
 | (A) Application 2: Cahn–Hilliard | 17–22 | not started | recover k_c, k_max (month 20) |
@@ -41,8 +41,11 @@ Suggested next steps (in order):
    mixed init with real-constrained slots + multi-start recovers 40–70 % of the real
    poles; repulsion / split / sparsity do not add. Best of 5 by validation loss
    (independent check): all poles 8/10 (p4), 7/10 (p6). Learned gate and fixed 4 + 4
-   sizing fail; |Im μ| ≥ 2π/T on complex slots (`bound8`) works for p4, not p6. Fine-grid
-   training does not reach the lower floor. Next: damping bound, L-BFGS polish.
+   sizing fail; |Im μ| ≥ 2π/T on complex slots (`bound8`) works for p4, not p6. Adding a
+   damping bound (`damp8`, |Re μ| < 0.5 |Im μ|) and an L-BFGS polish gives a prior-free
+   recipe: p4 85 % single; p6 on the fine grid 50 % single, 3/4 best of 5 (= truth-sized).
+   On the fine grid reaching the floor certifies the poles (8/8). Next: estimate the floor
+   without the truth; carry the recipe to ALNO / LFNO / deep (E3/E4).
 4. Optional E1 extras: log-parameterised decay rate; untied models with 64 steady modes
    (H1); weight decay excluded from poles; deep LNO v1 at its published size.
 
@@ -55,6 +58,27 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-13 — (C) E2: damping-bounded complex slots and L-BFGS polish
+
+- Done: `e2_train.py` variants `damp8(_ms)` / `damp8w(_ms)` (as `bound8`, plus
+  Re μ = −c |Im μ| σ(a) on complex slots, c = 0.5 / 1); 100 runs (p4, p6 at dt = 20/1024,
+  seeds 10–29; p6 at dt = 20/4096). New `e2_polish.py`: L-BFGS-B polish of saved Adam
+  checkpoints (paired), 280 runs polished; README sections added.
+- Results:
+  - Adam only: p4 `damp8_ms` 65 % all poles (truth-sized `mixed_off_ms` 38 %); p6 absorbers
+    gone, but −2 still missed at dt = 20/1024 (15 %).
+  - Polish: p4 38 → 74 % (truth-sized), 65 → 85 % (`damp8_ms`); p6 coarse 32 → 38 %;
+    p6 fine-grid `damp8_ms` 15 → 50 %, best of 5 1/4 → 3/4 (truth-sized fine grid 45 %, 4/4).
+  - Floor certificate (p6): at dt = 20/4096 every run within 1.5 × the oracle floor
+    recovers all poles (8/8); at dt = 20/1024 only 20/53 do, as phase 1 predicts.
+  - With 8 slots on the coarse grid the test error falls below the oracle (3.0e-4 vs 4.0e-4).
+- Decisions: the prior-free recipe is 8 slots (4 real, 4 complex with |Im μ| ≥ 2π/T and
+  |Re μ| < 0.5 |Im μ|) + multi-start + Adam + L-BFGS polish + a dt at which the poles are
+  identifiable; c = 1 is too loose. Polishing is cheap (seconds) and should follow Adam
+  in all later pole-recovery runs.
+- Next: estimate the floor without the truth (certificate in practice); restarts for runs
+  far from the floor; more best-of-5 groups; carry the recipe to ALNO / LFNO / deep.
 
 ### 2026-11-13 — (C) E2: complex-slot bound (prior-free) and fine-grid training; web page updated
 

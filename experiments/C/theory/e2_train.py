@@ -53,6 +53,9 @@ Remedies (E2 -> E3/E4 candidates):
   bound8      as fixed8, but the complex slots are bounded away from the real axis:
               |Im mu| = 2 pi / T + |Im mu~| (at least one period in the window), so a slow decay
               can only be taken by a real slot; still no use of the true pole count
+  damp8       as bound8, and the complex slots are also lightly damped: |Re mu| < c |Im mu| with
+              c = 0.5 (Re mu = -c |Im mu| sigmoid(a), a learned), so a heavily damped oscillation
+              cannot stand in for a fast real decay; damp8w: c = 1. True complex poles: |Re|/|Im| <= 0.33
   *_ms        multi-start: 8 candidate inits (seeds 100 * seed + c) trained 100 epochs each,
               the best on validation continues with the full protocol (1000 epochs, fresh optimiser)
 The real constraint is a parametrisation of ``pr.mu`` (Im multiplied by a 0/1 mask), applied
@@ -88,7 +91,8 @@ RECOVERED = 0.1
 VARIANTS = ("base", "warm", "free_min", "real_spare", "real_min", "wide", "mixed", "base_ms", "mixed_ms", "mixed_off", "mixed_off_ms",
             "mixed_off_rep", "mixed_off_rep_ms", "mixed_off_split", "mixed_off_split_ms",
             "mixed_off_l1", "mixed_off_l1_ms", "mixed_off_l1s_ms", "mixed_off_prune_ms", "few", "few_ms",
-            "fixed8", "fixed8_ms", "gate8", "gate8_ms", "bound8", "bound8_ms")
+            "fixed8", "fixed8_ms", "gate8", "gate8_ms", "bound8", "bound8_ms", "damp8", "damp8_ms", "damp8w", "damp8w_ms")
+DAMP = {"damp8": 0.5, "damp8w": 1.0}                       # complex slots: |Re mu| <= c |Im mu|
 N_GENERIC, GATE_ON, GATE_OFF = 8, 3.0, -5.0               # prior-free variants: 8 slots; gate logits
 MS_CANDIDATES, MS_EPOCHS = 8, 100
 REP_LAMBDA, REP_SIGMA, REP_EPOCHS = 1e-2, 0.15, 600       # repulsion weight (annealed to 0), width in log|Re|
@@ -120,6 +124,21 @@ class ImagFloor(torch.nn.Module):
 
     def forward(self, mu):
         return torch.complex(mu.real, self.mask * (self.w_min + mu.imag.abs()))
+
+
+class DampFloor(torch.nn.Module):
+    """As ImagFloor, and complex slots are lightly damped: Re mu = -c Im mu sigmoid(Re mu~),
+    so |Re mu| < c |Im mu| (damping ratio < c / sqrt(1 + c^2)); real slots: Re mu = Re mu~."""
+
+    def __init__(self, mask, w_min, c):
+        super().__init__()
+        self.register_buffer("mask", mask)
+        self.w_min, self.c = w_min, c
+
+    def forward(self, mu):
+        im = self.w_min + mu.imag.abs()
+        re_c = -self.c * im * torch.sigmoid(mu.real)
+        return torch.complex(self.mask * re_c + (1 - self.mask) * mu.real, self.mask * im)
 
 
 class ImagMask(torch.nn.Module):
@@ -285,23 +304,32 @@ def build(variant, mu_true, beta_true, t, seed):
     n = {"free_min": n_folded, "real_min": n_folded,
          "wide": n_pairs + 1 + 2 * n_real, "mixed": n_pairs + 1 + 2 * n_real,
          "mixed_off": n_pairs + 1 + 2 * n_real, "few": n_pairs + 1 + n_real + 1,
-         "fixed8": N_GENERIC, "gate8": N_GENERIC, "bound8": N_GENERIC}.get(variant, mu_true.size)
+         "fixed8": N_GENERIC, "gate8": N_GENERIC, "bound8": N_GENERIC, "damp8": N_GENERIC, "damp8w": N_GENERIC}.get(variant, mu_true.size)
     model = E.Layer1("tied", n, t, "stable")
     rng = np.random.default_rng(seed)
     E.layer_init(model, "warm" if variant == "warm" else "band", mu_true, beta_true, rng)
     if any(full.removesuffix("_ms").endswith(sfx) for sfx in ("_l1", "_l1s", "_prune")):
         torch.nn.utils.parametrize.register_parametrization(model.pr, "beta", Keep(n))
-    if variant in ("fixed8", "gate8", "bound8"):
+    if variant in ("fixed8", "gate8", "bound8", "damp8", "damp8w"):
         k = N_GENERIC // 2
         re = -np.exp(np.log(0.05) + (np.arange(k) + rng.uniform()) / k * np.log(100.0))
         with torch.no_grad():
             mu0 = model.pr.mu.clone()
             mu0[..., n - k:] = torch.complex(torch.tensor(re, dtype=torch.float32), mu0[..., n - k:].imag)
             model.pr.mu.copy_(mu0)
-        if variant in ("fixed8", "bound8"):
+        if variant in ("fixed8", "bound8", "damp8", "damp8w"):
             mask = torch.ones(n)
             mask[n - k:] = 0
-            if variant == "bound8":
+            if variant in DAMP:
+                w_min, c = 2 * np.pi / (float(t[-1]) + float(t[1] - t[0])), DAMP[variant]
+                with torch.no_grad():                   # band init's |Im| kept where possible, its Re
+                    mu0 = model.pr.mu.clone()           # clipped into the cone and stored as a logit
+                    im = mu0[..., :n - k].imag.abs().clamp_min(w_min)
+                    q = (mu0[..., :n - k].real.abs() / (c * im)).clamp(0.02, 0.98)
+                    mu0[..., :n - k] = torch.complex(torch.log(q / (1 - q)), im - w_min)
+                    model.pr.mu.copy_(mu0)
+                par = DampFloor(mask.reshape(1, 1, -1), w_min, c)
+            elif variant == "bound8":
                 w_min = 2 * np.pi / (float(t[-1]) + float(t[1] - t[0]))
                 with torch.no_grad():                   # keep the band init's |Im| where possible
                     mu0 = model.pr.mu.clone()

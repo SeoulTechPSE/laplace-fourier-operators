@@ -13,6 +13,7 @@ families) make the poles practically identifiable, and does training then recove
 | `e2_richness.py` | phase 1: local identifiability of the tied layer at the truth, over 46 data configurations (p4, p6) | `results/e2_richness.md` / `.json` |
 | `e2_grid.py` | phase 1b: the phase-1 analysis over the time step dt = 20/N, N = 256–8192 | `results/e2_grid.md` / `.json` |
 | `e2_select.py` | best of 5 by validation loss on independent seeds 10–59 | `results/e2_select.md` / `.json` |
+| `e2_polish.py` | L-BFGS-B polish of saved Adam checkpoints (paired before/after), floor-certificate table | `results/e2_polish/*.json`, `results/e2_polish.md` |
 | `e2_train.py` | phase 2: train the E1 tied layer on selected configurations, 10 seeds; `--variant` controls (warm, no spare slot, real-constrained slots) | `results/e2_train/*.json`, `results/e2_train.md` |
 
 ```
@@ -396,10 +397,82 @@ seeds 10–29 (20 runs, ≈ 6 min each), compared with the same seeds at dt = 20
   principle; the training protocol (1000 epochs, StepLR) does not converge to that
   precision, so the gain is not realised.
 
+## Prior-free sizing, third try: damping-bounded complex slots
+
+`damp8` (`e2_train.py`): as `bound8`, and the complex slots are lightly damped,
+Re μ = −c |Im μ| σ(a) (a learned), so |Re μ| < c |Im μ|; c = 0.5 (damping ratio < 0.45),
+`damp8w`: c = 1. The true complex poles have |Re|/|Im| ≤ 0.33; the p6 absorbers seen with
+`bound8` had 0.57 and 1.6. Still no use of the true pole count. `_ms`, seeds 10–29
+(4 groups), 80 runs. Adam only (before the polish below):
+
+| system | variant | all poles | best of 5 | −1 | −0.2 or −2 |
+|---|---|---|---|---|---|
+| p4 | mixed_off_ms (truth-sized, seeds 10–59) | 38 % | 8/10 | 44 % | 58 % |
+| p4 | bound8_ms (seeds 0–19) | 20 % | 3/4 | 30 % | 60 % |
+| p4 | **damp8_ms** | **65 %** | **4/4** | 70 % | 75 % |
+| p4 | damp8w_ms | 35 % | 4/4 | 45 % | 50 % |
+| p6 | mixed_off_ms (truth-sized, seeds 10–59) | 32 % | 7/10 | 70 % | 32 % |
+| p6 | bound8_ms (seeds 0–19) | 10 % | 0/4 | 50 % | 10 % |
+| p6 | damp8_ms | 15 % | 1/4 | 55 % | 20 % |
+| p6 | damp8w_ms | 5 % | 1/4 | 55 % | 5 % |
+
+- **p4: the damping bound beats the truth-sized recipe** (65 % vs 38 % single). c = 1 is
+  too loose (35 %).
+- **p6 (dt = 20/1024): the absorbers are gone, but −2 is still missed.** No complex slot
+  holds −2 any more. The failures are either near misses (−2 at −2.2 to −2.6, error
+  0.1–0.3) at the floor, or local minima where the real slots coalesce near −0.8 (test
+  ≈ 2e-3). The near misses reach the floor (see the certificate table below), so at this
+  dt the data do not pin −2 (phase 1: ratio 0.6). With 8 slots the polished test error
+  is *below* the oracle (3.0e-4 vs 4.0e-4): the extra slots fit the discretisation error
+  of the truth.
+
+## L-BFGS polish after Adam
+
+`e2_polish.py`: every saved Adam checkpoint is polished with L-BFGS-B (scipy, full
+training batch, data loss only, ≤ 3000 iterations, restarted after a line-search stall;
+seconds per run). Before and after are the same run (`results/e2_polish.md`, 280 runs).
+
+| condition | variant | test, Adam → polish | oracle | all poles | best of 5 |
+|---|---|---|---|---|---|
+| p4 | mixed_off_ms | 1.5e-3 → 7.3e-4 | 5.9e-4 | 38 % → 74 % | 8/10 → 9/10 |
+| p4 | damp8_ms | 1.7e-3 → 7.4e-4 | 5.9e-4 | 65 % → **85 %** | 4/4 → 4/4 |
+| p6, dt 20/1024 | mixed_off_ms | 6.0e-4 → 4.7e-4 | 4.0e-4 | 32 % → 38 % | 7/10 → 6/10 |
+| p6, dt 20/1024 | damp8_ms | 1.6e-3 → 6.9e-4 | 4.0e-4 | 15 % → 35 % | 1/4 → 2/4 |
+| p6, dt 20/4096 | mixed_off_ms | 4.4e-4 → 3.0e-4 | 5.6e-5 | 35 % → 45 % | 4/4 → 4/4 |
+| p6, dt 20/4096 | **damp8_ms** (prior-free) | 1.6e-3 → 5.6e-4 | 5.6e-5 | 15 % → **50 %** | 1/4 → **3/4** |
+
+Does reaching the floor certify the poles? All polished p6 runs (seeds 10–29, all
+variants), binned by final training loss / oracle error:
+
+| grid | train/oracle < 1.5 | 1.5–3 | ≥ 3 |
+|---|---|---|---|
+| dt = 20/1024 | 20/53 all recovered | 0/11 | 0/6 |
+| dt = 20/4096 | **8/8** | 5/6 | 6/26 |
+
+- **Adam was the bottleneck at the end of training**: the polish halves the p4 test error
+  to near the oracle and doubles the p4 recovery (38 → 74 %, truth-sized; 65 → 85 %,
+  prior-free). The Adam-stage pole errors of 0.1–0.2 were partly unconverged runs, not
+  wrong basins.
+- **Fine grid + polish confirms phase 1b.** At dt = 20/4096 every run that reaches the
+  floor recovers all four p6 poles (8/8), and the floor is reached only near the truth.
+  At dt = 20/1024 most runs reach the floor (53/70) but only 20 of them recover the poles.
+  There the loss cannot tell, exactly as the profiled ratios (−1: 1.8, −2: 0.6) predict.
+- The remaining fine-grid failures are local minima (train/oracle 3–12): a damped spare
+  complex slot holding −2 (truth-sized `mixed_off`, which has no damping bound), or
+  coalesced real slots. A run's distance to the floor flags them without the truth.
+- **Prior-free p6 now matches truth-sized p6** on the fine grid after the polish (50 % vs
+  45 % single, 3/4 vs 4/4 best of 5; 4 groups, within noise). Full prior-free recipe:
+  8 slots (4 real on a random log grid, 4 complex with |Im μ| ≥ 2π/T and |Re μ| < 0.5 |Im μ|),
+  multi-start, Adam, L-BFGS polish, a dt fine enough for the poles to be identifiable, and
+  the floor ratio as a check.
+
 ## Next
 
-- Prior-free sizing: add a damping bound to the complex slots (|Re μ| ≤ c |Im μ|) on top of
-  the |Im μ| ≥ 2π/T bound (`bound8`); check p6 and best of 5 again.
-- Fine grids: a longer / second-order training phase (e.g. L-BFGS polish after Adam) to
-  reach the fine-grid floor, then re-check p6 −1 / −2.
-- More groups for the best-of-5 rates (currently 4–10 per system).
+- Floor certificate in practice: the oracle floor is unknown without the truth; estimate
+  it (e.g. from the lowest training loss over restarts, or from the dt-convergence of the
+  loss) and check whether "close to the floor" can still be decided.
+- Restarts from the polished point for runs far from the floor (e.g. re-initialise the
+  slot nearest a coalesced pair), then polish again.
+- More groups for the best-of-5 rates (currently 4–10 per system); c sensitivity between
+  0.35 and 0.7.
+- Carry the recipe (damping-bounded slots + polish) to ALNO / LFNO and the deep setting (E3/E4).
