@@ -37,6 +37,14 @@ Remedies (E2 -> E3/E4 candidates):
   *_split     at epochs 150 and 300, each pair of real slots within 10 % is merged (residues added,
               output nearly unchanged) and the freed slot moved, with residue 0, to the point of
               the log grid on [-5, -0.05] farthest from all real slots
+  *_l1, *_l1s  sparsity: + lambda(ep) sum_j |beta_j| ||e^{mu_j t}||_2 (impulse-response norm of each
+              slot, so fast decays are not favoured), lambda = 1e-3 / 1e-2 to epoch 200, linearly
+              to 0 at 300; at epoch 300 slots whose output is < 2 % of the layer output (train
+              inputs) are pruned (residue masked to 0) and training continues to 1000 without
+              penalty. Pole metrics use the remaining slots only.
+  *_prune     pruning at epoch 300 without the penalty (control)
+  few         mixed with n_real + 1 real slots (instead of 2 n_real) on a log grid of [-5, -0.05]
+              with a random offset per seed (positions (i + u) / k, u ~ U(0, 1)), no shift prior
   *_ms        multi-start: 8 candidate inits (seeds 100 * seed + c) trained 100 epochs each,
               the best on validation continues with the full protocol (1000 epochs, fresh optimiser)
 The real constraint is a parametrisation of ``pr.mu`` (Im multiplied by a 0/1 mask), applied
@@ -70,11 +78,14 @@ RUNS = E.ROOT / "runs" / "C" / "e2"
 PROTOCOL, PLR = "common", 10.0
 RECOVERED = 0.1
 VARIANTS = ("base", "warm", "free_min", "real_spare", "real_min", "wide", "mixed", "base_ms", "mixed_ms", "mixed_off", "mixed_off_ms",
-            "mixed_off_rep", "mixed_off_rep_ms", "mixed_off_split", "mixed_off_split_ms")
+            "mixed_off_rep", "mixed_off_rep_ms", "mixed_off_split", "mixed_off_split_ms",
+            "mixed_off_l1", "mixed_off_l1_ms", "mixed_off_l1s_ms", "mixed_off_prune_ms", "few", "few_ms")
 MS_CANDIDATES, MS_EPOCHS = 8, 100
 REP_LAMBDA, REP_SIGMA, REP_EPOCHS = 1e-2, 0.15, 600       # repulsion weight (annealed to 0), width in log|Re|
 SPLIT_EPOCHS, SPLIT_TOL = (150, 300), 0.1                 # coalescence check: |log(Re_i / Re_j)| < 0.1
 GRID = np.log(np.geomspace(0.05, 5.0, 200))               # candidate log|Re| for a split slot
+L1_LAMBDA = {"_l1": 1e-3, "_l1s": 1e-2}                    # sparsity weight, constant to epoch 200, 0 at 300
+L1_ON, L1_OFF, PRUNE_EPOCH, PRUNE_TOL = 200, 300, 300, 0.02
 E.POLE_PARAMS = E.POLE_PARAMS + ("mu.original",)     # parametrised pr.mu still gets the pole lr
 
 
@@ -123,7 +134,65 @@ def predicted(system, family, T, K):
 
 
 def base_variant(variant):
-    return variant.removesuffix("_ms").removesuffix("_rep").removesuffix("_split")
+    v = variant.removesuffix("_ms")
+    for suf in ("_rep", "_split", "_l1s", "_l1", "_prune"):
+        v = v.removesuffix(suf)
+    return v
+
+
+class Keep(torch.nn.Module):
+    """beta -> beta * keep: pruned slots have keep 0."""
+
+    def __init__(self, n):
+        super().__init__()
+        self.register_buffer("keep", torch.ones(1, 1, n))
+
+    def forward(self, beta):
+        return beta * self.keep
+
+
+def keep_mask(model):
+    if torch.nn.utils.parametrize.is_parametrized(model.pr, "beta"):
+        return model.pr.parametrizations.beta[0].keep.flatten().bool()
+    return torch.ones(model.pr.beta.numel(), dtype=torch.bool, device=model.pr.beta.device)
+
+
+def make_l1(lam0):
+    def l1(model, ep):
+        lam = lam0 if ep < L1_ON else lam0 * max(0.0, (L1_OFF - ep) / (L1_OFF - L1_ON))
+        if lam == 0:
+            return 0.0
+        mu, beta = model.pr.mu.flatten(), model.pr.beta.flatten()
+        a = mu.real.clamp(max=-1e-4)
+        T = float(model.pr.t[-1])
+        w = torch.sqrt((1 - torch.exp(2 * a * T)) / (-2 * a))          # ||e^{mu t}||_2 on [0, T]
+        return lam * (beta.abs() * w).sum()
+    return l1
+
+
+def make_pruner(events, x):
+    @torch.no_grad()
+    def prune(model, ep):
+        if ep + 1 != PRUNE_EPOCH:
+            return
+        keep = model.pr.parametrizations.beta[0].keep
+        full = model(x).norm()
+        old = keep.clone()
+        share = []
+        for j in range(keep.numel()):
+            if not old.flatten()[j]:
+                share.append(0.0)
+                continue
+            keep.copy_(torch.zeros_like(old))
+            keep.view(-1)[j] = 1
+            share.append(float(model(x).norm() / full))
+        keep.copy_(old)
+        drop = [j for j, c in enumerate(share) if c < PRUNE_TOL]
+        keep.view(-1)[drop] = 0
+        mu = model.pr.mu.flatten().cpu().numpy()
+        events.append(dict(epoch=ep + 1, share=share, pruned=drop,
+                           pruned_poles=[[float(mu[j].real), float(mu[j].imag)] for j in drop]))
+    return prune
 
 
 def real_slots(model):
@@ -167,20 +236,26 @@ def make_splitter(events):
 
 
 def build(variant, mu_true, beta_true, t, seed):
+    full = variant
     variant = base_variant(variant)
     n_real = int(np.sum(mu_true.imag == 0))
     n_folded = int(np.sum(mu_true.imag >= 0))
     n_pairs = n_folded - n_real
     n = {"free_min": n_folded, "real_min": n_folded,
          "wide": n_pairs + 1 + 2 * n_real, "mixed": n_pairs + 1 + 2 * n_real,
-         "mixed_off": n_pairs + 1 + 2 * n_real}.get(variant, mu_true.size)
+         "mixed_off": n_pairs + 1 + 2 * n_real, "few": n_pairs + 1 + n_real + 1}.get(variant, mu_true.size)
     model = E.Layer1("tied", n, t, "stable")
     rng = np.random.default_rng(seed)
     E.layer_init(model, "warm" if variant == "warm" else "band", mu_true, beta_true, rng)
-    if variant in ("mixed", "mixed_off"):
-        k = 2 * n_real
-        shift = (5.0 / 0.05) ** (0.5 / (k - 1)) if variant == "mixed_off" else 1.0   # half a grid step
-        re = -np.geomspace(0.05, 5.0, k) * shift * np.exp(0.2 * rng.normal(size=k))
+    if any(full.removesuffix("_ms").endswith(sfx) for sfx in ("_l1", "_l1s", "_prune")):
+        torch.nn.utils.parametrize.register_parametrization(model.pr, "beta", Keep(n))
+    if variant in ("mixed", "mixed_off", "few"):
+        k = n_real + 1 if variant == "few" else 2 * n_real
+        if variant == "few":
+            re = -np.exp(np.log(0.05) + (np.arange(k) + rng.uniform()) / k * np.log(100.0))
+        else:
+            shift = (5.0 / 0.05) ** (0.5 / (k - 1)) if variant == "mixed_off" else 1.0   # half a grid step
+            re = -np.geomspace(0.05, 5.0, k) * shift * np.exp(0.2 * rng.normal(size=k))
         with torch.no_grad():
             model.pr.mu[..., n - k:] = torch.tensor(re, dtype=torch.cfloat)
         mask = torch.ones(n)
@@ -194,8 +269,13 @@ def build(variant, mu_true, beta_true, t, seed):
     return model, dict(n_poles=n, real_slots=n_real if variant.startswith("real") else 0)
 
 
-def remedy(variant, events):
+def remedy(variant, events, x=None):
     v = variant.removesuffix("_ms")
+    for suf, lam in L1_LAMBDA.items():
+        if v.endswith(suf):
+            return dict(penalty=make_l1(lam), hook=make_pruner(events, x))
+    if v.endswith("_prune"):
+        return dict(hook=make_pruner(events, x))
     if v.endswith("_rep"):
         return dict(penalty=repulsion)
     if v.endswith("_split"):
@@ -212,6 +292,7 @@ def run(cond: str, seed: int, device, variant: str = "base"):
     data, t = make_splits(system, family, T, K)
     mu_true, beta_true = (np.array(a, dtype=complex) for a in E.SYSTEMS[system])
     t0 = time.time()
+    xprune = data["train"][0][:50].to(device)[..., None]
     if variant.endswith("_ms"):
         screen = dict(E.PROTOCOLS[PROTOCOL], epochs=MS_EPOCHS)
         cands = []
@@ -219,7 +300,7 @@ def run(cond: str, seed: int, device, variant: str = "base"):
             seed_everything(100 * seed + c)
             m, cfg = build(variant, mu_true, beta_true, t, 100 * seed + c)
             m.to(device)
-            h = E.train(m, data, screen, device, PLR, **remedy(variant, []))
+            h = E.train(m, data, screen, device, PLR, **remedy(variant, [], xprune))
             cands.append((h[-1][2] if np.isfinite(h[-1][2]) else np.inf, c, m))
         val, best, model = min(cands, key=lambda z: z[0])
         cfg = dict(cfg, ms_candidates=MS_CANDIDATES, ms_epochs=MS_EPOCHS, ms_best=best,
@@ -230,13 +311,14 @@ def run(cond: str, seed: int, device, variant: str = "base"):
         model, cfg = build(variant, mu_true, beta_true, t, seed)
         model.to(device)
     events = []
-    hist = E.train(model, data, E.PROTOCOLS[PROTOCOL], device, PLR, **remedy(variant, events))
+    hist = E.train(model, data, E.PROTOCOLS[PROTOCOL], device, PLR, **remedy(variant, events, xprune))
     if events:
-        cfg = dict(cfg, split_events=events)
+        cfg = dict(cfg, events=events)
     secs = time.time() - t0
     xte, yte = (a.to(device)[..., None] for a in data["test"])
     test = E.evaluate(model, xte, yte)
-    mu_l, beta_l = (a.detach().cpu().numpy() for a in model.pole_sets())
+    active = keep_mask(model).cpu().numpy()
+    mu_l, beta_l = (a.detach().cpu().numpy()[active] for a in model.pole_sets())
     mt, _ = E.true_folded(mu_true, beta_true)
     diverged = not (np.isfinite(mu_l).all() and np.isfinite(test))
     mf, _ = E.fold(mu_l, beta_l)

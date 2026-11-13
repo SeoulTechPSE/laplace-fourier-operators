@@ -222,12 +222,58 @@ Findings:
 3. Hence the redundant real slots are the remaining problem: a remedy needs to remove
    them (residue sparsity / pruning) or use fewer of them, not to separate them.
 
+## Remedies (third round): removing redundant slots; what limits recovery
+
+Variants (120 runs, 10 seeds, none diverged): `mixed_off_l1(_ms)` / `mixed_off_l1s_ms`
+(L1 on each slot's impulse-response norm |β| ‖e^{μt}‖, λ = 1e-3 / 1e-2 to epoch 200, 0 at
+300; slots with < 2 % of the output pruned at epoch 300, re-fit to 1000), `mixed_off_prune_ms`
+(pruning without the penalty), `few(_ms)` (n_real + 1 real slots, grid with a random
+log offset per seed). Pole metrics use the remaining slots.
+
+Recovered (−1 / −0.2 or −2), test rel. L2:
+
+| variant | p4 | p4 test | p6 | p6 test | pruned per run |
+|---|---|---|---|---|---|
+| mixed_off_ms (reference) | 60 / 70 % | 1.4e-3 | 50 / 40 % | 5.6e-4 | – |
+| mixed_off_l1 | 40 / 10 % | 3.4e-3 | 50 / 70 % | 2.8e-3 | 0–1 |
+| mixed_off_l1_ms | 40 / 70 % | 1.1e-3 | 60 / 40 % | 5.5e-4 | 0–2 |
+| mixed_off_l1s_ms | 50 / 90 % | 9.7e-4 | 30 / 10 % | 1.0e-3 | 0–2 |
+| mixed_off_prune_ms | 60 / 70 % | 1.4e-3 | 50 / 40 % | 5.6e-4 | 0–1 |
+| few | 40 / 30 % | 3.5e-3 | 30 / 0 % | 3.6e-2 | – |
+| few_ms | 60 / 40 % | 1.6e-3 | 50 / 20 % | 7.2e-4 | – |
+
+No variant is better than the reference beyond seed noise; pruning rarely fires
+(spare slots keep > 2 % of the output even under L1); fewer real slots hurt p6's −2.
+
+**What limits recovery: fit quality of the failed runs** (all `mixed_off*_ms` runs pooled):
+
+| system | runs with all poles recovered | runs missing a real pole |
+|---|---|---|
+| p4 | 24 runs, test median 6.0e-4 = 1.0 × oracle | 36 runs, 1.5e-3 = 2.6 × oracle |
+| p6 | 8 runs, 5.8e-4 = 1.5 × oracle | 52 runs, 5.9e-4 = 1.5 × oracle |
+
+- **p4: the wrong-pole solutions fit worse**, so they are local minima that the loss
+  can tell apart. Selecting the lowest validation loss among k independent runs
+  (bootstrap from the 10 seeds, 2,000 draws): `mixed_off_ms` all poles recovered in
+  50 % (k = 1), 84 % (k = 3), 95 % (k = 5); `mixed_off_l1s_ms` 50 / 88 / 98 %;
+  `mixed_off` (no multi-start) 24 / 45 / 61 %.
+- **p6: the wrong-pole solutions fit as well or better**; validation selection makes
+  recovery worse (10 → 0 %). This is the practical non-identifiability of phase 1
+  (ratios 1.8 / 0.6): at the floor, the data prefer other decay rates.
+
+E2 conclusion. Two different limits, separable by the loss: (i) optimisation (p4):
+locally identifiable poles in a non-convex landscape; mixed real-constrained init +
+multi-start + selection by validation loss recovers them (≈ 95 % with 5 runs, an estimate
+from 10 seeds); (ii) identifiability (p6 −1, −2): good-fit wrong-pole solutions exist
+below the representation floor; no training remedy can fix this; it needs a lower floor
+(grid resolution) or different data.
+
 ## Next
 
 - ~~Separate the causes for p4~~ done (controls above).
-- ~~Mixed init / multi-start~~, ~~repulsion / split~~ done (sections above). Next: remove
-  redundant real slots: residue sparsity (L1 on |β|, annealed) + pruning with re-fit;
-  fewer real slots (1 × real count + 1 spare).
+- ~~Mixed init / multi-start~~, ~~repulsion / split~~, ~~sparsity / pruning / fewer slots~~
+  done (sections above). Recommended recipe for p4-type limits: `mixed_off_ms` + best of
+  ≥ 5 runs by validation loss; verify with independent runs (not bootstrap).
 - The real constraint needs to know how many slots should be real; a learned gate
   (Im μ = g · Im μ̃) would remove that prior.
-- p6: phase-1 sweep over grid resolution (dt, n_t) to see whether a lower floor exposes −1, −2.
+- p6 (identifiability limit): phase-1 sweep over grid resolution (dt, n_t) to see whether a lower floor exposes −1, −2.

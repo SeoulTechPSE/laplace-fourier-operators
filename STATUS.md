@@ -39,8 +39,9 @@ Suggested next steps (in order):
    layer setting (report section "Open decisions").
 3. E2 phases 1–2, controls and first remedies done (`experiments/C/theory/README.md`):
    mixed init with real-constrained slots + multi-start recovers 40–70 % of the real
-   poles; repulsion / split remove coalescence but not the failures (now bracketing).
-   Next: residue sparsity + pruning, fewer real slots, learned real gate, p6 grid sweep.
+   poles; repulsion / split / sparsity do not add. p4 = optimisation limit (best of 5 by
+   validation ≈ 95 %), p6 −1/−2 = identifiability limit. Next: confirm best-of-5
+   independently, learned real gate, p6 grid-resolution sweep.
 4. Optional E1 extras: log-parameterised decay rate; untied models with 64 steady modes
    (H1); weight decay excluded from poles; deep LNO v1 at its published size.
 
@@ -53,6 +54,28 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-13 — (C) E2: third remedies (sparsity, pruning, fewer slots); two kinds of limit
+
+- Done: `e2_train.py` variants `mixed_off_l1(_ms)`, `mixed_off_l1s_ms`, `mixed_off_prune_ms`,
+  `few(_ms)`; 120 runs (p4 multisine16, p6 multisine16 T = 80; 10 seeds). Fit-quality and
+  best-of-k selection analysis of all `mixed_off*_ms` runs. README section "Remedies (third round)".
+- Results:
+  - No variant beats `mixed_off_ms` beyond seed noise; pruning fires in 0–2 slots per run;
+    fewer real slots hurt p6's −2 (0–20 %).
+  - p4: runs missing a real pole fit worse (test median 2.6 × oracle vs 1.0 ×). Selecting
+    the lowest validation loss among k runs: 50 / 84 / 95 % all poles recovered for k = 1 / 3 / 5
+    (`mixed_off_ms`, bootstrap from 10 seeds).
+  - p6: failed and successful runs fit equally (1.5 × oracle); validation selection lowers
+    recovery (10 → 0 %): practical non-identifiability, as in phase 1.
+- Decisions: E2 conclusion: two separable limits, optimisation (p4: fixed by mixed
+  real-constrained init + multi-start + selection) and identifiability (p6 fast real poles:
+  no training remedy). Candidate E3/E4 recipe: `mixed_off_ms` + best of ≥ 5 by validation.
+  Sparsity / pruning / repulsion / split not adopted.
+- Problems / open questions: the best-of-k numbers are a bootstrap over 10 seeds, not
+  independent repeats; the real-slot count still uses the true number of real poles.
+- Next: confirm best-of-5 with independent runs; learned real gate (no prior on the
+  number of real poles); p6 grid-resolution sweep (phase 1, CPU).
 
 ### 2026-11-13 — (C) E2: second remedies (repulsion, split) against coalescing real slots
 
