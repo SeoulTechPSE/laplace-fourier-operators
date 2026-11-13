@@ -45,6 +45,11 @@ Remedies (E2 -> E3/E4 candidates):
   *_prune     pruning at epoch 300 without the penalty (control)
   few         mixed with n_real + 1 real slots (instead of 2 n_real) on a log grid of [-5, -0.05]
               with a random offset per seed (positions (i + u) / k, u ~ U(0, 1)), no shift prior
+  fixed8      prior-free (no use of the true pole count): 8 slots, 4 band-init complex slots and
+              4 real-constrained slots on a log grid of [-5, -0.05] with a random offset per seed
+  gate8       as fixed8, but no slot is constrained: Im mu = sigmoid(a) Im mu~ with a learned gate
+              logit a per slot (pole lr), a = -5 on the grid slots (start almost real: sigmoid = 0.007,
+              Im mu~ from the band init, so |Im mu| <= 0.03) and +3 on the band slots; a slot becomes real if its gate closes
   *_ms        multi-start: 8 candidate inits (seeds 100 * seed + c) trained 100 epochs each,
               the best on validation continues with the full protocol (1000 epochs, fresh optimiser)
 The real constraint is a parametrisation of ``pr.mu`` (Im multiplied by a 0/1 mask), applied
@@ -79,14 +84,27 @@ PROTOCOL, PLR = "common", 10.0
 RECOVERED = 0.1
 VARIANTS = ("base", "warm", "free_min", "real_spare", "real_min", "wide", "mixed", "base_ms", "mixed_ms", "mixed_off", "mixed_off_ms",
             "mixed_off_rep", "mixed_off_rep_ms", "mixed_off_split", "mixed_off_split_ms",
-            "mixed_off_l1", "mixed_off_l1_ms", "mixed_off_l1s_ms", "mixed_off_prune_ms", "few", "few_ms")
+            "mixed_off_l1", "mixed_off_l1_ms", "mixed_off_l1s_ms", "mixed_off_prune_ms", "few", "few_ms",
+            "fixed8", "fixed8_ms", "gate8", "gate8_ms")
+N_GENERIC, GATE_ON, GATE_OFF = 8, 3.0, -5.0               # prior-free variants: 8 slots; gate logits
 MS_CANDIDATES, MS_EPOCHS = 8, 100
 REP_LAMBDA, REP_SIGMA, REP_EPOCHS = 1e-2, 0.15, 600       # repulsion weight (annealed to 0), width in log|Re|
 SPLIT_EPOCHS, SPLIT_TOL = (150, 300), 0.1                 # coalescence check: |log(Re_i / Re_j)| < 0.1
 GRID = np.log(np.geomspace(0.05, 5.0, 200))               # candidate log|Re| for a split slot
 L1_LAMBDA = {"_l1": 1e-3, "_l1s": 1e-2}                    # sparsity weight, constant to epoch 200, 0 at 300
 L1_ON, L1_OFF, PRUNE_EPOCH, PRUNE_TOL = 200, 300, 300, 0.02
-E.POLE_PARAMS = E.POLE_PARAMS + ("mu.original",)     # parametrised pr.mu still gets the pole lr
+E.POLE_PARAMS = E.POLE_PARAMS + ("mu.original", ".gate")   # parametrised pr.mu and real gates get the pole lr
+
+
+class ImagGate(torch.nn.Module):
+    """mu -> Re mu + i Im mu * sigmoid(gate): a learned, per-slot real/complex switch."""
+
+    def __init__(self, logits):
+        super().__init__()
+        self.gate = torch.nn.Parameter(logits)
+
+    def forward(self, mu):
+        return torch.complex(mu.real, mu.imag * torch.sigmoid(self.gate))
 
 
 class ImagMask(torch.nn.Module):
@@ -243,12 +261,29 @@ def build(variant, mu_true, beta_true, t, seed):
     n_pairs = n_folded - n_real
     n = {"free_min": n_folded, "real_min": n_folded,
          "wide": n_pairs + 1 + 2 * n_real, "mixed": n_pairs + 1 + 2 * n_real,
-         "mixed_off": n_pairs + 1 + 2 * n_real, "few": n_pairs + 1 + n_real + 1}.get(variant, mu_true.size)
+         "mixed_off": n_pairs + 1 + 2 * n_real, "few": n_pairs + 1 + n_real + 1,
+         "fixed8": N_GENERIC, "gate8": N_GENERIC}.get(variant, mu_true.size)
     model = E.Layer1("tied", n, t, "stable")
     rng = np.random.default_rng(seed)
     E.layer_init(model, "warm" if variant == "warm" else "band", mu_true, beta_true, rng)
     if any(full.removesuffix("_ms").endswith(sfx) for sfx in ("_l1", "_l1s", "_prune")):
         torch.nn.utils.parametrize.register_parametrization(model.pr, "beta", Keep(n))
+    if variant in ("fixed8", "gate8"):
+        k = N_GENERIC // 2
+        re = -np.exp(np.log(0.05) + (np.arange(k) + rng.uniform()) / k * np.log(100.0))
+        with torch.no_grad():
+            mu0 = model.pr.mu.clone()
+            mu0[..., n - k:] = torch.complex(torch.tensor(re, dtype=torch.float32), mu0[..., n - k:].imag)
+            model.pr.mu.copy_(mu0)
+        if variant == "fixed8":
+            mask = torch.ones(n)
+            mask[n - k:] = 0
+            torch.nn.utils.parametrize.register_parametrization(model.pr, "mu", ImagMask(mask.reshape(1, 1, -1)))
+        else:
+            logits = torch.full((n,), GATE_ON)
+            logits[n - k:] = GATE_OFF
+            torch.nn.utils.parametrize.register_parametrization(model.pr, "mu", ImagGate(logits.reshape(1, 1, -1)))
+        return model, dict(n_poles=n, real_slots=k, gate=variant == "gate8")
     if variant in ("mixed", "mixed_off", "few"):
         k = n_real + 1 if variant == "few" else 2 * n_real
         if variant == "few":
@@ -330,6 +365,8 @@ def run(cond: str, seed: int, device, variant: str = "base"):
                true_poles=[[float(z.real), float(z.imag)] for z in mt], pole_error=pe,
                pole_error_mean=None if pe is None else float(np.mean(pe)),
                learned_poles=[[float(z.real), float(z.imag)] for z in mu_l],
+               gates=(torch.sigmoid(model.pr.parametrizations.mu[0].gate).flatten().detach().cpu().numpy()[active].tolist()
+                      if cfg.get("gate") else None),
                predicted=predicted(system, family, T, K))
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / f"{run_name(cond, variant, seed)}.json").write_text(json.dumps(res, indent=1))

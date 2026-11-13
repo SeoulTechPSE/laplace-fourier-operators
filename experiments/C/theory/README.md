@@ -11,6 +11,7 @@ families) make the poles practically identifiable, and does training then recove
 | script | what | output |
 |---|---|---|
 | `e2_richness.py` | phase 1: local identifiability of the tied layer at the truth, over 46 data configurations (p4, p6) | `results/e2_richness.md` / `.json` |
+| `e2_grid.py` | phase 1b: the phase-1 analysis over the time step dt = 20/N, N = 256–8192 | `results/e2_grid.md` / `.json` |
 | `e2_select.py` | best of 5 by validation loss on independent seeds 10–59 | `results/e2_select.md` / `.json` |
 | `e2_train.py` | phase 2: train the E1 tied layer on selected configurations, 10 seeds; `--variant` controls (warm, no spare slot, real-constrained slots) | `results/e2_train/*.json`, `results/e2_train.md` |
 
@@ -297,12 +298,64 @@ p6's −1, −2 remain the harder case: phase-1 ratios < 2, weak link between lo
 error, misses near the floor. Their identifiability is weak but not absent: we did not
 show they cannot be recovered.
 
+## Without the true number of real poles: fixed split and learned gate
+
+The recipe above sizes the slots from the truth (pairs + 1 complex, 2 × real constrained).
+Two prior-free variants, both with 8 slots for p4 and p6 (`e2_train.py`): `fixed8` (4 band
+complex + 4 real-constrained on a randomly offset log grid) and `gate8` (no constraint;
+Im μ = sigmoid(a) Im μ̃ with a learned gate logit per slot, a = −5 on the grid slots, +3 on
+the band slots, pole lr). 100 runs (`_ms`: 20 seeds = 4 groups of 5; `gate8`: 10 seeds).
+Reference `mixed_off_ms` on seeds 10–29 (same group structure).
+
+| system | variant | test (median) | −1 | −0.2 or −2 | all poles | best of 5 | Spearman(val, error) |
+|---|---|---|---|---|---|---|---|
+| p4 | mixed_off_ms (truth-sized) | 1.3e-3 | 25 % | 65 % | 25 % | 2/4 | +0.87 |
+| p4 | fixed8_ms | 1.5e-3 | 40 % | 25 % | 5 % | 1/4 | +0.13 |
+| p4 | gate8_ms | 9.4e-4 | 0 % | 0 % | 0 % | 0/4 | +0.08 |
+| p4 | gate8 | 1.4e-3 | 10 % | 0 % | 0 % | – | +0.05 |
+| p6 | mixed_off_ms (truth-sized) | 5.6e-4 | 75 % | 30 % | 30 % | 3/4 | +0.40 |
+| p6 | fixed8_ms | 8.4e-4 | 45 % | 15 % | 15 % | 1/4 | +0.31 |
+| p6 | gate8_ms | 1.1e-3 | 10 % | 10 % | 0 % | 0/4 | +0.30 |
+| p6 | gate8 | 3.2e-3 | 0 % | 0 % | 0 % | – | +0.60 |
+
+Complex pairs 80–100 % everywhere.
+
+- **The learned gate does not work.** Gates end partly open (0.06–0.2, 0.7–1.5 of 4
+  closed per run) while Im μ̃ grows: only the product g · Im μ̃ matters, so the gate does
+  not decide real vs complex, and the slots end like the base model (−0.24 + 0.11i for −0.2).
+- **A fixed 4 + 4 split is worse than the truth-sized one.** The three spare complex slots
+  take the slow real decays at low frequency (−0.42 + 0.17i, −0.36 + 0.18i): the
+  wrong-assignment failure again. Validation loss also stops telling right from wrong
+  poles in p4 (Spearman 0.13), so best-of-5 selection no longer helps.
+- So the recipe's success depends on the slot sizing prior. A prior-free candidate that
+  targets the mechanism: bound complex slots away from the real axis (|Im μ| ≥ ω_min,
+  e.g. one period in the window, 2π/T), so slow decays can only be taken by real slots.
+
+## Phase 1b: grid resolution
+
+`e2_grid.py` → `results/e2_grid.md` / `.json`: the phase-1 analysis with dt = 20/N,
+N = 256 … 8192, at fixed T (outputs exact, so only the layer's discretisation changes).
+
+- The floor falls ∝ dt (first-order discretisation error): p6 multisine16 T = 80: 5.5e-3
+  (N = 256) → 4.2e-4 (1024) → 3.1e-5 (8192). The profiled error of a 10 % pole change
+  is set by the data and nearly constant, so ratios grow ∝ 1/dt.
+- p6 −1 / −2 ratios, N = 1024 → 4096 → 8192: E1 data T = 20: 0.6 / 0.2 → 3.0 / 1.0 → 6.3 / 2.0;
+  multisine16 T = 20: 1.0 / 0.4 → 4.7 / 1.7 → 9.6 / 3.4; multisine16 T = 80: 1.8 / 0.6 →
+  **11.6** / 4.0 → **24.3** / 8.3. −1 becomes practically identifiable with rich data on
+  a fine grid; −2 stays just below the threshold even at N = 8192, T = 80.
+- p4: ratios double per halving of dt (E1 data: all ≥ 10 from N = 2048 except −1 at 9.5).
+- Interpretation: "practically identifiable" is relative to the error level the model
+  cannot remove (here the discretisation floor; with real data also noise). With exact
+  data and an exact model every pole is identifiable; the ratio asks whether a 10 % pole
+  change is visible above that level. Not tested: training on the fine grids
+  (N = 4096 at T = 80 is n_t = 16,384, ≈ 4 × the run time).
+
 ## Next
 
-- ~~Separate the causes for p4~~ done (controls above).
-- ~~Mixed init / multi-start~~, ~~repulsion / split~~, ~~sparsity / pruning / fewer slots~~
-  done (sections above). Recipe: `mixed_off_ms` + best of 5 by validation loss
-  (independently checked: 8/10, 7/10). More groups would narrow the intervals.
-- The real constraint needs to know how many slots should be real; a learned gate
-  (Im μ = g · Im μ̃) would remove that prior.
-- p6 (identifiability limit): phase-1 sweep over grid resolution (dt, n_t) to see whether a lower floor exposes −1, −2.
+- ~~Separate the causes for p4~~, ~~remedies (three rounds)~~, ~~independent best-of-5
+  check~~, ~~learned gate~~ (does not work), ~~grid sweep~~ done (sections above).
+- Prior-free slot sizing: bound complex slots away from the real axis (|Im μ| ≥ 2π/T) with
+  a generous number of real and complex slots; check best-of-5 again.
+- Training on a fine grid for p6 (multisine16, T = 80, N = 4096): does −1 (ratio 11.6)
+  become recoverable, and −2 (4.0) not?
+- More groups for the best-of-5 rates (currently 10 per system).

@@ -130,7 +130,7 @@ Re μ of one pole fixed at c × truth, all else re-fitted with L-BFGS from the t
 | In p4 the real poles are weakly identifiable | −1 profiled 6.3e-3 (fixed 1.6e-1); profile not monotone (c = 0.25 lower than 0.5: second basin) |
 | Frequencies are always well identified | Im μ of every complex pole: profiled e ≈ 1e-2 – 9e-2 for 10 %; profiles of complex Re μ are sharp |
 | Conditioning degrades with the number of poles | cond(F) = 47 (p2), 3.9e4 (p4), 6.8e6 (p6) |
-| A real pole sits at a flat point in Im μ | first-order sensitivity to Im μ and Im β is zero at Im μ = 0 — consistent with the spurious Im ≈ 0.2 of learned real poles |
+| A real pole sits at a flat point in Im μ | first-order sensitivity to Im μ and Im β is zero at Im μ = 0 **for a real residue** (as at the truth). *E2 correction:* with a complex β, d/d(Im μ) = −t Im(β) e^{Re μ t} ≠ 0, so during training a slot on the real axis does not stay there |
 
 Reading: the real-pole failure of E1 is not an optimisation artefact. With these inputs
 and window, the data do not determine the fast decays: the other poles reproduce
@@ -138,4 +138,11 @@ their effect to within the discretisation floor of the layer itself. This is the
 practical-identifiability side of H2 — unique in principle (warm start converges), flat
 in practice. Which input/window changes restore it (fast-content inputs, more samples
 near t = 0, finer grid) is the E2 question.
+
+*Revised by E2 (`experiments/C/theory/README.md`):* "not an optimisation artefact" holds
+for the E1 data and grid, but not in general. With richer data (p4) or a finer grid
+(p6 −1) the real poles become locally identifiable, and the truth is a stable minimum
+(warm start). From generic inits training then still fails, and a training recipe (mixed
+real-constrained init + multi-start + best of 5 by validation loss) recovers all poles
+in 8/10 (p4) and 7/10 (p6) independent groups.
 Note: one profile point failed (p4, −0.2, c = 3: L-BFGS returned nan).

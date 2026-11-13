@@ -8,7 +8,7 @@ Each session appends one entry using the template at the bottom.
 | Work package | Months | Status | Gate |
 |---|---|---|---|
 | Shared foundation | 1–4 | nearly done: LNO v1/v2 reproduced (gate met), ALNO/LFNO 1D re-implemented; LTI/PDE/process generators partly | reproduce original LNO results (month 4) — **met** |
-| (C) Pole audit of existing models | 3–5 | **in progress**: E1 first full run done (585 runs) | — |
+| (C) Pole audit of existing models | 3–5 | **in progress**: E1 done, draft report (`E1_report.md`, updated with E2); paper decisions open | — |
 | (D) Non-periodic input representation | 4–8 | not started | differs from padded FNO? (month 8) |
 | (A) Pole layer and linear validation | 5–10 | not started | dispersion relations recovered (month 10) |
 | (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, first remedies done (`experiments/C/theory/`) | — |
@@ -21,7 +21,7 @@ Each session appends one entry using the template at the bottom.
 
 - [ ] Staffing (affects schedule adjustments in `docs/integrated_schedule_ACD.qmd`, Section 4)
 - [x] Whether ALNO / LFNO code is public: **not public** (2026-11-12); both re-implemented in `lfo.models.hybrid`
-- [ ] E1 paper: reported set; deep "closest pooled pole" in main text; waive the budget rule for the minimal layer setting? (`experiments/C/e1_audit/E1_report.md`)
+- [ ] E1 paper: reported set; deep "closest pooled pole" in main text; waive the budget rule for the minimal layer setting? E2 in the same paper? (`experiments/C/e1_audit/E1_report.md`, decisions 1–4)
 - [x] Ask the LFNO authors? **No** (2026-11-12): paper not formally published; use the reconstruction and document it
 
 ## Handoff (2026-11-12, after E1 first run) — start here in the next session
@@ -40,8 +40,9 @@ Suggested next steps (in order):
 3. E2 phases 1–2, controls and first remedies done (`experiments/C/theory/README.md`):
    mixed init with real-constrained slots + multi-start recovers 40–70 % of the real
    poles; repulsion / split / sparsity do not add. Best of 5 by validation loss
-   (independent check): all poles 8/10 (p4), 7/10 (p6). Next: learned real gate,
-   p6 grid-resolution sweep.
+   (independent check): all poles 8/10 (p4), 7/10 (p6). Learned gate and fixed 4 + 4
+   sizing fail (prior on the real-pole count still needed); grid sweep done. Next:
+   |Im μ| ≥ 2π/T for complex slots, fine-grid training for p6.
 4. Optional E1 extras: log-parameterised decay rate; untied models with 64 steady modes
    (H1); weight decay excluded from poles; deep LNO v1 at its published size.
 
@@ -54,6 +55,27 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-13 — (C) E2: prior-free slot sizing, grid resolution; E1 report updated
+
+- Done: `e2_train.py` variants `fixed8(_ms)` and `gate8(_ms)` (8 slots, no use of the true
+  pole count; `gate8` = learned per-slot gate on Im μ); 100 runs (p4, p6; `_ms` 20 seeds =
+  4 groups of 5). `e2_grid.py` (phase-1 analysis over dt = 20/N, N = 256–8192) →
+  `results/e2_grid.md`. `E1_report.md`: part 3 qualified, new section "Follow-up: E2",
+  limitations and open decision 4; `e1_audit/README.md`: Im μ flatness corrected, E2 note.
+- Results:
+  - Prior-free variants fail: all poles 0–15 % (truth-sized `mixed_off_ms` 25–30 % on the same
+    seeds), best of 5: 0–1/4 groups (truth-sized 2/4, 3/4). Spare complex slots take the slow
+    decays (−0.42 + 0.17i); the gate is compensated by Im μ̃ (only g · Im μ̃ matters).
+    In p4 validation loss no longer tracks pole error (Spearman 0.13 vs 0.87).
+  - Grid: floor ∝ dt, ratios ∝ 1/dt. p6 −1 identifiable with multisine16, T = 80 at
+    N = 4096 (11.6) and 8192 (24.3); −2 reaches 8.3 at N = 8192.
+- Decisions: the E2 recipe needs the real-pole count; removing that prior is open (learned
+  gate rejected). "Practically identifiable" is relative to the model's error level
+  (discretisation floor, in practice also noise); stated in the E1 report and the E2 README.
+- Next: complex slots bounded away from the real axis (|Im μ| ≥ 2π/T) as a prior-free
+  sizing; training on a fine grid for p6 (T = 80, N = 4096); more best-of-5 groups;
+  E1/E2 paper decisions (open decision 4).
 
 ### 2026-11-13 — (C) E2: best-of-5 selection checked on independent runs; p6 claim revised
 

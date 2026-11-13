@@ -1,6 +1,7 @@
 # E1: do Laplace–Fourier operators learn the true poles? (draft summary)
 
-Project (C), RQ1 / E1. Status: draft for the workshop paper, 2026-11-13.
+Project (C), RQ1 / E1. Status: draft for the workshop paper, 2026-11-13; part 3 and the
+section "Follow-up: E2" updated with the E2 results the same day.
 Sources: `README.md` (setup, all findings), `results/summary.md`, `results/per_pole.md`,
 `results/identifiability.md`; figures from `figures.py`.
 
@@ -49,19 +50,51 @@ or not their poles are right.
 *Fig. 2. Fraction of runs recovering each true pole (relative error < 0.1).
 Shaded: real poles. Only the warm start recovers the fast real poles −1 and −2.*
 
-**3. Fast real poles are not identified, and the data cannot identify them.** Without
+**3. Fast real poles are not identified, and the E1 data cannot identify them.** Without
 a warm start, −1 and −2 are recovered in 0–10 % of runs in every setting, including the
 tied layer with enough travel. The models still fit (tied p6: test 8e-3 without −2).
 At the truth, a 10 % change of −1 / −2 that the other parameters may compensate costs
 4.9e-4 / 1.6e-4 relative error, below the layer's own floor. Fixing Re of −2 anywhere in
 [−6, −1] costs at most 2.1e-3 (Fig. 3). The poles are unique in principle (a warm start
 converges to them, consistent with H2) but practically non-identifiable from these data.
+E2 (below) shows this is specific to the E1 data and grid: with richer inputs or a finer
+grid the poles become identifiable, and the remaining failure is optimisation.
 
 ![Fig. 3](figures/fig3_profile.png)
 
 *Fig. 3. p6, tied layer: best achievable error with one pole's decay rate fixed at c × truth
 (all other parameters re-fitted). Complex poles have sharp profiles; the real poles
 are flat to within a few times the representation floor.*
+
+## Follow-up: E2 (data richness and training remedies)
+
+Details: `experiments/C/theory/README.md`. Tied single layer, same systems; 10–50 seeds per condition.
+
+- **Richer data make p4's poles locally identifiable.** Profiled-error / floor ratio
+  (≥ 10 = identifiable) of −1 / −0.2: E1 data 4.6 / 9.5; 16 input frequencies 13.9 / 23.8;
+  E1 data with T = 40: 11.3 / 30. Ramps alone: nothing.
+- **The floor, not the data, hides p6's −1, −2.** No data change tried lifts their
+  ratio above 1.8 at dt = 20/1024. The ratio grows ∝ 1/dt: with 16 frequencies, T = 80,
+  −1 reaches 11.6 at dt = 20/4096 and 24 at 20/8192; −2 reaches 8.3.
+- **Identifiable is not recovered.** On the data where all p4 poles are identifiable,
+  the E1 recipe (band init, pole lr × 10) recovers the pair (100 %) but no real pole
+  (0 %, 10 seeds); a warm start recovers all (test error at the floor). Learned real
+  decays are carried by complex slots (e.g. −0.82 + 0.61i) or by two real slots that
+  merge. A real pole's flatness in Im μ holds only for a real residue; with a complex
+  residue and Adam a slot leaves the real axis within a few steps.
+- **A training recipe recovers them.** Slots on a log grid of decay rates, constrained
+  real, plus spare complex slots (`mixed`), multi-start (8 × 100 epochs), and the lowest
+  validation loss among 5 independent runs: all poles recovered in 8/10 groups (p4) and
+  7/10 (p6) on independent seeds, from 0 % with the E1 recipe. Repulsion, merge-and-split,
+  sparsity / pruning and fewer slots add nothing.
+- **Open:** the recipe sizes the slots from the true number of real poles. Without it
+  (fixed 4 + 4 slots, or a learned real/complex gate) recovery falls to 0–15 %: spare
+  complex slots take the slow decays, and the gate is compensated by Im μ̃.
+
+Revised message for part 3: under the E1 data the fast real poles are practically
+non-identifiable; with identifiable data they are still not found by the published
+recipes, because complex slots absorb real decays. A real-constrained parameterisation
+with the right slot count recovers them; doing so without that prior is open.
 
 ## Main numbers (proposed reported set)
 
@@ -91,7 +124,9 @@ unstable (Re μ > 0), and 10 of 30 deep LFNO runs diverged mid-training. Weight 
 - The layer setting does not match parameter budgets across models (they differ by
   construction: 8–56 parameters); the deep setting does (5,927–5,977).
 - Local identifiability is evaluated at the truth only; the good-fit / wrong-pole minima
-  found in training were not analysed one by one.
+  found in training were not analysed one by one (E2 classifies their types).
+- E2 uses only the tied single layer; ALNO / LFNO and the deep setting were not re-run
+  with the E2 data or recipe. Training on the finer grids was not run.
 - LNO v1 at the matched 5.9k budget does not train from its original init; its published
   1.8k configuration was not run here.
 
@@ -103,3 +138,5 @@ unstable (Re μ > 0), and 10 of 30 deep LFNO runs diverged mid-training. Weight 
    or only the layer setting.
 3. Whether the parameter-budget rule (CLAUDE.md) is waived for the layer setting, where
    the model is the minimal one by design.
+4. Whether E2 goes into the same paper (as "follow-up / remedy") or into a separate one;
+   the E2 recipe uses a slot-count prior that a deployable method would have to remove.
