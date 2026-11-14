@@ -11,7 +11,7 @@ Each session appends one entry using the template at the bottom.
 | (C) Pole audit of existing models | 3–5 | **in progress**: E1 done, draft report (`E1_report.md`, updated with E2); paper decisions open | — |
 | (D) Non-periodic input representation | 4–8 | not started | differs from padded FNO? (month 8) |
 | (A) Pole layer and linear validation | 5–10 | not started | dispersion relations recovered (month 10) |
-| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals), E3 deep first pass done (`experiments/C/theory/`) | — |
+| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit), E3 deep first pass done (`experiments/C/theory/`) | — |
 | (A) Application 1: process dynamics | 11–16 | not started | — |
 | (D) Initial conditions and rollout | 13–19 | not started | — |
 | (A) Application 2: Cahn–Hilliard | 17–22 | not started | recover k_c, k_max (month 20) |
@@ -53,8 +53,12 @@ Suggested next steps (in order):
    noise-aware restarts / χ² certificate give 100 % at η = 1e-2 and separate −1 / −2 at
    η = 0.1 (−2 still 9/20). Second pass: releasing δ from the tied run reaches the floor on
    p6 (90 %); a minimal refit + order test + profile intervals (`e4_profile.py`) gives
-   CRB-level errors and honest intervals at η ≥ 1e-2. Next: model-error term for low noise;
-   linear-probe poles for deep (RQ4); E1 data.
+   CRB-level errors and honest intervals at η ≥ 1e-2. Third pass: the low-noise model
+   error is the input hold (data: first-order hold; layer: band-limited). Refitting with
+   the FOH response plus order reduction (`e4_profile.py --hold foh`) identifies every pole
+   in 32/32 groups, η = 1e-3 … 0.3, errors at the CRB, no false pole. Release under noise:
+   fine at η = 1e-2, worse than tied at η = 0.1. Next: the hold inside the neural layer;
+   noise-dependent release; linear-probe poles for deep (RQ4); E1 data.
 4. Optional E1 extras: log-parameterised decay rate; untied models with 64 steady modes
    (H1); weight decay excluded from poles; deep LNO v1 at its published size.
 
@@ -67,6 +71,39 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-14 — (C) E3 release under noise; E4 hold mismatch and first-order-hold refit; interval fix
+
+- Done: two-stage partial tie under noise (`e2_rescue.py --start release --rule noise`,
+  p6 fine, δ = 0.3, ALNO / LFNO, η = 1e-2 and 0.1, 80 runs; summary `e2_rescue_na_rel`,
+  stage `rescue_na_rel` in `e2_floor.py`). Diagnosis of the E4 model error (scratch
+  scripts). `e4_profile.py --hold foh`: refit, per-run backward order reduction, certificate,
+  consensus and order test with the exact first-order-hold response; 32 groups. Fixed the
+  profile-interval edge interpolation (now in √(S − min S)); band results rescored from the
+  stored profiles. README sections "two-stage partial tie under noise" and "E4, fourth pass";
+  third-pass table and bullets corrected.
+- Results:
+  - Release under noise: η = 1e-2 all poles 20/20 (both forms), certificate 4/4, no false
+    pole, as tied. η = 0.1 worse than tied: all poles 25 % (tied 45 %), −2 30–35 % (45 %),
+    test error 2.5–3.5 ×, best of 5 0/4 (3/4), 1–3 false poles.
+  - The low-noise "discretisation floor" is the input hold: `lfo.data.lti.response` uses a
+    piecewise-linear input, the layer a band-limited one. Bias ∝ dt² of the generator
+    (p6 −2: 4.3e-2 at N = 1024, 3.0e-3 at 4096), unchanged by decimating the data; with the
+    FOH model S at the truth is 1.3e-13 (float32), bias ≈ 1e-11.
+  - FOH refit: 32/32 groups consensus + order test passed, all poles identified, no false
+    pole, errors 0.5–1.3 × the CRB at every η (band at η = 1e-3: up to 100 ×), coverage
+    100/112 (misses: complex poles, the same seeds at every η). 159/160 reduced runs have
+    exactly the true poles.
+  - Correction to the previous entry: the interval interpolation shrank intervals narrower
+    than the first grid step ∝ η². Corrected band coverage: p4 η = 1e-3 0/4, 4/4, 4/4
+    (was 0 everywhere); p4 η = 1e-2 3, 4, 4 (was 0, 2, 1); p6 η = 1e-2 4, 1, 4, 4 (was
+    1, 0, 4, 4); p6 η = 1e-3 still 0/16. "0/28 cells at η = 1e-3" is 8/28; the complex
+    half-width at p6 η = 1e-2 is 8.4e-6, not 4.7e-7. Half-widths are 1.4–2 × the CRB.
+- Decisions: the hold of the input is treated as known measurement information (like the
+  sample rate) in the refit; the neural layer is unchanged.
+- Next: the FOH (or ZOH) response inside the layer, so training sees it; separate hold vs
+  reduction (band refit with reduction); noise-dependent release; joint intervals;
+  linear-probe poles for deep (RQ4); the report on the E1 data.
 
 ### 2026-11-14 — (C) E3 partial tie, second pass (release vs reset); E4 minimal refit and profile intervals
 

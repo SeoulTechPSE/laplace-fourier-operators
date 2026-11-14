@@ -13,10 +13,10 @@ families) make the poles practically identifiable, and does training then recove
 | `e2_richness.py` | phase 1: local identifiability of the tied layer at the truth, over 46 data configurations (p4, p6) | `results/e2_richness.md` / `.json` |
 | `e2_grid.py` | phase 1b: the phase-1 analysis over the time step dt = 20/N, N = 256–8192 | `results/e2_grid.md` / `.json` |
 | `e2_select.py` | best of 5 by validation loss on independent seeds 10–59 | `results/e2_select.md` / `.json` |
-| `e2_rescue.py` | truth-free single-slot restarts of polished runs; `--rule noise`: noise-aware acceptance (E4); `--start reset/release`: partial tie with R_res reset / released from the tied run (E3) | `results/e2_rescue{,_na,_rr,_rel}/*.json`, `results/e2_rescue{,_na,_rr,_rel}.md` |
+| `e2_rescue.py` | truth-free single-slot restarts of polished runs; `--rule noise`: noise-aware acceptance (E4); `--start reset/release`: partial tie with R_res reset / released from the tied run (E3), also under noise with `--rule noise` | `results/e2_rescue{,_na,_rr,_rel,_na_rel}/*.json`, `results/e2_rescue{,_na,_rr,_rel,_na_rel}.md` |
 | `e2_floor.py` | floor certificate without the truth: estimated floor + consensus poles; ratio and χ² (noise) rules | `results/e2_floor.md` / `.json` |
 | `e2_polish.py` | L-BFGS-B polish of saved Adam checkpoints (paired before/after), floor-certificate table | `results/e2_polish/*.json`, `results/e2_polish.md` |
-| `e4_profile.py` | E4: minimal-form refit of the certified report, order test, per-pole profile intervals (VarPro) | `results/e4_profile/*.json`, `results/e4_profile.md` |
+| `e4_profile.py` | E4: minimal-form refit of the certified report, order test, per-pole profile intervals (VarPro); `--hold foh`: refits with the data generator's first-order-hold input, with backward order reduction per run | `results/e4_profile{,_foh}/*.json`, `results/e4_profile{,_foh}.md` |
 | `e2_noise.py` | E4: pole error under output noise vs the Cramér–Rao bound of the minimal-form layer, both restart rules | `results/e2_noise.md` / `.json` |
 | `e2_figures.py` | figures: recovery by recipe stage; noise vs CRB | `results/figures/fig_e2_stages.png`, `fig_e4_noise.png` |
 | `e3_deep.py` | E3 deep first pass: bounded slots in full ALNO / LFNO stacks | `results/e3_deep/*.json`, `results/e3_deep.md` |
@@ -690,6 +690,30 @@ Train/oracle against the tied oracle. On p4 the columns in parentheses are −1 
 - On p4 both work (reset 100 %, release 90 %, the tied level); the reset counts are small
   (9–12 runs).
 
+## E3, layer setting: two-stage partial tie under noise
+
+`e2_rescue.py --start release --rule noise` on p6 fine (δ = 0.3, ALNO and LFNO forms, η =
+1e-2 and 0.1, seeds 10–29): the noise-aware tied run after its restarts → release δ →
+polish → noise-aware restarts. Reference: the noise-aware tied runs of the E4 second pass.
+
+| η | form | all poles (single run) | −1 / −2 | test rel. L2 (median) | best of 5: all | certified: consensus −1 / −2 | false |
+|---|---|---|---|---|---|---|---|
+| 1e-2 | tied | 100 % | 100 / 100 % | 6.1–6.3e-5 | 4/4 | 4/4, 4/4 | 0 |
+| 1e-2 | ALNO release | 100 % | 100 / 100 % | 1.0e-4 | 4/4 | 4/4, 4/4 | 0 |
+| 1e-2 | LFNO release | 100 % | 100 / 100 % | 8.0e-5 | 4/4 | 4/4, 4/4 | 0 |
+| 0.1 | tied | 45 % | 100 / 45 % | 2.5–2.7e-4 | 3/4 | 4/4, 0/4 | 1 |
+| 0.1 | ALNO release | 25 % | 85 / 30 % | 8.8e-4 | 0/4 | 3/4, 0/4 | 3 |
+| 0.1 | LFNO release | 25 % | 90 / 35 % | 6.3e-4 | 0/4 | 4/4, 0/4 | 1 |
+
+(full tables: `results/e2_rescue_na_rel.md`, `results/e2_floor.md`, stage `rescue_na_rel`)
+
+- **At η = 1e-2 the release keeps the tied result**: all poles in 20/20 runs, the
+  certificate certifies all 20 and reports the four poles in 4/4 groups, no false pole.
+- **At η = 0.1 the release costs accuracy.** R_res fits part of the noise: the test error rises 2.5–3.5 ×, −2 drops from 45 to 30–35 %, −1 from
+  100 to 85–90 %, best of 5 from 3/4 to 0/4 groups, and the certified consensus loses −2 in
+  every group (as the tied one does), with 1–3 false poles (tied: 1). The release is a remedy for the truncation floor; when
+  the noise dominates it, the tied form (or a smaller δ) is the better estimator.
+
 ## E4: pole error under output noise vs the Cramér–Rao bound
 
 `e2_noise.py`. Gaussian noise on the training and validation outputs, per sample with
@@ -797,7 +821,12 @@ level). Instead, per group of 5 runs after the noise-aware restarts, truth-free:
    consensus fails, the best run's poles are refitted and tested.
 5. Profile interval of each fitted Re μ: fix it at c × its value (c ∈ [1/3, 3]), refit the
    rest, keep the c with S(c) − min S ≤ χ²₁(0.95) σ̂² (95 % profile-likelihood interval).
-   A pole is identified if its interval closes on both sides.
+   A pole is identified if its interval closes on both sides. The edges are interpolated
+   linearly in √(S − min S) (S is quadratic near the minimum). (The first version
+   interpolated S itself; when the interval is narrower than the first grid step, 2e-3,
+   that shrinks the half-width ∝ η². The numbers below are recomputed from the stored
+   profiles; the first-commit version of this table understated the coverage at
+   η ≤ 1e-2.)
 
 Scoring with the truth: identified = a fitted pole within 0.1 of the true pole with a closed
 interval; covered = the interval contains the true Re μ; false = an identified pole that
@@ -805,12 +834,12 @@ matches no true pole. 4 groups per η.
 
 | system | η | order test passed | report from consensus | identified (per true pole) | covered | fit error / CRB (real poles) | false |
 |---|---|---|---|---|---|---|---|
-| p4 | 1e-3 | 1/4 | 0/4 | 4, 4, 4 | 0, 0, 0 | −1: 4.5e-5 / 2.5e-5 | 2 |
-| p4 | 1e-2 | 4/4 | 4/4 | 4, 4, 4 | 0, 2, 1 | −1: 1.9e-4 / 2.5e-4 | 0 |
+| p4 | 1e-3 | 1/4 | 0/4 | 4, 4, 4 | 0, 4, 4 | −1: 4.5e-5 / 2.5e-5 | 2 |
+| p4 | 1e-2 | 4/4 | 4/4 | 4, 4, 4 | 3, 4, 4 | −1: 1.9e-4 / 2.5e-4 | 0 |
 | p4 | 0.1 | 4/4 | 4/4 | 4, 4, 4 | 3, 4, 4 | −1: 2.1e-3 / 2.5e-3 | 0 |
 | p4 | 0.3 | 4/4 | 3/4 | 4, 2, 2 | 4, 3, 4 | −1: 3.7e-2 / 7.4e-3 | 0 |
 | p6 fine | 1e-3 | 1/4 | 0/4 | 4, 4, 4, 4 | 0, 0, 0, 0 | −2: 2.1e-2 / 2.1e-4 | 2 |
-| p6 fine | 1e-2 | 4/4 | 4/4 | 4, 4, 4, 4 | 1, 0, 4, 4 | −1: 5.4e-4 / 7.2e-4, −2: 2.2e-3 / 2.1e-3 | 0 |
+| p6 fine | 1e-2 | 4/4 | 4/4 | 4, 4, 4, 4 | 4, 1, 4, 4 | −1: 5.4e-4 / 7.2e-4, −2: 2.2e-3 / 2.1e-3 | 0 |
 | p6 fine | 0.1 | 4/4 | 1/4 | 4, 4, 1, 1 | 4, 2, 2, 3 | −1: 1.2e-2 / 7.2e-3, −2: 3.0e-2 / 2.1e-2 | 0 |
 | p6 fine | 0.3 | 4/4 | 1/4 | 4, 4, 1, 1 | 4, 2, 3, 1 | −1: 5.4e-2 / 2.2e-2, −2: 6.6e-2 / 6.4e-2 | 1 |
 
@@ -828,17 +857,70 @@ interval half-widths: `results/e4_profile.md`)
   data do not resolve the real part of the spectrum, and the method says so instead of
   reporting a wrong pole. In the fourth group the consensus has all four poles, and −2 is
   identified at −2.02 [−1.94, −2.10].
-- **Where the noise dominates, the intervals are honest.** At η ≥ 1e-2 the intervals of the
-  identified poles cover the truth for most real poles (p4 η = 0.1: 11/12), and there is
-  one false identified pole in the 24 groups at η ≥ 1e-2.
+- **Where the noise dominates, the intervals are honest.** At η ≥ 1e-2 the intervals cover
+  the truth for 67 of 84 group-pole intervals (the real poles of p4: 23/24), their
+  half-widths are 1.4–2 × the CRB, and there is one false identified pole in the 24 groups at η ≥ 1e-2.
 - **At low noise the statistics break down.** At η = 1e-3 the model error (the discretised
   layer vs the data, S ≈ 130 σ̂² on p6 at the truth at η = 1e-2, ≈ 700 σ̂² on p4) exceeds the
-  noise. The order test fails in 3/4 groups, the intervals are far too narrow (they cover
-  the truth in 0 of 28 cells), and 2 false poles get closed intervals per system. The χ²
-  tests and intervals are valid only when the model error is well below the noise
-  (η ≳ 1e-2 here).
-- The complex intervals are often too narrow even at η = 1e-2 (p6 −0.3+4i: covered 0/4,
-  error 1.4e-5, half-width 4.7e-7): same cause, at the precision of the complex poles.
+  noise. The order test fails in 3/4 groups, 2 false poles get closed intervals per
+  system, and on p6 the intervals miss the truth in all 16 cells (−2: error 2.1e-2, 100 ×
+  the CRB). On p4 the real-pole intervals still cover (8/8), the complex one does not (0/4).
+  The χ² tests and intervals are valid only when the model error is well below the noise
+  (η ≳ 1e-2 here). The fourth pass below finds the source of the model error and removes it.
+
+## E4, fourth pass: the model error is the input hold; first-order-hold refit
+
+Where the model error of the third pass comes from (diagnostic scripts, not kept):
+
+- The noise-free minimal fit of p6 is biased (−2: relative error 3.0e-3). The bias does not
+  change when the data are decimated (2 ×: 3.3e-3, 4 ×: 4.0e-3) or the window is shortened,
+  so it is not the frequency grid or the truncation of the window.
+- It scales as dt² of the data generator: N = 1024 gives 4.3e-2, N = 4096 3.0e-3 (16 × for
+  4 × dt). `lfo.data.lti.response` drives the system with a first-order-hold
+  (piecewise-linear) input between samples; the layer assumes a band-limited input. The
+  mismatch is O(dt²) and is the whole "discretisation floor": with the exact FOH response,
+  S at the true poles is 1.3e-13 (the float32 rounding of the data) instead of 8e-7, and the
+  noise-free bias is ≈ 1e-11. A Richardson step from decimated data cannot remove it (the
+  bias does not depend on the data grid).
+
+`e4_profile.py --hold foh` refits with the FOH transfer function. Per slot μ, with E = e^{μ dt},
+z_l = e^{iω_l dt}, I₀ = (E − 1)/μ, I₁ = (E − 1 − μ dt)/μ²:
+H_l = ((I₀ − I₁/dt) + (I₁/dt) z_l) / (z_l − E). Each certified run is refitted with this
+model and then reduced (backward elimination: drop a pole or make a complex pole real,
+taking the move with the smallest rise in S, while S_reduced − S_full ≤ χ²_Δp(0.99) σ̂²).
+The reduced refits replace the runs in the certificate, the consensus and the fallback; the
+order-test reference is the best full refit. Everything else as in the third pass; same 32
+groups.
+
+| system | η | certified (mean) | report from consensus | order test passed | identified | covered | error / CRB (real poles) | false |
+|---|---|---|---|---|---|---|---|---|
+| p4 | 1e-3 | 5.0 | 4/4 | 4/4 | 4, 4, 4 | 3, 4, 4 | −1: 2.1e-5 / 2.5e-5 | 0 |
+| p4 | 1e-2 | 5.0 | 4/4 | 4/4 | 4, 4, 4 | 3, 4, 4 | −1: 2.1e-4 / 2.5e-4 | 0 |
+| p4 | 0.1 | 5.0 | 4/4 | 4/4 | 4, 4, 4 | 3, 4, 4 | −1: 2.1e-3 / 2.5e-3 | 0 |
+| p4 | 0.3 | 5.0 | 4/4 | 4/4 | 4, 4, 4 | 3, 4, 4 | −1: 6.4e-3 / 7.4e-3 | 0 |
+| p6 fine | 1e-3 | 5.0 | 4/4 | 4/4 | 4, 4, 4, 4 | 4, 2, 4, 4 | −1: 3.3e-5 / 7.2e-5, −2: 1.2e-4 / 2.1e-4 | 0 |
+| p6 fine | 1e-2 | 5.0 | 4/4 | 4/4 | 4, 4, 4, 4 | 4, 2, 4, 4 | −1: 3.3e-4 / 7.2e-4, −2: 1.2e-3 / 2.1e-3 | 0 |
+| p6 fine | 0.1 | 5.0 | 4/4 | 4/4 | 4, 4, 4, 4 | 4, 2, 4, 4 | −1: 3.3e-3 / 7.2e-3, −2: 1.2e-2 / 2.1e-2 | 0 |
+| p6 fine | 0.3 | 4.8 | 4/4 | 4/4 | 4, 4, 4, 4 | 4, 2, 4, 4 | −1: 1.1e-2 / 2.2e-2, −2: 3.8e-2 / 6.4e-2 | 0 |
+
+(full table, with half-widths: `results/e4_profile_foh.md`)
+
+- **With the right input model every group identifies every pole, at every η.** 32/32
+  groups report from the consensus, pass the order test, close all intervals near the true
+  poles, and have no false pole (band model: order test 1/4 at η = 1e-3, consensus 1/4 at
+  p6 η = 0.1 and 0.3, 5 false poles). After the reduction 159 of 160 runs have exactly the
+  true poles (relative error < 0.1); the exception (p6 η = 0.3, seed 25: three real poles
+  near −0.38, no −1 or −2) is not certified.
+- **The errors are at the CRB, also at low noise.** Errors / CRB are 0.5–1.3 at every η (band
+  model at η = 1e-3: up to 100 ×). The rows scale with η because each seed uses the same noise
+  direction at every level.
+- **Coverage**: 100 of 112 group-pole intervals. The misses are complex poles (p4 −0.4+3i 3/4, p6 −0.3+4i
+  2/4 at every η, the same seeds each time); with 4 groups this is within what pointwise 95 %
+  intervals allow for one pole (P(≤ 2 of 4) ≈ 1.4 %, so p6 −0.3+4i is borderline).
+- **The hold of the input is part of the model.** The neural layer cannot know it from data at
+  this resolution; the refit uses it as prior knowledge of the measurement (the D/A hold of
+  the input, like the sample rate). Not separated here: how much of the single-run gain
+  comes from the hold and how much from the reduction step (the band refit has no reduction).
 
 ## E3, deep setting: first pass
 
@@ -880,11 +962,13 @@ dead; NaN and dead runs count as not recovered.)
 
 ## Next
 
-- E3 layer: the two-stage partial tie (tied, then release) on the noisy data and with the
-  steady branch untied above the residual band; whether the release needs the restarts.
-- E4: the model-error limit. Estimate the discretisation floor (e.g. from a second grid)
-  and add it to σ̂², so that the tests and intervals hold at low noise; simultaneous
-  (joint) intervals instead of pointwise ones.
+- E3 layer: a noise-dependent release (δ chosen by the χ² order test, or released only
+  when the tied fit fails the certificate); the steady branch untied above the residual
+  band; whether the release needs the restarts.
+- E4: the FOH (or zero-order-hold) response inside the neural layer itself, so that
+  training, not only the refit, sees the right input model; separate the hold from the
+  reduction step (band refit with reduction); simultaneous (joint) intervals; more groups
+  for the complex-pole coverage.
 - E4: the two-stage report (consensus → minimal refit → order test) on the E1 data
   (step / ramp / PRBS / smooth, T = 20), as the truth-free version of E1 finding 3.
 - E3 deep: linear-probe poles of trained deep models (RQ4); the dead-start LFNO runs

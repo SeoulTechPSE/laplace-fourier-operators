@@ -30,18 +30,21 @@ Partial-tie starts (E3, H3; ``--start``):
            pin a wrong pole)
   release  the tied-layer run on the same data and seed after its own restarts (``_rescue.pt``
            of the tied condition), loaded with R_res = 0 (delta schedule 0 -> delta), then a
-           full polish, then the restarts. Truth-free: the tied run used no truth.
+           full polish, then the restarts. Truth-free: the tied run used no truth. With
+           ``--rule noise`` the tied start is the noise-aware run (``_rescue_na.pt``), for the
+           noisy partial-tie conditions (``*_pt03_n*``, which have no Adam runs of their own)
 
     python experiments/C/theory/e2_rescue.py --cond p6_ms16_T80_N4096 --variant damp8_ms --seeds 10 11
     python experiments/C/theory/e2_rescue.py --cond p6_ms16_T80_N4096_n1e-1 --variant damp8_ms --rule noise
     python experiments/C/theory/e2_rescue.py --cond p6_ms16_T80_N4096_alno_pt03 --variant damp8_ms --start release
-    python experiments/C/theory/e2_rescue.py --summarize      # writes results/e2_rescue{,_rr,_rel,_na}.md
+    python experiments/C/theory/e2_rescue.py --summarize      # writes results/e2_rescue{,_rr,_rel,_na,_na_rel}.md
 """
 from __future__ import annotations
 
 import argparse
 import json
 import math
+import re
 import sys
 import time
 from pathlib import Path
@@ -131,16 +134,18 @@ def reset_residual(model):
 
 
 def tied_base(cond):
-    """Tied condition with the same data as a partial-tie condition."""
-    for k in ("_alno_pt", "_lfno_pt"):
-        if k in cond:
-            return cond[:cond.index(k)]
-    raise ValueError(cond)
+    """Tied condition with the same data as a partial-tie condition (drops ``_alno_pt..`` /
+    ``_lfno_pt..``, keeps a noise suffix)."""
+    out = re.sub(r"_(alno|lfno)_pt\d+", "", cond)
+    if out == cond:
+        raise ValueError(cond)
+    return out
 
 
 def run(cond, variant, seed, device, rule="ratio", start="lbfgs"):
     name = T.run_name(cond, variant, seed)
-    ck = (T.RUNS / f"{T.run_name(tied_base(cond), variant, seed)}_rescue.pt" if start == "release"
+    tied_name = T.run_name(tied_base(cond), variant, seed) if start == "release" else None
+    ck = (T.RUNS / f"{tied_name}_rescue{tag(rule)}.pt" if start == "release"
           else T.RUNS / f"{name}_lbfgs.pt")
     if not ck.exists():
         print(f"skip {name}: no checkpoint {ck.name}", flush=True)
@@ -197,7 +202,7 @@ def run(cond, variant, seed, device, rule="ratio", start="lbfgs"):
     loss = train_loss(model, data, device)
     after = P.score(model, data, mu_true, beta_true, device)
     res = dict(cond=cond, variant=variant, seed=seed, system=system, n_per_20=N, seconds=round(time.time() - t0, 1),
-               oracle_rel_l2=json.loads((P.OUT / f"{name}.json").read_text())["oracle_rel_l2"],
+               oracle_rel_l2=json.loads((P.OUT / f"{tied_name or name}.json").read_text())["oracle_rel_l2"],
                true_poles=[[float(z.real), float(z.imag)] for z in E.true_folded(mu_true, beta_true)[0]],
                train_before=loss0, train_after=loss, moves=moves, before=before, after=after, rule=rule,
                noise_regime=bool(noisy), sigma2=sig2, eta_hat=float(np.sqrt(n_t * sig2)), sse_before=S0,
@@ -223,7 +228,8 @@ CASES = [("p4_ms16_T20", "mixed_off_ms"), ("p4_ms16_T20", "damp8_ms"),
          ("p6_ms16_T80_N4096_n1e-1", "damp8_ms"), ("p6_ms16_T80_N4096_n3e-1", "damp8_ms"),
          ("p4_ms16_T20_alno_pt03", "damp8_ms"), ("p4_ms16_T20_lfno_pt03", "damp8_ms"),
          ("p6_ms16_T80_N4096_alno_pt003", "damp8_ms"), ("p6_ms16_T80_N4096_alno_pt03", "damp8_ms"),
-         ("p6_ms16_T80_N4096_lfno_pt003", "damp8_ms"), ("p6_ms16_T80_N4096_lfno_pt03", "damp8_ms")]
+         ("p6_ms16_T80_N4096_lfno_pt003", "damp8_ms"), ("p6_ms16_T80_N4096_lfno_pt03", "damp8_ms"),
+         *((f"p6_ms16_T80_N4096_{k}_pt03_n{e}", "damp8_ms") for k in ("alno", "lfno") for e in ("1e-2", "1e-1"))]
 
 
 def summarize():
@@ -232,6 +238,8 @@ def summarize():
           "(plus a reset-only candidate), accept if training loss falls ≥ 1 %")
     table(T.R.RESULTS / "e2_rescue_rel", "e2_rescue_rel", "partial tie released from the restarted tied run "
           "(R_res = 0, then a full polish; before = after that polish), accept if training loss falls ≥ 1 %")
+    table(T.R.RESULTS / "e2_rescue_na_rel", "e2_rescue_na_rel", "partial tie released from the noise-aware tied run, "
+          f"then noise-aware restarts (accept if S falls ≥ {CHI2_MOVE} σ̂² in the noise regime)")
     table(OUT_NA, "e2_rescue_na", f"noise-aware rule: in the noise regime (S ≤ {NOISE_REGIME:g} n_s n_t σ̂²) "
           f"minimise S and accept if S falls ≥ {CHI2_MOVE} σ̂², otherwise accept if training loss falls ≥ 1 %")
 
@@ -240,11 +248,12 @@ def table(src, stem, rule):
     rs = [json.loads(f.read_text()) for f in sorted(src.glob("*.json"))]
     if not rs:
         return
-    na = src == OUT_NA
+    na = src.name.startswith("e2_rescue_na")
     lab = lambda z: f"{z[0]:+g}{z[1]:+g}i" if z[1] else f"{z[0]:+g}"
     ok = lambda s: max(s["pole_error"]) < T.RECOVERED
     lines = ["# E2: truth-free single-slot restarts after the polish" + {"e2_rescue_na": ", noise-aware rule (E4)", "e2_rescue_rr": ", partial tie with residual reset (E3)",
-                                                               "e2_rescue_rel": ", partial tie released from the tied run (E3)"}.get(stem, ""), "",
+                                                               "e2_rescue_rel": ", partial tie released from the tied run (E3)",
+                                                               "e2_rescue_na_rel": ", partial tie released from the tied run, under noise (E3 / E4)"}.get(stem, ""), "",
              f"Every polished run (seeds 10-29) gets up to {ROUNDS} rounds of single-slot moves (residue 0, "
              f"{SCREEN_ITERS}-iteration screen, {rule}, then full polish). "
              "Before = after the polish (e2_polish.py). Best of 5: lowest validation loss in groups of 5 "

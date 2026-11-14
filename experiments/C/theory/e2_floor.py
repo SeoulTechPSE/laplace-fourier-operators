@@ -52,10 +52,12 @@ CASES = [("p4_ms16_T20", "mixed_off_ms"), ("p4_ms16_T20", "damp8_ms"),
          ("p6_ms16_T80_N4096_n1e-1", "damp8_ms"), ("p6_ms16_T80_N4096_n3e-1", "damp8_ms"),
          ("p4_ms16_T20_alno_pt03", "damp8_ms"), ("p4_ms16_T20_lfno_pt03", "damp8_ms"),
          ("p6_ms16_T80_N4096_alno_pt003", "damp8_ms"), ("p6_ms16_T80_N4096_alno_pt03", "damp8_ms"),
-         ("p6_ms16_T80_N4096_lfno_pt003", "damp8_ms"), ("p6_ms16_T80_N4096_lfno_pt03", "damp8_ms")]
+         ("p6_ms16_T80_N4096_lfno_pt003", "damp8_ms"), ("p6_ms16_T80_N4096_lfno_pt03", "damp8_ms"),
+         *((f"p6_ms16_T80_N4096_{k}_pt03_n{e}", "damp8_ms") for k in ("alno", "lfno") for e in ("1e-2", "1e-1"))]
 STAGES = {"polish": (P.OUT, "_lbfgs"), "rescue": (T.R.RESULTS / "e2_rescue", "_rescue"),
           "rescue_na": (RS.OUT_NA, "_rescue_na"), "rescue_rr": (T.R.RESULTS / "e2_rescue_rr", "_rescue_rr"),
-          "rescue_rel": (T.R.RESULTS / "e2_rescue_rel", "_rescue_rel")}
+          "rescue_rel": (T.R.RESULTS / "e2_rescue_rel", "_rescue_rel"),
+          "rescue_na_rel": (T.R.RESULTS / "e2_rescue_na_rel", "_rescue_na_rel")}
 NOISY = lambda cond: T.extras(cond)["noise"] > 0
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -155,7 +157,8 @@ def analyse(stage, cond, variant, rule="ratio"):
 def main():
     jobs = [(st, c, v, "ratio") for st in ("polish", "rescue") for c, v in CASES]
     jobs += [(st, c, v, "ratio") for st in ("rescue_rr", "rescue_rel") for c, v in CASES if "_pt" in c]
-    jobs += [(st, c, v, "noise") for st in ("rescue", "rescue_na") for c, v in CASES if NOISY(c)]
+    jobs += [(st, c, v, "noise") for st in ("rescue", "rescue_na") for c, v in CASES if NOISY(c) and "_pt" not in c]
+    jobs += [("rescue_na_rel", c, v, "noise") for c, v in CASES if NOISY(c) and "_pt" in c]
     out = [a for st, c, v, rule in jobs if (a := analyse(st, c, v, rule))]
     (T.R.RESULTS / "e2_floor.json").write_text(json.dumps(out, indent=1, default=float))
     lab = lambda z: f"{z[0]:+.2f}{z[1]:+.2f}i" if z[1] else f"{z[0]:+.2f}"

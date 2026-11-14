@@ -217,6 +217,10 @@ CONDITIONS = {
     "p4_ms16_T20_n3e-1": ("p4", "multisine", 20.0, 16, 1024, dict(noise=3e-1)),
     "p6_ms16_T80_N4096_n1e-1": ("p6", "multisine", 80.0, 16, 4096, dict(noise=1e-1)),
     "p6_ms16_T80_N4096_n3e-1": ("p6", "multisine", 80.0, 16, 4096, dict(noise=3e-1)),
+    # E3 / E4: partial tie under noise (released from the noise-aware tied runs; no Adam runs of their own)
+    **{f"p6_ms16_T80_N4096_{k}_pt03_n{e}": ("p6", "multisine", 80.0, 16, 4096,
+                                            dict(kind=f"{k}_pt", modes=256, delta=0.3, noise=float(e)))
+       for k in ("alno", "lfno") for e in ("1e-2", "1e-1")},
 }
 NOISE_GROUP = 5                                     # runs s, s' with s // 5 == s' // 5 share one noise draw
 N_DEFAULT = 1024                                    # grid: dt = 20 / N (5th entry of a condition, optional)

@@ -87,4 +87,8 @@ Groups of 5 consecutive seeds (10-29). Floor estimate = lowest training loss in 
 | rescue_na | noise | p6_ms16_T80_N4096_n1e-2 | damp8_ms | 100% | 180.05 | 19/19 | 4/4 | 4/4 | 4/4 | 4/4 | 0 | -0.50+1.50i, -0.30+4.00i, -1.00, -1.97 (20 cert.) |
 | rescue_na | noise | p6_ms16_T80_N4096_n1e-1 | damp8_ms | 45% | 1791.65 | 9/20 | 4/4 | 4/4 | 4/4 | 0/4 | 1 | -0.30+4.00i, -0.50+1.50i, -1.00 (20 cert.) |
 | rescue_na | noise | p6_ms16_T80_N4096_n3e-1 | damp8_ms | 15% | 5174.07 | 3/20 | 4/4 | 4/4 | 0/4 | 0/4 | 3 | -0.47+1.51i, -0.30+4.00i (20 cert.) |
+| rescue_na_rel | noise | p6_ms16_T80_N4096_alno_pt03_n1e-2 | damp8_ms | 100% | 180.05 | 20/20 | 4/4 | 4/4 | 4/4 | 4/4 | 0 | -0.50+1.50i, -0.30+4.00i, -0.99, -1.99 (20 cert.) |
+| rescue_na_rel | noise | p6_ms16_T80_N4096_alno_pt03_n1e-1 | damp8_ms | 25% | 1791.57 | 5/20 | 4/4 | 4/4 | 3/4 | 0/4 | 3 | -0.50+1.50i, -0.30+4.00i, -0.94 (20 cert.) |
+| rescue_na_rel | noise | p6_ms16_T80_N4096_lfno_pt03_n1e-2 | damp8_ms | 100% | 180.05 | 20/20 | 4/4 | 4/4 | 4/4 | 4/4 | 0 | -0.50+1.50i, -0.30+4.00i, -1.98, -1.00 (20 cert.) |
+| rescue_na_rel | noise | p6_ms16_T80_N4096_lfno_pt03_n1e-1 | damp8_ms | 25% | 1791.61 | 5/20 | 4/4 | 4/4 | 4/4 | 0/4 | 1 | -0.50+1.51i, -0.30+4.00i, -0.97 (20 cert.) |
 

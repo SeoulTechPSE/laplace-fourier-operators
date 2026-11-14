@@ -20,12 +20,29 @@ runs after the noise-aware restarts (stage ``rescue_na``), truth-free:
               likelihood interval)
   identified  a fitted pole whose interval closes on both sides
 
+``--hold foh``: the refits use the exact sampled response to a first-order-hold (piecewise-linear)
+input, the input model of the data generator (lfo.data.lti.response), instead of the layer's
+band-limited one. Per pole, the discrete filter x_{j+1} = E x_j + b0 u_j + b1 u_{j+1}
+(E = e^{mu dt}, b0 = I0 - I1 / dt, b1 = I1 / dt) replaces 1 / (i omega - mu) by
+(b0 + b1 z_l) / (z_l - E), z_l = e^{i omega_l dt}; the transient term keeps its form. At the truth
+this leaves S ~ 1e-13 (float32 data) instead of 8e-7 (p6), and no pole bias: the layer's
+"discretisation floor" is the hold mismatch. With foh the certificate and the order test also
+use FOH refits. Each run's effective poles are refitted and then reduced by backward elimination
+(drop a pole or make a complex pole real, the move that raises S least, while the rise stays below
+chi2_dp(0.99) sigma^2); the
+reduced refit replaces the run (poles and S) in the certificate, the consensus and the best-run
+fallback, and the best full refit is the reference of the order test (dp = its free parameters -
+the report's). Earlier versions used the full refits' poles (spare poles drift, unpruned) or the
+runs' band-model poles with refitted S (wrong runs certified); both broke the consensus.
+Outputs then go to ``results/e4_profile_foh``.
+
 The truth is used only to score: per true pole, whether a fitted pole is within 0.1 with a
 closed interval, whether the interval covers the true Re mu, and fitted poles with closed
 intervals that match no true pole (false).
 
     python experiments/C/theory/e4_profile.py --cond p6_ms16_T80_N4096_n1e-1 --group 10
-    python experiments/C/theory/e4_profile.py --summarize    # writes results/e4_profile.md
+    python experiments/C/theory/e4_profile.py --hold foh --cond p6_ms16_T80_N4096_n1e-3 --group 10
+    python experiments/C/theory/e4_profile.py --summarize    # writes results/e4_profile{,_foh}.md
 """
 from __future__ import annotations
 
@@ -46,6 +63,7 @@ import e2_floor as F  # noqa: E402
 
 P, RS, T, E = F.P, F.RS, F.T, F.E
 OUT = T.R.RESULTS / "e4_profile"
+HOLDS = ("band", "foh")
 STAGE, VARIANT = "rescue_na", "damp8_ms"
 CONDS = [c for c, v in F.CASES if v == VARIANT and F.NOISY(c)]
 BAD = 1e30                                          # objective returned for non-finite S
@@ -82,7 +100,8 @@ class VarPro:
     so the objective is S); only the poles are iterated (L-BFGS on S with autograd gradients).
     Real poles have a real residue (1 basis column), complex poles a complex one (2 columns)."""
 
-    def __init__(self, data, t, device):
+    def __init__(self, data, t, device, hold="band"):
+        self.hold = hold
         x, y = (a.to(device).double() for a in data["train"])
         self.n_t = x.shape[1]
         self.alpha = torch.fft.fft(x)
@@ -101,9 +120,20 @@ class VarPro:
             i += 1 if r else 2
         return torch.stack(out)
 
+    def transfer(self, mu):
+        """(L, n) frequency response per pole: band-limited input (the layer) or first-order hold."""
+        if self.hold == "band":
+            return 1 / (self.iw[:, None] - mu[None, :])
+        dt = self.t[1] - self.t[0]
+        z = mu * dt
+        Ek = torch.exp(z)
+        I0, I1 = (Ek - 1) / mu, (Ek - 1 - z) / mu ** 2       # int_0^dt e^{mu(dt-s)} (1, s) ds
+        zl = torch.exp(self.iw * dt)[:, None]
+        return ((I0 - I1 / dt)[None] + (I1 / dt)[None] * zl) / (zl - Ek[None])
+
     def S(self, theta, real):
         mu = self.mu(theta, real)
-        H = 1 / (self.iw[:, None] - mu[None, :])                                      # (L, n)
+        H = self.transfer(mu)                                                         # (L, n)
         aH = self.alpha[:, :, None] * H[None]                                         # (b, L, n)
         trans = -(aH.sum(1) / self.n_t)[:, :, None] * torch.exp(mu[:, None] * self.t[None])[None]   # (b, n, n_t)
         phi = trans + torch.fft.ifft(aH, dim=1).transpose(1, 2)
@@ -182,7 +212,10 @@ def profile(vp, theta, real, k):
 
 
 def interval(cs, S, thr):
-    """c range around c = 1 with S - min S <= thr (linear crossing in log c); None side = open."""
+    """c range around c = 1 with S - min S <= thr; None side = open. The crossing is interpolated
+    linearly in sqrt(S - min S) vs log c, which is exact for a quadratic profile. (A first version
+    interpolated S itself: when the interval is narrower than the first grid step, U_MIN = 2e-3,
+    that shrinks the half-width by about thr / (S(c_1) - min S), i.e. ~ eta^2 instead of eta.)"""
     i0 = int(np.argmin(np.abs(cs - 1.0)))
     ok = S - S.min() <= thr
     out = []
@@ -195,13 +228,43 @@ def interval(cs, S, thr):
             out.append(None)
             continue
         a, b = np.log(cs[i]), np.log(cs[j])
-        fa, fb = S[i] - S.min() - thr, S[j] - S.min() - thr
+        fa, fb = (np.sqrt(max(S[k] - S.min(), 0.0)) - np.sqrt(thr) for k in (i, j))
         out.append(float(np.exp(a + (b - a) * fa / (fa - fb))) if fb != fa else float(cs[j]))
     return out
 
 
-def run(cond, g0, device):
-    if (OUT / f"{cond}_g{g0}.json").exists():
+def reduce(vp, poles, sig2):
+    """Refit a run's effective poles, then backward elimination: of the moves "drop pole k" and "make
+    complex pole k real", take the one that raises S least, while S_reduced - S_full <= chi2_dp(0.99)
+    sigma^2 (dp = parameters removed). Returns
+    (reduced poles, S_reduced, S_full, free parameters of the full refit)."""
+    th, re_ = pack(list(poles))
+    th, S_full = vp.fit(th, re_)
+    p_full = n_eff(re_)
+    cur, S_cur = unpack_theta(th, re_), S_full
+    cur = list(cur)
+    while len(cur) > 1:
+        trials = []
+        moves = [cur[:k] + cur[k + 1:] for k in range(len(cur))]                    # drop pole k
+        moves += [cur[:k] + [complex(z.real, 0.0)] + cur[k + 1:] for k, z in enumerate(cur) if z.imag]  # make it real
+        for m in moves:
+            th, re_ = pack(m)
+            th, S = vp.fit(th, re_)
+            trials.append((S, unpack_theta(th, re_), n_eff(re_)))
+        S, cand, pc = min(trials, key=lambda x: x[0])
+        if not S - S_full <= chi2.ppf(0.99, p_full - pc) * sig2:
+            break
+        cur, S_cur = cand, S
+    return np.array(cur), S_cur, S_full, p_full
+
+
+def out_dir(hold):
+    return OUT if hold == "band" else OUT.with_name(f"{OUT.name}_{hold}")
+
+
+def run(cond, g0, device, hold="band"):
+    out = out_dir(hold)
+    if (out / f"{cond}_g{g0}.json").exists():
         return
     system, family, Tw, Kk, N = T.unpack(cond)
     t0 = time.time()
@@ -212,19 +275,26 @@ def run(cond, g0, device):
     sig2 = RS.noise_var(data["train"][1])
     mask = runs[0]["model"].pr.parametrizations.mu[0].mask.flatten().cpu().numpy()
     p = n_eff(list(mask == 0))                               # effective free parameters of the 8-slot layer
+    vp = VarPro(data, t, device, hold)
+    ref = None
+    if hold != "band":                                       # runs replaced by their reduced FOH refits
+        for r in runs:
+            r["eff"], r["S"], r["S_full"], r["p_full"] = reduce(vp, r["eff"], sig2)
+        p = max(r["p_full"] for r in runs)
+        ref = min(runs, key=lambda r: r["S_full"])
     s_min = min(r["S"] for r in runs)
     cert = [r for r in runs if r["S"] - s_min <= chi2.ppf(0.99, p) * sig2]
     best = min(runs, key=lambda r: r["S"])
+    S_ref, p_ref = (best["S"], p) if ref is None else (ref["S_full"], ref["p_full"])   # order-test reference
     # candidate reports: the consensus (>= 2 certified runs), then the best run's effective poles
     cands = ([("consensus", F.consensus([r["eff"] for r in cert]))] if len(cert) >= 2 else []) + [("best run", best["eff"])]
-    vp = VarPro(data, t, device)
     tried = []
     for src, rep in cands:
         if rep.size == 0:
             continue
         theta, real = pack(list(rep))
         theta, S_fit = vp.fit(theta, real)
-        dS, dp = S_fit - best["S"], max(p - n_eff(real), 1)
+        dS, dp = S_fit - S_ref, max(p_ref - n_eff(real), 1)
         tried.append(dict(source=src, theta=theta, real=real, S=S_fit, dS=dS / sig2, dp=dp,
                           order_ok=bool(dS <= chi2.ppf(0.99, dp) * sig2)))
         if tried[-1]["order_ok"]:
@@ -241,15 +311,18 @@ def run(cond, g0, device):
         k += 1 if r else 2
     true = E.true_folded(mu_true, beta_true)[0]
     res = dict(cond=cond, group=g0, system=system, eta_hat=float(np.sqrt(data["train"][1].shape[1] * sig2)),
-               sigma2=sig2, p=p, n_cert=len(cert), best_seed=best["seed"], best_S=best["S"],
+               sigma2=sig2, p=p, n_cert=len(cert), best_seed=best["seed"], best_S=best["S"], S_ref=S_ref, p_ref=p_ref,
+               runs=[dict(seed=r["seed"], S=r["S"], S_full=r.get("S_full"), certified=any(r is c for c in cert),
+                          poles=[[float(z.real), float(z.imag)] for z in r["eff"]]) for r in runs],
                tried=[dict(source=x["source"], S=x["S"], dS=x["dS"], dp=x["dp"], order_ok=x["order_ok"],
                            poles=[[float(z.real), float(z.imag)] for z in unpack_theta(x["theta"], x["real"])])
                       for x in tried],
                source=chosen["source"], order_ok=chosen["order_ok"],
                report=[[float(z.real), float(z.imag)] for z in mu_fit], profiles=profs,
-               true_poles=[[float(z.real), float(z.imag)] for z in true], seconds=round(time.time() - t0, 1))
-    OUT.mkdir(parents=True, exist_ok=True)
-    (OUT / f"{cond}_g{g0}.json").write_text(json.dumps(res, indent=1, default=float))
+               true_poles=[[float(z.real), float(z.imag)] for z in true], hold=hold,
+               seconds=round(time.time() - t0, 1))
+    out.mkdir(parents=True, exist_ok=True)
+    (out / f"{cond}_g{g0}.json").write_text(json.dumps(res, indent=1, default=float))
     fmt = lambda iv: "[" + ", ".join("open" if x is None else f"{x:.3f}" for x in iv) + "]"
     print(f"{cond} g{g0}: {len(cert)} cert., best s{best['seed']}, "
           + ", ".join(f"{x['source']} dS {x['dS']:.1f} (dp {x['dp']}, ok {x['order_ok']})" for x in tried)
@@ -261,7 +334,11 @@ def score(r):
     """Truth-scored view of one group, per true pole: (fitted pole, interval closed, interval covers
     the true Re mu, relative error of the fit, relative half-width); and the false identified poles."""
     true = [complex(*z) for z in r["true_poles"]]
-    fit = [(complex(*pr["mu"]), pr["interval"]) for pr in r["profiles"]]
+    fit = []
+    for pr in r["profiles"]:                         # interval recomputed from the stored profile
+        z = complex(*pr["mu"])
+        lo, hi = interval(np.array(pr["c"]), np.array(pr["dS"]), LEVEL)
+        fit.append((z, [None if lo is None else z.real * lo, None if hi is None else z.real * hi]))
     per = {}
     used = set()
     for z in true:
@@ -280,10 +357,21 @@ def score(r):
 
 
 def summarize():
+    for hold in HOLDS:
+        summarize_hold(hold)
+
+
+def summarize_hold(hold):
     import e2_noise as NZ
-    rs = [json.loads(f.read_text()) for f in sorted(OUT.glob("*.json"))]
+    rs = [json.loads(f.read_text()) for f in sorted(out_dir(hold).glob("*.json"))]
+    if not rs:
+        return
     lab = lambda z: f"{z.real:+g}{z.imag:+g}i" if z.imag else f"{z.real:+g}"
-    lines = ["# E4: minimal-form refit, order test and profile intervals", "",
+    lines = ["# E4: minimal-form refit, order test and profile intervals"
+             + (", first-order-hold refits" if hold == "foh" else ""), "",
+             *(["Refits, certificate and order-test reference use the exact first-order-hold response "
+                "(the data generator's input model) instead of the layer's band-limited one.", ""]
+               if hold == "foh" else []),
              "Stage `rescue_na` (noise-aware restarts), groups of 5 seeds (one noise draw each), truth-free up "
              "to the scores. Certified: S − S_min ≤ χ²_p(0.99) σ̂². Report: the consensus of the certified runs "
              "(≥ 2), else the best run's effective poles. The report is refitted as a minimal tied layer (one "
@@ -322,7 +410,7 @@ def summarize():
                          f"{sum(r['source'] == 'consensus' for r in gr)}/{len(gr)} | {sum(r['order_ok'] for r in gr)}/{len(gr)} | "
                          + " | ".join(cells) + f" | {sum(s[1] for s in sc)} |")
         lines.append("")
-    (T.R.RESULTS / "e4_profile.md").write_text("\n".join(lines))
+    (T.R.RESULTS / f"{out_dir(hold).name}.md").write_text("\n".join(lines))
     print("\n".join(lines))
 
 
@@ -330,6 +418,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--cond", nargs="+", default=CONDS)
     ap.add_argument("--group", nargs="+", type=int, default=[10, 15, 20, 25])
+    ap.add_argument("--hold", choices=HOLDS, default="band")
     ap.add_argument("--summarize", action="store_true")
     a = ap.parse_args()
     if a.summarize:
@@ -337,7 +426,7 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     for c in a.cond:
         for g in a.group:
-            run(c, g, device)
+            run(c, g, device, a.hold)
 
 
 if __name__ == "__main__":
