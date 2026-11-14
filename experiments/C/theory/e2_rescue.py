@@ -229,7 +229,8 @@ CASES = [("p4_ms16_T20", "mixed_off_ms"), ("p4_ms16_T20", "damp8_ms"),
          ("p4_ms16_T20_alno_pt03", "damp8_ms"), ("p4_ms16_T20_lfno_pt03", "damp8_ms"),
          ("p6_ms16_T80_N4096_alno_pt003", "damp8_ms"), ("p6_ms16_T80_N4096_alno_pt03", "damp8_ms"),
          ("p6_ms16_T80_N4096_lfno_pt003", "damp8_ms"), ("p6_ms16_T80_N4096_lfno_pt03", "damp8_ms"),
-         *((f"p6_ms16_T80_N4096_{k}_pt03_n{e}", "damp8_ms") for k in ("alno", "lfno") for e in ("1e-2", "1e-1"))]
+         *((f"p6_ms16_T80_N4096_{k}_pt03_n{e}", "damp8_ms") for k in ("alno", "lfno") for e in ("1e-2", "1e-1")),
+         *((c, "damp8_ms") for c in ['p4_ms16_T20_foh', 'p6_ms16_T80_foh', 'p6_ms16_T80_N4096_foh', 'p6_ms16_T80_N4096_n1e-2_foh', 'p6_ms16_T80_N4096_n1e-1_foh'])]
 
 
 def summarize():

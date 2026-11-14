@@ -16,11 +16,11 @@ families) make the poles practically identifiable, and does training then recove
 | `e2_rescue.py` | truth-free single-slot restarts of polished runs; `--rule noise`: noise-aware acceptance (E4); `--start reset/release`: partial tie with R_res reset / released from the tied run (E3), also under noise with `--rule noise` | `results/e2_rescue{,_na,_rr,_rel,_na_rel}/*.json`, `results/e2_rescue{,_na,_rr,_rel,_na_rel}.md` |
 | `e2_floor.py` | floor certificate without the truth: estimated floor + consensus poles; ratio and χ² (noise) rules | `results/e2_floor.md` / `.json` |
 | `e2_polish.py` | L-BFGS-B polish of saved Adam checkpoints (paired before/after), floor-certificate table | `results/e2_polish/*.json`, `results/e2_polish.md` |
-| `e4_profile.py` | E4: minimal-form refit of the certified report, order test, per-pole profile intervals (VarPro); `--hold foh`: refits with the data generator's first-order-hold input, with backward order reduction per run | `results/e4_profile{,_foh}/*.json`, `results/e4_profile{,_foh}.md` |
+| `e4_profile.py` | E4: minimal-form refit of the certified report, order test, per-pole profile intervals (VarPro); `--hold foh`: refits with the data generator's first-order-hold input, with backward order reduction per run; `--hold band_red`: band-limited refits with the same reduction (control) | `results/e4_profile{,_foh,_band_red}/*.json`, `results/e4_profile{,_foh,_band_red}.md` |
 | `e2_noise.py` | E4: pole error under output noise vs the Cramér–Rao bound of the minimal-form layer, both restart rules | `results/e2_noise.md` / `.json` |
 | `e2_figures.py` | figures: recovery by recipe stage; noise vs CRB | `results/figures/fig_e2_stages.png`, `fig_e4_noise.png` |
 | `e3_deep.py` | E3 deep first pass: bounded slots in full ALNO / LFNO stacks | `results/e3_deep/*.json`, `results/e3_deep.md` |
-| `e2_train.py` | phase 2: train the E1 tied layer on selected configurations, 10 seeds; `--variant` controls (warm, no spare slot, real-constrained slots); E3 steady branches and partial ties (`*_alno`, `*_lfno`, `*_pt*` conditions) | `results/e2_train/*.json`, `results/e2_train.md` |
+| `e2_train.py` | phase 2: train the E1 tied layer on selected configurations, 10 seeds; `--variant` controls (warm, no spare slot, real-constrained slots); E3 steady branches and partial ties (`*_alno`, `*_lfno`, `*_pt*` conditions); tied layer with the first-order-hold response (`*_foh` conditions, `FOHPoleResidue`) | `results/e2_train/*.json`, `results/e2_train.md` |
 
 ```
 python experiments/C/theory/e2_richness.py                  # < 1 min (CPU)
@@ -922,6 +922,76 @@ groups.
   the input, like the sample rate). Not separated here: how much of the single-run gain
   comes from the hold and how much from the reduction step (the band refit has no reduction).
 
+## E4, fifth pass: hold vs reduction; the hold inside the layer
+
+Two questions left by the fourth pass.
+
+**1. Which part of the fourth-pass gain is the hold, and which the reduction?**
+`e4_profile.py --hold band_red` repeats the fourth pass with the band-limited model, so it has
+the per-run reduction but not the hold. Same 32 groups.
+
+| system | η | band (3rd pass) | band + reduction | FOH + reduction (4th pass) |
+|---|---|---|---|---|
+| p4 | 1e-3 | order 1/4, consensus 0/4, 2 false | order 4/4, consensus 1/4, **4 false**, covered 0, 1, 1 | 4/4, 4/4, 0 false, covered 3, 4, 4 |
+| p4 | 1e-2 | 4/4, 4/4, 0 false | 4/4, 2/4, 0 false, −1 error 2.4 × CRB | 4/4, 4/4, 0 false, −1 0.84 × CRB |
+| p4 | 0.1, 0.3 | 4/4, 4/4 and 3/4, 0 false | 4/4, 4/4, 0 false, errors as FOH | 4/4, 4/4, 0 false |
+| p6 fine | 1e-3 | 1/4, 0/4, 2 false | 4/4, 1/4, **3 false**, covered 0/16, −2 error 160 × CRB | 4/4, 4/4, 0 false, covered 14/16 |
+| p6 fine | 1e-2 | 4/4, 4/4, 0 false | 4/4, 4/4, 0 false, errors = band | 4/4, 4/4, 0 false, errors 0.5–1.3 × CRB |
+| p6 fine | 0.1 | 4/4, **1/4**, −1 / −2 identified 1/4 | 4/4, 4/4, all identified, errors ≈ FOH | 4/4, 4/4, all identified |
+| p6 fine | 0.3 | 4/4, **1/4**, 1 false | 4/4, 4/4, all identified, 0 false | 4/4, 4/4, all identified |
+
+(order test passed, report from consensus, false identified poles; full tables:
+`results/e4_profile_band_red.md`, `results/e4_profile_foh.md`)
+
+- **At η ≥ 0.1 the reduction is the whole gain.** With the band model and the reduction,
+  p6 at η = 0.1 and 0.3 reports from the consensus in 4/4 groups and identifies −1 and −2
+  everywhere (third pass: 1/4). The errors match the FOH ones: the model error is far below
+  the noise there. What failed in the third pass was the consensus of unreduced runs.
+- **At η ≤ 1e-2 the hold is needed.** Without it the reduction makes things worse at
+  η = 1e-3: the order test passes (the full refits carry the same model error), but the
+  consensus of the reduced runs forms in 1/4 groups, the fallback poles are biased
+  (p6 −2: 3.3e-2, 160 × the CRB) with closed, wrong intervals, and 3–4 false poles per
+  system. At η = 1e-2 the band errors stay 0.75–2.4 × the CRB.
+
+**2. Does the hold help inside the layer, during training?** `e2_train.py` conditions `*_foh`:
+the tied layer's 1 / (iω − μ) is replaced by the exact first-order-hold response
+(`FOHPoleResidue`, computed in complex128). With the true poles its test error is
+2.7–5.6e-7 (float32 rounding), against 5.6e-5–5.9e-4 for the band layer. The full recipe
+(damp8_ms, seeds 10–29, Adam → polish → restarts; noise-aware restarts on noisy data):
+
+| condition | layer | after polish: all poles | after restarts: all poles | −1 / −2 | test rel. L2 (median) | s per restart run |
+|---|---|---|---|---|---|---|
+| p4 | band | 85 % | 90 % | (−1 100, −0.2 90) | 5.4e-4 | 365 |
+| p4 | FOH | 70 % | 95 % | (−1 100, −0.2 95) | 2.4e-6 | 2782 |
+| p6, dt = 20/1024 | band | 35 % | 80 % | 90 / 85 % | 2.9e-4 | 445 |
+| p6, dt = 20/1024 | FOH | 40 % | **100 %** | 100 / 100 % | 7.0e-6 | 2810 |
+| p6 fine | band | 50 % | 90 % | 90 / 100 % | 5.2e-5 | 386 |
+| p6 fine | FOH | 30 % | **100 %** | 100 / 100 % | 6.9e-6 | 2469 |
+| p6 fine, η = 1e-2 | band | 50 % | 100 % | 100 / 100 % | 6.1e-5 | 1154 |
+| p6 fine, η = 1e-2 | FOH | 40 % | 95 % | 100 / 95 % | 2.4e-5 | 1639 |
+| p6 fine, η = 0.1 | band | 5 % | 45 % | 100 / 45 % | 2.3e-4 | 748 |
+| p6 fine, η = 0.1 | FOH | 5 % | 20 % | 70 / 25 % | 2.4e-4 | 972 |
+
+(full tables: `results/e2_polish.md`, `results/e2_rescue.md`, `results/e2_rescue_na.md`,
+`results/e2_floor.md`; restarts on noisy data: noise-aware rule)
+
+- **Without noise the FOH layer reaches every pole in every run, also on the coarse grid**
+  (p6, dt = 20/1024: 100 % against 80 %), and the test error drops 7–225 × (to 2.4–7.0e-6).
+  The gain comes in the restarts: after Adam and the polish the two layers are alike
+  (30–70 % vs 35–85 %). The hold changes the minimum, not how the optimiser finds it.
+- **The ratio certificate does not carry over.** The runs stop 4–25 × above the FOH oracle
+  (float32 optimisation, against a floor at the rounding of the data), so few are within
+  1.5 × the best one: the consensus forms in 1/4 groups (p4, p6 coarse) and 3/4 (p6 fine),
+  although every run is right. The certificate needs a noise or precision term here, as
+  under noise.
+- **Under noise there is no gain.** At η = 1e-2 the two layers are alike (95 vs 100 %); at
+  η = 0.1 the FOH layer is lower (20 vs 45 %, Fisher p = 0.18, within the run-to-run spread).
+  The model error is below the noise there.
+- **After the FOH refit the training layer does not matter.** The profile pass on the
+  FOH-trained noisy runs (`--hold foh`, 8 groups) gives the same report, errors and intervals
+  as on the band-trained runs (identical to the printed digits): the refit finds the same minimum.
+- Cost: the FOH restarts take 1.3–7.6 × longer per run.
+
 ## E3, deep setting: first pass
 
 `e3_deep.py`. The E1 deep models (ALNO / LFNO, 5,977 parameters, four layers) are trained
@@ -965,10 +1035,10 @@ dead; NaN and dead runs count as not recovered.)
 - E3 layer: a noise-dependent release (δ chosen by the χ² order test, or released only
   when the tied fit fails the certificate); the steady branch untied above the residual
   band; whether the release needs the restarts.
-- E4: the FOH (or zero-order-hold) response inside the neural layer itself, so that
-  training, not only the refit, sees the right input model; separate the hold from the
-  reduction step (band refit with reduction); simultaneous (joint) intervals; more groups
-  for the complex-pole coverage.
+- E4: a certificate for noise-free FOH training (a precision term in place of σ̂², so that
+  the consensus forms); the hold on the E1 data (step / ramp / PRBS / smooth), where the
+  input is not a sum of sines, and a zero-order-hold variant; simultaneous (joint) intervals;
+  more groups for the complex-pole coverage.
 - E4: the two-stage report (consensus → minimal refit → order test) on the E1 data
   (step / ramp / PRBS / smooth, T = 20), as the truth-free version of E1 finding 3.
 - E3 deep: linear-probe poles of trained deep models (RQ4); the dead-start LFNO runs

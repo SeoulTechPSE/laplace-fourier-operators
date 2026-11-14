@@ -11,7 +11,7 @@ Each session appends one entry using the template at the bottom.
 | (C) Pole audit of existing models | 3–5 | **in progress**: E1 done, draft report (`E1_report.md`, updated with E2); paper decisions open | — |
 | (D) Non-periodic input representation | 4–8 | not started | differs from padded FNO? (month 8) |
 | (A) Pole layer and linear validation | 5–10 | not started | dispersion relations recovered (month 10) |
-| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit), E3 deep first pass done (`experiments/C/theory/`) | — |
+| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer), E3 deep first pass done (`experiments/C/theory/`) | — |
 | (A) Application 1: process dynamics | 11–16 | not started | — |
 | (D) Initial conditions and rollout | 13–19 | not started | — |
 | (A) Application 2: Cahn–Hilliard | 17–22 | not started | recover k_c, k_max (month 20) |
@@ -57,8 +57,12 @@ Suggested next steps (in order):
    error is the input hold (data: first-order hold; layer: band-limited). Refitting with
    the FOH response plus order reduction (`e4_profile.py --hold foh`) identifies every pole
    in 32/32 groups, η = 1e-3 … 0.3, errors at the CRB, no false pole. Release under noise:
-   fine at η = 1e-2, worse than tied at η = 0.1. Next: the hold inside the neural layer;
-   noise-dependent release; linear-probe poles for deep (RQ4); E1 data.
+   fine at η = 1e-2, worse than tied at η = 0.1. Hold vs reduction: at η ≥ 0.1 the
+   reduction alone gives the gain, at η ≤ 1e-2 the hold is needed. FOH inside the layer:
+   noise-free training reaches all poles in 95–100 % of runs (p6 coarse grid 100 % vs 80 %),
+   test 7–225 × lower; no gain under noise; the ratio certificate then under-certifies.
+   Next: precision term for the noise-free certificate; the hold on the E1 data;
+   noise-dependent release; linear-probe poles for deep (RQ4).
 4. Optional E1 extras: log-parameterised decay rate; untied models with 64 steady modes
    (H1); weight decay excluded from poles; deep LNO v1 at its published size.
 
@@ -71,6 +75,32 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-15 — (C) E4: hold vs reduction; the first-order-hold response inside the layer
+
+- Done: `e4_profile.py --hold band_red` (band-limited refits with the per-run reduction; 32
+  groups). `FOHPoleResidue` in `e2_train.py` (tied layer with the exact first-order-hold
+  response, complex128 inside) and 5 conditions `*_foh` (p4; p6 dt = 20/1024; p6 fine, clean,
+  η = 1e-2, 0.1), 100 runs through the full recipe (Adam → polish → restarts, noise-aware on
+  noisy data), registered in `e2_polish.py`, `e2_rescue.py`, `e2_floor.py`; FOH profile pass on
+  the 8 noisy FOH-trained groups (own section in `results/e4_profile_foh.md`). README section
+  "E4, fifth pass". `src/lfo/` unchanged.
+- Results:
+  - Hold vs reduction: with the band model and the reduction, p6 η = 0.1 / 0.3 report from the
+    consensus in 4/4 groups with all poles (unreduced: 1/4), errors as FOH. At η = 1e-3 the
+    band reduction is worse: consensus 1/4, 3–4 false poles, p6 −2 160 × the CRB with closed,
+    wrong intervals. The hold is needed at η ≤ 1e-2, the reduction at η ≥ 0.1.
+  - FOH layer, oracle 2.7–5.6e-7 (band 5.6e-5–5.9e-4). Noise-free, after restarts: all poles
+    p4 95 % (band 90), p6 coarse 100 % (80), p6 fine 100 % (90); test 2.4–7.0e-6 (7–225 ×
+    lower). After Adam / polish no gain (30–70 % vs 35–85 %). Runs stop 4–25 × above the FOH
+    oracle, so the 1.5 × ratio certificate forms a consensus in only 1–3 of 4 groups.
+  - Under noise no gain: η = 1e-2 95 % (band 100), η = 0.1 20 % (45; Fisher p = 0.18). The
+    FOH refit of the FOH-trained runs gives the same report and intervals as of the
+    band-trained runs. Restarts 1.3–7.6 × slower.
+- Decisions: none.
+- Next: a precision term for the noise-free certificate; the hold on the E1 data (non-sine
+  inputs) and a zero-order-hold variant; noise-dependent release; joint intervals;
+  linear-probe poles for deep (RQ4).
 
 ### 2026-11-14 — (C) E3 release under noise; E4 hold mismatch and first-order-hold refit; interval fix
 

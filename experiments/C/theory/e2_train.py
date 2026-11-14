@@ -58,6 +58,10 @@ Remedies (E2 -> E3/E4 candidates):
               cannot stand in for a fast real decay; damp8w: c = 1. True complex poles: |Re|/|Im| <= 0.33
   *_ms        multi-start: 8 candidate inits (seeds 100 * seed + c) trained 100 epochs each,
               the best on validation continues with the full protocol (1000 epochs, fresh optimiser)
+Conditions ending in ``_foh``: the tied layer's response 1 / (i omega - mu) is replaced by the exact
+sampled response to a first-order-hold (piecewise-linear) input, the input model of the data
+generator (``FOHPoleResidue``); the oracle uses the same layer. E4 traced the layer's low-noise
+"discretisation floor" to this hold mismatch (``e4_profile.py --hold foh``).
 The real constraint is a parametrisation of ``pr.mu`` (Im multiplied by a 0/1 mask), applied
 after the init, so the constrained slots start on the real axis at the band init's Re.
 
@@ -82,6 +86,7 @@ import e2_richness as R  # noqa: E402  (also puts e1_audit on the path)
 
 E = R.E
 from lfo.metrics import pole_error  # noqa: E402
+from lfo.models.hybrid import PoleResidueTS1d  # noqa: E402
 from lfo.training import count_params, seed_everything  # noqa: E402
 
 OUT = R.RESULTS / "e2_train"
@@ -217,6 +222,12 @@ CONDITIONS = {
     "p4_ms16_T20_n3e-1": ("p4", "multisine", 20.0, 16, 1024, dict(noise=3e-1)),
     "p6_ms16_T80_N4096_n1e-1": ("p6", "multisine", 80.0, 16, 4096, dict(noise=1e-1)),
     "p6_ms16_T80_N4096_n3e-1": ("p6", "multisine", 80.0, 16, 4096, dict(noise=3e-1)),
+    # E4: tied layer with the first-order-hold response (the data generator's input model)
+    "p4_ms16_T20_foh": ("p4", "multisine", 20.0, 16, 1024, dict(hold="foh")),
+    "p6_ms16_T80_foh": ("p6", "multisine", 80.0, 16, 1024, dict(hold="foh")),
+    "p6_ms16_T80_N4096_foh": ("p6", "multisine", 80.0, 16, 4096, dict(hold="foh")),
+    "p6_ms16_T80_N4096_n1e-2_foh": ("p6", "multisine", 80.0, 16, 4096, dict(noise=1e-2, hold="foh")),
+    "p6_ms16_T80_N4096_n1e-1_foh": ("p6", "multisine", 80.0, 16, 4096, dict(noise=1e-1, hold="foh")),
     # E3 / E4: partial tie under noise (released from the noise-aware tied runs; no Adam runs of their own)
     **{f"p6_ms16_T80_N4096_{k}_pt03_n{e}": ("p6", "multisine", 80.0, 16, 4096,
                                             dict(kind=f"{k}_pt", modes=256, delta=0.3, noise=float(e)))
@@ -234,7 +245,26 @@ def unpack(cond):
 def extras(cond):
     """kind (tied / alno / lfno), steady modes, output noise level of a condition."""
     c = CONDITIONS[cond]
-    return dict(dict(kind="tied", modes=E.MODES, noise=0.0, delta=None), **(c[5] if len(c) > 5 else {}))
+    return dict(dict(kind="tied", modes=E.MODES, noise=0.0, delta=None, hold="band"), **(c[5] if len(c) > 5 else {}))
+
+
+class FOHPoleResidue(PoleResidueTS1d):
+    """PoleResidueTS1d with the sampled first-order-hold response instead of 1 / (i omega - mu):
+    per pole the exact discrete filter x_{j+1} = E x_j + b0 u_j + b1 u_{j+1} of a piecewise-linear
+    input, E = e^{mu dt}, I0 = (E - 1) / mu, I1 = (E - 1 - mu dt) / mu^2, b0 = I0 - I1 / dt,
+    b1 = I1 / dt, gives H_l = (b0 + b1 z_l) / (z_l - E), z_l = e^{i omega_l dt}. The transient
+    term keeps its form. Computed in complex128 (I1 cancels for small mu dt), returned in the
+    layer's dtype."""
+
+    def _H(self, iw):
+        dt = float(self.t[1] - self.t[0])
+        mu = self.mu.to(torch.complex128)
+        z = mu * dt
+        Ek = torch.exp(z)
+        I0, I1 = (Ek - 1) / mu, (Ek - 1 - z) / mu ** 2
+        zl = torch.exp(iw.to(torch.complex128) * dt)[:, None, None, None]
+        H = ((I0 - I1 / dt) + (I1 / dt) * zl) / (zl - Ek)
+        return (self.beta.to(torch.complex128) * H).to(self.beta.dtype)
 
 
 def make_splits(system, family, T, K, N=N_DEFAULT, noise=0.0, noise_seed=0):
@@ -264,7 +294,7 @@ def setup(cond, seed):
 
 def build_for(cond, variant, seed, t, mu_true, beta_true):
     x = extras(cond)
-    return build(variant, mu_true, beta_true, t, seed, kind=x["kind"], modes=x["modes"], delta=x["delta"])
+    return build(variant, mu_true, beta_true, t, seed, kind=x["kind"], modes=x["modes"], delta=x["delta"], hold=x["hold"])
 
 
 @torch.no_grad()
@@ -272,6 +302,12 @@ def oracle_for(cond, data, t, mu_true, beta_true):
     """Test error of the true poles in this layer kind; untied steady branches set to their
     tied value on the kept modes (ALNO: weight = tied steady coefficient; LFNO: R = 1)."""
     x = extras(cond)
+    if x["hold"] == "foh":
+        layer = FOHPoleResidue(1, 1, mu_true.size, t)
+        layer.mu.copy_(torch.tensor(mu_true, dtype=torch.cfloat).reshape(1, 1, -1))
+        layer.beta.copy_(torch.tensor(beta_true, dtype=torch.cfloat).reshape(1, 1, -1))
+        xte, yte = data["test"]
+        return float(np.mean(E.relative_l2(layer(xte[:, None])[:, 0], yte, axis=1)))
     if x["kind"] == "tied" or x["kind"].endswith("_pt"):          # partial tie: truth has R_res = 0
         return E.oracle_error(data, t, mu_true, beta_true)
     m = E.Layer1(x["kind"], mu_true.size, t, "stable", x["modes"])
@@ -401,7 +437,7 @@ def make_splitter(events):
     return split
 
 
-def build(variant, mu_true, beta_true, t, seed, kind="tied", modes=None, delta=None):
+def build(variant, mu_true, beta_true, t, seed, kind="tied", modes=None, delta=None, hold="band"):
     full = variant
     variant = base_variant(variant)
     n_real = int(np.sum(mu_true.imag == 0))
@@ -413,6 +449,9 @@ def build(variant, mu_true, beta_true, t, seed, kind="tied", modes=None, delta=N
          "fixed8": N_GENERIC, "gate8": N_GENERIC, "bound8": N_GENERIC, "damp8": N_GENERIC, "damp8w": N_GENERIC}.get(variant, mu_true.size)
     model = (PartialTie(kind, n, t, "stable", modes, delta) if kind.endswith("_pt")
              else E.Layer1(kind, n, t, "stable", modes or E.MODES))
+    if hold == "foh":
+        assert kind == "tied" and type(model.pr) is PoleResidueTS1d
+        model.pr.__class__ = FOHPoleResidue                 # before any parametrisation of pr.mu
     rng = np.random.default_rng(seed)
     E.layer_init(model, "warm" if variant == "warm" else "band", mu_true, beta_true, rng)
     if any(full.removesuffix("_ms").endswith(sfx) for sfx in ("_l1", "_l1s", "_prune")):
@@ -525,7 +564,7 @@ def run(cond: str, seed: int, device, variant: str = "base"):
     mf, _ = E.fold(mu_l, beta_l)
     pe = None if diverged else pole_error(mf, mt, reduce="none").tolist()
     res = dict(cond=cond, variant=variant, config=cfg, system=system, family=family, T=T, K=K, seed=seed, n_t=int(t.size),
-               model=extras(cond)["kind"], modes=extras(cond)["modes"], noise=extras(cond)["noise"], delta=extras(cond)["delta"], init="warm" if variant == "warm" else "band", protocol=f"{PROTOCOL}+plr{PLR:g}", params=count_params(model),
+               model=extras(cond)["kind"], hold=extras(cond)["hold"], modes=extras(cond)["modes"], noise=extras(cond)["noise"], delta=extras(cond)["delta"], init="warm" if variant == "warm" else "band", protocol=f"{PROTOCOL}+plr{PLR:g}", params=count_params(model),
                seconds=round(secs, 1), test_rel_l2=test, diverged=bool(diverged), history=hist,
                oracle_rel_l2=oracle_for(cond, data, t, mu_true, beta_true),
                true_poles=[[float(z.real), float(z.imag)] for z in mt], pole_error=pe,

@@ -34,7 +34,10 @@ reduced refit replaces the run (poles and S) in the certificate, the consensus a
 fallback, and the best full refit is the reference of the order test (dp = its free parameters -
 the report's). Earlier versions used the full refits' poles (spare poles drift, unpruned) or the
 runs' band-model poles with refitted S (wrong runs certified); both broke the consensus.
-Outputs then go to ``results/e4_profile_foh``.
+Outputs then go to ``results/e4_profile_foh``. ``--hold band_red``: the same per-run refit and
+reduction with the band-limited model (control: the reduction without the right hold); outputs in
+``results/e4_profile_band_red``. Conditions ending in ``_foh`` (runs of the FOH-trained layer,
+e2_train.py) are reported in their own section; refit them with ``--hold foh``.
 
 The truth is used only to score: per true pole, whether a fitted pole is within 0.1 with a
 closed interval, whether the interval covers the true Re mu, and fitted poles with closed
@@ -63,7 +66,7 @@ import e2_floor as F  # noqa: E402
 
 P, RS, T, E = F.P, F.RS, F.T, F.E
 OUT = T.R.RESULTS / "e4_profile"
-HOLDS = ("band", "foh")
+HOLDS = ("band", "foh", "band_red")
 STAGE, VARIANT = "rescue_na", "damp8_ms"
 CONDS = [c for c, v in F.CASES if v == VARIANT and F.NOISY(c)]
 BAD = 1e30                                          # objective returned for non-finite S
@@ -122,7 +125,7 @@ class VarPro:
 
     def transfer(self, mu):
         """(L, n) frequency response per pole: band-limited input (the layer) or first-order hold."""
-        if self.hold == "band":
+        if self.hold.startswith("band"):
             return 1 / (self.iw[:, None] - mu[None, :])
         dt = self.t[1] - self.t[0]
         z = mu * dt
@@ -277,7 +280,7 @@ def run(cond, g0, device, hold="band"):
     p = n_eff(list(mask == 0))                               # effective free parameters of the 8-slot layer
     vp = VarPro(data, t, device, hold)
     ref = None
-    if hold != "band":                                       # runs replaced by their reduced FOH refits
+    if hold != "band":                                       # runs replaced by their reduced refits
         for r in runs:
             r["eff"], r["S"], r["S_full"], r["p_full"] = reduce(vp, r["eff"], sig2)
         p = max(r["p_full"] for r in runs)
@@ -368,10 +371,14 @@ def summarize_hold(hold):
         return
     lab = lambda z: f"{z.real:+g}{z.imag:+g}i" if z.imag else f"{z.real:+g}"
     lines = ["# E4: minimal-form refit, order test and profile intervals"
-             + (", first-order-hold refits" if hold == "foh" else ""), "",
+             + {"band": "", "foh": ", first-order-hold refits", "band_red": ", band-limited refits with reduction"}[hold], "",
              *(["Refits, certificate and order-test reference use the exact first-order-hold response "
-                "(the data generator's input model) instead of the layer's band-limited one.", ""]
+                "(the data generator's input model) instead of the layer's band-limited one. Each run is refitted "
+                "and reduced (backward elimination) before the certificate.", ""]
                if hold == "foh" else []),
+             *(["Control: refits with the band-limited (layer) model, each run refitted and reduced (backward "
+                "elimination) before the certificate, as with `--hold foh`.", ""]
+               if hold == "band_red" else []),
              "Stage `rescue_na` (noise-aware restarts), groups of 5 seeds (one noise draw each), truth-free up "
              "to the scores. Certified: S − S_min ≤ χ²_p(0.99) σ̂². Report: the consensus of the certified runs "
              "(≥ 2), else the best run's effective poles. The report is refitted as a minimal tied layer (one "
@@ -381,18 +388,18 @@ def summarize_hold(hold):
              "interval closed. Cell per true pole: identified groups / intervals covering the true Re μ; "
              "RMS relative error of the minimal fit; mean relative half-width of the interval; relative CRB "
              "(e2_noise.py).", ""]
-    for system, (base, noisy) in NZ.SYSTEMS.items():
-        g = [r for r in rs if r["system"] == system]
+    for (system, (base, noisy)), suf in ((x, sf) for sf in ("", "_foh") for x in NZ.SYSTEMS.items()):
+        g = [r for r in rs if r["system"] == system and r["cond"] in {c + suf for c in noisy.values()}]
         if not g:
             continue
         cr = NZ.crb_unit(base)
         true = [complex(*z) for z in cr["poles"]]
-        lines += [f"## {system}", "",
+        lines += [f"## {system}" + (", runs of the FOH-trained layer (`*_foh`)" if suf else ""), "",
                   "| η | groups | certified runs (mean) | report from consensus | order test passed | "
                   + " | ".join(f"{lab(z)}: identified / covered, error, half-width, CRB" for z in true)
                   + " | false identified |", "|---|---|---|---|---|" + "---|" * len(true) + "---|"]
         for eta, cond in noisy.items():
-            gr = sorted((r for r in g if r["cond"] == cond), key=lambda r: r["group"])
+            gr = sorted((r for r in g if r["cond"] == cond + suf), key=lambda r: r["group"])
             if not gr:
                 continue
             sc = [score(r) for r in gr]
