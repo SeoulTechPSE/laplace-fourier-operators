@@ -23,9 +23,19 @@ expectation n_s n_t sigma^2. There, the screen picks the candidate with the lowe
 if S falls by >= chi2_4(0.99) sigma^2 (a likelihood-ratio test for the 4 real parameters a move
 changes). Outside the noise regime the ratio rule above applies unchanged.
 
+Partial-tie starts (E3, H3; ``--start``):
+  lbfgs    the polished run (default)
+  reset    as lbfgs, and every candidate also sets the steady residual R_res to 0; one extra
+           candidate resets R_res only (the residual can hold part of a slow decay and so
+           pin a wrong pole)
+  release  the tied-layer run on the same data and seed after its own restarts (``_rescue.pt``
+           of the tied condition), loaded with R_res = 0 (delta schedule 0 -> delta), then a
+           full polish, then the restarts. Truth-free: the tied run used no truth.
+
     python experiments/C/theory/e2_rescue.py --cond p6_ms16_T80_N4096 --variant damp8_ms --seeds 10 11
     python experiments/C/theory/e2_rescue.py --cond p6_ms16_T80_N4096_n1e-1 --variant damp8_ms --rule noise
-    python experiments/C/theory/e2_rescue.py --summarize      # writes results/e2_rescue{,_na}.md
+    python experiments/C/theory/e2_rescue.py --cond p6_ms16_T80_N4096_alno_pt03 --variant damp8_ms --start release
+    python experiments/C/theory/e2_rescue.py --summarize      # writes results/e2_rescue{,_rr,_rel,_na}.md
 """
 from __future__ import annotations
 
@@ -46,6 +56,12 @@ import e2_polish as P  # noqa: E402
 T, E = P.T, P.E
 OUT = T.R.RESULTS / "e2_rescue"
 OUT_NA = T.R.RESULTS / "e2_rescue_na"
+STARTS = {"lbfgs": "", "reset": "_rr", "release": "_rel"}         # output suffix per start
+
+
+def tag(rule="ratio", start="lbfgs"):
+    """Suffix of the output directory (e2_rescue<tag>) and checkpoint (<name>_rescue<tag>.pt)."""
+    return ("_na" if rule == "noise" else "") + STARTS[start]
 ROUNDS, SCREEN_ITERS, ACCEPT = 3, 300, 0.99
 NOISE_REGIME, CHI2_MOVE = 2.0, 13.28                     # chi2_4(0.99)
 DIFF = 6                                                 # difference order of the noise estimator
@@ -98,25 +114,52 @@ def set_slot(model, j, mu_new):
         model.pr.beta[..., j] = 0
 
 
-def candidates(model):
+def candidates(model, reset=False):
+    """(slot, new pole); slot None = no pole move (only with reset: R_res to 0 alone)."""
+    if reset:
+        yield None, None
     mask = model.pr.parametrizations.mu[0].mask.flatten().cpu().numpy()
     for j, m in enumerate(mask):
         for z in (REAL_GRID if m == 0 else -0.1 * IMAG_GRID + 1j * IMAG_GRID):
             yield j, complex(z)
 
 
-def run(cond, variant, seed, device, rule="ratio"):
+def reset_residual(model):
+    """Partial tie: steady residual R_res to 0 (raw weight of its Bounded parametrisation)."""
+    with torch.no_grad():
+        model.spec.parametrizations.weight.original.zero_()
+
+
+def tied_base(cond):
+    """Tied condition with the same data as a partial-tie condition."""
+    for k in ("_alno_pt", "_lfno_pt"):
+        if k in cond:
+            return cond[:cond.index(k)]
+    raise ValueError(cond)
+
+
+def run(cond, variant, seed, device, rule="ratio", start="lbfgs"):
     name = T.run_name(cond, variant, seed)
-    ck = T.RUNS / f"{name}_lbfgs.pt"
+    ck = (T.RUNS / f"{T.run_name(tied_base(cond), variant, seed)}_rescue.pt" if start == "release"
+          else T.RUNS / f"{name}_lbfgs.pt")
     if not ck.exists():
-        print(f"skip {name}: no polished checkpoint", flush=True)
+        print(f"skip {name}: no checkpoint {ck.name}", flush=True)
         return
     system, family, Tw, Kk, N = T.unpack(cond)
     data, t, mu_true, beta_true = T.setup(cond, seed)
     model, _ = T.build_for(cond, variant, seed, t, mu_true, beta_true)
-    model.load_state_dict(torch.load(ck, map_location="cpu"))
+    if start == "release":                                   # tied state; R_res stays at its init 0
+        missing, unexpected = model.load_state_dict(torch.load(ck, map_location="cpu"), strict=False)
+        assert not unexpected and all(k.startswith("spec.") for k in missing), (missing, unexpected)
+    else:
+        model.load_state_dict(torch.load(ck, map_location="cpu"))
     model.to(device)
     t0 = time.time()
+    start_info = {}
+    if start == "release":
+        start_info = dict(tied=P.score(model, data, mu_true, beta_true, device),
+                          polish=P.polish(model, data, device))
+    reset = start == "reset"
     before = P.score(model, data, mu_true, beta_true, device)
     loss = train_loss(model, data, device)
     sig2 = noise_var(data["train"][1])
@@ -131,20 +174,24 @@ def run(cond, variant, seed, device, rule="ratio"):
     for rnd in range(ROUNDS):
         state = {k: v.clone() for k, v in model.state_dict().items()}
         best = (cur, None, None)
-        for j, z in candidates(model):
+        for j, z in candidates(model, reset):
             model.load_state_dict(state)
-            set_slot(model, j, z)
+            if reset:
+                reset_residual(model)
+            if j is not None:
+                set_slot(model, j, z)
             P.polish(model, data, device, maxiter=SCREEN_ITERS)
             cj = crit()
             if cj < best[0]:
                 best = (cj, j, z, {k: v.clone() for k, v in model.state_dict().items()})
-        if best[1] is None or not accept(best[0], cur):
+        if len(best) == 3 or not accept(best[0], cur):
             model.load_state_dict(state)
             break
         model.load_state_dict(best[3])
         P.polish(model, data, device)
         new = crit()
-        moves.append(dict(round=rnd + 1, slot=int(best[1]), to=[best[2].real, best[2].imag], crit_before=cur,
+        moves.append(dict(round=rnd + 1, slot=None if best[1] is None else int(best[1]),
+                          to=None if best[2] is None else [best[2].real, best[2].imag], crit_before=cur,
                           crit_after=new, loss_after=train_loss(model, data, device)))
         cur = new
     loss = train_loss(model, data, device)
@@ -154,11 +201,11 @@ def run(cond, variant, seed, device, rule="ratio"):
                true_poles=[[float(z.real), float(z.imag)] for z in E.true_folded(mu_true, beta_true)[0]],
                train_before=loss0, train_after=loss, moves=moves, before=before, after=after, rule=rule,
                noise_regime=bool(noisy), sigma2=sig2, eta_hat=float(np.sqrt(n_t * sig2)), sse_before=S0,
-               sse_after=sse(model, data, device))
-    out = OUT_NA if rule == "noise" else OUT
+               sse_after=sse(model, data, device), start=start, **start_info)
+    out = T.R.RESULTS / f"e2_rescue{tag(rule, start)}"
     out.mkdir(parents=True, exist_ok=True)
     (out / f"{name}.json").write_text(json.dumps(res, indent=1))
-    torch.save(model.state_dict(), T.RUNS / f"{name}_rescue{'_na' if rule == 'noise' else ''}.pt")
+    torch.save(model.state_dict(), T.RUNS / f"{name}_rescue{tag(rule, start)}.pt")
     r3 = lambda pe: pe and [round(x, 3) for x in pe]
     print(f"{name}: train/oracle {loss0 / res['oracle_rel_l2']:.2f} -> {loss / res['oracle_rel_l2']:.2f}, "
           f"moves {len(moves)}, pole_err {r3(before['pole_error'])} -> {r3(after['pole_error'])} ({res['seconds']:.0f}s)",
@@ -181,6 +228,10 @@ CASES = [("p4_ms16_T20", "mixed_off_ms"), ("p4_ms16_T20", "damp8_ms"),
 
 def summarize():
     table(OUT, "e2_rescue", "accept if training loss falls ≥ 1 %")
+    table(T.R.RESULTS / "e2_rescue_rr", "e2_rescue_rr", "partial tie, every candidate also resets R_res to 0 "
+          "(plus a reset-only candidate), accept if training loss falls ≥ 1 %")
+    table(T.R.RESULTS / "e2_rescue_rel", "e2_rescue_rel", "partial tie released from the restarted tied run "
+          "(R_res = 0, then a full polish; before = after that polish), accept if training loss falls ≥ 1 %")
     table(OUT_NA, "e2_rescue_na", f"noise-aware rule: in the noise regime (S ≤ {NOISE_REGIME:g} n_s n_t σ̂²) "
           f"minimise S and accept if S falls ≥ {CHI2_MOVE} σ̂², otherwise accept if training loss falls ≥ 1 %")
 
@@ -192,7 +243,8 @@ def table(src, stem, rule):
     na = src == OUT_NA
     lab = lambda z: f"{z[0]:+g}{z[1]:+g}i" if z[1] else f"{z[0]:+g}"
     ok = lambda s: max(s["pole_error"]) < T.RECOVERED
-    lines = ["# E2: truth-free single-slot restarts after the polish" + (", noise-aware rule (E4)" if na else ""), "",
+    lines = ["# E2: truth-free single-slot restarts after the polish" + {"e2_rescue_na": ", noise-aware rule (E4)", "e2_rescue_rr": ", partial tie with residual reset (E3)",
+                                                               "e2_rescue_rel": ", partial tie released from the tied run (E3)"}.get(stem, ""), "",
              f"Every polished run (seeds 10-29) gets up to {ROUNDS} rounds of single-slot moves (residue 0, "
              f"{SCREEN_ITERS}-iteration screen, {rule}, then full polish). "
              "Before = after the polish (e2_polish.py). Best of 5: lowest validation loss in groups of 5 "
@@ -235,6 +287,7 @@ def main():
     ap.add_argument("--variant", nargs="+")
     ap.add_argument("--seeds", nargs="+", type=int, default=list(range(10, 30)))
     ap.add_argument("--rule", choices=("ratio", "noise"), default="ratio")
+    ap.add_argument("--start", choices=tuple(STARTS), default="lbfgs")
     ap.add_argument("--summarize", action="store_true")
     a = ap.parse_args()
     if a.summarize:
@@ -243,7 +296,7 @@ def main():
     for c in a.cond:
         for v in a.variant:
             for s in a.seeds:
-                run(c, v, s, device, a.rule)
+                run(c, v, s, device, a.rule, a.start)
 
 
 if __name__ == "__main__":

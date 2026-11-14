@@ -11,7 +11,7 @@ Each session appends one entry using the template at the bottom.
 | (C) Pole audit of existing models | 3–5 | **in progress**: E1 done, draft report (`E1_report.md`, updated with E2); paper decisions open | — |
 | (D) Non-periodic input representation | 4–8 | not started | differs from padded FNO? (month 8) |
 | (A) Pole layer and linear validation | 5–10 | not started | dispersion relations recovered (month 10) |
-| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie), E4 noise vs CRB (noise-aware restarts and certificate), E3 deep first pass done (`experiments/C/theory/`) | — |
+| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals), E3 deep first pass done (`experiments/C/theory/`) | — |
 | (A) Application 1: process dynamics | 11–16 | not started | — |
 | (D) Initial conditions and rollout | 13–19 | not started | — |
 | (A) Application 2: Cahn–Hilliard | 17–22 | not started | recover k_c, k_max (month 20) |
@@ -51,7 +51,9 @@ Suggested next steps (in order):
    noisy run, deep stacks recover no real pole. Partial tie R = K + R_res (2026-11-14) brings
    p4 back to the tied level (ALNO 95 %) but not p6 (≤ 30 %, runs above the floor);
    noise-aware restarts / χ² certificate give 100 % at η = 1e-2 and separate −1 / −2 at
-   η = 0.1 (−2 still 9/20). Next: p6 partial tie optimisation; combined certificate;
+   η = 0.1 (−2 still 9/20). Second pass: releasing δ from the tied run reaches the floor on
+   p6 (90 %); a minimal refit + order test + profile intervals (`e4_profile.py`) gives
+   CRB-level errors and honest intervals at η ≥ 1e-2. Next: model-error term for low noise;
    linear-probe poles for deep (RQ4); E1 data.
 4. Optional E1 extras: log-parameterised decay rate; untied models with 64 steady modes
    (H1); weight decay excluded from poles; deep LNO v1 at its published size.
@@ -65,6 +67,33 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-14 — (C) E3 partial tie, second pass (release vs reset); E4 minimal refit and profile intervals
+
+- Done: `e2_rescue.py --start reset` (restarts that also zero R_res) and `--start release`
+  (tied run after restarts → release δ → polish → restarts) on the 6 partial-tie conditions
+  (release 120 runs; reset stopped at 101 when release finished). New `e4_profile.py`:
+  χ² certification → report (consensus, else best run) → minimal tied refit (variable
+  projection, float64) → order test S_min − S_best ≤ χ²_Δp(0.99) σ̂² → 95 % profile
+  interval per Re μ; 32 groups (p4, p6; η = 1e-3 … 0.3). README sections "partial tie,
+  second pass" and "E4, third pass".
+- Results:
+  - Release brings p6 to the floor: all poles 90 % in all four p6 conditions (from 10–30 %),
+    −2 20/20, train/oracle 0.83–0.92, certificate 4/4 groups, no false pole. It fails on
+    the same seeds as the tied runs: the tied solution is a minimum of the partial-tie
+    problem; Adam from scratch does not find it. Reset stays at 10–30 %, 1.25–1.66 × the
+    oracle. Recipe: train tied, then release δ and polish.
+  - The minimal refit removes the CRB gap: p6 η = 1e-2 errors 0.75–2.4 × the CRB (8-slot
+    15–110 ×), p4 η = 0.1 0.7–1.1 ×. The order test rejects the p6 η = 0.1 consensus that
+    lacks −2 (ΔS ≈ 1.8e4 σ̂² vs ≈ 29), and the fallback's real poles get open intervals
+    (−1 / −2 unresolved) rather than a wrong pole. One false identified pole in 24 groups
+    at η ≥ 1e-2.
+  - Limit: at η = 1e-3 the model (discretisation) error exceeds the noise; order test 1/4,
+    intervals cover the truth in 0/28 cells, 2 false poles per system.
+- Decisions: the combined certificate is not "the looser of ratio / χ²" (the ratio rule
+  certifies every noisy run); it is χ² certification + minimal refit + order test.
+- Next: add a model-error term to σ̂² (low-noise validity); joint intervals; two-stage
+  partial tie under noise; the report on the E1 data; linear-probe poles for deep (RQ4).
 
 ### 2026-11-14 — (C) E3 partial tie (H3) and E4 noise-aware restarts / certificate
 

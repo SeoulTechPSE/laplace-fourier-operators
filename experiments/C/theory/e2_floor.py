@@ -54,7 +54,8 @@ CASES = [("p4_ms16_T20", "mixed_off_ms"), ("p4_ms16_T20", "damp8_ms"),
          ("p6_ms16_T80_N4096_alno_pt003", "damp8_ms"), ("p6_ms16_T80_N4096_alno_pt03", "damp8_ms"),
          ("p6_ms16_T80_N4096_lfno_pt003", "damp8_ms"), ("p6_ms16_T80_N4096_lfno_pt03", "damp8_ms")]
 STAGES = {"polish": (P.OUT, "_lbfgs"), "rescue": (T.R.RESULTS / "e2_rescue", "_rescue"),
-          "rescue_na": (RS.OUT_NA, "_rescue_na")}
+          "rescue_na": (RS.OUT_NA, "_rescue_na"), "rescue_rr": (T.R.RESULTS / "e2_rescue_rr", "_rescue_rr"),
+          "rescue_rel": (T.R.RESULTS / "e2_rescue_rel", "_rescue_rel")}
 NOISY = lambda cond: T.extras(cond)["noise"] > 0
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -153,6 +154,7 @@ def analyse(stage, cond, variant, rule="ratio"):
 
 def main():
     jobs = [(st, c, v, "ratio") for st in ("polish", "rescue") for c, v in CASES]
+    jobs += [(st, c, v, "ratio") for st in ("rescue_rr", "rescue_rel") for c, v in CASES if "_pt" in c]
     jobs += [(st, c, v, "noise") for st in ("rescue", "rescue_na") for c, v in CASES if NOISY(c)]
     out = [a for st, c, v, rule in jobs if (a := analyse(st, c, v, rule))]
     (T.R.RESULTS / "e2_floor.json").write_text(json.dumps(out, indent=1, default=float))
@@ -165,7 +167,9 @@ def main():
              "contains it (within 0.1); false = consensus poles matching no true pole (truth used only for "
              "these two scores). Pooled: the same over all 20 runs (ratio rule). Rule `noise`: certified = "
              "S − S_min ≤ χ²_p(0.99) σ̂² when the floor is at the noise level (see the docstring); stage "
-             "`rescue_na` = restarts with the noise-aware acceptance (e2_rescue.py --rule noise).", ""]
+             "`rescue_na` = restarts with the noise-aware acceptance (e2_rescue.py --rule noise); `rescue_rr` / "
+             "`rescue_rel` = partial-tie restarts with residual reset / released from the tied run "
+             "(e2_rescue.py --start reset / release).", ""]
     for system in ("p4", "p6"):
         rows = [a for a in out if a["cond"].startswith(system)]
         if not rows:

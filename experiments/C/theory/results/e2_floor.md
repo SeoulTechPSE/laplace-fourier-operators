@@ -1,6 +1,6 @@
 # E2: floor certificate without the truth
 
-Groups of 5 consecutive seeds (10-29). Floor estimate = lowest training loss in the group; certified = training loss < 1.5 x estimate. Consensus = effective poles present (within 10%) in ≥ 2/3 of the certified runs (needs ≥ 2 certified); slots below 2% impulse-response weight dropped, slots within 10 % merged. Per true pole: groups whose consensus contains it (within 0.1); false = consensus poles matching no true pole (truth used only for these two scores). Pooled: the same over all 20 runs (ratio rule). Rule `noise`: certified = S − S_min ≤ χ²_p(0.99) σ̂² when the floor is at the noise level (see the docstring); stage `rescue_na` = restarts with the noise-aware acceptance (e2_rescue.py --rule noise).
+Groups of 5 consecutive seeds (10-29). Floor estimate = lowest training loss in the group; certified = training loss < 1.5 x estimate. Consensus = effective poles present (within 10%) in ≥ 2/3 of the certified runs (needs ≥ 2 certified); slots below 2% impulse-response weight dropped, slots within 10 % merged. Per true pole: groups whose consensus contains it (within 0.1); false = consensus poles matching no true pole (truth used only for these two scores). Pooled: the same over all 20 runs (ratio rule). Rule `noise`: certified = S − S_min ≤ χ²_p(0.99) σ̂² when the floor is at the noise level (see the docstring); stage `rescue_na` = restarts with the noise-aware acceptance (e2_rescue.py --rule noise); `rescue_rr` / `rescue_rel` = partial-tie restarts with residual reset / released from the tied run (e2_rescue.py --start reset / release).
 
 ## p4
 
@@ -26,6 +26,10 @@ Groups of 5 consecutive seeds (10-29). Floor estimate = lowest training loss in 
 | rescue | ratio | p4_ms16_T20_n3e-1 | damp8_ms | 45% | 488.02 | 9/20 | 4/4 | 2/4 | 3/4 | 2 | -0.36+2.99i, -1.03, -0.19 (20 cert.) |
 | rescue | ratio | p4_ms16_T20_alno_pt03 | damp8_ms | 95% | 0.74 | 19/20 | 4/4 | 4/4 | 4/4 | 0 | -0.41+3.00i, -0.20, -0.97 (20 cert.) |
 | rescue | ratio | p4_ms16_T20_lfno_pt03 | damp8_ms | 85% | 0.77 | 17/20 | 4/4 | 4/4 | 4/4 | 0 | -0.42+3.01i, -0.20, -0.99 (20 cert.) |
+| rescue_rr | ratio | p4_ms16_T20_alno_pt03 | damp8_ms | 100% | 0.73 | 10/10 | 2/2 | 2/2 | 2/2 | 0 | -0.41+3.00i, -0.20, -0.99 (12 cert.) |
+| rescue_rr | ratio | p4_ms16_T20_lfno_pt03 | damp8_ms | 100% | 0.74 | 5/5 | 1/1 | 1/1 | 1/1 | 0 | -0.43+3.01i, -0.20, -1.00 (9 cert.) |
+| rescue_rel | ratio | p4_ms16_T20_alno_pt03 | damp8_ms | 90% | 0.73 | 18/20 | 4/4 | 4/4 | 3/4 | 0 | -0.41+3.00i, -1.00, -0.20 (20 cert.) |
+| rescue_rel | ratio | p4_ms16_T20_lfno_pt03 | damp8_ms | 90% | 0.74 | 18/20 | 4/4 | 4/4 | 3/4 | 0 | -0.41+3.00i, -1.00, -0.20 (20 cert.) |
 | rescue | noise | p4_ms16_T20_n1e-3 | damp8_ms | 100% | 1.96 | 4/4 | 0/4 | 0/4 | 0/4 | 0 | -0.41+3.00i, -0.20, -0.99 (20 cert.) |
 | rescue | noise | p4_ms16_T20_n1e-2 | damp8_ms | 70% | 17.01 | 9/10 | 3/4 | 3/4 | 3/4 | 0 | -0.40+2.99i, -1.07, -0.20, -0.93 (20 cert.) |
 | rescue | noise | p4_ms16_T20_n1e-1 | damp8_ms | 45% | 168.92 | 6/10 | 3/4 | 3/4 | 3/4 | 6 | -0.38+2.98i, -0.20, -1.12, -0.97 (20 cert.) |
@@ -67,6 +71,14 @@ Groups of 5 consecutive seeds (10-29). Floor estimate = lowest training loss in 
 | rescue | ratio | p6_ms16_T80_N4096_alno_pt03 | damp8_ms | 30% | 1.08 | 6/15 | 4/4 | 4/4 | 4/4 | 0/4 | 2 | -0.30+4.00i, -0.50+1.50i, -1.03, -1.75, -1.55 (14 cert.) |
 | rescue | ratio | p6_ms16_T80_N4096_lfno_pt003 | damp8_ms | 20% | 1.95 | 1/10 | 3/4 | 3/4 | 3/4 | 0/4 | 2 | -0.29+3.99i, -0.51+1.49i, -0.93, -2.54 (9 cert.) |
 | rescue | ratio | p6_ms16_T80_N4096_lfno_pt03 | damp8_ms | 15% | 1.67 | 3/7 | 3/4 | 3/4 | 3/4 | 0/4 | 2 | -0.50+1.50i, -0.30+4.00i, -1.01, -1.81 (6 cert.) |
+| rescue_rr | ratio | p6_ms16_T80_N4096_alno_pt003 | damp8_ms | 10% | 1.22 | 2/13 | 3/4 | 3/4 | 2/4 | 0/4 | 4 | -0.50+1.50i, -0.30+4.00i, -1.01, -1.92, -1.22 (2 cert.) |
+| rescue_rr | ratio | p6_ms16_T80_N4096_alno_pt03 | damp8_ms | 15% | 0.91 | 3/12 | 4/4 | 4/4 | 4/4 | 2/4 | 2 | -0.30+4.00i, -0.50+1.50i, -1.02, -1.78 (11 cert.) |
+| rescue_rr | ratio | p6_ms16_T80_N4096_lfno_pt003 | damp8_ms | 30% | 1.10 | 6/9 | 3/4 | 3/4 | 3/4 | 2/4 | 0 | -0.50+1.50i, -0.30+4.00i, -0.99, -1.99 (9 cert.) |
+| rescue_rr | ratio | p6_ms16_T80_N4096_lfno_pt03 | damp8_ms | 15% | 1.02 | 3/12 | 4/4 | 4/4 | 4/4 | 0/4 | 2 | -0.50+1.49i, -0.30+4.00i, -1.00, -1.72 (10 cert.) |
+| rescue_rel | ratio | p6_ms16_T80_N4096_alno_pt003 | damp8_ms | 90% | 0.89 | 18/20 | 4/4 | 4/4 | 4/4 | 4/4 | 0 | -0.30+4.00i, -0.50+1.50i, -1.99, -1.02 (20 cert.) |
+| rescue_rel | ratio | p6_ms16_T80_N4096_alno_pt03 | damp8_ms | 90% | 0.83 | 18/20 | 4/4 | 4/4 | 4/4 | 4/4 | 0 | -0.30+4.00i, -0.50+1.50i, -1.99, -1.02 (20 cert.) |
+| rescue_rel | ratio | p6_ms16_T80_N4096_lfno_pt003 | damp8_ms | 90% | 0.91 | 18/20 | 4/4 | 4/4 | 4/4 | 4/4 | 0 | -0.30+4.00i, -0.50+1.50i, -1.99, -1.02 (20 cert.) |
+| rescue_rel | ratio | p6_ms16_T80_N4096_lfno_pt03 | damp8_ms | 90% | 0.83 | 18/20 | 4/4 | 4/4 | 4/4 | 4/4 | 0 | -0.30+4.00i, -0.50+1.50i, -1.99, -1.02 (20 cert.) |
 | rescue | noise | p6_ms16_T80_N4096_n1e-3 | damp8_ms | 85% | 18.04 | 4/4 | 0/4 | 0/4 | 0/4 | 0/4 | 0 | -0.30+4.00i, -0.50+1.50i, -0.99, -1.96 (20 cert.) |
 | rescue | noise | p6_ms16_T80_N4096_n1e-2 | damp8_ms | 70% | 180.06 | 6/6 | 2/4 | 2/4 | 2/4 | 2/4 | 0 | -0.30+4.00i, -0.49+1.49i, -0.97, -2.02 (20 cert.) |
 | rescue | noise | p6_ms16_T80_N4096_n1e-1 | damp8_ms | 5% | 1791.69 | 0/5 | 1/4 | 1/4 | 1/4 | 0/4 | 1 | -0.47+1.48i, -0.30+4.00i, -0.68 (20 cert.) |
