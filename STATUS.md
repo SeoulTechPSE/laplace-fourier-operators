@@ -11,7 +11,7 @@ Each session appends one entry using the template at the bottom.
 | (C) Pole audit of existing models | 3–5 | **in progress**: E1 done, draft report (`E1_report.md`, updated with E2); paper decisions open | — |
 | (D) Non-periodic input representation | 4–8 | not started | differs from padded FNO? (month 8) |
 | (A) Pole layer and linear validation | 5–10 | not started | dispersion relations recovered (month 10) |
-| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise), E3 deep first pass done (`experiments/C/theory/`) | — |
+| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval), E3 deep first pass done (`experiments/C/theory/`) | — |
 | (A) Application 1: process dynamics | 11–16 | not started | — |
 | (D) Initial conditions and rollout | 13–19 | not started | — |
 | (A) Application 2: Cahn–Hilliard | 17–22 | not started | recover k_c, k_max (month 20) |
@@ -68,8 +68,9 @@ Suggested next steps (in order):
    not η*: p6 −2 identified in 4/4 groups up to η = 0.03, lost near 0.1 (CRB limit 0.035);
    p4 real poles 4/4 at η = 0.3; see open decisions. The noise-free undercoverage is the
    float32 rounding of the inputs (not in σ²); a truth-free bootstrap covers 18/18.
-   Next: input noise / rounding as errors-in-variables under noise; noise-dependent
-   release; linear probe (RQ4).
+   Input noise (errors-in-variables): the E4 intervals undercover (2–25 % at η_u = 10 η_y);
+   a truth-free EIV bootstrap restores 88–98 % (`e4_eiv.py`, local diagnosis).
+   Next: the EIV bootstrap in the full pipeline; noise-dependent release; linear probe (RQ4).
 4. Optional E1 extras: log-parameterised decay rate; untied models with 64 steady modes
    (H1); weight decay excluded from poles; deep LNO v1 at its published size.
 
@@ -82,6 +83,29 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-15 — (C) E4: input noise as errors-in-variables under output noise
+
+- Done: `e4_eiv.py` (minimal FOH refit started at the truth, 64 independent draws per row of
+  input noise η_u ∈ {0, 0.01, 0.03, 0.1} on the stored inputs and output noise η_y = 0.01;
+  4 data sets: p4 multisine / E1, p6 E1 / fine multisine). Three 95 % intervals per Re μ:
+  the E4 one (output σ̂², Wald = profile), the residual σ², and a truth-free EIV parametric
+  bootstrap (σ_u from the inputs by a robust MAD 6th-difference estimate, bias-corrected).
+  README section "E4, ninth pass". `src/lfo/` unchanged.
+- Results:
+  - The pole spread grows ~ linearly with η_u: 1.1–1.8 × at η_u = η_y, 10–14 × at 10 × (p6
+    fine −0.3+4i 5.7 ×).
+  - E4 interval coverage (95 % nominal; 92–97 % at η_u = 0): 67–92 % at η_u = η_y, 30–58 %
+    at 3 ×, 2–25 % at 10 ×. Residual σ²: at most 31–42 % at 10 ×.
+  - EIV bootstrap: 88–98 % in every row except p6 E1, η_u = 0.1, −1 (83 %); std 0.86–1.23 ×
+    the true spread. The MAD estimate reads η̂_u / η_u ≈ 1 also on the E1 step inputs
+    (mean-square estimate: η ≈ 0.05 on clean E1 inputs).
+  - Bias matters only at large η_u: |bias| / spread 0.53 (p4 E1 −0.2, η_u = 0.1), 0.44 / 2.5
+    (p6 fine −0.3+4i, η_u = 0.03 / 0.1); after the bootstrap correction 0.15, 0.11, 0.08.
+- Decisions: none.
+- Next: the EIV bootstrap inside `e4_profile.py` (trained runs, certificate and order test
+  under input noise); coloured input noise; resolving close real pairs at the limit;
+  noise-dependent release; zero-order hold; joint intervals; RQ4 linear probe.
 
 ### 2026-11-15 — (C) E4: the E1 data under noise; the noise limit is the CRB, not η*
 

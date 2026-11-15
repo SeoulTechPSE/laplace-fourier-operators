@@ -18,6 +18,7 @@ families) make the poles practically identifiable, and does training then recove
 | `e2_polish.py` | L-BFGS-B polish of saved Adam checkpoints (paired before/after), floor-certificate table | `results/e2_polish/*.json`, `results/e2_polish.md` |
 | `e4_profile.py` | E4: minimal-form refit of the certified report, order test, per-pole profile intervals (VarPro); `--hold foh`: refits with the data generator's first-order-hold input, with backward order reduction per run; `--hold band_red`: band-limited refits with the same reduction (control); noise-free conditions use σ² = float32 rounding of the outputs, Newton-finished fits and bootstrap intervals; E1 data under output noise (eighth pass) | `results/e4_profile{,_foh,_band_red}/*.json`, `results/e4_profile{,_foh,_band_red}.md` |
 | `e4_bias.py` | E4: the noise-free pole bias, float32 rounding of inputs vs outputs (exact vs stored data, Monte Carlo, truth-free bootstrap) | `results/e4_bias.md` / `.json` |
+| `e4_eiv.py` | E4: input noise (errors-in-variables) under output noise: Monte-Carlo coverage of the E4, residual-σ² and truth-free EIV-bootstrap intervals (minimal FOH refit) | `results/e4_eiv/*.json`, `results/e4_eiv.md` |
 | `e2_noise.py` | E4: pole error under output noise vs the Cramér–Rao bound of the minimal-form layer, both restart rules | `results/e2_noise.md` / `.json` |
 | `e2_figures.py` | figures: recovery by recipe stage; noise vs CRB | `results/figures/fig_e2_stages.png`, `fig_e4_noise.png` |
 | `e3_deep.py` | E3 deep first pass: bounded slots in full ALNO / LFNO stacks | `results/e3_deep/*.json`, `results/e3_deep.md` |
@@ -1166,6 +1167,59 @@ Noise-free E1 data, sixth pass: single runs 90 / 65 % all poles. Full tables:
   (`results/e2_floor.md`) reports −2 in 0–2/4 groups. The FOH refit is what turns the runs
   into a full report.
 
+## E4, ninth pass: input noise (errors-in-variables) under output noise
+
+The E4 intervals treat the inputs as exact; σ² holds the output noise only. Without noise,
+the float32 rounding of the inputs already widened the pole spread up to 2 × (seventh pass).
+`e4_eiv.py` now adds measurement noise to the stored inputs. The refit sees x̃ = x + e_u, while
+the outputs y = G x + e_y come from the clean x. Both noises are white Gaussian with relative
+L2 norm η per sample (as `make_splits`); η_y = 0.01 is fixed and η_u ∈ {0, 0.01, 0.03, 0.1}.
+Each row uses 64 independent draws of (e_u, e_y), so coverage is counted over independent data.
+This differs from the groups of `e4_profile.py`, which share one draw.
+
+Each draw gets the minimal FOH refit, started at the truth (a local diagnosis, no training),
+and three 95 % intervals per Re μ:
+
+- **naive**: the E4 interval. σ² is the output-noise estimate, in Wald form
+  √(2σ² [H⁻¹]_kk), which equals the profile interval for a quadratic profile.
+- **resid**: the same with σ² = S_min / (n − p).
+- **EIV bootstrap**: truth-free. σ_u² is estimated from the stored inputs by a robust (MAD)
+  6th-difference estimate. The mean-square estimate of `e2_rescue.noise_var` reads η ≈ 0.05
+  on clean E1 inputs because of their steps; the MAD reads 4e-13 there, and η̂_u / η_u =
+  0.99–1.03 under noise. Then y* = G_fit x̃ + e_y* and x̃* = x̃ + e_u*, refitted from the fit
+  (32 draws). The estimate is bias-corrected (2θ̂ − mean θ*), with interval ± 1.96 std(θ*).
+
+Coverage of the 95 % intervals, range over the poles of each data set (full table:
+`results/e4_eiv.md`):
+
+| data | η_u | pole spread / spread at η_u = 0 | naive | resid | EIV bootstrap |
+|---|---|---|---|---|---|
+| p4 multisine | 0 / 0.01 / 0.03 / 0.1 | 1 / 1.6 / 3.1–4.2 / 10–14 | 95–97 / 81–84 / 30–58 / 14–23 % | 95–97 / 81–84 / 42–61 / 31–42 % | 95 / 92–97 / 94–97 / 95–97 % |
+| p4 E1 | same | 1 / 1.7–1.8 / 4.0–4.2 / 13–14 | 92–95 / 67–78 / 36–41 / 5–9 % | 92–95 / 70–80 / 48–52 / 31–39 % | 92–95 / 91–97 / 95–97 / 91–95 % |
+| p6 E1 | same | 1 / 1.3–1.4 / 2.6–4.0 / 10–12 | 92–97 / 81–88 / 36–52 / 8–20 % | 92–97 / 83–88 / 38–56 / 19–33 % | 92–94 / 94–98 / 94–98 / 83–97 % |
+| p6 fine multisine | same | 1 / 1.1–1.4 / 2.5–3.5 / 5.7–11 | 92–95 / 80–92 / 36–45 / 2–25 % | 92–95 / 80–92 / 38–48 / 2–33 % | 94–95 / 94–98 / 88–97 / 94–98 % |
+
+(64 draws: ± 3 % for a true 95 %. The p6 fine rows took 1.7–1.9 h each; the others 14–22 min.)
+
+- **Input noise mainly adds variance.** The pole spread grows about linearly with η_u: it
+  is 10–14 × the output-only spread at η_u = 10 η_y. With η_u = η_y it is already
+  1.1–1.8 ×.
+- **The E4 interval does not see this.** Its width does not depend on η_u. Coverage falls to
+  67–92 % at η_u = η_y and to 2–25 % at 10 ×.
+- **The residual variance does not repair it** (at most 31–42 %). The input noise reaches
+  the outputs through the system, low-pass. It raises S much less than it moves the poles.
+- **The EIV bootstrap restores the coverage**: 88–98 % in every row but one. That row is
+  p6 E1 at η_u = 0.1, where −1 is covered 83 % of the time. Its std is 0.86–1.23 × the
+  true spread. It needs only the stored data: σ_u from the inputs and σ_y from the outputs.
+- **Bias is visible only at large η_u, and the bootstrap corrects it.** At η_u = 0 the
+  |bias| / spread is 0.01–0.19, which is Monte-Carlo noise (1 / √64 = 0.13). Above that,
+  three cases stand out: p4 E1 −0.2 at η_u = 0.1 (0.53), and p6 fine −0.3+4i at η_u = 0.03
+  (0.44) and 0.1 (2.5). The last one would sink even a correctly sized interval. After the
+  correction they are 0.15, 0.11 and 0.08.
+- **Limits.** The fits start at the truth and give no certificate or order test under input
+  noise. The input noise is white, with a known shape; the scale is estimated. One output
+  noise level only.
+
 ## E3, deep setting: first pass
 
 `e3_deep.py`. The E1 deep models (ALNO / LFNO, 5,977 parameters, four layers) are trained
@@ -1209,8 +1263,9 @@ dead; NaN and dead runs count as not recovered.)
 - E3 layer: a noise-dependent release (δ chosen by the χ² order test, or released only
   when the tied fit fails the certificate); the steady branch untied above the residual
   band; whether the release needs the restarts.
-- E4: the input rounding / input noise as errors-in-variables under noise as well;
-  resolving close real pairs at the CRB limit (p6 −1 / −2 at η = 0.1);
+- E4: the EIV bootstrap inside `e4_profile.py` (trained runs, certificate and order test
+  under input noise; coloured input noise); resolving close real pairs at the CRB limit
+  (p6 −1 / −2 at η = 0.1);
   a zero-order-hold variant; simultaneous (joint) intervals; more groups for the
   complex-pole coverage.
 - E3 deep: linear-probe poles of trained deep models (RQ4); the dead-start LFNO runs
