@@ -16,7 +16,8 @@ families) make the poles practically identifiable, and does training then recove
 | `e2_rescue.py` | truth-free single-slot restarts of polished runs; `--rule noise`: noise-aware acceptance (E4); `--start reset/release`: partial tie with R_res reset / released from the tied run (E3), also under noise with `--rule noise` | `results/e2_rescue{,_na,_rr,_rel,_na_rel}/*.json`, `results/e2_rescue{,_na,_rr,_rel,_na_rel}.md` |
 | `e2_floor.py` | floor certificate without the truth: estimated floor + consensus poles; ratio and χ² (noise) rules | `results/e2_floor.md` / `.json` |
 | `e2_polish.py` | L-BFGS-B polish of saved Adam checkpoints (paired before/after), floor-certificate table | `results/e2_polish/*.json`, `results/e2_polish.md` |
-| `e4_profile.py` | E4: minimal-form refit of the certified report, order test, per-pole profile intervals (VarPro); `--hold foh`: refits with the data generator's first-order-hold input, with backward order reduction per run; `--hold band_red`: band-limited refits with the same reduction (control); noise-free conditions use σ² = float32 rounding of the outputs | `results/e4_profile{,_foh,_band_red}/*.json`, `results/e4_profile{,_foh,_band_red}.md` |
+| `e4_profile.py` | E4: minimal-form refit of the certified report, order test, per-pole profile intervals (VarPro); `--hold foh`: refits with the data generator's first-order-hold input, with backward order reduction per run; `--hold band_red`: band-limited refits with the same reduction (control); noise-free conditions use σ² = float32 rounding of the outputs, Newton-finished fits and bootstrap intervals | `results/e4_profile{,_foh,_band_red}/*.json`, `results/e4_profile{,_foh,_band_red}.md` |
+| `e4_bias.py` | E4: the noise-free pole bias, float32 rounding of inputs vs outputs (exact vs stored data, Monte Carlo, truth-free bootstrap) | `results/e4_bias.md` / `.json` |
 | `e2_noise.py` | E4: pole error under output noise vs the Cramér–Rao bound of the minimal-form layer, both restart rules | `results/e2_noise.md` / `.json` |
 | `e2_figures.py` | figures: recovery by recipe stage; noise vs CRB | `results/figures/fig_e2_stages.png`, `fig_e4_noise.png` |
 | `e3_deep.py` | E3 deep first pass: bounded slots in full ALNO / LFNO stacks | `results/e3_deep/*.json`, `results/e3_deep.md` |
@@ -1058,10 +1059,51 @@ band- and FOH-trained):
   offset in every group (p6 −1: error 7.6e-9 vs half-width 7.2e-9). A bias at the 1e-9–1e-8
   level that σ² does not contain (candidates: the float32 rounding of the inputs, which the
   output-only σ² ignores; the generator's own arithmetic). Not resolved; the identification
-  does not depend on it, the coverage claim does.
+  does not depend on it, the coverage claim does. *Resolved in the seventh pass: the input
+  rounding, one draw per data set; a bootstrap interval covers 18/18.*
 - **Layer choice on noise-free E1 data:** the FOH layer cuts the test error 37–140 × and
   raises the single-run rate in p6 (80 vs 65 %), not in p4 (85 vs 90 %). Its runs need the
   precision-term certificate; the band runs pass the ratio one.
+
+## E4, seventh pass: the noise-free undercoverage is the input rounding
+
+The sixth pass left the 95 % intervals undercovering on noise-free data: for some poles the
+truth was 1–1.7 half-widths outside, the same in every group. `e4_bias.py` takes it apart.
+On each of the 5 noise-free data sets it runs the minimal FOH refit on four versions of the
+training data: inputs / outputs as stored (float32) or exact (float64, regenerated). It also
+runs a Monte Carlo over 32 uniform ±ulp/2 dithers of the exact data, of both inputs and outputs
+or of the outputs only (`results/e4_bias.md`):
+
+| quantity | result |
+|---|---|
+| pole error, both exact (x64 y64) | ≤ 2e-14: the generator and the refit are exact |
+| S at the fit / n σ² (σ² = output rounding) | 1.00 with exact inputs, 1.01–1.31 as stored |
+| MC std, outputs dithered / profile half-width ÷ 1.96 | ≈ 1: the profile intervals are right for the output rounding |
+| MC std, inputs and outputs dithered / profile half-width ÷ 1.96 | **1.2–2.0** |
+
+- **The cause is the float32 rounding of the inputs.** σ² holds the output rounding only.
+  The input rounding adds little to S (≤ 1.3 ×) but widens the pole spread 1.2–2.0 ×,
+  because it passes through the system. That is an errors-in-variables term, not white noise.
+  No bias: the stored-data errors are within 1.9 std of the full spread on every pole.
+- **"The same offset in every group" is one draw.** All groups of a condition share one data
+  set, so its 4 groups are not independent coverage trials: the sixth pass had 5 misses in
+  18 pole intervals (5 data sets), not 5 × 4.
+- **Truth-free fix: a parametric bootstrap** (`e4_profile.bootstrap`, noise-free
+  conditions). Take the fitted outputs as exact, dither the stored inputs and the fitted
+  outputs by ±ulp/2 (32 draws), refit, and use Re μ ± 1.96 std. Its std matches the exact
+  Monte Carlo to 0.7–1.3 × (32 draws). Coverage: **18/18** pole intervals (profile: 13/18;
+  every pole in all 40 groups, against 0/4 for 5 pole × data pairs with the profile).
+- **The refit needed a second fix.** On S ≈ 1e-13, L-BFGS with gtol = 1e-14 on S stopped
+  early in flat valleys. On p6 fine a fit started at the truth ended 3.5 σ² above the minimum
+  reached from the report, with Re μ of −1 / −2 off by 3e-9 / 1e-8, about 2 std. Noise-free
+  fits now minimise S / (n σ²) and end with damped Newton steps (autograd Hessian). Then both
+  starts reach the same point. The reports of the sixth pass were already at that minimum
+  (same digits after the rerun); the stalled fits were the truth-started ones of the
+  diagnosis. Noisy conditions are unchanged.
+- Rerun of the 40 noise-free groups (`results/e4_profile_foh.md`, noise-free sections):
+  order test, consensus and all poles still 40/40, no false pole, the same errors; the profile
+  intervals miss the same pole × data pairs; the bootstrap intervals cover all.
+  The Newton steps make the p6 groups slow (≈ 1 h per group on N = 4096).
 
 ## E3, deep setting: first pass
 
@@ -1106,8 +1148,8 @@ dead; NaN and dead runs count as not recovered.)
 - E3 layer: a noise-dependent release (δ chosen by the χ² order test, or released only
   when the tied fit fails the certificate); the steady branch untied above the residual
   band; whether the release needs the restarts.
-- E4: the bias behind the noise-free undercoverage (input rounding in σ², or the generator's
-  arithmetic); the E1 data under output noise near η* (the noise limit of finding 3);
+- E4: the E1 data under output noise near η* (the noise limit of finding 3); the input
+  rounding / input noise as errors-in-variables under noise as well;
   a zero-order-hold variant; simultaneous (joint) intervals; more groups for the
   complex-pole coverage.
 - E3 deep: linear-probe poles of trained deep models (RQ4); the dead-start LFNO runs

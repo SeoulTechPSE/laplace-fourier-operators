@@ -31,20 +31,24 @@ Stage `rescue_na` (noise-aware restarts), groups of 5 seeds (one noise draw each
 
 ## p4, noise-free data (σ² = float32 rounding of the outputs)
 
-| condition | groups | certified runs (mean) | report from consensus | order test passed | -0.4+3i: identified / covered, error, half-width | -1: identified / covered, error, half-width | -0.2: identified / covered, error, half-width | false identified |
+Fits minimise S / (n σ²) and end with damped Newton steps. Covered: by the 95 % profile interval (σ² from the outputs only) / by the bootstrap interval Re μ ± 1.96 std (32 dithers of the stored inputs and fitted outputs by ± ulp/2). All groups of a condition share one data set, so coverage is one realisation per condition.
+
+| condition | groups | certified runs (mean) | report from consensus | order test passed | -0.4+3i: identified / covered (profile / bootstrap), error, half-width | -1: identified / covered (profile / bootstrap), error, half-width | -0.2: identified / covered (profile / bootstrap), error, half-width | false identified |
 |---|---|---|---|---|---|---|---|---|
-| p4_ms16_T20 | 4 | 5.0 | 4/4 | 4/4 | 4/4, 5.6e-11, 9.3e-11 | 4/4, 2.5e-10, 1.2e-09 | 4/4, 3.0e-10, 7.1e-10 | 0 |
-| p4_ms16_T20_foh | 4 | 5.0 | 4/4 | 4/4 | 4/4, 5.6e-11, 9.3e-11 | 4/4, 2.4e-10, 1.2e-09 | 4/4, 3.0e-10, 7.1e-10 | 0 |
-| p4_e1_T20 | 4 | 5.0 | 4/4 | 4/4 | 4/4, 8.7e-12, 1.5e-10 | 4/4, 1.5e-09, 1.8e-09 | 4/0, 1.4e-09, 8.5e-10 | 0 |
-| p4_e1_T20_foh | 4 | 5.0 | 4/4 | 4/4 | 4/4, 8.6e-12, 1.5e-10 | 4/4, 1.5e-09, 1.8e-09 | 4/0, 1.4e-09, 8.5e-10 | 0 |
+| p4_ms16_T20 | 4 | 5.0 | 4/4 | 4/4 | 4 / 4 / 4, 5.6e-11, 9.3e-11 | 4 / 4 / 4, 2.5e-10, 1.2e-09 | 4 / 4 / 4, 3.0e-10, 7.1e-10 | 0 |
+| p4_ms16_T20_foh | 4 | 5.0 | 4/4 | 4/4 | 4 / 4 / 4, 5.6e-11, 9.3e-11 | 4 / 4 / 4, 2.5e-10, 1.2e-09 | 4 / 4 / 4, 3.0e-10, 7.1e-10 | 0 |
+| p4_e1_T20 | 4 | 5.0 | 4/4 | 4/4 | 4 / 4 / 4, 8.6e-12, 1.5e-10 | 4 / 4 / 4, 1.5e-09, 1.8e-09 | 4 / 0 / 4, 1.4e-09, 8.5e-10 | 0 |
+| p4_e1_T20_foh | 4 | 5.0 | 4/4 | 4/4 | 4 / 4 / 4, 8.6e-12, 1.5e-10 | 4 / 4 / 4, 1.5e-09, 1.8e-09 | 4 / 0 / 4, 1.4e-09, 8.5e-10 | 0 |
 
 ## p6, noise-free data (σ² = float32 rounding of the outputs)
 
-| condition | groups | certified runs (mean) | report from consensus | order test passed | -0.5+1.5i: identified / covered, error, half-width | -0.3+4i: identified / covered, error, half-width | -1: identified / covered, error, half-width | -2: identified / covered, error, half-width | false identified |
+Fits minimise S / (n σ²) and end with damped Newton steps. Covered: by the 95 % profile interval (σ² from the outputs only) / by the bootstrap interval Re μ ± 1.96 std (32 dithers of the stored inputs and fitted outputs by ± ulp/2). All groups of a condition share one data set, so coverage is one realisation per condition.
+
+| condition | groups | certified runs (mean) | report from consensus | order test passed | -0.5+1.5i: identified / covered (profile / bootstrap), error, half-width | -0.3+4i: identified / covered (profile / bootstrap), error, half-width | -1: identified / covered (profile / bootstrap), error, half-width | -2: identified / covered (profile / bootstrap), error, half-width | false identified |
 |---|---|---|---|---|---|---|---|---|---|
-| p6_ms16_T80 | 4 | 5.0 | 4/4 | 4/4 | 4/0, 4.4e-10, 3.1e-10 | 4/4, 4.2e-11, 4.3e-11 | 4/0, 7.6e-09, 7.2e-09 | 4/0, 2.5e-08, 2.1e-08 | 0 |
-| p6_ms16_T80_foh | 4 | 5.0 | 4/4 | 4/4 | 4/0, 4.4e-10, 3.1e-10 | 4/4, 4.2e-11, 4.3e-11 | 4/0, 7.7e-09, 7.2e-09 | 4/0, 2.5e-08, 2.1e-08 | 0 |
-| p6_ms16_T80_N4096 | 4 | 5.0 | 4/4 | 4/4 | 4/4, 1.9e-10, 1.6e-10 | 4/4, 2.2e-11, 2.1e-11 | 4/0, 3.7e-09, 3.6e-09 | 4/4, 1.0e-08, 1.1e-08 | 0 |
-| p6_ms16_T80_N4096_foh | 4 | 5.0 | 4/4 | 4/4 | 4/4, 1.9e-10, 1.6e-10 | 4/4, 2.2e-11, 2.1e-11 | 4/0, 3.7e-09, 3.6e-09 | 4/4, 1.0e-08, 1.1e-08 | 0 |
-| p6_e1_T20 | 4 | 5.0 | 4/4 | 4/4 | 4/4, 4.7e-10, 1.1e-09 | 4/4, 5.1e-11, 1.5e-10 | 4/4, 4.8e-10, 2.3e-08 | 4/4, 1.4e-08, 7.2e-08 | 0 |
-| p6_e1_T20_foh | 4 | 5.0 | 4/4 | 4/4 | 4/4, 4.7e-10, 1.1e-09 | 4/4, 5.1e-11, 1.5e-10 | 4/4, 4.8e-10, 2.3e-08 | 4/4, 1.4e-08, 7.2e-08 | 0 |
+| p6_ms16_T80 | 4 | 5.0 | 4/4 | 4/4 | 4 / 0 / 4, 4.4e-10, 3.1e-10 | 4 / 4 / 4, 4.2e-11, 4.3e-11 | 4 / 0 / 4, 7.7e-09, 7.2e-09 | 4 / 0 / 4, 2.5e-08, 2.1e-08 | 0 |
+| p6_ms16_T80_foh | 4 | 5.0 | 4/4 | 4/4 | 4 / 0 / 4, 4.4e-10, 3.1e-10 | 4 / 4 / 4, 4.2e-11, 4.3e-11 | 4 / 0 / 4, 7.7e-09, 7.2e-09 | 4 / 0 / 4, 2.5e-08, 2.1e-08 | 0 |
+| p6_ms16_T80_N4096 | 4 | 5.0 | 4/4 | 4/4 | 4 / 4 / 4, 1.9e-10, 1.6e-10 | 4 / 4 / 4, 2.2e-11, 2.1e-11 | 4 / 0 / 4, 3.7e-09, 3.6e-09 | 4 / 4 / 4, 1.0e-08, 1.1e-08 | 0 |
+| p6_ms16_T80_N4096_foh | 4 | 5.0 | 4/4 | 4/4 | 4 / 4 / 4, 1.9e-10, 1.6e-10 | 4 / 4 / 4, 2.2e-11, 2.1e-11 | 4 / 0 / 4, 3.7e-09, 3.6e-09 | 4 / 4 / 4, 1.0e-08, 1.1e-08 | 0 |
+| p6_e1_T20 | 4 | 5.0 | 4/4 | 4/4 | 4 / 4 / 4, 4.7e-10, 1.1e-09 | 4 / 4 / 4, 5.1e-11, 1.5e-10 | 4 / 4 / 4, 4.8e-10, 2.3e-08 | 4 / 4 / 4, 1.4e-08, 7.2e-08 | 0 |
+| p6_e1_T20_foh | 4 | 5.0 | 4/4 | 4/4 | 4 / 4 / 4, 4.7e-10, 1.1e-09 | 4 / 4 / 4, 5.1e-11, 1.5e-10 | 4 / 4 / 4, 4.8e-10, 2.3e-08 | 4 / 4 / 4, 1.4e-08, 7.2e-08 | 0 |

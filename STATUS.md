@@ -11,7 +11,7 @@ Each session appends one entry using the template at the bottom.
 | (C) Pole audit of existing models | 3–5 | **in progress**: E1 done, draft report (`E1_report.md`, updated with E2); paper decisions open | — |
 | (D) Non-periodic input representation | 4–8 | not started | differs from padded FNO? (month 8) |
 | (A) Pole layer and linear validation | 5–10 | not started | dispersion relations recovered (month 10) |
-| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term, E1 data identifiable without noise), E3 deep first pass done (`experiments/C/theory/`) | — |
+| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise), E3 deep first pass done (`experiments/C/theory/`) | — |
 | (A) Application 1: process dynamics | 11–16 | not started | — |
 | (D) Initial conditions and rollout | 13–19 | not started | — |
 | (A) Application 2: Cahn–Hilliard | 17–22 | not started | recover k_c, k_max (month 20) |
@@ -65,8 +65,9 @@ Suggested next steps (in order):
    Precision term (σ² = float32 rounding) for noise-free data: FOH-refit certificate
    correct in 40/40 groups. On the E1 data the recipe recovers −1 / −2 (band p6 95 / 70 %,
    FOH 95 / 80 %) and the certificate reports every pole: E1 finding 3 holds only under
-   noise above η* (p6 −2: 1.5e-5); see open decisions. Intervals undercover at 1e-8.
-   Next: that bias; E1 data under noise; noise-dependent release; linear probe (RQ4).
+   noise above η* (p6 −2: 1.5e-5); see open decisions. The noise-free undercoverage is the
+   float32 rounding of the inputs (not in σ²); a truth-free bootstrap covers 18/18.
+   Next: E1 data under noise; noise-dependent release; linear probe (RQ4).
 4. Optional E1 extras: log-parameterised decay rate; untied models with 64 steady modes
    (H1); weight decay excluded from poles; deep LNO v1 at its published size.
 
@@ -79,6 +80,29 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-15 — (C) E4: the noise-free undercoverage is the input rounding; bootstrap intervals
+
+- Done: `e4_bias.py` (minimal FOH refit on stored vs exact inputs / outputs, Monte Carlo over
+  ±ulp/2 dithers, truth-free parametric bootstrap; 5 noise-free data sets). In `e4_profile.py`,
+  noise-free conditions only: fits minimise S / (n σ²) and end with damped Newton steps;
+  `bootstrap()` intervals per reported pole; `VarPro.pred` factored out of `S`. The 40
+  noise-free groups rerun (old JSONs in `runs/archive/e4_profile_foh_clean_v1`). README
+  section "E4, seventh pass". Noisy conditions and `src/lfo/` unchanged.
+- Results:
+  - Both exact: pole errors ≤ 2e-14 (generator and refit exact). Output-only dithers give the
+    profile width; dithering the inputs as well widens the pole spread 1.2–2.0 × while S rises
+    ≤ 1.3 ×. The missing term is the float32 rounding of the inputs (errors-in-variables). The
+    stored-data errors are within 1.9 std of the full spread: no bias.
+  - The groups of a condition share one data set, so the sixth-pass "0/4" misses are one draw
+    each: the profile intervals cover 13 of 18 pole × data pairs, unchanged after the rerun.
+  - Bootstrap (stored inputs + fitted outputs dithered, 32 draws): std 0.7–1.3 × the exact
+    Monte Carlo; covers 18/18 poles, every pole in 40/40 groups.
+  - L-BFGS on S ~ 1e-13 stalled (truth start 3.5 σ² above the minimum, ~2 std off); the Newton
+    finish fixes it. The reports were already at the minimum (same digits).
+- Decisions: none.
+- Next: E1 data under output noise near η*; input noise / rounding as errors-in-variables
+  under noise; noise-dependent release; zero-order hold; joint intervals; RQ4 linear probe.
 
 ### 2026-11-15 — (C) E4: noise-free certificate at float32 precision; the hold on the E1 data
 

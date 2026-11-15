@@ -37,7 +37,11 @@ runs' band-model poles with refitted S (wrong runs certified); both broke the co
 Outputs then go to ``results/e4_profile_foh``.
 Noise-free conditions (``CLEAN``, stage ``rescue``): sigma^2 is the float32 rounding variance of the
 stored outputs (``round_var``), so the chi-square certificate, the order test and the intervals
-work at the precision of the data; reported in their own section (no CRB). ``--hold band_red``: the same per-run refit and
+work at the precision of the data; reported in their own section (no CRB). There the fits minimise
+S / (n sigma^2) and end with damped Newton steps (L-BFGS on S ~ 1e-13 stalled), and each reported
+pole also gets a bootstrap interval (``bootstrap``: dithers of the stored inputs and fitted outputs),
+because the rounding of the inputs, missing from sigma^2, widens the pole spread (e4_bias.py).
+``--hold band_red``: the same per-run refit and
 reduction with the band-limited model (control: the reduction without the right hold); outputs in
 ``results/e4_profile_band_red``. Conditions ending in ``_foh`` (runs of the FOH-trained layer,
 e2_train.py) are reported in their own section; refit them with ``--hold foh``.
@@ -77,6 +81,7 @@ CONDS = [c for c, v in F.CASES if v == VARIANT and F.NOISY(c)]
 BAD = 1e30                                          # objective returned for non-finite S
 STEPS, U_MIN, C_MAX, VP_ITERS = 12, 2e-3, 3.0, 500  # per side: c = exp(+-u), u log-spaced in [U_MIN, ln C_MAX]
 LEVEL = chi2.ppf(0.95, 1)
+N_BOOT = 32                                         # noise-free data: dithers per group (bootstrap())
 
 
 def round_var(y):
@@ -87,6 +92,30 @@ def round_var(y):
     y = y.numpy()
     u = np.spacing(np.abs(y).astype(np.float32)).astype(np.float64)
     return float(np.mean((u ** 2 / 12).mean(1) / (y.astype(np.float64) ** 2).sum(1)))
+
+
+def dither(a, rng):
+    """a + uniform(-ulp/2, ulp/2) with the float32 ulp of each element (a: float64 tensor)."""
+    ulp = np.spacing(np.abs(a.numpy()).astype(np.float32)).astype(np.float64)
+    return a + torch.tensor(rng.uniform(-0.5, 0.5, a.shape) * ulp)
+
+
+def bootstrap(vp, data, t, theta, real, device, n_boot=N_BOOT, seed=0):
+    """Noise-free data, truth-free: the fitted outputs are taken as exact; the stored inputs and the
+    fitted outputs are dithered by +-ulp/2 (float32) and refitted from theta. Returns the std of each
+    Re mu over the refits. The input rounding is missing from sigma^2 (outputs only) and doubles
+    the pole spread on some data (e4_bias.py)."""
+    x, y = (a.double().cpu() for a in data["train"])
+    with torch.no_grad():
+        y_hat = (vp.pred(torch.tensor(theta, device=device), real).reshape(y.shape) / vp.scale).cpu()
+    rng = np.random.default_rng(seed)
+    idx = np.cumsum([0] + [1 if r else 2 for r in real])[:-1]
+    out = []
+    for _ in range(n_boot):
+        vb = VarPro({"train": (dither(x, rng), dither(y_hat, rng))}, t, device, vp.hold)
+        vb.s_unit = vp.s_unit
+        out.append(vb.fit(theta, real)[0][idx])
+    return np.std(out, axis=0, ddof=1)
 
 
 def load_group(cond, g0, device):
@@ -129,6 +158,7 @@ class VarPro:
         self.scale = 1 / y.norm(dim=1, keepdim=True)
         self.y = (y * self.scale).reshape(-1)
         self.device = device
+        self.s_unit = 1.0               # fit() minimises S / s_unit (noise-free data: n sigma^2, see run())
 
     def mu(self, theta, real):
         out, i = [], 0
@@ -150,6 +180,11 @@ class VarPro:
         return ((I0 - I1 / dt)[None] + (I1 / dt)[None] * zl) / (zl - Ek[None])
 
     def S(self, theta, real):
+        r = self.y - self.pred(theta, real)
+        return (r @ r)
+
+    def pred(self, theta, real):
+        """Fitted outputs (flattened, rows scaled by 1 / ||y_i||) with the exact residues."""
         mu = self.mu(theta, real)
         H = self.transfer(mu)                                                         # (L, n)
         aH = self.alpha[:, :, None] * H[None]                                         # (b, L, n)
@@ -165,8 +200,7 @@ class VarPro:
         G = A.T @ A
         c = torch.linalg.solve(G + 1e-12 * torch.eye(len(cols), dtype=G.dtype, device=G.device) * G.diag().max(),
                                A.T @ self.y)                                  # small ridge: coinciding poles
-        r = self.y - A @ c
-        return (r @ r)
+        return A @ c
 
     def fit(self, theta0, real, fixed=None, iters=VP_ITERS):
         """argmin_theta S; fixed = index of theta held at its value. Returns (theta, S)."""
@@ -180,7 +214,7 @@ class VarPro:
             th[free] = z
             tt = torch.tensor(th, dtype=torch.float64, device=self.device, requires_grad=True)
             try:
-                val = self.S(tt, real)
+                val = self.S(tt, real) / self.s_unit
                 val.backward()
                 g = tt.grad.cpu().numpy()[free]
                 if np.isfinite(float(val)) and np.isfinite(g).all():
@@ -193,7 +227,44 @@ class VarPro:
                        options=dict(maxiter=iters, ftol=0.0, gtol=1e-14, maxcor=20))
         th = theta0.copy()
         th[free] = res.x
-        return th, float(res.fun)
+        if self.s_unit != 1.0:                  # noise-free data: L-BFGS stalls in flat valleys (see run())
+            return self.newton(th, real, free)
+        return th, float(res.fun) * self.s_unit
+
+    def newton(self, theta, real, free, steps=30):
+        """Damped Newton on the free parameters (autograd Hessian, |eigenvalues|, step halving) after
+        L-BFGS. On p6 fine the L-BFGS fit started at the truth stalled 3.5 sigma^2 above the minimum
+        that the start from the report reached (Re mu of -1 / -2 off by 3e-9 / 1e-8, ~2 std); a few
+        Newton steps bring both starts to the same point."""
+        th = torch.tensor(theta, dtype=torch.float64, device=self.device)
+        idx = torch.tensor(np.flatnonzero(free), device=self.device)
+
+        def f(z):
+            return self.S(th.index_put((idx,), z), real) / self.s_unit
+
+        z = th[idx].clone()
+        try:
+            S = float(f(z))
+            for _ in range(steps):
+                zz = z.clone().requires_grad_(True)
+                g = torch.autograd.grad(f(zz), zz)[0]
+                w, V = torch.linalg.eigh(torch.autograd.functional.hessian(f, z))
+                step = -(V @ ((V.T @ g) / w.abs().clamp_min(1e-12 * float(w.abs().max()))))
+                lam = 1.0
+                while lam > 1e-9 and not float(f(z + lam * step)) < S:
+                    lam /= 2
+                if lam <= 1e-9:
+                    break
+                z = z + lam * step
+                S_new = float(f(z))
+                done, S = S - S_new < 1e-12, S_new
+                if done:
+                    break
+        except torch.linalg.LinAlgError:
+            S = float(f(z))
+        out = theta.copy()
+        out[free] = z.cpu().numpy()
+        return out, S * self.s_unit
 
 
 def pack(poles):
@@ -294,6 +365,11 @@ def run(cond, g0, device, hold="band"):
     mask = runs[0]["model"].pr.parametrizations.mu[0].mask.flatten().cpu().numpy()
     p = n_eff(list(mask == 0))                               # effective free parameters of the 8-slot layer
     vp = VarPro(data, t, device, hold)
+    if not F.NOISY(cond):
+        # S ~ 1e-13 here, so gtol = 1e-14 on S itself stops L-BFGS early: a fit started at the truth
+        # ended above the fit started at the report (p6 fine: S 1.29352322e-13 vs 1.29352183e-13), and
+        # pole errors of 1e-9 were off by up to 1e-8. Minimise S / (n sigma^2) = O(1) instead.
+        vp.s_unit = data["train"][1].numel() * sig2
     ref = None
     if hold != "band":                                       # runs replaced by their reduced refits
         for r in runs:
@@ -327,6 +403,11 @@ def run(cond, g0, device, hold="band"):
         profs.append(dict(mu=[float(z.real), float(z.imag)], c=cs.tolist(), dS=((S - S.min()) / sig2).tolist(),
                           interval=[None if lo is None else z.real * lo, None if hi is None else z.real * hi]))
         k += 1 if r else 2
+    if not F.NOISY(cond) and hold == "foh":
+        sd = bootstrap(vp, data, t, theta, real, device)
+        for pr, sk in zip(profs, sd):
+            pr["boot_std"] = float(sk)
+            pr["interval_boot"] = [pr["mu"][0] - 1.96 * float(sk), pr["mu"][0] + 1.96 * float(sk)]
     true = E.true_folded(mu_true, beta_true)[0]
     res = dict(cond=cond, group=g0, system=system, eta_hat=float(np.sqrt(data["train"][1].shape[1] * sig2)),
                sigma2=sig2, p=p, n_cert=len(cert), best_seed=best["seed"], best_S=best["S"], S_ref=S_ref, p_ref=p_ref,
@@ -356,7 +437,7 @@ def score(r):
     for pr in r["profiles"]:                         # interval recomputed from the stored profile
         z = complex(*pr["mu"])
         lo, hi = interval(np.array(pr["c"]), np.array(pr["dS"]), LEVEL)
-        fit.append((z, [None if lo is None else z.real * lo, None if hi is None else z.real * hi]))
+        fit.append((z, [None if lo is None else z.real * lo, None if hi is None else z.real * hi], pr.get("interval_boot")))
     per = {}
     used = set()
     for z in true:
@@ -365,12 +446,13 @@ def score(r):
             per[z] = None
             continue
         used.add(k)
-        f, (lo, hi) = fit[k]
+        f, (lo, hi), ib = fit[k]
         closed = lo is not None and hi is not None
         per[z] = dict(fit=f, closed=closed, err=abs(f - z) / abs(z),
                       cover=(hi is None or hi <= z.real) and (lo is None or z.real <= lo),
-                      half=abs(lo - hi) / 2 / abs(z) if closed else None)
-    false = sum(1 for i, (f, (lo, hi)) in enumerate(fit) if i not in used and lo is not None and hi is not None)
+                      half=abs(lo - hi) / 2 / abs(z) if closed else None,
+                      boot_cover=None if ib is None else bool(ib[0] <= z.real <= ib[1]))
+    false = sum(1 for i, (f, (lo, hi), _) in enumerate(fit) if i not in used and lo is not None and hi is not None)
     return per, false
 
 
@@ -439,8 +521,12 @@ def summarize_hold(hold):
             continue
         true = [complex(*z) for z in g[0]["true_poles"]]
         lines += [f"## {system}, noise-free data (σ² = float32 rounding of the outputs)", "",
+                  "Fits minimise S / (n σ²) and end with damped Newton steps. Covered: by the 95 % profile "
+                  f"interval (σ² from the outputs only) / by the bootstrap interval Re μ ± 1.96 std ({N_BOOT} "
+                  "dithers of the stored inputs and fitted outputs by ± ulp/2). All groups of a condition share "
+                  "one data set, so coverage is one realisation per condition.", "",
                   "| condition | groups | certified runs (mean) | report from consensus | order test passed | "
-                  + " | ".join(f"{lab(z)}: identified / covered, error, half-width" for z in true)
+                  + " | ".join(f"{lab(z)}: identified / covered (profile / bootstrap), error, half-width" for z in true)
                   + " | false identified |", "|---|---|---|---|---|" + "---|" * len(true) + "---|"]
         for cond in clean:
             gr = sorted((r for r in g if r["cond"] == cond), key=lambda r: r["group"])
@@ -452,7 +538,8 @@ def summarize_hold(hold):
                 xs = [x[0][z] for x in sc]
                 errs = [x["err"] for x in xs if x]
                 halves = [x["half"] for x in xs if x and x["half"] is not None]
-                cells.append(f"{sum(bool(x and x['closed']) for x in xs)}/{sum(bool(x and x['cover']) for x in xs)}, "
+                cells.append(f"{sum(bool(x and x['closed']) for x in xs)} / {sum(bool(x and x['cover']) for x in xs)} / "
+                             f"{sum(bool(x and x['boot_cover']) for x in xs)}, "
                              + (f"{np.sqrt(np.mean(np.square(errs))):.1e}" if errs else "–")
                              + (f", {np.mean(halves):.1e}" if halves else ", –"))
             lines.append(f"| {cond} | {len(gr)} | {np.mean([r['n_cert'] for r in gr]):.1f} | "
