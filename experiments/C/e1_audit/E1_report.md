@@ -64,9 +64,11 @@ grid the poles become identifiable, and the remaining failure is optimisation.
 and −2 when there is no output noise. With the E2 recipe (damping bound, polish, restarts)
 the band layer recovers them in 95 / 70 % of runs on the E1 data (p6), and a truth-free
 first-order-hold refit with a float32-precision term reports every pole in 4/4 groups. The
-"floor" above is the layer's band-limited input hold, not a property of the data. The data
-lose −2 above a relative output noise of about 1.5e-5. See `experiments/C/theory/README.md`,
-"E4, sixth pass". The wording of this finding is not yet revised.
+"floor" above is the layer's band-limited input hold, not a property of the data. Under output
+noise the limit is the Cramér–Rao bound: −2 stays identifiable (4/4 groups, intervals
+covering) up to a relative noise of η ≈ 0.03 and is lost near η ≈ 0.1; −1 holds to ≈ 0.1. (An
+earlier per-sample estimate, η* ≈ 1.5e-5, was far too strict.) See
+`experiments/C/theory/README.md`, "E4, sixth pass" and "E4, eighth pass". The wording of this finding is not yet revised.
 
 ![Fig. 3](figures/fig3_profile.png)
 

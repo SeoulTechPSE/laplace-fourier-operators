@@ -11,7 +11,7 @@ Each session appends one entry using the template at the bottom.
 | (C) Pole audit of existing models | 3–5 | **in progress**: E1 done, draft report (`E1_report.md`, updated with E2); paper decisions open | — |
 | (D) Non-periodic input representation | 4–8 | not started | differs from padded FNO? (month 8) |
 | (A) Pole layer and linear validation | 5–10 | not started | dispersion relations recovered (month 10) |
-| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise), E3 deep first pass done (`experiments/C/theory/`) | — |
+| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise), E3 deep first pass done (`experiments/C/theory/`) | — |
 | (A) Application 1: process dynamics | 11–16 | not started | — |
 | (D) Initial conditions and rollout | 13–19 | not started | — |
 | (A) Application 2: Cahn–Hilliard | 17–22 | not started | recover k_c, k_max (month 20) |
@@ -22,7 +22,7 @@ Each session appends one entry using the template at the bottom.
 - [ ] Staffing (affects schedule adjustments in `docs/integrated_schedule_ACD.qmd`, Section 4)
 - [x] Whether ALNO / LFNO code is public: **not public** (2026-11-12); both re-implemented in `lfo.models.hybrid`
 - [ ] E1 paper: reported set; deep "closest pooled pole" in main text; waive the budget rule for the minimal layer setting? E2 in the same paper? (`experiments/C/e1_audit/E1_report.md`, decisions 1–4)
-- [ ] E1 finding 3 (2026-11-15): the E1 data identify −1 / −2 without noise (E2 recipe; FOH-refit certificate 4/4 groups); restate as "not found by the published recipes; identifiable from noise-free data, lost above relative noise η* ≈ 1.5e-5 (p6 −2)"? (`experiments/C/theory/README.md`, E4 sixth pass)
+- [ ] E1 finding 3 (2026-11-15): the E1 data identify −1 / −2 without noise (E2 recipe; FOH-refit certificate 4/4 groups); restate as "not found by the published recipes; identifiable from noise-free data and under relative output noise up to η ≈ 0.03 (p6 −2, CRB limit; confirmed in 4/4 groups at 0.03)"? (η* ≈ 1.5e-5 of the sixth pass was a per-sample criterion, corrected 2026-11-15; `experiments/C/theory/README.md`, E4 sixth and eighth passes)
 - [x] Ask the LFNO authors? **No** (2026-11-12): paper not formally published; use the reconstruction and document it
 
 ## Handoff (2026-11-12, after E1 first run) — start here in the next session
@@ -64,10 +64,12 @@ Suggested next steps (in order):
    test 7–225 × lower; no gain under noise; the ratio certificate then under-certifies.
    Precision term (σ² = float32 rounding) for noise-free data: FOH-refit certificate
    correct in 40/40 groups. On the E1 data the recipe recovers −1 / −2 (band p6 95 / 70 %,
-   FOH 95 / 80 %) and the certificate reports every pole: E1 finding 3 holds only under
-   noise above η* (p6 −2: 1.5e-5); see open decisions. The noise-free undercoverage is the
+   FOH 95 / 80 %) and the certificate reports every pole. Under noise the limit is the CRB,
+   not η*: p6 −2 identified in 4/4 groups up to η = 0.03, lost near 0.1 (CRB limit 0.035);
+   p4 real poles 4/4 at η = 0.3; see open decisions. The noise-free undercoverage is the
    float32 rounding of the inputs (not in σ²); a truth-free bootstrap covers 18/18.
-   Next: E1 data under noise; noise-dependent release; linear probe (RQ4).
+   Next: input noise / rounding as errors-in-variables under noise; noise-dependent
+   release; linear probe (RQ4).
 4. Optional E1 extras: log-parameterised decay rate; untied models with 64 steady modes
    (H1); weight decay excluded from poles; deep LNO v1 at its published size.
 
@@ -80,6 +82,30 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-15 — (C) E4: the E1 data under noise; the noise limit is the CRB, not η*
+
+- Done: conditions `p4_e1_T20_n{1e-1,3e-1}`, `p6_e1_T20_n{1e-2,3e-2,1e-1}` in `e2_train.py`
+  and the case lists of `e2_polish.py`, `e2_floor.py`, `e2_rescue.py`; full recipe (band
+  layer, damp8_ms, seeds 10–29: Adam → polish → restarts → noise-aware restarts; 100 runs),
+  then the FOH-refit certificate (`e4_profile.py --hold foh`, 20 groups; new "E1 data"
+  sections with a CRB column). README section "E4, eighth pass"; sixth-pass η* statements
+  corrected in README, the E1 report note, the handoff and the open decision. `src/lfo/`
+  unchanged.
+- Results:
+  - η* (sixth pass) is per sample. It ignores the √n averaging over 200 × 1024 samples and is
+    10³–10⁴ × too strict. The CRB limit (1.96 CRB = 0.1 relative) is, for the E1 data, p6
+    −1 / −2: η ≈ 0.11 / 0.035; p4 −1 / −0.2: 1.4 / 3.
+  - FOH certificate on the E1 data: p4 every pole in 4/4 groups at η = 0.1 and 0.3; p6
+    every pole 4/4 at η = 0.01 and 0.03, 0 false poles, all intervals cover. Errors
+    0.7–1.2 × CRB; real-pole half-widths ≈ 1.96 CRB.
+  - p6 at η = 0.1 (above the −2 limit): order 4 in 4/4 groups and every interval covers, but
+    the −1 / −2 intervals overlap; −2 within 0.1 in 2/4 groups (2 counted false).
+  - Single runs (after noise-aware restarts): all poles 55 % (p4), 35–60 % (p6); p6 −2
+    35–60 % (before them 0–15 %).
+- Decisions: none. The open decision on finding 3 now proposes the CRB limit instead of η*.
+- Next: input noise / rounding as errors-in-variables under noise; resolving close real pairs
+  at the limit; noise-dependent release; zero-order hold; joint intervals; RQ4 linear probe.
 
 ### 2026-11-15 — (C) E4: the noise-free undercoverage is the input rounding; bootstrap intervals
 

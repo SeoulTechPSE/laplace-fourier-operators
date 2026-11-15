@@ -49,7 +49,7 @@ CASES = [("p4_ms16_T20", "mixed_off_ms", SEL), ("p6_ms16_T80", "mixed_off_ms", S
                                    "p4_ms16_T20_n1e-1", "p4_ms16_T20_n3e-1", "p6_ms16_T80_N4096_n1e-1",
                                    "p6_ms16_T80_N4096_n3e-1", "p4_ms16_T20_alno_pt03", "p4_ms16_T20_lfno_pt03",
                                    "p6_ms16_T80_N4096_alno_pt003", "p6_ms16_T80_N4096_alno_pt03",
-                                   "p6_ms16_T80_N4096_lfno_pt003", "p6_ms16_T80_N4096_lfno_pt03", *["p4_ms16_T20_foh", "p6_ms16_T80_foh", "p6_ms16_T80_N4096_foh", "p6_ms16_T80_N4096_n1e-2_foh", "p6_ms16_T80_N4096_n1e-1_foh", "p4_e1_T20", "p4_e1_T20_foh", "p6_e1_T20", "p6_e1_T20_foh"])]
+                                   "p6_ms16_T80_N4096_lfno_pt003", "p6_ms16_T80_N4096_lfno_pt03", *["p4_ms16_T20_foh", "p6_ms16_T80_foh", "p6_ms16_T80_N4096_foh", "p6_ms16_T80_N4096_n1e-2_foh", "p6_ms16_T80_N4096_n1e-1_foh", "p4_e1_T20", "p4_e1_T20_foh", "p6_e1_T20", "p6_e1_T20_foh", "p4_e1_T20_n1e-1", "p4_e1_T20_n3e-1", "p6_e1_T20_n1e-2", "p6_e1_T20_n3e-2", "p6_e1_T20_n1e-1"])]
 
 
 def score(model, data, mu_true, beta_true, device):

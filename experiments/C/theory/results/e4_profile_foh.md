@@ -29,6 +29,21 @@ Stage `rescue_na` (noise-aware restarts), groups of 5 seeds (one noise draw each
 | 0.01 | 4 | 5.0 | 4/4 | 4/4 | 4/4, 2.0e-05, 6.2e-05, 4.1e-05 | 4/2, 7.5e-06, 8.4e-06, 5.9e-06 | 4/4, 3.3e-04, 1.4e-03, 7.2e-04 | 4/4, 1.2e-03, 4.2e-03, 2.1e-03 | 0 |
 | 0.1 | 4 | 5.0 | 4/4 | 4/4 | 4/4, 2.0e-04, 6.2e-04, 4.1e-04 | 4/2, 7.5e-05, 8.4e-05, 5.9e-05 | 4/4, 3.3e-03, 1.4e-02, 7.2e-03 | 4/4, 1.2e-02, 4.2e-02, 2.1e-02 | 0 |
 
+## p4, E1 data
+
+| η | groups | certified runs (mean) | report from consensus | order test passed | -0.4+3i: identified / covered, error, half-width, CRB | -1: identified / covered, error, half-width, CRB | -0.2: identified / covered, error, half-width, CRB | false identified |
+|---|---|---|---|---|---|---|---|---|
+| 0.1 | 4 | 5.0 | 4/4 | 4/4 | 4/4, 3.6e-04, 6.0e-04, 4.2e-04 | 4/4, 4.3e-03, 6.9e-03, 3.5e-03 | 4/4, 2.0e-03, 3.4e-03, 1.7e-03 | 0 |
+| 0.3 | 4 | 5.0 | 4/4 | 4/4 | 4/4, 1.1e-03, 1.8e-03, 1.2e-03 | 4/4, 1.3e-02, 2.1e-02, 1.1e-02 | 4/4, 6.2e-03, 1.0e-02, 5.2e-03 | 0 |
+
+## p6, E1 data
+
+| η | groups | certified runs (mean) | report from consensus | order test passed | -0.5+1.5i: identified / covered, error, half-width, CRB | -0.3+4i: identified / covered, error, half-width, CRB | -1: identified / covered, error, half-width, CRB | -2: identified / covered, error, half-width, CRB | false identified |
+|---|---|---|---|---|---|---|---|---|---|
+| 0.01 | 4 | 5.0 | 4/4 | 4/4 | 4/4, 1.9e-04, 4.2e-04, 2.8e-04 | 4/4, 4.8e-05, 5.9e-05, 4.1e-05 | 4/4, 3.9e-03, 9.3e-03, 4.7e-03 | 4/4, 1.1e-02, 2.9e-02, 1.5e-02 | 0 |
+| 0.03 | 4 | 5.0 | 4/4 | 4/4 | 4/4, 5.8e-04, 1.3e-03, 8.3e-04 | 4/4, 1.4e-04, 1.8e-04, 1.2e-04 | 4/4, 1.2e-02, 2.9e-02, 1.4e-02 | 4/4, 3.3e-02, 8.6e-02, 4.4e-02 | 0 |
+| 0.1 | 4 | 5.0 | 4/4 | 4/4 | 4/4, 1.9e-03, 4.1e-03, 2.8e-03 | 4/4, 4.9e-04, 5.9e-04, 4.1e-04 | 4/4, 4.0e-02, 5.6e-01, 4.7e-02 | 2/2, 2.8e-02, 3.8e-01, 1.5e-01 | 2 |
+
 ## p4, noise-free data (σ² = float32 rounding of the outputs)
 
 Fits minimise S / (n σ²) and end with damped Newton steps. Covered: by the 95 % profile interval (σ² from the outputs only) / by the bootstrap interval Re μ ± 1.96 std (32 dithers of the stored inputs and fitted outputs by ± ulp/2). All groups of a condition share one data set, so coverage is one realisation per condition.

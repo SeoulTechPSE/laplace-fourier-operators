@@ -230,6 +230,9 @@ CONDITIONS = {
     "p6_ms16_T80_N4096_n1e-1_foh": ("p6", "multisine", 80.0, 16, 4096, dict(noise=1e-1, hold="foh")),
     "p4_e1_T20_foh": ("p4", "e1", 20.0, 0, 1024, dict(hold="foh")),       # E1 data with the FOH layer
     "p6_e1_T20_foh": ("p6", "e1", 20.0, 0, 1024, dict(hold="foh")),
+    # E4: E1 data under output noise, around the CRB noise limit of the real poles (p6: -2 at 0.035, -1 at 0.11)
+    **{f"{s}_e1_T20_n{e}": (s, "e1", 20.0, 0, 1024, dict(noise=float(e)))
+       for s, es in (("p4", ("1e-1", "3e-1")), ("p6", ("1e-2", "3e-2", "1e-1"))) for e in es},
     # E3 / E4: partial tie under noise (released from the noise-aware tied runs; no Adam runs of their own)
     **{f"p6_ms16_T80_N4096_{k}_pt03_n{e}": ("p6", "multisine", 80.0, 16, 4096,
                                             dict(kind=f"{k}_pt", modes=256, delta=0.3, noise=float(e)))

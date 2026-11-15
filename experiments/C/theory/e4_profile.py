@@ -81,6 +81,8 @@ CONDS = [c for c, v in F.CASES if v == VARIANT and F.NOISY(c)]
 BAD = 1e30                                          # objective returned for non-finite S
 STEPS, U_MIN, C_MAX, VP_ITERS = 12, 2e-3, 3.0, 500  # per side: c = exp(+-u), u log-spaced in [U_MIN, ln C_MAX]
 LEVEL = chi2.ppf(0.95, 1)
+E1_NOISY = {s: (f"{s}_e1_T20", {float(e): f"{s}_e1_T20_n{e}" for e in es})        # E1 data under noise
+            for s, es in (("p4", ("1e-1", "3e-1")), ("p6", ("1e-2", "3e-2", "1e-1")))}
 N_BOOT = 32                                         # noise-free data: dithers per group (bootstrap())
 
 
@@ -485,13 +487,15 @@ def summarize_hold(hold):
              "interval closed. Cell per true pole: identified groups / intervals covering the true Re μ; "
              "RMS relative error of the minimal fit; mean relative half-width of the interval; relative CRB "
              "(e2_noise.py).", ""]
-    for (system, (base, noisy)), suf in ((x, sf) for sf in ("", "_foh") for x in NZ.SYSTEMS.items()):
+    sets = [(s, s, base, noisy, suf) for suf in ("", "_foh") for s, (base, noisy) in NZ.SYSTEMS.items()]
+    sets += [(f"{s}, E1 data", s, base, noisy, "") for s, (base, noisy) in E1_NOISY.items()]
+    for label, system, base, noisy, suf in sets:
         g = [r for r in rs if r["system"] == system and r["cond"] in {c + suf for c in noisy.values()}]
         if not g:
             continue
         cr = NZ.crb_unit(base)
         true = [complex(*z) for z in cr["poles"]]
-        lines += [f"## {system}" + (", runs of the FOH-trained layer (`*_foh`)" if suf else ""), "",
+        lines += [f"## {label}" + (", runs of the FOH-trained layer (`*_foh`)" if suf else ""), "",
                   "| η | groups | certified runs (mean) | report from consensus | order test passed | "
                   + " | ".join(f"{lab(z)}: identified / covered, error, half-width, CRB" for z in true)
                   + " | false identified |", "|---|---|---|---|---|" + "---|" * len(true) + "---|"]
