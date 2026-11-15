@@ -11,7 +11,7 @@ Each session appends one entry using the template at the bottom.
 | (C) Pole audit of existing models | 3–5 | **in progress**: E1 done, draft report (`E1_report.md`, updated with E2); paper decisions open | — |
 | (D) Non-periodic input representation | 4–8 | not started | differs from padded FNO? (month 8) |
 | (A) Pole layer and linear validation | 5–10 | not started | dispersion relations recovered (month 10) |
-| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval and EIV-weighted refits), E3 deep first pass done (`experiments/C/theory/`) | — |
+| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits and a bootstrap-calibrated order), E3 deep first pass done (`experiments/C/theory/`) | — |
 | (A) Application 1: process dynamics | 11–16 | not started | — |
 | (D) Initial conditions and rollout | 13–19 | not started | — |
 | (A) Application 2: Cahn–Hilliard | 17–22 | not started | recover k_c, k_max (month 20) |
@@ -71,9 +71,10 @@ Suggested next steps (in order):
    Input noise (errors-in-variables): the E4 intervals undercover (2–25 % at η_u = 10 η_y);
    a truth-free EIV bootstrap restores 88–98 % (`e4_eiv.py`, local diagnosis). In the full
    pipeline the certificate breaks for η_u > η_y; EIV-weighted refits (`--hold foh_eiv`)
-   repair it up to η_u = 3 η_y; at 10 × on band-limited inputs false fast poles remain.
-   Next: consistent EIV refit (θ-dependent weights / excited band); noise-dependent release;
-   linear probe (RQ4).
+   repair it up to η_u = 3 η_y; at 10 × a bootstrap-calibrated reduction (`--hold foh_eivb`)
+   removes every false pole (4/4 groups end at the true order); report bootstrap intervals
+   there (profile 5/12, bootstrap 11/12). Next: calibrated certificate between runs;
+   noise-dependent release; linear probe (RQ4).
 4. Optional E1 extras: log-parameterised decay rate; untied models with 64 steady modes
    (H1); weight decay excluded from poles; deep LNO v1 at its published size.
 
@@ -86,6 +87,32 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-16 — (C) E4: bootstrap-calibrated order under strong input noise
+
+- Done: `e4_profile.py`: `EIVML` (frequency-domain EIV ML refit, poles and residues jointly;
+  local tests only), `denoise_input`, `calibrated_reduce` and `--hold foh_eivb` (the
+  `foh_eiv` report reduced further with bootstrap-calibrated thresholds; 16 draws per step;
+  the current model refitted from two starts). 24 groups (first version archived in
+  `runs/archive/e4_profile_foh_eivb_v1`). README section "E4, eleventh pass". `src/lfo/`
+  unchanged.
+- Results:
+  - Truth data, p4 multisine, η_u = 0.1: two extra fast poles lower S by 1880 σ² (FOH) /
+    179 (ML), against χ²₄(0.99) = 13.3; E1 inputs 5008 / 66. ML is not enough. The stationary
+    noise model is off by −28 % to +23 % (start-up of the propagated input noise).
+  - EIV-weighted tests are miscalibrated under strong input noise (an extra pole at −28 on
+    truth data: ΔS 99–126 vs 9.2). The parametric bootstrap reproduces this (124–162).
+  - `foh_eivb`: p4 multisine η_u = 0.1 goes from 5–7 to exactly the 3 true poles in 4/4
+    groups (κ = 52–64 at the last spurious step, 21–25 at the first true-pole step), 0 false poles (foh_eiv: 8). κ = 1 at small
+    input noise (reports unchanged), 2.2 for p6 E1 at η_u = 0.03. True poles are never removed
+    (ΔS 6e3–8e7 vs thresholds 9–21).
+  - At η_u = 0.1 the profile intervals cover 5/12, the bootstrap intervals 11/12.
+  - The first version had one group fail (bootstrap fit in a local minimum, mean ΔS* < 0);
+    the two-start refit fixed it.
+- Decisions: none.
+- Next: a calibrated certificate between runs (consensus 1/4 at η_u = 0.1); calibrated profile
+  intervals; exact time-domain EIV ML; coloured input noise; resolving close real pairs at
+  the limit; noise-dependent release; zero-order hold; joint intervals; RQ4 linear probe.
 
 ### 2026-11-16 — (C) E4: input noise in the full pipeline; EIV-weighted refits
 

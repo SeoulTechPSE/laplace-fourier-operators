@@ -74,7 +74,9 @@ import e2_floor as F  # noqa: E402
 
 P, RS, T, E = F.P, F.RS, F.T, F.E
 OUT = T.R.RESULTS / "e4_profile"
-HOLDS = ("band", "foh", "band_red", "foh_eiv")       # foh_eiv: FOH refits, EIV-whitened (eiv_weights)
+HOLDS = ("band", "foh", "band_red", "foh_eiv", "foh_ml", "foh_eivb")
+# foh_eiv: EIV-whitened refits (eiv_weights); foh_ml: EIVML refits; foh_eivb: foh_eiv + calibrated_reduce of the report
+N_CAL = 16                                          # bootstrap draws per calibrated elimination step
 STAGE, VARIANT = "rescue_na", "damp8_ms"
 CLEAN_STAGE = "rescue"                              # noise-free data: ratio-rule restarts
 CLEAN = ("p4_ms16_T20", "p6_ms16_T80", "p6_ms16_T80_N4096", "p4_e1_T20", "p6_e1_T20")   # + "_foh" variants
@@ -147,7 +149,7 @@ def eiv_bootstrap(vp, data, t, theta, real, sig2_y, sig2_u, device, n_boot=N_BOO
     idx = np.cumsum([0] + [1 if r else 2 for r in real])[:-1]
     out = []
     for _ in range(n_boot):
-        vb = VarPro({"train": (nz(x, sig2_u), nz(y_hat, sig2_y))}, t, device, vp.hold, vp.w)
+        vb = vp.like({"train": (nz(x, sig2_u), nz(y_hat, sig2_y))})
         out.append(vb.fit(theta, real)[0][idx])
     return np.mean(out, axis=0), np.std(out, axis=0, ddof=1)
 
@@ -221,6 +223,7 @@ class VarPro:
         x, y = (a.to(device).double() for a in data["train"])
         self.n_t = x.shape[1]
         self.alpha = torch.fft.fft(x)
+        self.t_np = np.asarray(t)
         self.t = torch.tensor(np.asarray(t), dtype=torch.float64, device=device)
         dt = float(self.t[1] - self.t[0])                                          # i omega_l as _omega, float64
         self.iw = (2j * np.pi * torch.fft.fftfreq(self.n_t, dt, dtype=torch.float64, device=device))
@@ -230,6 +233,10 @@ class VarPro:
         self.b = x.shape[0]
         self.yw = None if w is None else self.whiten(self.y[:, None])[:, 0]
         self.s_unit = 1.0               # fit() minimises S / s_unit (noise-free data: n sigma^2, see run())
+
+    def like(self, data):
+        """The same refit model on other data (bootstrap draws)."""
+        return VarPro(data, self.t_np, self.device, self.hold, self.w)
 
     def mu(self, theta, real):
         out, i = [], 0
@@ -362,6 +369,133 @@ class VarPro:
         return out, S * self.s_unit
 
 
+class EIVML(VarPro):
+    """Frequency-domain errors-in-variables ML refit (`--hold foh_ml`). With known noise variances the
+    ML cost of y = G x observed as (x~, y~), the true inputs eliminated, is
+
+        V = sum_il |R_il|^2 / v_il(theta),  v_il = sig2_y + sig2_u (||x_i|| / ||y_i||)^2 |G_theta(i omega_l)|^2,
+
+    R_i = fft of the normalised time-domain residual of sample i (the transient of e_u ignored, as in
+    eiv_weights). The weights move with theta, so lowering |G| where the input is pure noise no
+    longer pays (the plug-in weights of foh_eiv keep that bias). The residues enter v, so they are
+    no longer projected out: theta = (pole parameters, residues), fitted jointly; a pole-only theta
+    (from pack) gets its residues from the unweighted least squares first. V is in noise units
+    (sigma^2 = 1 in every test); V / n ~ 1 at the truth."""
+
+    def __init__(self, data, t, device, hold, sig2_y, sig2_u):
+        super().__init__(data, t, device, hold)
+        self.sig2_y, self.sig2_u = sig2_y, sig2_u
+        self.ratio = (self.alpha.abs().pow(2).sum(1) / self.n_t) * self.scale[:, 0] ** 2
+        self.neg = (-torch.arange(self.n_t, device=device)) % self.n_t
+
+    def like(self, data):
+        return EIVML(data, self.t_np, self.device, self.hold, self.sig2_y, self.sig2_u)
+
+    @staticmethod
+    def n_pole(real):
+        return int(sum(1 if r else 2 for r in real))
+
+    def full(self, theta, real):
+        """Append the unweighted LS residues to a pole-only theta (numpy)."""
+        theta = np.asarray(theta, float)
+        if theta.size > self.n_pole(real):
+            return theta
+        with torch.no_grad():
+            A = self.design(torch.tensor(theta, dtype=torch.float64, device=self.device), real)
+            c = self.solve(A, self.y)
+        return np.concatenate([theta, c.cpu().numpy()])
+
+    def split(self, theta, real):
+        k = self.n_pole(real)
+        return theta[:k], theta[k:]
+
+    def coef(self, theta, real):
+        thp, c = self.split(theta, real)
+        return self.design(thp, real), c
+
+    def S(self, theta, real):
+        thp, c = self.split(theta, real)
+        A = self.design(thp, real)
+        R = torch.fft.fft((self.y - A @ c).reshape(self.b, self.n_t), dim=1)
+        H = self.transfer(self.mu(thp, real))
+        b, i = [], 0
+        for r in real:
+            b.append(torch.complex(c[i], torch.zeros((), dtype=c.dtype, device=c.device)) if r
+                     else torch.complex(c[i], c[i + 1]))
+            i += 1 if r else 2
+        bk = torch.stack(b)
+        G = 0.5 * ((H * bk).sum(1) + torch.conj((H[self.neg] * bk).sum(1)))
+        v = self.sig2_y + self.sig2_u * self.ratio[:, None] * G.abs().pow(2)[None]
+        return (R.abs().pow(2) / v).sum() / self.n_t                     # Parseval: time-domain units
+
+    def fit(self, theta0, real, fixed=None, iters=VP_ITERS):
+        return super().fit(self.full(theta0, real), real, fixed, max(iters, 2000))
+
+
+def denoise_input(x, sig2_u):
+    """Wiener-type shrinkage of the stored inputs, truth-free: per frequency line the mean normalised power
+    P_l over the samples, noise power n_t sigma_u^2; gain max(0, 1 - n_t sigma_u^2 / P_l)."""
+    X = torch.fft.fft(x, dim=1)
+    P = (X.abs().pow(2) / x.pow(2).sum(1, keepdim=True)).mean(0)
+    gain = torch.clamp(1 - x.shape[1] * sig2_u / P, min=0)
+    return torch.fft.ifft(X * gain[None], dim=1).real
+
+
+def calibrated_reduce(vp, theta, real, data, sig2_y, sig2_u, device, n_cal=N_CAL, seed=0):
+    """Backward elimination of a report with bootstrap-calibrated thresholds (errors-in-variables data).
+    Under input noise the drop in S from an extra pole is far above chi2 sigma^2 even when the data
+    have no such pole (p4 multisine, eta_u = 10 eta_y, a real pole at -28 added to the true model:
+    dS ~ 100-130 against chi2_2(0.99) = 9.2, on simulated truth data). Per step: the cheapest move
+    (drop pole k / make complex pole k real) gives dS = S_reduced - S_current; n_cal EIV draws from the
+    reduced fit (denoised stored inputs as clean inputs, y* = G_reduced x^ + e_y*, x~* = x^ + e_u*) give
+    dS* = S*_reduced - S*_current; the move is taken while dS <= kappa chi2_dp(0.99), kappa = max(1,
+    mean dS* / dp). S*_current is the better of two starts (the current fit, and the reduced bootstrap fit
+    with the removed pole put back): from the current fit alone it landed above S*_reduced in one group
+    (mean dS* < 0). Returns (theta, real, steps)."""
+    x, y = (a.double().cpu() for a in data["train"])
+    xh = denoise_input(x, sig2_u)
+    vpx = vp.like({"train": (xh, y)})
+    gen = torch.Generator().manual_seed(seed)
+    nz = lambda a, s2: a + math.sqrt(s2) * a.norm(dim=1, keepdim=True) * torch.randn(a.shape, generator=gen,
+                                                                                    dtype=a.dtype)
+    theta, S_cur = vp.fit(theta, real)
+    steps = []
+    while len(real) > 1:
+        cur = unpack_theta(theta, real)
+        moves = [(cur[:k] + cur[k + 1:], ("drop", k)) for k in range(len(cur))]
+        moves += [(cur[:k] + [complex(z.real, 0.0)] + cur[k + 1:], ("real", k)) for k, z in enumerate(cur) if z.imag]
+        trials = []
+        for m, mv in moves:
+            a, b = pack(m)
+            a, S = vp.fit(a, b)
+            trials.append((S, a, b, mv))
+        S, a, b, (kind, k) = min(trials, key=lambda q: q[0])
+
+        def nested(th_red):
+            """The current model started from a reduced fit (the removed pole put back)."""
+            z = unpack_theta(th_red, b)
+            z = z[:k] + [cur[k]] + z[k:] if kind == "drop" else z[:k] + [complex(z[k].real, cur[k].imag)] + z[k + 1:]
+            return pack(z)[0]
+        dp = n_eff(real) - n_eff(b)
+        with torch.no_grad():
+            yc = (vpx.pred(torch.tensor(a, device=device), b).reshape(y.shape) / vpx.scale).cpu()
+        d = []
+        for _ in range(n_cal):
+            vb = vp.like({"train": (nz(xh, sig2_u), nz(yc, sig2_y))})
+            th_r, S_r = vb.fit(a, b)
+            S_c = min(vb.fit(theta, real)[1], vb.fit(nested(th_r), real)[1])   # two starts: local minima
+            d.append(max(S_r - S_c, 0.0))
+        kappa = max(1.0, float(np.mean(d)) / dp)
+        thr = kappa * chi2.ppf(0.99, dp)
+        ok = bool(S - S_cur <= thr)
+        steps.append(dict(poles=[[float(z.real), float(z.imag)] for z in unpack_theta(a, b)], dS=float(S - S_cur),
+                          dp=int(dp), dS_boot_mean=float(np.mean(d)), kappa=kappa, threshold=float(thr), removed=ok))
+        if not ok:
+            break
+        theta, real, S_cur = a, b, S
+    return theta, real, steps
+
+
 def pack(poles):
     real = [z.imag == 0 for z in poles]
     theta = [v for z in poles for v in ((z.real,) if z.imag == 0 else (z.real, abs(z.imag)))]
@@ -461,13 +595,16 @@ def run(cond, g0, device, hold="band"):
     p = n_eff(list(mask == 0))                               # effective free parameters of the 8-slot layer
     vp = VarPro(data, t, device, hold)
     sig2_y = sig2
-    if hold == "foh_eiv":
+    if hold in ("foh_eiv", "foh_eivb"):
         # weights from the best run's refit (unweighted FOH); then every S is in noise units, sigma^2 = 1
         best0 = min(runs, key=lambda r: r["S"])
         th0, re0 = pack(list(best0["eff"]))
         th0, _ = vp.fit(th0, re0)
         sig2_u = noise_var_robust(data["train"][0])
         vp = VarPro(data, t, device, hold, eiv_weights(vp, th0, re0, sig2_y, sig2_u))
+        sig2 = 1.0
+    if hold == "foh_ml":
+        vp = EIVML(data, t, device, hold, sig2_y, noise_var_robust(data["train"][0]))
         sig2 = 1.0
     if not F.NOISY(cond):
         # S ~ 1e-13 here, so gtol = 1e-14 on S itself stops L-BFGS early: a fit started at the truth
@@ -499,6 +636,11 @@ def run(cond, g0, device, hold="band"):
             break
     chosen = next((x for x in tried if x["order_ok"]), tried[-1])
     theta, real = chosen["theta"], chosen["real"]
+    calib = {}
+    if hold == "foh_eivb":
+        theta, real, steps = calibrated_reduce(vp, theta, real, data, sig2_y, sig2_u, device)
+        calib = dict(calibrated_steps=steps, report_before=[[float(z.real), float(z.imag)]
+                                                            for z in unpack_theta(chosen["theta"], chosen["real"])])
     mu_fit = unpack_theta(theta, real)
     profs, k = [], 0
     for z, r in zip(mu_fit, real):
@@ -513,7 +655,7 @@ def run(cond, g0, device, hold="band"):
             pr["boot_std"] = float(sk)
             pr["interval_boot"] = [pr["mu"][0] - 1.96 * float(sk), pr["mu"][0] + 1.96 * float(sk)]
     eiv = {}
-    if F.NOISY(cond) and hold in ("foh", "foh_eiv") and cond in EIV_CONDS:
+    if F.NOISY(cond) and hold in ("foh", "foh_eiv", "foh_ml", "foh_eivb") and cond in EIV_CONDS:
         add_eiv(eiv, profs, vp, data, t, theta, real, sig2_y, device)
     true = E.true_folded(mu_true, beta_true)[0]
     res = dict(cond=cond, group=g0, system=system, eta_hat=float(np.sqrt(data["train"][1].shape[1] * sig2_y)),
@@ -526,7 +668,7 @@ def run(cond, g0, device, hold="band"):
                source=chosen["source"], order_ok=chosen["order_ok"],
                report=[[float(z.real), float(z.imag)] for z in mu_fit], profiles=profs,
                true_poles=[[float(z.real), float(z.imag)] for z in true], hold=hold,
-               seconds=round(time.time() - t0, 1), **eiv)
+               seconds=round(time.time() - t0, 1), **eiv, **calib)
     out.mkdir(parents=True, exist_ok=True)
     (out / f"{cond}_g{g0}.json").write_text(json.dumps(res, indent=1, default=float))
     fmt = lambda iv: "[" + ", ".join("open" if x is None else f"{x:.3f}" for x in iv) + "]"
@@ -591,7 +733,9 @@ def summarize_hold(hold):
     lab = lambda z: f"{z.real:+g}{z.imag:+g}i" if z.imag else f"{z.real:+g}"
     lines = ["# E4: minimal-form refit, order test and profile intervals"
              + {"band": "", "foh": ", first-order-hold refits", "band_red": ", band-limited refits with reduction",
-                 "foh_eiv": ", first-order-hold refits, errors-in-variables weighting"}[hold], "",
+                 "foh_eiv": ", first-order-hold refits, errors-in-variables weighting",
+                 "foh_ml": ", first-order-hold refits, errors-in-variables ML",
+                 "foh_eivb": ", first-order-hold refits, EIV weighting and bootstrap-calibrated reduction"}[hold], "",
              *(["Refits, certificate and order-test reference use the exact first-order-hold response "
                 "(the data generator's input model) instead of the layer's band-limited one. Each run is refitted "
                 "and reduced (backward elimination) before the certificate.", ""]
@@ -601,6 +745,15 @@ def summarize_hold(hold):
                 "|G(iω)|², σ_y² from the outputs, σ_u² from the inputs by a robust estimate, G from the best run's "
                 "refit). S is then in noise units and every test uses σ² = 1. With σ_u² = 0 this is `--hold foh`.", ""]
                if hold == "foh_eiv" else []),
+             *(["As `--hold foh`, but every refit minimises the frequency-domain errors-in-variables ML cost "
+                "Σ |R|² / (σ_y² + σ_u² (‖x_i‖ / ‖y_i‖)² |G_θ(iω)|²) (`EIVML`; poles and residues jointly, the "
+                "weights move with θ). S is in noise units and every test uses σ² = 1.", ""]
+               if hold == "foh_ml" else []),
+             *(["As `--hold foh_eiv`; then the report is reduced once more by backward elimination with "
+                f"bootstrap-calibrated thresholds (`calibrated_reduce`, {N_CAL} EIV draws per step from the reduced "
+                "fit with a denoised input): drop the cheapest pole / make it real while ΔS ≤ κ χ²_Δp(0.99), "
+                "κ = max(1, mean ΔS* / Δp).", ""]
+               if hold == "foh_eivb" else []),
              *(["Control: refits with the band-limited (layer) model, each run refitted and reduced (backward "
                 "elimination) before the certificate, as with `--hold foh`.", ""]
                if hold == "band_red" else []),
@@ -644,7 +797,7 @@ def summarize_hold(hold):
                          f"{sum(r['source'] == 'consensus' for r in gr)}/{len(gr)} | {sum(r['order_ok'] for r in gr)}/{len(gr)} | "
                          + " | ".join(cells) + f" | {sum(s[1] for s in sc)} |")
         lines.append("")
-    for system, conds in (EIV.items() if hold in ("foh", "foh_eiv") else ()):
+    for system, conds in (EIV.items() if hold in ("foh", "foh_eiv", "foh_ml", "foh_eivb") else ()):
         g = [r for r in rs if r["cond"] in conds.values()]
         if not g:
             continue
