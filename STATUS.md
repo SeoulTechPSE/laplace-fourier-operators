@@ -11,7 +11,7 @@ Each session appends one entry using the template at the bottom.
 | (C) Pole audit of existing models | 3–5 | **in progress**: E1 done, draft report (`E1_report.md`, updated with E2); paper decisions open | — |
 | (D) Non-periodic input representation | 4–8 | not started | differs from padded FNO? (month 8) |
 | (A) Pole layer and linear validation | 5–10 | not started | dispersion relations recovered (month 10) |
-| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer), E3 deep first pass done (`experiments/C/theory/`) | — |
+| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term, E1 data identifiable without noise), E3 deep first pass done (`experiments/C/theory/`) | — |
 | (A) Application 1: process dynamics | 11–16 | not started | — |
 | (D) Initial conditions and rollout | 13–19 | not started | — |
 | (A) Application 2: Cahn–Hilliard | 17–22 | not started | recover k_c, k_max (month 20) |
@@ -22,6 +22,7 @@ Each session appends one entry using the template at the bottom.
 - [ ] Staffing (affects schedule adjustments in `docs/integrated_schedule_ACD.qmd`, Section 4)
 - [x] Whether ALNO / LFNO code is public: **not public** (2026-11-12); both re-implemented in `lfo.models.hybrid`
 - [ ] E1 paper: reported set; deep "closest pooled pole" in main text; waive the budget rule for the minimal layer setting? E2 in the same paper? (`experiments/C/e1_audit/E1_report.md`, decisions 1–4)
+- [ ] E1 finding 3 (2026-11-15): the E1 data identify −1 / −2 without noise (E2 recipe; FOH-refit certificate 4/4 groups); restate as "not found by the published recipes; identifiable from noise-free data, lost above relative noise η* ≈ 1.5e-5 (p6 −2)"? (`experiments/C/theory/README.md`, E4 sixth pass)
 - [x] Ask the LFNO authors? **No** (2026-11-12): paper not formally published; use the reconstruction and document it
 
 ## Handoff (2026-11-12, after E1 first run) — start here in the next session
@@ -61,8 +62,11 @@ Suggested next steps (in order):
    reduction alone gives the gain, at η ≤ 1e-2 the hold is needed. FOH inside the layer:
    noise-free training reaches all poles in 95–100 % of runs (p6 coarse grid 100 % vs 80 %),
    test 7–225 × lower; no gain under noise; the ratio certificate then under-certifies.
-   Next: precision term for the noise-free certificate; the hold on the E1 data;
-   noise-dependent release; linear-probe poles for deep (RQ4).
+   Precision term (σ² = float32 rounding) for noise-free data: FOH-refit certificate
+   correct in 40/40 groups. On the E1 data the recipe recovers −1 / −2 (band p6 95 / 70 %,
+   FOH 95 / 80 %) and the certificate reports every pole: E1 finding 3 holds only under
+   noise above η* (p6 −2: 1.5e-5); see open decisions. Intervals undercover at 1e-8.
+   Next: that bias; E1 data under noise; noise-dependent release; linear probe (RQ4).
 4. Optional E1 extras: log-parameterised decay rate; untied models with 64 steady modes
    (H1); weight decay excluded from poles; deep LNO v1 at its published size.
 
@@ -75,6 +79,31 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-15 — (C) E4: noise-free certificate at float32 precision; the hold on the E1 data
+
+- Done: `e4_profile.py` noise-free conditions (multisine p4 / p6 coarse / p6 fine, E1 data
+  p4 / p6, band- and FOH-trained; σ² = float32 rounding of the stored outputs, since the
+  sixth-difference σ̂² sees the signal and the E1 input steps; 40 groups). `e2_richness.py
+  --hold foh` (phase 1 with the FOH layer: floor and noise limit η*). Conditions
+  `p4_e1_T20{,_foh}`, `p6_e1_T20{,_foh}` through the full recipe (80 runs). README section
+  "E4, sixth pass"; a note under E1 finding 3 in `E1_report.md`. `src/lfo/` unchanged.
+- Results:
+  - At the truth the FOH floor is 1e-15–3e-14 on every phase-1 configuration (band
+    4e-4–3e-3). On the E1 data η* = 6e-4–1.3e-3 (p4 poles), 4.7e-5 / 1.5e-5 (p6 −1 / −2),
+    all far above float32 rounding.
+  - E1 data, E2 recipe (noise-free): all poles in a single run, band 90 % (p4) / 65 % (p6),
+    FOH 85 / 80 %; p6 −2 70 / 80 % (E1 recipes: −1 / −2 in 0–10 %). Ratio certificate:
+    band p4 4/4 groups, p6 −2 2/4 with 2 false; FOH runs 0–1/4.
+  - Precision-term FOH-refit certificate: order test, consensus and all poles in 40/40
+    groups (multisine and E1, both layers), no false pole, errors 1e-11–2.5e-8. The 95 %
+    intervals undercover for some poles (truth 1–1.7 half-widths outside, same in every
+    group): an unmodelled bias at 1e-9–1e-8 (input rounding? generator arithmetic?).
+- Decisions: none taken. E1 finding 3 ("the E1 data cannot identify them") does not hold for
+  noise-free data; it holds only under relative output noise above η*. Added to the open
+  decisions (how to state finding 3 in the E1 paper).
+- Next: the bias behind the undercoverage; the E1 data under noise near η*; noise-dependent
+  release; zero-order-hold variant; joint intervals; linear-probe poles for deep (RQ4).
 
 ### 2026-11-15 — (C) E4: hold vs reduction; the first-order-hold response inside the layer
 

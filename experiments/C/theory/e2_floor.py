@@ -54,7 +54,7 @@ CASES = [("p4_ms16_T20", "mixed_off_ms"), ("p4_ms16_T20", "damp8_ms"),
          ("p6_ms16_T80_N4096_alno_pt003", "damp8_ms"), ("p6_ms16_T80_N4096_alno_pt03", "damp8_ms"),
          ("p6_ms16_T80_N4096_lfno_pt003", "damp8_ms"), ("p6_ms16_T80_N4096_lfno_pt03", "damp8_ms"),
          *((f"p6_ms16_T80_N4096_{k}_pt03_n{e}", "damp8_ms") for k in ("alno", "lfno") for e in ("1e-2", "1e-1")),
-         *((c, "damp8_ms") for c in ['p4_ms16_T20_foh', 'p6_ms16_T80_foh', 'p6_ms16_T80_N4096_foh', 'p6_ms16_T80_N4096_n1e-2_foh', 'p6_ms16_T80_N4096_n1e-1_foh'])]
+         *((c, "damp8_ms") for c in ["p4_ms16_T20_foh", "p6_ms16_T80_foh", "p6_ms16_T80_N4096_foh", "p6_ms16_T80_N4096_n1e-2_foh", "p6_ms16_T80_N4096_n1e-1_foh", "p4_e1_T20", "p4_e1_T20_foh", "p6_e1_T20", "p6_e1_T20_foh"])]
 STAGES = {"polish": (P.OUT, "_lbfgs"), "rescue": (T.R.RESULTS / "e2_rescue", "_rescue"),
           "rescue_na": (RS.OUT_NA, "_rescue_na"), "rescue_rr": (T.R.RESULTS / "e2_rescue_rr", "_rescue_rr"),
           "rescue_rel": (T.R.RESULTS / "e2_rescue_rel", "_rescue_rel"),

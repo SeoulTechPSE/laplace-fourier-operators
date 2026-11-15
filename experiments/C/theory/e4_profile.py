@@ -34,7 +34,10 @@ reduced refit replaces the run (poles and S) in the certificate, the consensus a
 fallback, and the best full refit is the reference of the order test (dp = its free parameters -
 the report's). Earlier versions used the full refits' poles (spare poles drift, unpruned) or the
 runs' band-model poles with refitted S (wrong runs certified); both broke the consensus.
-Outputs then go to ``results/e4_profile_foh``. ``--hold band_red``: the same per-run refit and
+Outputs then go to ``results/e4_profile_foh``.
+Noise-free conditions (``CLEAN``, stage ``rescue``): sigma^2 is the float32 rounding variance of the
+stored outputs (``round_var``), so the chi-square certificate, the order test and the intervals
+work at the precision of the data; reported in their own section (no CRB). ``--hold band_red``: the same per-run refit and
 reduction with the band-limited model (control: the reduction without the right hold); outputs in
 ``results/e4_profile_band_red``. Conditions ending in ``_foh`` (runs of the FOH-trained layer,
 e2_train.py) are reported in their own section; refit them with ``--hold foh``.
@@ -68,17 +71,29 @@ P, RS, T, E = F.P, F.RS, F.T, F.E
 OUT = T.R.RESULTS / "e4_profile"
 HOLDS = ("band", "foh", "band_red")
 STAGE, VARIANT = "rescue_na", "damp8_ms"
+CLEAN_STAGE = "rescue"                              # noise-free data: ratio-rule restarts
+CLEAN = ("p4_ms16_T20", "p6_ms16_T80", "p6_ms16_T80_N4096", "p4_e1_T20", "p6_e1_T20")   # + "_foh" variants
 CONDS = [c for c, v in F.CASES if v == VARIANT and F.NOISY(c)]
 BAD = 1e30                                          # objective returned for non-finite S
 STEPS, U_MIN, C_MAX, VP_ITERS = 12, 2e-3, 3.0, 500  # per side: c = exp(+-u), u log-spaced in [U_MIN, ln C_MAX]
 LEVEL = chi2.ppf(0.95, 1)
 
 
+def round_var(y):
+    """Noise-free data: the float32 rounding variance per element of y_i / ||y_i|| (ulp^2 / 12),
+    from the stored data alone. At the true poles the FOH refit has S = (1.0-1.3) x n sigma^2 here,
+    so it takes the place of the noise estimate (whose 6th differences see the signal and the
+    steps of the E1 inputs on clean data)."""
+    y = y.numpy()
+    u = np.spacing(np.abs(y).astype(np.float32)).astype(np.float64)
+    return float(np.mean((u ** 2 / 12).mean(1) / (y.astype(np.float64) ** 2).sum(1)))
+
+
 def load_group(cond, g0, device):
     """Runs of one group (seeds g0 .. g0 + 4): model, S, effective poles."""
     system, family, Tw, Kk, N = T.unpack(cond)
     data, t, mu_true, beta_true = T.setup(cond, g0)
-    out, suffix = F.STAGES[STAGE]
+    out, suffix = F.STAGES[STAGE if F.NOISY(cond) else CLEAN_STAGE]
     runs = []
     for s in range(g0, g0 + F.K):
         name = T.run_name(cond, VARIANT, s)
@@ -275,7 +290,7 @@ def run(cond, g0, device, hold="band"):
     if len(runs) < F.K:
         print(f"skip {cond} {g0}: {len(runs)} runs", flush=True)
         return
-    sig2 = RS.noise_var(data["train"][1])
+    sig2 = RS.noise_var(data["train"][1]) if F.NOISY(cond) else round_var(data["train"][1])
     mask = runs[0]["model"].pr.parametrizations.mu[0].mask.flatten().cpu().numpy()
     p = n_eff(list(mask == 0))                               # effective free parameters of the 8-slot layer
     vp = VarPro(data, t, device, hold)
@@ -416,6 +431,33 @@ def summarize_hold(hold):
             lines.append(f"| {eta:g} | {len(gr)} | {np.mean([r['n_cert'] for r in gr]):.1f} | "
                          f"{sum(r['source'] == 'consensus' for r in gr)}/{len(gr)} | {sum(r['order_ok'] for r in gr)}/{len(gr)} | "
                          + " | ".join(cells) + f" | {sum(s[1] for s in sc)} |")
+        lines.append("")
+    clean = [c + suf for c in CLEAN for suf in ("", "_foh")]
+    for system in ("p4", "p6"):
+        g = [r for r in rs if r["system"] == system and r["cond"] in clean]
+        if not g:
+            continue
+        true = [complex(*z) for z in g[0]["true_poles"]]
+        lines += [f"## {system}, noise-free data (σ² = float32 rounding of the outputs)", "",
+                  "| condition | groups | certified runs (mean) | report from consensus | order test passed | "
+                  + " | ".join(f"{lab(z)}: identified / covered, error, half-width" for z in true)
+                  + " | false identified |", "|---|---|---|---|---|" + "---|" * len(true) + "---|"]
+        for cond in clean:
+            gr = sorted((r for r in g if r["cond"] == cond), key=lambda r: r["group"])
+            if not gr:
+                continue
+            sc = [score(r) for r in gr]
+            cells = []
+            for z in true:
+                xs = [x[0][z] for x in sc]
+                errs = [x["err"] for x in xs if x]
+                halves = [x["half"] for x in xs if x and x["half"] is not None]
+                cells.append(f"{sum(bool(x and x['closed']) for x in xs)}/{sum(bool(x and x['cover']) for x in xs)}, "
+                             + (f"{np.sqrt(np.mean(np.square(errs))):.1e}" if errs else "–")
+                             + (f", {np.mean(halves):.1e}" if halves else ", –"))
+            lines.append(f"| {cond} | {len(gr)} | {np.mean([r['n_cert'] for r in gr]):.1f} | "
+                         f"{sum(r['source'] == 'consensus' for r in gr)}/{len(gr)} | {sum(r['order_ok'] for r in gr)}/{len(gr)} | "
+                         + " | ".join(cells) + f" | {sum(x[1] for x in sc)} |")
         lines.append("")
     (T.R.RESULTS / f"{out_dir(hold).name}.md").write_text("\n".join(lines))
     print("\n".join(lines))

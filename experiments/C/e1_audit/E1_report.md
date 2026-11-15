@@ -60,6 +60,14 @@ converges to them, consistent with H2) but practically non-identifiable from the
 E2 (below) shows this is specific to the E1 data and grid: with richer inputs or a finer
 grid the poles become identifiable, and the remaining failure is optimisation.
 
+*Note (2026-11-15, open decision):* E2 / E4 later found that the E1 data do identify −1
+and −2 when there is no output noise. With the E2 recipe (damping bound, polish, restarts)
+the band layer recovers them in 95 / 70 % of runs on the E1 data (p6), and a truth-free
+first-order-hold refit with a float32-precision term reports every pole in 4/4 groups. The
+"floor" above is the layer's band-limited input hold, not a property of the data. The data
+lose −2 above a relative output noise of about 1.5e-5. See `experiments/C/theory/README.md`,
+"E4, sixth pass". The wording of this finding is not yet revised.
+
 ![Fig. 3](figures/fig3_profile.png)
 
 *Fig. 3. p6, tied layer: best achievable error with one pole's decay rate fixed at c × truth

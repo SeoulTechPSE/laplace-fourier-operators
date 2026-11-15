@@ -10,13 +10,13 @@ families) make the poles practically identifiable, and does training then recove
 
 | script | what | output |
 |---|---|---|
-| `e2_richness.py` | phase 1: local identifiability of the tied layer at the truth, over 46 data configurations (p4, p6) | `results/e2_richness.md` / `.json` |
+| `e2_richness.py` | phase 1: local identifiability of the tied layer at the truth, over 46 data configurations (p4, p6); `--hold foh`: the same with the first-order-hold layer, floor and noise limit η* | `results/e2_richness{,_foh}.md` / `.json` |
 | `e2_grid.py` | phase 1b: the phase-1 analysis over the time step dt = 20/N, N = 256–8192 | `results/e2_grid.md` / `.json` |
 | `e2_select.py` | best of 5 by validation loss on independent seeds 10–59 | `results/e2_select.md` / `.json` |
 | `e2_rescue.py` | truth-free single-slot restarts of polished runs; `--rule noise`: noise-aware acceptance (E4); `--start reset/release`: partial tie with R_res reset / released from the tied run (E3), also under noise with `--rule noise` | `results/e2_rescue{,_na,_rr,_rel,_na_rel}/*.json`, `results/e2_rescue{,_na,_rr,_rel,_na_rel}.md` |
 | `e2_floor.py` | floor certificate without the truth: estimated floor + consensus poles; ratio and χ² (noise) rules | `results/e2_floor.md` / `.json` |
 | `e2_polish.py` | L-BFGS-B polish of saved Adam checkpoints (paired before/after), floor-certificate table | `results/e2_polish/*.json`, `results/e2_polish.md` |
-| `e4_profile.py` | E4: minimal-form refit of the certified report, order test, per-pole profile intervals (VarPro); `--hold foh`: refits with the data generator's first-order-hold input, with backward order reduction per run; `--hold band_red`: band-limited refits with the same reduction (control) | `results/e4_profile{,_foh,_band_red}/*.json`, `results/e4_profile{,_foh,_band_red}.md` |
+| `e4_profile.py` | E4: minimal-form refit of the certified report, order test, per-pole profile intervals (VarPro); `--hold foh`: refits with the data generator's first-order-hold input, with backward order reduction per run; `--hold band_red`: band-limited refits with the same reduction (control); noise-free conditions use σ² = float32 rounding of the outputs | `results/e4_profile{,_foh,_band_red}/*.json`, `results/e4_profile{,_foh,_band_red}.md` |
 | `e2_noise.py` | E4: pole error under output noise vs the Cramér–Rao bound of the minimal-form layer, both restart rules | `results/e2_noise.md` / `.json` |
 | `e2_figures.py` | figures: recovery by recipe stage; noise vs CRB | `results/figures/fig_e2_stages.png`, `fig_e4_noise.png` |
 | `e3_deep.py` | E3 deep first pass: bounded slots in full ALNO / LFNO stacks | `results/e3_deep/*.json`, `results/e3_deep.md` |
@@ -963,8 +963,8 @@ the tied layer's 1 / (iω − μ) is replaced by the exact first-order-hold resp
 |---|---|---|---|---|---|---|
 | p4 | band | 85 % | 90 % | (−1 100, −0.2 90) | 5.4e-4 | 365 |
 | p4 | FOH | 70 % | 95 % | (−1 100, −0.2 95) | 2.4e-6 | 2782 |
-| p6, dt = 20/1024 | band | 35 % | 80 % | 90 / 85 % | 2.9e-4 | 445 |
-| p6, dt = 20/1024 | FOH | 40 % | **100 %** | 100 / 100 % | 7.0e-6 | 2810 |
+| p6 coarse (T = 80, N = 1024) | band | 35 % | 80 % | 90 / 85 % | 2.9e-4 | 445 |
+| p6 coarse (T = 80, N = 1024) | FOH | 40 % | **100 %** | 100 / 100 % | 7.0e-6 | 2810 |
 | p6 fine | band | 50 % | 90 % | 90 / 100 % | 5.2e-5 | 386 |
 | p6 fine | FOH | 30 % | **100 %** | 100 / 100 % | 6.9e-6 | 2469 |
 | p6 fine, η = 1e-2 | band | 50 % | 100 % | 100 / 100 % | 6.1e-5 | 1154 |
@@ -976,7 +976,7 @@ the tied layer's 1 / (iω − μ) is replaced by the exact first-order-hold resp
 `results/e2_floor.md`; restarts on noisy data: noise-aware rule)
 
 - **Without noise the FOH layer reaches every pole in every run, also on the coarse grid**
-  (p6, dt = 20/1024: 100 % against 80 %), and the test error drops 7–225 × (to 2.4–7.0e-6).
+  (p6 coarse, T = 80 with N = 1024: 100 % against 80 %), and the test error drops 7–225 × (to 2.4–7.0e-6).
   The gain comes in the restarts: after Adam and the polish the two layers are alike
   (30–70 % vs 35–85 %). The hold changes the minimum, not how the optimiser finds it.
 - **The ratio certificate does not carry over.** The runs stop 4–25 × above the FOH oracle
@@ -991,6 +991,77 @@ the tied layer's 1 / (iω − μ) is replaced by the exact first-order-hold resp
   FOH-trained noisy runs (`--hold foh`, 8 groups) gives the same report, errors and intervals
   as on the band-trained runs (identical to the printed digits): the refit finds the same minimum.
 - Cost: the FOH restarts take 1.3–7.6 × longer per run.
+
+## E4, sixth pass: noise-free certificate at float32 precision; the hold on the E1 data
+
+Two items left by the fifth pass.
+
+**1. A precision term for noise-free data.** The χ² certificate needs σ̂², and the
+sixth-difference estimate (`e2_rescue.noise_var`) fails without noise: it sees the signal and,
+on the E1 data, the steps of the inputs (σ̂² ≈ 7e-11). On noise-free data `e4_profile.py` now
+uses the variance of the float32 rounding of the stored outputs instead (ulp² / 12 per sample,
+normalised by ||y_i||²; truth-free, from the storage format alone). At the truth the FOH refit's
+score is 1.0–1.3 × n σ². Everything else is the fourth pass (`--hold foh`, per-run reduction,
+consensus, order test, profile intervals), on band- and FOH-trained runs (restart stage).
+
+**2. The hold on the E1 data.** `e2_richness.py --hold foh` repeats phase 1 with the FOH layer.
+At the truth its floor is 1e-15 to 3e-14 on every configuration, against 4e-4 to 3e-3 for the
+band layer, so identifiability is set by the noise. Per pole, η* = profiled error of a 10 %
+change / 10, the relative output noise below which the change stays ≥ 10 × the noise
+(`results/e2_richness_foh.md`):
+
+| data | pole | band ratio (E1 finding 3: ≥ 10 = identifiable) | η* (FOH) |
+|---|---|---|---|
+| p4, E1 inputs, T = 20 | −0.4+3i / −1 / −0.2 | 7.0 / 4.6 / 9.5 | 9.5e-4 / 6.2e-4 / 1.3e-3 |
+| p6, E1 inputs, T = 20 | −1 / −2 | 0.6 / 0.2 | 4.7e-5 / 1.5e-5 |
+
+All η* are far above the float32 rounding (~1e-7). Then the recipe on the E1 data
+(`p4_e1_T20`, `p6_e1_T20` and their `_foh` versions; damp8_ms, seeds 10–29, Adam → polish →
+restarts, ratio rule):
+
+| data | layer | after polish: all poles | after restarts: all poles | −1 / −2 (p6) or −1 / −0.2 (p4) | test rel. L2 (median) | ratio certificate (groups of 5): −1 / −0.2 or −2 identified, false | FOH-refit certificate (σ² = rounding) |
+|---|---|---|---|---|---|---|---|
+| p4 E1 | band | 45 % | 90 % | 95 / 90 % | 1.0e-3 | 4/4, 4/4, 0 | 4/4 groups, all poles, 0 false |
+| p4 E1 | FOH | 55 % | 85 % | 90 / 90 % | 2.7e-5 | 0/4, 0/4, 0 | 4/4 groups, all poles, 0 false |
+| p6 E1 | band | 55 % | 65 % | 95 / 70 % | 6.7e-4 | 4/4, 2/4, 2 | 4/4 groups, all poles, 0 false |
+| p6 E1 | FOH | 55 % | 80 % | 95 / 80 % | 4.7e-6 | 1/4, 1/4, 0 | 4/4 groups, all poles, 0 false |
+
+(E1 setting, published recipes, tied layer: −1 / −2 in 0–10 % of runs; full tables:
+`results/e2_polish.md`, `results/e2_rescue.md`, `results/e2_floor.md`, `results/e4_profile_foh.md`)
+
+The noise-free FOH-refit certificate on all runs (24 multisine groups and 16 E1 groups,
+band- and FOH-trained):
+
+| system | data | order test | consensus | all poles identified | false | RMS rel. error of the report | coverage of the 95 % intervals |
+|---|---|---|---|---|---|---|---|
+| p4 | multisine, E1 | 16/16 | 16/16 | 16/16 | 0 | 9e-12 – 1.5e-9 | −0.4+3i, −1: 16/16; −0.2: 8/16 (E1: 0/8) |
+| p6 | multisine coarse (T = 80, N = 1024) | 8/8 | 8/8 | 8/8 | 0 | 4e-11 – 2.5e-8 | −0.3+4i 8/8, others 0/8 |
+| p6 | multisine fine (N = 4096) | 8/8 | 8/8 | 8/8 | 0 | 2e-11 – 1.0e-8 | all 8/8, except −1: 0/8 |
+| p6 | E1 | 8/8 | 8/8 | 8/8 | 0 | 5e-11 – 1.4e-8 | 8/8 per pole |
+
+(the band- and FOH-trained runs give the same report to the printed digits)
+
+- **The E1 data identify the fast real poles; E1 finding 3 was a property of the recipe and
+  the hold, not of the data.** With the E2 recipe the band layer recovers −1 and −2 on the E1
+  data in 95 / 70 % of single runs (E1: 0–10 %), and the truth-free ratio certificate
+  reports them in 4/4 (p4) and 4/4 / 2/4 (p6) groups. With the FOH refit and the precision
+  term every group reports every pole at relative errors 1e-11 to 1e-8, with no false pole.
+  The phase-1 ratio criterion (≥ 10 × the band floor) was conservative: a ratio of 4.6
+  means the 10 % change is still 4.6 × above the best fit, which the optimiser can resolve.
+  The limit is noise: on the E1 data −2 of p6 stays identifiable only for relative output
+  noise below ~1.5e-5 (η*), −1 below ~5e-5, and the real poles of p4 below ~6e-4.
+- **The precision term makes the noise-free certificate work.** Consensus and order test in
+  every group, also where the ratio rule failed (FOH-trained runs: 0–1/4 groups), so the
+  certificate covers the noise-free FOH training.
+- **The intervals undercover at this precision.** The reported poles are within 1e-8, but
+  the truth lies ≈ 1–1.7 half-widths outside the interval for some poles, with the same
+  offset in every group (p6 −1: error 7.6e-9 vs half-width 7.2e-9). A bias at the 1e-9–1e-8
+  level that σ² does not contain (candidates: the float32 rounding of the inputs, which the
+  output-only σ² ignores; the generator's own arithmetic). Not resolved; the identification
+  does not depend on it, the coverage claim does.
+- **Layer choice on noise-free E1 data:** the FOH layer cuts the test error 37–140 × and
+  raises the single-run rate in p6 (80 vs 65 %), not in p4 (85 vs 90 %). Its runs need the
+  precision-term certificate; the band runs pass the ratio one.
 
 ## E3, deep setting: first pass
 
@@ -1035,12 +1106,10 @@ dead; NaN and dead runs count as not recovered.)
 - E3 layer: a noise-dependent release (δ chosen by the χ² order test, or released only
   when the tied fit fails the certificate); the steady branch untied above the residual
   band; whether the release needs the restarts.
-- E4: a certificate for noise-free FOH training (a precision term in place of σ̂², so that
-  the consensus forms); the hold on the E1 data (step / ramp / PRBS / smooth), where the
-  input is not a sum of sines, and a zero-order-hold variant; simultaneous (joint) intervals;
-  more groups for the complex-pole coverage.
-- E4: the two-stage report (consensus → minimal refit → order test) on the E1 data
-  (step / ramp / PRBS / smooth, T = 20), as the truth-free version of E1 finding 3.
+- E4: the bias behind the noise-free undercoverage (input rounding in σ², or the generator's
+  arithmetic); the E1 data under output noise near η* (the noise limit of finding 3);
+  a zero-order-hold variant; simultaneous (joint) intervals; more groups for the
+  complex-pole coverage.
 - E3 deep: linear-probe poles of trained deep models (RQ4); the dead-start LFNO runs
   (bounded, loss 1.0 from epoch 1).
 - More groups for the best-of-5 rates; c sensitivity between 0.35 and 0.7.

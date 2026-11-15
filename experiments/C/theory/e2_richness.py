@@ -27,11 +27,21 @@ Input families (amplitudes random per sample, data seed 0, 200 samples):
   pulse     1-3 rectangular pulses per sample, width U[0.05, 0.5], random sign/height
 
     python experiments/C/theory/e2_richness.py          # writes results/e2_richness.md (+ .json)
+    python experiments/C/theory/e2_richness.py --hold foh   # results/e2_richness_foh.md (+ .json)
+
+``--hold foh``: the same analysis with the layer's 1 / (i omega - mu) replaced by the exact
+sampled response to a first-order-hold input (the data generator's input model, as
+``FOHPoleResidue`` in e2_train.py). The floor then drops to the float64 rounding of the data,
+so the ratio s_k / floor is no longer the limit; the table reports s_k / 10 instead: the
+output-noise level (relative L2 per sample) up to which a 10 % change of Re mu_k stays an
+order of magnitude above the noise.
 """
 from __future__ import annotations
 
+import argparse
 import itertools
 import json
+import math
 import sys
 from pathlib import Path
 
@@ -96,6 +106,26 @@ def make(system: str, family: str, T: float, K: int = 0, seed: int = 0):
 
 # ---- analysis -------------------------------------------------------------------
 
+def layer_out_foh(mu, beta, x, t):
+    """``identifiability.layer_out`` with the first-order-hold response
+    H_l = (b0 + b1 z_l) / (z_l - E) per pole (E = e^{mu dt}, z_l = e^{i omega_l dt})."""
+    n = x.shape[-1]
+    dt = float(t[1] - t[0])
+    alpha = torch.fft.fft(x)
+    iw = 2j * math.pi * torch.fft.fftfreq(n, dt, dtype=torch.float64)
+    z = mu * dt
+    Ek = torch.exp(z)
+    I0, I1 = (Ek - 1) / mu, (Ek - 1 - z) / mu ** 2
+    zl = torch.exp(iw * dt)[:, None]
+    H = beta[None, :] * ((I0 - I1 / dt)[None, :] + (I1 / dt)[None, :] * zl) / (zl - Ek[None, :])
+    gamma = -(alpha @ H) / n
+    tr = torch.real(gamma @ torch.exp(mu[:, None] * t[None, :].to(torch.complex128)))
+    lam = alpha * H.sum(1)[None, :]
+    pos = torch.arange(n // 2 + 1)
+    c = (lam[:, pos] + torch.conj_physical(lam[:, (-pos) % n])) / 2
+    return tr + torch.fft.irfft(c, n=n)
+
+
 def local(system, family, T, K=0) -> dict:
     t, x, y, m, b = make(system, family, T, K)
     keep = y.norm(dim=1) > 1e-8 * y.norm(dim=1).max()        # drop all-zero outputs (e.g. late pulses)
@@ -133,6 +163,12 @@ def sweeps():
 
 
 def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--hold", choices=("band", "foh"), default="band")
+    hold = ap.parse_args().hold
+    if hold == "foh":
+        ID.layer_out = layer_out_foh                     # ID.residual looks it up at call time
+        return main_foh()
     out = []
     for cfg in sweeps():
         r = local(*cfg)
@@ -145,6 +181,38 @@ def main():
     RESULTS.mkdir(exist_ok=True)
     (RESULTS / "e2_richness.json").write_text(json.dumps(out, indent=1))
     write_md(out)
+
+
+def main_foh():
+    band = {(r["system"], r["family"], r["T"], r["K"]): r for r in json.loads((RESULTS / "e2_richness.json").read_text())}
+    out = []
+    for cfg in sweeps():
+        r = local(*cfg)
+        out.append(r)
+        (RESULTS / "e2_richness_foh.json").write_text(json.dumps(out, indent=1))
+    fmt = lambda z: f"{z[0]:+g}{z[1]:+g}i" if z[1] else f"{z[0]:+g}"
+    lines = ["# E2 phase 1 with the first-order-hold layer (at the truth)", "",
+             "As `e2_richness.md`, with the exact first-order-hold response in the tied layer. Floor: band layer → "
+             "FOH layer. Per pole: band ratio (profiled error of a 10 % change in Re μ / band floor; **bold** ≥ "
+             f"{RATIO_OK:g}) / η* = profiled error / 10 with the FOH layer: the output-noise level (relative L2 per "
+             "sample) below which the 10 % change stays ≥ 10 × the noise.", ""]
+    for system in ("p4", "p6"):
+        rs = [r for r in out if r["system"] == system]
+        poles = [fmt(p["pole"]) for p in rs[0]["poles"]]
+        lines += [f"## {system}", "",
+                  "| family | K | T | floor (band → FOH) | " + " | ".join(f"Re {p}: band ratio / η*" for p in poles) + " |",
+                  "|---|---|---|---|" + "---|" * len(poles)]
+        for r in rs:
+            b = band[(r["system"], r["family"], r["T"], r["K"])]
+            cells = []
+            for pb, pf in zip(b["poles"], r["poles"]):
+                q = pb["Re mu"]["ratio"]
+                cells.append((f"**{q:.1f}**" if q >= RATIO_OK else f"{q:.1f}") + f" / {pf['Re mu']['profiled_e'] / 10:.1e}")
+            lines.append(f"| {r['family']} | {r['K'] or '–'} | {r['T']:g} | {b['floor']:.1e} → {r['floor']:.1e} | "
+                         + " | ".join(cells) + " |")
+        lines.append("")
+    (RESULTS / "e2_richness_foh.md").write_text("\n".join(lines))
+    print("\n".join(lines))
 
 
 def write_md(out):
