@@ -21,6 +21,8 @@ Groups of 5 consecutive seeds (10-29). Floor estimate = lowest training loss in 
 | polish | ratio | p4_e1_T20_foh | damp8_ms | 55% | 7.83 | 4/6 | 1/4 | 1/4 | 0/4 | 2 | – (1 cert.) |
 | polish | ratio | p4_e1_T20_n1e-1 | damp8_ms | 40% | 99.16 | 8/20 | 4/4 | 0/4 | 2/4 | 0 | -0.41+3.00i, -0.20 (20 cert.) |
 | polish | ratio | p4_e1_T20_n3e-1 | damp8_ms | 30% | 286.31 | 6/20 | 4/4 | 0/4 | 1/4 | 3 | -0.41+2.95i (20 cert.) |
+| polish | ratio | p4_ms16_T20_n1e-2_u1e-2 | damp8_ms | 65% | 17.36 | 13/20 | 4/4 | 4/4 | 3/4 | 5 | -0.38+2.99i, -0.20, -1.07, -0.96 (20 cert.) |
+| polish | ratio | p4_ms16_T20_n1e-2_u1e-1 | damp8_ms | 75% | 38.09 | 15/20 | 4/4 | 2/4 | 4/4 | 3 | -0.39+3.00i, -1.03, -0.20 (20 cert.) |
 | rescue | ratio | p4_ms16_T20 | mixed_off_ms | 95% | 0.86 | 19/20 | 4/4 | 4/4 | 4/4 | 0 | -0.40+3.00i, -0.20+0.00i, -1.02+0.00i (20 cert.) |
 | rescue | ratio | p4_ms16_T20 | damp8_ms | 90% | 0.85 | 18/20 | 4/4 | 4/4 | 3/4 | 0 | -0.41+3.00i, -1.00, -0.20 (20 cert.) |
 | rescue | ratio | p4_ms16_T20_alno | damp8_ms | 75% | 0.90 | 15/20 | 4/4 | 3/4 | 4/4 | 0 | -0.41+3.01i, -0.20, -1.03 (20 cert.) |
@@ -36,6 +38,8 @@ Groups of 5 consecutive seeds (10-29). Floor estimate = lowest training loss in 
 | rescue | ratio | p4_e1_T20_foh | damp8_ms | 85% | 3.52 | 4/4 | 0/4 | 0/4 | 0/4 | 0 | -0.40+3.00i, -0.20, -0.98 (2 cert.) |
 | rescue | ratio | p4_e1_T20_n1e-1 | damp8_ms | 40% | 99.16 | 8/20 | 4/4 | 0/4 | 2/4 | 0 | -0.41+3.00i, -0.20 (20 cert.) |
 | rescue | ratio | p4_e1_T20_n3e-1 | damp8_ms | 30% | 286.31 | 6/20 | 4/4 | 0/4 | 1/4 | 3 | -0.41+2.95i (20 cert.) |
+| rescue | ratio | p4_ms16_T20_n1e-2_u1e-2 | damp8_ms | 65% | 17.36 | 13/20 | 4/4 | 4/4 | 3/4 | 5 | -0.38+2.99i, -0.20, -1.07, -0.96 (20 cert.) |
+| rescue | ratio | p4_ms16_T20_n1e-2_u1e-1 | damp8_ms | 75% | 38.09 | 15/20 | 4/4 | 2/4 | 4/4 | 3 | -0.39+3.00i, -1.03, -0.20 (20 cert.) |
 | rescue_rr | ratio | p4_ms16_T20_alno_pt03 | damp8_ms | 100% | 0.73 | 10/10 | 2/2 | 2/2 | 2/2 | 0 | -0.41+3.00i, -0.20, -0.99 (12 cert.) |
 | rescue_rr | ratio | p4_ms16_T20_lfno_pt03 | damp8_ms | 100% | 0.74 | 5/5 | 1/1 | 1/1 | 1/1 | 0 | -0.43+3.01i, -0.20, -1.00 (9 cert.) |
 | rescue_rel | ratio | p4_ms16_T20_alno_pt03 | damp8_ms | 90% | 0.73 | 18/20 | 4/4 | 4/4 | 3/4 | 0 | -0.41+3.00i, -1.00, -0.20 (20 cert.) |
@@ -46,12 +50,16 @@ Groups of 5 consecutive seeds (10-29). Floor estimate = lowest training loss in 
 | rescue | noise | p4_ms16_T20_n3e-1 | damp8_ms | 45% | 488.02 | 8/14 | 4/4 | 4/4 | 3/4 | 7 | -0.36+2.99i, -1.03, -0.19 (20 cert.) |
 | rescue | noise | p4_e1_T20_n1e-1 | damp8_ms | 40% | 99.16 | 6/10 | 4/4 | 2/4 | 3/4 | 2 | -0.41+3.00i, -0.20 (20 cert.) |
 | rescue | noise | p4_e1_T20_n3e-1 | damp8_ms | 30% | 286.31 | 4/8 | 2/4 | 1/4 | 1/4 | 3 | -0.41+2.95i (20 cert.) |
+| rescue | noise | p4_ms16_T20_n1e-2_u1e-2 | damp8_ms | 65% | 17.36 | 5/5 | 1/4 | 1/4 | 1/4 | 0 | -0.38+2.99i, -0.20, -1.07, -0.96 (20 cert.) |
+| rescue | noise | p4_ms16_T20_n1e-2_u1e-1 | damp8_ms | 75% | 38.09 | 15/20 | 4/4 | 2/4 | 4/4 | 3 | -0.39+3.00i, -1.03, -0.20 (20 cert.) |
 | rescue_na | noise | p4_ms16_T20_n1e-3 | damp8_ms | 100% | 1.96 | 5/5 | 1/4 | 1/4 | 1/4 | 0 | -0.40+3.00i, -0.20, -1.00 (20 cert.) |
 | rescue_na | noise | p4_ms16_T20_n1e-2 | damp8_ms | 100% | 17.01 | 20/20 | 4/4 | 4/4 | 4/4 | 0 | -0.41+3.00i, -0.20, -1.01 (20 cert.) |
 | rescue_na | noise | p4_ms16_T20_n1e-1 | damp8_ms | 65% | 168.91 | 13/20 | 4/4 | 2/4 | 4/4 | 1 | -0.40+3.00i, -0.21, -1.06 (20 cert.) |
 | rescue_na | noise | p4_ms16_T20_n3e-1 | damp8_ms | 55% | 488.01 | 11/20 | 4/4 | 3/4 | 2/4 | 2 | -0.40+3.00i, -0.99, -0.20 (20 cert.) |
 | rescue_na | noise | p4_e1_T20_n1e-1 | damp8_ms | 55% | 99.15 | 11/20 | 4/4 | 1/4 | 3/4 | 0 | -0.40+3.00i, -0.20 (20 cert.) |
 | rescue_na | noise | p4_e1_T20_n3e-1 | damp8_ms | 55% | 286.30 | 11/20 | 4/4 | 2/4 | 2/4 | 2 | -0.41+3.00i, -0.20 (20 cert.) |
+| rescue_na | noise | p4_ms16_T20_n1e-2_u1e-2 | damp8_ms | 95% | 17.36 | 19/20 | 4/4 | 4/4 | 4/4 | 0 | -0.40+3.00i, -0.20, -0.97 (20 cert.) |
+| rescue_na | noise | p4_ms16_T20_n1e-2_u1e-1 | damp8_ms | 75% | 38.09 | 15/20 | 4/4 | 2/4 | 4/4 | 3 | -0.39+3.00i, -1.03, -0.20 (20 cert.) |
 
 ## p6
 
@@ -80,6 +88,8 @@ Groups of 5 consecutive seeds (10-29). Floor estimate = lowest training loss in 
 | polish | ratio | p6_e1_T20_n1e-2 | damp8_ms | 10% | 14.83 | 2/20 | 4/4 | 4/4 | 2/4 | 0/4 | 3 | -0.50+1.50i, -0.30+4.00i, -1.07 (20 cert.) |
 | polish | ratio | p6_e1_T20_n3e-2 | damp8_ms | 5% | 44.35 | 1/20 | 4/4 | 4/4 | 3/4 | 0/4 | 4 | -0.30+4.00i, -0.48+1.50i, -1.04, -0.92, -0.82 (20 cert.) |
 | polish | ratio | p6_e1_T20_n1e-1 | damp8_ms | 0% | 147.12 | 0/20 | 4/4 | 4/4 | 1/4 | 0/4 | 5 | -0.30+4.00i, -0.47+1.49i, -0.76 (20 cert.) |
+| polish | ratio | p6_e1_T20_n1e-2_u1e-2 | damp8_ms | 20% | 15.08 | 4/20 | 4/4 | 4/4 | 3/4 | 1/4 | 2 | -0.50+1.50i, -0.30+4.00i, -1.05 (20 cert.) |
+| polish | ratio | p6_e1_T20_n1e-2_u3e-2 | damp8_ms | 10% | 16.87 | 2/20 | 4/4 | 4/4 | 3/4 | 0/4 | 2 | -0.50+1.50i, -0.30+4.00i, -1.01, -1.59 (20 cert.) |
 | rescue | ratio | p6_ms16_T80 | mixed_off_ms | 35% | 0.69 | 7/20 | 4/4 | 4/4 | 4/4 | 1/4 | 0 | -0.50+1.50i, -0.30+4.00i, -0.98 (20 cert.) |
 | rescue | ratio | p6_ms16_T80 | damp8_ms | 80% | 0.67 | 16/20 | 4/4 | 4/4 | 4/4 | 3/4 | 2 | -0.50+1.50i, -0.30+4.00i, -0.98, -2.00, -1.08 (20 cert.) |
 | rescue | ratio | p6_ms16_T80_N4096 | mixed_off_ms | 80% | 0.91 | 16/20 | 4/4 | 4/4 | 4/4 | 4/4 | 1 | -0.50+1.50i, -0.30+4.00i, -1.00, -2.03+0.01i (20 cert.) |
@@ -103,6 +113,8 @@ Groups of 5 consecutive seeds (10-29). Floor estimate = lowest training loss in 
 | rescue | ratio | p6_e1_T20_n1e-2 | damp8_ms | 10% | 14.83 | 2/20 | 4/4 | 4/4 | 2/4 | 0/4 | 3 | -0.50+1.50i, -0.30+4.00i, -1.07 (20 cert.) |
 | rescue | ratio | p6_e1_T20_n3e-2 | damp8_ms | 5% | 44.35 | 1/20 | 4/4 | 4/4 | 3/4 | 0/4 | 4 | -0.30+4.00i, -0.48+1.50i, -1.04, -0.92, -0.82 (20 cert.) |
 | rescue | ratio | p6_e1_T20_n1e-1 | damp8_ms | 0% | 147.12 | 0/20 | 4/4 | 4/4 | 1/4 | 0/4 | 5 | -0.30+4.00i, -0.47+1.49i, -0.76 (20 cert.) |
+| rescue | ratio | p6_e1_T20_n1e-2_u1e-2 | damp8_ms | 20% | 15.08 | 4/20 | 4/4 | 4/4 | 3/4 | 1/4 | 2 | -0.50+1.50i, -0.30+4.00i, -1.05 (20 cert.) |
+| rescue | ratio | p6_e1_T20_n1e-2_u3e-2 | damp8_ms | 10% | 16.87 | 2/20 | 4/4 | 4/4 | 3/4 | 0/4 | 2 | -0.50+1.50i, -0.30+4.00i, -1.01, -1.59 (20 cert.) |
 | rescue_rr | ratio | p6_ms16_T80_N4096_alno_pt003 | damp8_ms | 10% | 1.22 | 2/13 | 3/4 | 3/4 | 2/4 | 0/4 | 4 | -0.50+1.50i, -0.30+4.00i, -1.01, -1.92, -1.22 (2 cert.) |
 | rescue_rr | ratio | p6_ms16_T80_N4096_alno_pt03 | damp8_ms | 15% | 0.91 | 3/12 | 4/4 | 4/4 | 4/4 | 2/4 | 2 | -0.30+4.00i, -0.50+1.50i, -1.02, -1.78 (11 cert.) |
 | rescue_rr | ratio | p6_ms16_T80_N4096_lfno_pt003 | damp8_ms | 30% | 1.10 | 6/9 | 3/4 | 3/4 | 3/4 | 2/4 | 0 | -0.50+1.50i, -0.30+4.00i, -0.99, -1.99 (9 cert.) |
@@ -120,6 +132,8 @@ Groups of 5 consecutive seeds (10-29). Floor estimate = lowest training loss in 
 | rescue | noise | p6_e1_T20_n1e-2 | damp8_ms | 10% | 14.83 | 2/13 | 4/4 | 4/4 | 3/4 | 0/4 | 5 | -0.50+1.50i, -0.30+4.00i, -1.07 (20 cert.) |
 | rescue | noise | p6_e1_T20_n3e-2 | damp8_ms | 5% | 44.35 | 1/8 | 3/4 | 3/4 | 2/4 | 0/4 | 3 | -0.30+4.00i, -0.48+1.50i, -1.04, -0.92, -0.82 (20 cert.) |
 | rescue | noise | p6_e1_T20_n1e-1 | damp8_ms | 0% | 147.12 | 0/16 | 4/4 | 4/4 | 1/4 | 0/4 | 8 | -0.30+4.00i, -0.47+1.49i, -0.76 (20 cert.) |
+| rescue | noise | p6_e1_T20_n1e-2_u1e-2 | damp8_ms | 20% | 15.08 | 3/12 | 4/4 | 4/4 | 4/4 | 0/4 | 5 | -0.50+1.50i, -0.30+4.00i, -1.05 (20 cert.) |
+| rescue | noise | p6_e1_T20_n1e-2_u3e-2 | damp8_ms | 10% | 16.87 | 1/12 | 4/4 | 4/4 | 4/4 | 0/4 | 7 | -0.50+1.50i, -0.30+4.00i, -1.01, -1.59 (20 cert.) |
 | rescue_na | noise | p6_ms16_T80_N4096_n1e-3 | damp8_ms | 85% | 18.04 | 6/6 | 2/4 | 2/4 | 2/4 | 2/4 | 0 | -0.50+1.50i, -0.30+4.00i, -1.00, -2.01 (20 cert.) |
 | rescue_na | noise | p6_ms16_T80_N4096_n1e-2 | damp8_ms | 100% | 180.05 | 19/19 | 4/4 | 4/4 | 4/4 | 4/4 | 0 | -0.50+1.50i, -0.30+4.00i, -1.00, -1.97 (20 cert.) |
 | rescue_na | noise | p6_ms16_T80_N4096_n1e-1 | damp8_ms | 45% | 1791.65 | 9/20 | 4/4 | 4/4 | 4/4 | 0/4 | 1 | -0.30+4.00i, -0.50+1.50i, -1.00 (20 cert.) |
@@ -129,6 +143,8 @@ Groups of 5 consecutive seeds (10-29). Floor estimate = lowest training loss in 
 | rescue_na | noise | p6_e1_T20_n1e-2 | damp8_ms | 35% | 14.83 | 7/19 | 4/4 | 4/4 | 4/4 | 1/4 | 6 | -0.30+4.00i, -0.50+1.50i, -1.02, -1.77 (20 cert.) |
 | rescue_na | noise | p6_e1_T20_n3e-2 | damp8_ms | 60% | 44.35 | 12/20 | 4/4 | 4/4 | 3/4 | 2/4 | 1 | -0.50+1.50i, -0.30+4.00i, -1.01, -1.83 (20 cert.) |
 | rescue_na | noise | p6_e1_T20_n1e-1 | damp8_ms | 50% | 147.11 | 10/20 | 4/4 | 4/4 | 3/4 | 1/4 | 3 | -0.30+4.00i, -0.50+1.50i, -0.96 (20 cert.) |
+| rescue_na | noise | p6_e1_T20_n1e-2_u1e-2 | damp8_ms | 40% | 15.08 | 8/20 | 4/4 | 4/4 | 4/4 | 1/4 | 5 | -0.50+1.50i, -0.30+4.00i, -1.03, -1.70 (20 cert.) |
+| rescue_na | noise | p6_e1_T20_n1e-2_u3e-2 | damp8_ms | 50% | 16.87 | 10/20 | 4/4 | 4/4 | 2/4 | 3/4 | 2 | -0.50+1.50i, -0.30+4.00i, -1.04, -1.88 (20 cert.) |
 | rescue_na_rel | noise | p6_ms16_T80_N4096_alno_pt03_n1e-2 | damp8_ms | 100% | 180.05 | 20/20 | 4/4 | 4/4 | 4/4 | 4/4 | 0 | -0.50+1.50i, -0.30+4.00i, -0.99, -1.99 (20 cert.) |
 | rescue_na_rel | noise | p6_ms16_T80_N4096_alno_pt03_n1e-1 | damp8_ms | 25% | 1791.57 | 5/20 | 4/4 | 4/4 | 3/4 | 0/4 | 3 | -0.50+1.50i, -0.30+4.00i, -0.94 (20 cert.) |
 | rescue_na_rel | noise | p6_ms16_T80_N4096_lfno_pt03_n1e-2 | damp8_ms | 100% | 180.05 | 20/20 | 4/4 | 4/4 | 4/4 | 4/4 | 0 | -0.50+1.50i, -0.30+4.00i, -1.98, -1.00 (20 cert.) |

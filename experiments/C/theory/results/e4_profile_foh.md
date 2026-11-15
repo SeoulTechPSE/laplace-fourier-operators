@@ -44,6 +44,26 @@ Stage `rescue_na` (noise-aware restarts), groups of 5 seeds (one noise draw each
 | 0.03 | 4 | 5.0 | 4/4 | 4/4 | 4/4, 5.8e-04, 1.3e-03, 8.3e-04 | 4/4, 1.4e-04, 1.8e-04, 1.2e-04 | 4/4, 1.2e-02, 2.9e-02, 1.4e-02 | 4/4, 3.3e-02, 8.6e-02, 4.4e-02 | 0 |
 | 0.1 | 4 | 5.0 | 4/4 | 4/4 | 4/4, 1.9e-03, 4.1e-03, 2.8e-03 | 4/4, 4.9e-04, 5.9e-04, 4.1e-04 | 4/4, 4.0e-02, 5.6e-01, 4.7e-02 | 2/2, 2.8e-02, 3.8e-01, 1.5e-01 | 2 |
 
+## p4, input noise (errors-in-variables), `p4_ms16_T20_n1e-2` + η_u
+
+Noise on the stored train / validation inputs as well (outputs from the clean inputs), output noise 1e-2. The pipeline above unchanged (σ̂² from the outputs). Covered: by the profile interval / by the truth-free EIV bootstrap (32 draws; σ_u² from the inputs by a robust estimate, bias-corrected Re μ ± 1.96 std). Half-width: profile / bootstrap.
+
+| η_u | η̂_u | groups | certified runs (mean) | report from consensus | order test passed | -0.4+3i: identified / covered (profile / bootstrap), error, half-width (profile / bootstrap) | -1: identified / covered (profile / bootstrap), error, half-width (profile / bootstrap) | -0.2: identified / covered (profile / bootstrap), error, half-width (profile / bootstrap) | false identified |
+|---|---|---|---|---|---|---|---|---|---|
+| 0 | 6.7e-07 | 4 | 5.0 | 4/4 | 4/4 | 4 / 3 / 3, 2.7e-05, 3.7e-05 / 2.9e-05 | 4 / 4 / 4, 2.1e-04, 4.8e-04 / 4.7e-04 | 4 / 4 / 4, 9.9e-05, 2.8e-04 / 2.6e-04 | 0 |
+| 0.01 | 0.01 | 4 | 5.0 | 2/4 | 4/4 | 4 / 3 / 3, 6.5e-05, 6.8e-05 / 1.1e-04 | 3 / 2 / 4, 3.7e-02, 5.7e-04 / 1.5e-01 | 3 / 4 / 3, 9.6e-03, 4.7e-04 / 4.6e-02 | 0 |
+| 0.1 | 0.1 | 4 | 1.2 | 0/4 | 4/4 | 4 / 0 / 4, 6.0e-04, 1.0e-02 / 5.1e-03 | 3 / 0 / 3, 1.4e-02, 1.6e-01 / 2.3e-01 | 2 / 0 / 2, 9.8e-04, 7.2e-03 / 3.2e-02 | 16 |
+
+## p6, input noise (errors-in-variables), `p6_e1_T20_n1e-2` + η_u
+
+Noise on the stored train / validation inputs as well (outputs from the clean inputs), output noise 1e-2. The pipeline above unchanged (σ̂² from the outputs). Covered: by the profile interval / by the truth-free EIV bootstrap (32 draws; σ_u² from the inputs by a robust estimate, bias-corrected Re μ ± 1.96 std). Half-width: profile / bootstrap.
+
+| η_u | η̂_u | groups | certified runs (mean) | report from consensus | order test passed | -0.5+1.5i: identified / covered (profile / bootstrap), error, half-width (profile / bootstrap) | -0.3+4i: identified / covered (profile / bootstrap), error, half-width (profile / bootstrap) | -1: identified / covered (profile / bootstrap), error, half-width (profile / bootstrap) | -2: identified / covered (profile / bootstrap), error, half-width (profile / bootstrap) | false identified |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 0 | 1.1e-08 | 4 | 5.0 | 4/4 | 4/4 | 4 / 4 / 4, 1.9e-04, 4.2e-04 / 3.8e-04 | 4 / 4 / 4, 4.8e-05, 5.9e-05 / 6.3e-05 | 4 / 4 / 4, 3.9e-03, 9.3e-03 / 9.0e-03 | 4 / 4 / 4, 1.1e-02, 2.9e-02 / 2.8e-02 | 0 |
+| 0.01 | 0.01 | 4 | 5.0 | 3/4 | 4/4 | 4 / 3 / 4, 2.9e-04, 5.3e-04 / 7.0e-04 | 4 / 4 / 4, 4.7e-05, 6.5e-05 / 8.6e-05 | 4 / 4 / 4, 4.9e-03, 1.1e-02 / 1.5e-02 | 4 / 4 / 4, 1.6e-02, 3.4e-02 / 4.5e-02 | 0 |
+| 0.03 | 0.031 | 4 | 2.0 | 1/4 | 4/4 | 4 / 1 / 4, 3.1e-03, 1.4e-03 / 4.2e-02 | 4 / 2 / 4, 1.4e-04, 6.9e-05 / 2.5e-04 | 2 / 1 / 2, 2.0e-02, 1.1e-02 / 3.9e-02 | 2 / 1 / 2, 5.9e-02, 2.9e-02 / 9.6e-02 | 7 |
+
 ## p4, noise-free data (σ² = float32 rounding of the outputs)
 
 Fits minimise S / (n σ²) and end with damped Newton steps. Covered: by the 95 % profile interval (σ² from the outputs only) / by the bootstrap interval Re μ ± 1.96 std (32 dithers of the stored inputs and fitted outputs by ± ulp/2). All groups of a condition share one data set, so coverage is one realisation per condition.

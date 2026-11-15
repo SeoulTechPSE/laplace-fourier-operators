@@ -58,6 +58,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 import time
 from pathlib import Path
@@ -73,7 +74,7 @@ import e2_floor as F  # noqa: E402
 
 P, RS, T, E = F.P, F.RS, F.T, F.E
 OUT = T.R.RESULTS / "e4_profile"
-HOLDS = ("band", "foh", "band_red")
+HOLDS = ("band", "foh", "band_red", "foh_eiv")       # foh_eiv: FOH refits, EIV-whitened (eiv_weights)
 STAGE, VARIANT = "rescue_na", "damp8_ms"
 CLEAN_STAGE = "rescue"                              # noise-free data: ratio-rule restarts
 CLEAN = ("p4_ms16_T20", "p6_ms16_T80", "p6_ms16_T80_N4096", "p4_e1_T20", "p6_e1_T20")   # + "_foh" variants
@@ -83,7 +84,10 @@ STEPS, U_MIN, C_MAX, VP_ITERS = 12, 2e-3, 3.0, 500  # per side: c = exp(+-u), u 
 LEVEL = chi2.ppf(0.95, 1)
 E1_NOISY = {s: (f"{s}_e1_T20", {float(e): f"{s}_e1_T20_n{e}" for e in es})        # E1 data under noise
             for s, es in (("p4", ("1e-1", "3e-1")), ("p6", ("1e-2", "3e-2", "1e-1")))}
-N_BOOT = 32                                         # noise-free data: dithers per group (bootstrap())
+N_BOOT = 32                                         # bootstrap draws per group (noise-free: dithers; noisy: EIV)
+EIV = {s: {u: f"{base}_u{u}" for u in us} | {"0": base}                           # input noise, eta_y = 1e-2
+       for s, base, us in (("p4", "p4_ms16_T20_n1e-2", ("1e-2", "1e-1")), ("p6", "p6_e1_T20_n1e-2", ("1e-2", "3e-2")))}
+EIV_CONDS = {c for d in EIV.values() for c in d.values()}
 
 
 def round_var(y):
@@ -120,6 +124,68 @@ def bootstrap(vp, data, t, theta, real, device, n_boot=N_BOOT, seed=0):
     return np.std(out, axis=0, ddof=1)
 
 
+def noise_var_robust(v):
+    """Per-element noise variance of v_i / ||v_i|| from the median absolute 6th difference (robust to
+    the few large differences at the steps / switches of the E1 inputs: there the mean-square
+    version, e2_rescue.noise_var, reads eta ~ 0.05 on clean inputs, this one 4e-13)."""
+    d = torch.diff(v.double(), n=RS.DIFF, dim=1)
+    s = 1.4826 * d.abs().median(1).values / math.sqrt(math.comb(2 * RS.DIFF, RS.DIFF))
+    return float((s ** 2 / v.double().pow(2).sum(1)).mean())
+
+
+def eiv_bootstrap(vp, data, t, theta, real, sig2_y, sig2_u, device, n_boot=N_BOOT, seed=0):
+    """Noisy data, truth-free errors-in-variables bootstrap (e4_eiv.py): y* = G_fit x~ + e_y*,
+    x~* = x~ + e_u*, white Gaussian with the per-element variances sig2_y (outputs, e2_rescue.noise_var)
+    and sig2_u (inputs, noise_var_robust) of the normalised samples; refit from theta. Returns the
+    mean and std of each Re mu over the refits (bias-corrected estimate 2 theta - mean)."""
+    x, y = (a.double().cpu() for a in data["train"])
+    with torch.no_grad():
+        y_hat = (vp.pred(torch.tensor(theta, device=device), real).reshape(y.shape) / vp.scale).cpu()
+    gen = torch.Generator().manual_seed(seed)
+    nz = lambda a, s2: a + math.sqrt(s2) * a.norm(dim=1, keepdim=True) * torch.randn(a.shape, generator=gen,
+                                                                                    dtype=a.dtype)
+    idx = np.cumsum([0] + [1 if r else 2 for r in real])[:-1]
+    out = []
+    for _ in range(n_boot):
+        vb = VarPro({"train": (nz(x, sig2_u), nz(y_hat, sig2_y))}, t, device, vp.hold, vp.w)
+        out.append(vb.fit(theta, real)[0][idx])
+    return np.mean(out, axis=0), np.std(out, axis=0, ddof=1)
+
+
+def add_eiv(res, profs, vp, data, t, theta, real, sig2, device):
+    """Store the EIV bootstrap per reported pole: boot_mean, boot_std, interval_boot = bias-corrected
+    Re mu +- 1.96 std."""
+    sig2_u = noise_var_robust(data["train"][0])
+    bm, bs = eiv_bootstrap(vp, data, t, theta, real, sig2, sig2_u, device)
+    res["eta_u_hat"] = float(np.sqrt(data["train"][0].shape[1] * sig2_u))
+    for pr, m, sk in zip(profs, bm, bs):
+        c = 2 * pr["mu"][0] - float(m)
+        pr.update(boot_mean=float(m), boot_std=float(sk), interval_boot=[c - 1.96 * float(sk), c + 1.96 * float(sk)])
+
+
+def eiv_weights(vp, theta, real, sig2_y, sig2_u):
+    """Frequency weights that whiten the errors-in-variables residual. With y = G x and the stored
+    x~ = x + e_u, the residual of the true model is e_y - G e_u: per normalised sample i its spectrum
+    is v_il = sig2_y + sig2_u (||x_i|| / ||y_i||)^2 |G(i omega_l)|^2 (stationary approximation; the
+    transient of e_u is ignored). G from the fit theta: G = 1/2 sum_k (b_k H_k(omega) + conj(b_k H_k(-omega))),
+    b_k the (complex) residue of pole k. Returns w = 1 / sqrt(v) (b, n_t), so that S is in units of the
+    noise (sigma^2 = 1 in every test). With sig2_u = 0, w = 1 / sigma_y: the unweighted tests."""
+    th = torch.tensor(theta, dtype=torch.float64, device=vp.device)
+    with torch.no_grad():
+        _, c = vp.coef(th, real)
+        H = vp.transfer(vp.mu(th, real))                                     # (L, n)
+        b, i = [], 0
+        for r in real:
+            b.append(complex(float(c[i]), 0.0) if r else complex(float(c[i]), float(c[i + 1])))
+            i += 1 if r else 2
+        bk = torch.tensor(b, dtype=torch.complex128, device=vp.device)
+        neg = (-torch.arange(vp.n_t, device=vp.device)) % vp.n_t
+        G = 0.5 * ((H * bk).sum(1) + torch.conj((H[neg] * bk).sum(1)))
+        ratio = (vp.alpha.abs().pow(2).sum(1) / vp.n_t) * vp.scale[:, 0] ** 2     # ||x_i||^2 / ||y_i||^2
+        v = sig2_y + sig2_u * ratio[:, None] * G.abs().pow(2)[None]
+    return 1 / v.sqrt()
+
+
 def load_group(cond, g0, device):
     """Runs of one group (seeds g0 .. g0 + 4): model, S, effective poles."""
     system, family, Tw, Kk, N = T.unpack(cond)
@@ -149,8 +215,9 @@ class VarPro:
     so the objective is S); only the poles are iterated (L-BFGS on S with autograd gradients).
     Real poles have a real residue (1 basis column), complex poles a complex one (2 columns)."""
 
-    def __init__(self, data, t, device, hold="band"):
+    def __init__(self, data, t, device, hold="band", w=None):
         self.hold = hold
+        self.w = w                      # (b, n_t) frequency weights 1 / sqrt(residual spectrum), or None
         x, y = (a.to(device).double() for a in data["train"])
         self.n_t = x.shape[1]
         self.alpha = torch.fft.fft(x)
@@ -160,6 +227,8 @@ class VarPro:
         self.scale = 1 / y.norm(dim=1, keepdim=True)
         self.y = (y * self.scale).reshape(-1)
         self.device = device
+        self.b = x.shape[0]
+        self.yw = None if w is None else self.whiten(self.y[:, None])[:, 0]
         self.s_unit = 1.0               # fit() minimises S / s_unit (noise-free data: n sigma^2, see run())
 
     def mu(self, theta, real):
@@ -181,12 +250,40 @@ class VarPro:
         zl = torch.exp(self.iw * dt)[:, None]
         return ((I0 - I1 / dt)[None] + (I1 / dt)[None] * zl) / (zl - Ek[None])
 
+    def whiten(self, M):
+        """(b n_t, m) columns -> ifft(w * fft(.)) per sample (EIV weighting; w even in omega, so real)."""
+        m = M.shape[1]
+        F_ = torch.fft.fft(M.reshape(self.b, self.n_t, m), dim=1) * self.w[:, :, None]
+        return torch.fft.ifft(F_, dim=1).real.reshape(-1, m)
+
     def S(self, theta, real):
-        r = self.y - self.pred(theta, real)
+        if self.w is None:
+            r = self.y - self.pred(theta, real)
+        else:
+            A = self.design(theta, real)
+            Aw = self.whiten(A)
+            r = self.yw - Aw @ self.solve(Aw, self.yw)
         return (r @ r)
+
+    def solve(self, A, y):
+        G = A.T @ A
+        return torch.linalg.solve(G + 1e-12 * torch.eye(A.shape[1], dtype=G.dtype, device=G.device) * G.diag().max(),
+                                  A.T @ y)                                     # small ridge: coinciding poles
+
+    def coef(self, theta, real):
+        """Design matrix and residues (weighted least squares when self.w is set)."""
+        A = self.design(theta, real)
+        if self.w is None:
+            return A, self.solve(A, self.y)
+        Aw = self.whiten(A)
+        return A, self.solve(Aw, self.yw)
 
     def pred(self, theta, real):
         """Fitted outputs (flattened, rows scaled by 1 / ||y_i||) with the exact residues."""
+        A, c = self.coef(theta, real)
+        return A @ c
+
+    def design(self, theta, real):
         mu = self.mu(theta, real)
         H = self.transfer(mu)                                                         # (L, n)
         aH = self.alpha[:, :, None] * H[None]                                         # (b, L, n)
@@ -198,11 +295,7 @@ class VarPro:
             cols.append(phi[:, k].real.reshape(-1))
             if not r:
                 cols.append(-phi[:, k].imag.reshape(-1))
-        A = torch.stack(cols, 1)
-        G = A.T @ A
-        c = torch.linalg.solve(G + 1e-12 * torch.eye(len(cols), dtype=G.dtype, device=G.device) * G.diag().max(),
-                               A.T @ self.y)                                  # small ridge: coinciding poles
-        return A @ c
+        return torch.stack(cols, 1)
 
     def fit(self, theta0, real, fixed=None, iters=VP_ITERS):
         """argmin_theta S; fixed = index of theta held at its value. Returns (theta, S)."""
@@ -367,6 +460,15 @@ def run(cond, g0, device, hold="band"):
     mask = runs[0]["model"].pr.parametrizations.mu[0].mask.flatten().cpu().numpy()
     p = n_eff(list(mask == 0))                               # effective free parameters of the 8-slot layer
     vp = VarPro(data, t, device, hold)
+    sig2_y = sig2
+    if hold == "foh_eiv":
+        # weights from the best run's refit (unweighted FOH); then every S is in noise units, sigma^2 = 1
+        best0 = min(runs, key=lambda r: r["S"])
+        th0, re0 = pack(list(best0["eff"]))
+        th0, _ = vp.fit(th0, re0)
+        sig2_u = noise_var_robust(data["train"][0])
+        vp = VarPro(data, t, device, hold, eiv_weights(vp, th0, re0, sig2_y, sig2_u))
+        sig2 = 1.0
     if not F.NOISY(cond):
         # S ~ 1e-13 here, so gtol = 1e-14 on S itself stops L-BFGS early: a fit started at the truth
         # ended above the fit started at the report (p6 fine: S 1.29352322e-13 vs 1.29352183e-13), and
@@ -410,8 +512,11 @@ def run(cond, g0, device, hold="band"):
         for pr, sk in zip(profs, sd):
             pr["boot_std"] = float(sk)
             pr["interval_boot"] = [pr["mu"][0] - 1.96 * float(sk), pr["mu"][0] + 1.96 * float(sk)]
+    eiv = {}
+    if F.NOISY(cond) and hold in ("foh", "foh_eiv") and cond in EIV_CONDS:
+        add_eiv(eiv, profs, vp, data, t, theta, real, sig2_y, device)
     true = E.true_folded(mu_true, beta_true)[0]
-    res = dict(cond=cond, group=g0, system=system, eta_hat=float(np.sqrt(data["train"][1].shape[1] * sig2)),
+    res = dict(cond=cond, group=g0, system=system, eta_hat=float(np.sqrt(data["train"][1].shape[1] * sig2_y)),
                sigma2=sig2, p=p, n_cert=len(cert), best_seed=best["seed"], best_S=best["S"], S_ref=S_ref, p_ref=p_ref,
                runs=[dict(seed=r["seed"], S=r["S"], S_full=r.get("S_full"), certified=any(r is c for c in cert),
                           poles=[[float(z.real), float(z.imag)] for z in r["eff"]]) for r in runs],
@@ -421,7 +526,7 @@ def run(cond, g0, device, hold="band"):
                source=chosen["source"], order_ok=chosen["order_ok"],
                report=[[float(z.real), float(z.imag)] for z in mu_fit], profiles=profs,
                true_poles=[[float(z.real), float(z.imag)] for z in true], hold=hold,
-               seconds=round(time.time() - t0, 1))
+               seconds=round(time.time() - t0, 1), **eiv)
     out.mkdir(parents=True, exist_ok=True)
     (out / f"{cond}_g{g0}.json").write_text(json.dumps(res, indent=1, default=float))
     fmt = lambda iv: "[" + ", ".join("open" if x is None else f"{x:.3f}" for x in iv) + "]"
@@ -429,6 +534,21 @@ def run(cond, g0, device, hold="band"):
           + ", ".join(f"{x['source']} dS {x['dS']:.1f} (dp {x['dp']}, ok {x['order_ok']})" for x in tried)
           + "; Re mu intervals " + "; ".join(f"{complex(*pr['mu']):.3f} {fmt(pr['interval'])}" for pr in profs)
           + f" ({res['seconds']:.0f}s)", flush=True)
+
+
+def add_boot_existing(cond, g0, device):
+    """EIV bootstrap for an existing FOH group JSON that lacks it (the eta_u = 0 references)."""
+    f = out_dir("foh") / f"{cond}_g{g0}.json"
+    r = json.loads(f.read_text())
+    if "eta_u_hat" in r:
+        return
+    data, t, _, _ = T.setup(cond, g0)
+    vp = VarPro(data, t, device, "foh")
+    theta, real = pack([complex(*z) for z in r["report"]])
+    theta, _ = vp.fit(theta, real)
+    add_eiv(r, r["profiles"], vp, data, t, theta, real, r["sigma2"], device)
+    f.write_text(json.dumps(r, indent=1, default=float))
+    print(f"{cond} g{g0}: EIV bootstrap added (eta_u_hat {r['eta_u_hat']:.2g})", flush=True)
 
 
 def score(r):
@@ -470,11 +590,17 @@ def summarize_hold(hold):
         return
     lab = lambda z: f"{z.real:+g}{z.imag:+g}i" if z.imag else f"{z.real:+g}"
     lines = ["# E4: minimal-form refit, order test and profile intervals"
-             + {"band": "", "foh": ", first-order-hold refits", "band_red": ", band-limited refits with reduction"}[hold], "",
+             + {"band": "", "foh": ", first-order-hold refits", "band_red": ", band-limited refits with reduction",
+                 "foh_eiv": ", first-order-hold refits, errors-in-variables weighting"}[hold], "",
              *(["Refits, certificate and order-test reference use the exact first-order-hold response "
                 "(the data generator's input model) instead of the layer's band-limited one. Each run is refitted "
                 "and reduced (backward elimination) before the certificate.", ""]
                if hold == "foh" else []),
+             *(["As `--hold foh`, but every refit is a weighted least-squares fit whose frequency weights whiten the "
+                "errors-in-variables residual e_y − G e_u (`eiv_weights`: residual spectrum σ_y² + σ_u² (‖x_i‖ / ‖y_i‖)² "
+                "|G(iω)|², σ_y² from the outputs, σ_u² from the inputs by a robust estimate, G from the best run's "
+                "refit). S is then in noise units and every test uses σ² = 1. With σ_u² = 0 this is `--hold foh`.", ""]
+               if hold == "foh_eiv" else []),
              *(["Control: refits with the band-limited (layer) model, each run refitted and reduced (backward "
                 "elimination) before the certificate, as with `--hold foh`.", ""]
                if hold == "band_red" else []),
@@ -518,6 +644,43 @@ def summarize_hold(hold):
                          f"{sum(r['source'] == 'consensus' for r in gr)}/{len(gr)} | {sum(r['order_ok'] for r in gr)}/{len(gr)} | "
                          + " | ".join(cells) + f" | {sum(s[1] for s in sc)} |")
         lines.append("")
+    for system, conds in (EIV.items() if hold in ("foh", "foh_eiv") else ()):
+        g = [r for r in rs if r["cond"] in conds.values()]
+        if not g:
+            continue
+        true = [complex(*z) for z in g[0]["true_poles"]]
+        base = conds["0"]
+        lines += [f"## {system}, input noise (errors-in-variables), `{base}` + η_u", "",
+                  "Noise on the stored train / validation inputs as well (outputs from the clean inputs), output "
+                  "noise 1e-2. The pipeline above unchanged (σ̂² from the outputs). Covered: by the profile interval / "
+                  f"by the truth-free EIV bootstrap ({N_BOOT} draws; σ_u² from the inputs by a robust estimate, "
+                  "bias-corrected Re μ ± 1.96 std). Half-width: profile / bootstrap.", "",
+                  "| η_u | η̂_u | groups | certified runs (mean) | report from consensus | order test passed | "
+                  + " | ".join(f"{lab(z)}: identified / covered (profile / bootstrap), error, half-width (profile / bootstrap)"
+                               for z in true) + " | false identified |",
+                  "|---|---|---|---|---|---|" + "---|" * len(true) + "---|"]
+        for u, cond in sorted(conds.items(), key=lambda kv: float(kv[0])):
+            gr = sorted((r for r in g if r["cond"] == cond), key=lambda r: r["group"])
+            if not gr:
+                continue
+            sc = [score(r) for r in gr]
+            cells = []
+            for z in true:
+                xs = [x[0][z] for x in sc]
+                errs = [x["err"] for x in xs if x]
+                halves = [x["half"] for x in xs if x and x["half"] is not None]
+                bh = [1.96 * pr["boot_std"] / abs(z) for r in gr for pr in r["profiles"]
+                      if "boot_std" in pr and abs(complex(*pr["mu"]) - z) < T.RECOVERED * abs(z)]
+                cells.append(f"{sum(bool(x and x['closed']) for x in xs)} / {sum(bool(x and x['cover']) for x in xs)} / "
+                             f"{sum(bool(x and x['boot_cover']) for x in xs)}, "
+                             + (f"{np.sqrt(np.mean(np.square(errs))):.1e}" if errs else "–")
+                             + (f", {np.mean(halves):.1e}" if halves else ", –")
+                             + (f" / {np.mean(bh):.1e}" if bh else " / –"))
+            eu = [r["eta_u_hat"] for r in gr if "eta_u_hat" in r]
+            lines.append(f"| {float(u):g} | {np.mean(eu):.2g} | {len(gr)} | {np.mean([r['n_cert'] for r in gr]):.1f} | "
+                         f"{sum(r['source'] == 'consensus' for r in gr)}/{len(gr)} | {sum(r['order_ok'] for r in gr)}/{len(gr)} | "
+                         + " | ".join(cells) + f" | {sum(x[1] for x in sc)} |")
+        lines.append("")
     clean = [c + suf for c in CLEAN for suf in ("", "_foh")]
     for system in ("p4", "p6"):
         g = [r for r in rs if r["system"] == system and r["cond"] in clean]
@@ -560,10 +723,16 @@ def main():
     ap.add_argument("--group", nargs="+", type=int, default=[10, 15, 20, 25])
     ap.add_argument("--hold", choices=HOLDS, default="band")
     ap.add_argument("--summarize", action="store_true")
+    ap.add_argument("--add-boot", action="store_true", help="EIV bootstrap for existing FOH groups")
     a = ap.parse_args()
     if a.summarize:
         return summarize()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if a.add_boot:
+        for c in a.cond:
+            for g in a.group:
+                add_boot_existing(c, g, device)
+        return
     for c in a.cond:
         for g in a.group:
             run(c, g, device, a.hold)

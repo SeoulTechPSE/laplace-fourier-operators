@@ -11,7 +11,7 @@ Each session appends one entry using the template at the bottom.
 | (C) Pole audit of existing models | 3–5 | **in progress**: E1 done, draft report (`E1_report.md`, updated with E2); paper decisions open | — |
 | (D) Non-periodic input representation | 4–8 | not started | differs from padded FNO? (month 8) |
 | (A) Pole layer and linear validation | 5–10 | not started | dispersion relations recovered (month 10) |
-| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval), E3 deep first pass done (`experiments/C/theory/`) | — |
+| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval and EIV-weighted refits), E3 deep first pass done (`experiments/C/theory/`) | — |
 | (A) Application 1: process dynamics | 11–16 | not started | — |
 | (D) Initial conditions and rollout | 13–19 | not started | — |
 | (A) Application 2: Cahn–Hilliard | 17–22 | not started | recover k_c, k_max (month 20) |
@@ -69,8 +69,11 @@ Suggested next steps (in order):
    p4 real poles 4/4 at η = 0.3; see open decisions. The noise-free undercoverage is the
    float32 rounding of the inputs (not in σ²); a truth-free bootstrap covers 18/18.
    Input noise (errors-in-variables): the E4 intervals undercover (2–25 % at η_u = 10 η_y);
-   a truth-free EIV bootstrap restores 88–98 % (`e4_eiv.py`, local diagnosis).
-   Next: the EIV bootstrap in the full pipeline; noise-dependent release; linear probe (RQ4).
+   a truth-free EIV bootstrap restores 88–98 % (`e4_eiv.py`, local diagnosis). In the full
+   pipeline the certificate breaks for η_u > η_y; EIV-weighted refits (`--hold foh_eiv`)
+   repair it up to η_u = 3 η_y; at 10 × on band-limited inputs false fast poles remain.
+   Next: consistent EIV refit (θ-dependent weights / excited band); noise-dependent release;
+   linear probe (RQ4).
 4. Optional E1 extras: log-parameterised decay rate; untied models with 64 steady modes
    (H1); weight decay excluded from poles; deep LNO v1 at its published size.
 
@@ -83,6 +86,33 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-16 — (C) E4: input noise in the full pipeline; EIV-weighted refits
+
+- Done: `make_splits(in_noise=)` and conditions `p4_ms16_T20_n1e-2_u{1e-2,1e-1}`,
+  `p6_e1_T20_n1e-2_u{1e-2,3e-2}` (`e2_train.py` and the case lists of polish / floor /
+  rescue; full recipe, 80 runs). `e4_profile.py`: weighted VarPro (`w`, `whiten`, `coef`,
+  `design`), `eiv_weights` (residual spectrum σ_y² + σ_u² (‖x‖/‖y‖)² |G|², G from the best
+  run), `--hold foh_eiv` (all tests with σ² = 1), `noise_var_robust` (moved from `e4_eiv.py`),
+  `eiv_bootstrap` per group and `--add-boot` for existing groups (η_u = 0 references); an
+  "input noise" summary section. 48 groups (24 FOH, 24 foh_eiv). README section "E4, tenth
+  pass". `src/lfo/` unchanged.
+- Results:
+  - Unweighted FOH refits: fine at η_u = η_y (certified 5/5; consensus 2–3/4). At η_u = 3 η_y
+    (p6 E1) and 10 η_y (p4 multisine) only 1–2 runs are certified, consensus 0–1/4, 7 / 16
+    false poles, profile intervals cover 5/16 and 0/12 (bootstrap 12/16, 9/12).
+  - EIV-weighted: weighted S / n = 0.998 at the fit. η_u = 0.01 (both) and 0.03 (p6 E1):
+    certified 5/5, consensus, order test and all poles 4/4 groups, 0 false, profile intervals
+    cover 16/16 and 12/12; profile / bootstrap half-width 0.9–1.4 ×. With σ_u = 0 identical
+    to the unweighted results.
+  - p4 multisine at η_u = 0.1: all true poles 4/4 groups, but 8 false fast poles and
+    consensus 1/4. Above the excited band the input is noise and the fit lowers the gain
+    there (report |G| / true |G| = 0.92 at 5–25 Hz), as a Wiener filter would; plug-in
+    weights do not remove this bias.
+- Decisions: none.
+- Next: a consistent EIV refit (θ-dependent weights or the excited band only); coloured input
+  noise; resolving close real pairs at the limit; noise-dependent release; zero-order hold;
+  joint intervals; RQ4 linear probe.
 
 ### 2026-11-15 — (C) E4: input noise as errors-in-variables under output noise
 

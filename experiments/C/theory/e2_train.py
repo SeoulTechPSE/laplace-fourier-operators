@@ -233,6 +233,11 @@ CONDITIONS = {
     # E4: E1 data under output noise, around the CRB noise limit of the real poles (p6: -2 at 0.035, -1 at 0.11)
     **{f"{s}_e1_T20_n{e}": (s, "e1", 20.0, 0, 1024, dict(noise=float(e)))
        for s, es in (("p4", ("1e-1", "3e-1")), ("p6", ("1e-2", "3e-2", "1e-1"))) for e in es},
+    # E4: input noise (errors-in-variables) on the train / validation inputs, under output noise 1e-2
+    **{f"p4_ms16_T20_n1e-2_u{e}": ("p4", "multisine", 20.0, 16, 1024, dict(noise=1e-2, in_noise=float(e)))
+       for e in ("1e-2", "1e-1")},
+    **{f"p6_e1_T20_n1e-2_u{e}": ("p6", "e1", 20.0, 0, 1024, dict(noise=1e-2, in_noise=float(e)))
+       for e in ("1e-2", "3e-2")},
     # E3 / E4: partial tie under noise (released from the noise-aware tied runs; no Adam runs of their own)
     **{f"p6_ms16_T80_N4096_{k}_pt03_n{e}": ("p6", "multisine", 80.0, 16, 4096,
                                             dict(kind=f"{k}_pt", modes=256, delta=0.3, noise=float(e)))
@@ -250,7 +255,7 @@ def unpack(cond):
 def extras(cond):
     """kind (tied / alno / lfno), steady modes, output noise level of a condition."""
     c = CONDITIONS[cond]
-    return dict(dict(kind="tied", modes=E.MODES, noise=0.0, delta=None, hold="band"), **(c[5] if len(c) > 5 else {}))
+    return dict(dict(kind="tied", modes=E.MODES, noise=0.0, in_noise=0.0, delta=None, hold="band"), **(c[5] if len(c) > 5 else {}))
 
 
 class FOHPoleResidue(PoleResidueTS1d):
@@ -272,9 +277,11 @@ class FOHPoleResidue(PoleResidueTS1d):
         return (self.beta.to(torch.complex128) * H).to(self.beta.dtype)
 
 
-def make_splits(system, family, T, K, N=N_DEFAULT, noise=0.0, noise_seed=0):
+def make_splits(system, family, T, K, N=N_DEFAULT, noise=0.0, noise_seed=0, in_noise=0.0):
     """noise > 0: white Gaussian noise on the train and validation outputs, per sample with
-    relative L2 norm ``noise`` (std noise * ||y_i|| / sqrt(n_t)); the test outputs stay clean."""
+    relative L2 norm ``noise`` (std noise * ||y_i|| / sqrt(n_t)); the test outputs stay clean.
+    in_noise > 0: the same on the train and validation inputs (errors-in-variables: the outputs
+    come from the clean inputs); the test inputs stay clean."""
     R.DT = 20.0 / N
     f = lambda a: a.to(torch.float32)
     splits = {}
@@ -285,6 +292,10 @@ def make_splits(system, family, T, K, N=N_DEFAULT, noise=0.0, noise_seed=0):
             g = torch.Generator().manual_seed(10_000 + 10 * noise_seed + i)
             y = y + noise * y.norm(dim=1, keepdim=True) / np.sqrt(y.shape[1]) * torch.randn(y.shape, generator=g,
                                                                                            dtype=y.dtype)
+        if in_noise > 0 and name != "test":
+            g = torch.Generator().manual_seed(20_000 + 10 * noise_seed + i)
+            u = u + in_noise * u.norm(dim=1, keepdim=True) / np.sqrt(u.shape[1]) * torch.randn(u.shape, generator=g,
+                                                                                              dtype=u.dtype)
         splits[name] = (f(u), f(y))
     return splits, t.numpy()
 
@@ -292,7 +303,8 @@ def make_splits(system, family, T, K, N=N_DEFAULT, noise=0.0, noise_seed=0):
 def setup(cond, seed):
     """Data, time grid and true system of a run (noise draw shared by groups of NOISE_GROUP seeds)."""
     system, family, T, K, N = unpack(cond)
-    data, t = make_splits(system, family, T, K, N, extras(cond)["noise"], seed // NOISE_GROUP)
+    data, t = make_splits(system, family, T, K, N, extras(cond)["noise"], seed // NOISE_GROUP,
+                          extras(cond)["in_noise"])
     mu_true, beta_true = (np.array(a, dtype=complex) for a in E.SYSTEMS[system])
     return data, t, mu_true, beta_true
 
@@ -569,7 +581,7 @@ def run(cond: str, seed: int, device, variant: str = "base"):
     mf, _ = E.fold(mu_l, beta_l)
     pe = None if diverged else pole_error(mf, mt, reduce="none").tolist()
     res = dict(cond=cond, variant=variant, config=cfg, system=system, family=family, T=T, K=K, seed=seed, n_t=int(t.size),
-               model=extras(cond)["kind"], hold=extras(cond)["hold"], modes=extras(cond)["modes"], noise=extras(cond)["noise"], delta=extras(cond)["delta"], init="warm" if variant == "warm" else "band", protocol=f"{PROTOCOL}+plr{PLR:g}", params=count_params(model),
+               model=extras(cond)["kind"], hold=extras(cond)["hold"], modes=extras(cond)["modes"], noise=extras(cond)["noise"], in_noise=extras(cond)["in_noise"], delta=extras(cond)["delta"], init="warm" if variant == "warm" else "band", protocol=f"{PROTOCOL}+plr{PLR:g}", params=count_params(model),
                seconds=round(secs, 1), test_rel_l2=test, diverged=bool(diverged), history=hist,
                oracle_rel_l2=oracle_for(cond, data, t, mu_true, beta_true),
                true_poles=[[float(z.real), float(z.imag)] for z in mt], pole_error=pe,

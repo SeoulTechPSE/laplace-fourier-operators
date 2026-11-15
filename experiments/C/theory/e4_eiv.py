@@ -66,13 +66,7 @@ def add_noise(a, eta, gen):
                                                                                         dtype=a.dtype)
 
 
-def noise_var_robust(v):
-    """Per-element noise variance of v_i / ||v_i||: MAD of the 6th differences (robust to the few
-    large differences at the steps / switches of the E1 inputs, where the mean-square version of
-    e2_rescue.noise_var reads eta ~ 0.05 on clean inputs; with the MAD 4e-13)."""
-    d = torch.diff(v.double(), n=RS.DIFF, dim=1)
-    s = 1.4826 * d.abs().median(1).values / math.sqrt(math.comb(2 * RS.DIFF, RS.DIFF))
-    return float((s ** 2 / v.double().pow(2).sum(1)).mean())
+noise_var_robust = EP.noise_var_robust      # robust to the steps of the E1 inputs
 
 
 def re_index(real):

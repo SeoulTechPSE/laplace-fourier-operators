@@ -16,7 +16,7 @@ families) make the poles practically identifiable, and does training then recove
 | `e2_rescue.py` | truth-free single-slot restarts of polished runs; `--rule noise`: noise-aware acceptance (E4); `--start reset/release`: partial tie with R_res reset / released from the tied run (E3), also under noise with `--rule noise` | `results/e2_rescue{,_na,_rr,_rel,_na_rel}/*.json`, `results/e2_rescue{,_na,_rr,_rel,_na_rel}.md` |
 | `e2_floor.py` | floor certificate without the truth: estimated floor + consensus poles; ratio and χ² (noise) rules | `results/e2_floor.md` / `.json` |
 | `e2_polish.py` | L-BFGS-B polish of saved Adam checkpoints (paired before/after), floor-certificate table | `results/e2_polish/*.json`, `results/e2_polish.md` |
-| `e4_profile.py` | E4: minimal-form refit of the certified report, order test, per-pole profile intervals (VarPro); `--hold foh`: refits with the data generator's first-order-hold input, with backward order reduction per run; `--hold band_red`: band-limited refits with the same reduction (control); noise-free conditions use σ² = float32 rounding of the outputs, Newton-finished fits and bootstrap intervals; E1 data under output noise (eighth pass) | `results/e4_profile{,_foh,_band_red}/*.json`, `results/e4_profile{,_foh,_band_red}.md` |
+| `e4_profile.py` | E4: minimal-form refit of the certified report, order test, per-pole profile intervals (VarPro); `--hold foh`: refits with the data generator's first-order-hold input, with backward order reduction per run; `--hold band_red`: band-limited refits with the same reduction (control); noise-free conditions use σ² = float32 rounding of the outputs, Newton-finished fits and bootstrap intervals; E1 data under output noise (eighth pass); EIV bootstrap per group and `--hold foh_eiv` (EIV-weighted refits) for input noise (tenth pass) | `results/e4_profile{,_foh,_band_red}/*.json`, `results/e4_profile{,_foh,_band_red}.md` |
 | `e4_bias.py` | E4: the noise-free pole bias, float32 rounding of inputs vs outputs (exact vs stored data, Monte Carlo, truth-free bootstrap) | `results/e4_bias.md` / `.json` |
 | `e4_eiv.py` | E4: input noise (errors-in-variables) under output noise: Monte-Carlo coverage of the E4, residual-σ² and truth-free EIV-bootstrap intervals (minimal FOH refit) | `results/e4_eiv/*.json`, `results/e4_eiv.md` |
 | `e2_noise.py` | E4: pole error under output noise vs the Cramér–Rao bound of the minimal-form layer, both restart rules | `results/e2_noise.md` / `.json` |
@@ -1220,6 +1220,65 @@ Coverage of the 95 % intervals, range over the poles of each data set (full tabl
   noise. The input noise is white, with a known shape; the scale is estimated. One output
   noise level only.
 
+## E4, tenth pass: input noise in the full pipeline; EIV-weighted refits
+
+The ninth pass was local: fits started at the truth, with no certificate. Here the input noise
+goes through the whole truth-free pipeline: training, restarts, certificate, reduction, order
+test and intervals. New conditions (`e2_train.py`, train / validation inputs noisy, test
+clean), all with output noise η_y = 0.01:
+
+- `p4_ms16_T20_n1e-2_u{1e-2,1e-1}`
+- `p6_e1_T20_n1e-2_u{1e-2,3e-2}`
+
+The recipe is as in the eighth pass: band layer, damp8_ms, seeds 10–29, 80 runs. The η_u = 0
+references are `p4_ms16_T20_n1e-2` and `p6_e1_T20_n1e-2`. Every FOH group also gets the EIV
+bootstrap of the ninth pass (`e4_profile.eiv_bootstrap`, 32 draws, bias-corrected);
+`--add-boot` adds it to existing groups.
+
+**EIV weighting (`--hold foh_eiv`).** The residual of the true model on the stored inputs is
+e_y − G e_u, which is coloured. Its spectrum per normalised sample is
+σ_y² + σ_u² (‖x_i‖ / ‖y_i‖)² |G(iω)|². `eiv_weights` takes σ_y² from the outputs, σ_u² from
+the inputs (robust estimate) and G from the refit of the best run. Every FOH refit (VarPro) is
+then a weighted least-squares fit with these frequency weights. S is in noise units, and the
+certificate, reduction, order test and profile intervals all use σ² = 1. At the fit the
+weighted S / n = 0.998, against 1.30 unweighted (p6 E1, η_u = 0.03). With σ_u² = 0 this is
+`--hold foh`; the η_u = 0 rows are unchanged.
+
+| data | η_u | refit | certified runs (mean) | consensus | order test | all true poles identified (groups) | covered: profile / bootstrap (true-pole intervals) | false poles |
+|---|---|---|---|---|---|---|---|---|
+| p4 multisine | 0 | foh = foh_eiv | 5.0 | 4/4 | 4/4 | 4/4 | 11 / 11 of 12 | 0 |
+| p4 multisine | 0.01 | foh | 5.0 | 2/4 | 4/4 | 3/4 | 9 / 10 of 12 | 0 |
+| | | foh_eiv | 5.0 | 4/4 | 4/4 | 4/4 | 12 / 11 of 12 | 0 |
+| p4 multisine | 0.1 | foh | 1.2 | 0/4 | 4/4 | 2/4 | 0 / 9 of 12 | 16 |
+| | | foh_eiv | 1.8 | 1/4 | 4/4 | 4/4 | 6 / 11 of 12 | 8 |
+| p6 E1 | 0 | foh = foh_eiv | 5.0 | 4/4 | 4/4 | 4/4 | 16 / 16 of 16 | 0 |
+| p6 E1 | 0.01 | foh | 5.0 | 3/4 | 4/4 | 4/4 | 15 / 16 of 16 | 0 |
+| | | foh_eiv | 5.0 | 4/4 | 4/4 | 4/4 | 16 / 16 of 16 | 0 |
+| p6 E1 | 0.03 | foh | 2.0 | 1/4 | 4/4 | 2/4 | 5 / 12 of 16 | 7 |
+| | | foh_eiv | 5.0 | 4/4 | 4/4 | 4/4 | 16 / 15 of 16 | 0 |
+
+(Full tables: `results/e4_profile_foh.md` and `results/e4_profile_foh_eiv.md`, sections
+"input noise". Single runs after noise-aware restarts, all poles: p4 95 / 75 %, p6 40 / 50 %
+(`results/e2_rescue_na.md`).)
+
+- **Unweighted, the certificate breaks once input noise exceeds output noise.** The
+  propagated input noise is coloured. Spurious poles fit it, and the runs' scores spread far
+  beyond χ² σ̂². So one run is certified, there is no consensus, and the best run keeps 7–16
+  false poles. The order test passes trivially, because the reference is that same run. The
+  profile intervals cover 0–5 of 12–16.
+- **EIV weighting repairs it up to η_u = 3 η_y.** p6 E1 at η_u = 0.03 gives certified 5/5,
+  consensus, order test and all poles in 4/4 groups, no false pole, and 16/16 profile
+  intervals covering. At η_u = 0.01 every row is clean. The profile intervals now include
+  the input noise: their half-widths are 0.9–1.4 × the bootstrap's (10–90 % range), against
+  0.17–0.55 × unweighted at η_u = 0.03.
+- **At η_u = 10 η_y on the band-limited multisine, false fast poles remain** (Re μ from
+  −11 to −4.6e4, 8 in 4 groups). The true poles are still identified in 4/4 groups. Above the
+  excited band (|f| > 2) the stored input is mostly noise. The LS fit lowers the gain there,
+  as a Wiener filter would: the report's |G| is 0.96 × the true |G| at 2–5 Hz and 0.92 × at
+  5–25 Hz, against 1.00 in the band. Extra fast poles make this gain change. Plug-in weights
+  fix the noise level, not this bias. A consistent EIV estimator would need the weights to
+  depend on θ (frequency-domain ML), or would fit the excited band only.
+
 ## E3, deep setting: first pass
 
 `e3_deep.py`. The E1 deep models (ALNO / LFNO, 5,977 parameters, four layers) are trained
@@ -1263,8 +1322,8 @@ dead; NaN and dead runs count as not recovered.)
 - E3 layer: a noise-dependent release (δ chosen by the χ² order test, or released only
   when the tied fit fails the certificate); the steady branch untied above the residual
   band; whether the release needs the restarts.
-- E4: the EIV bootstrap inside `e4_profile.py` (trained runs, certificate and order test
-  under input noise; coloured input noise); resolving close real pairs at the CRB limit
+- E4: a consistent EIV refit (θ-dependent weights, i.e. frequency-domain ML, or the excited
+  band only) for input noise ≫ output noise on band-limited inputs; coloured input noise; resolving close real pairs at the CRB limit
   (p6 −1 / −2 at η = 0.1);
   a zero-order-hold variant; simultaneous (joint) intervals; more groups for the
   complex-pole coverage.
