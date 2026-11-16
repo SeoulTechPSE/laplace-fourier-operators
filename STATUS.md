@@ -11,7 +11,7 @@ Each session appends one entry using the template at the bottom.
 | (C) Pole audit of existing models | 3–5 | **in progress**: E1 done, draft report (`E1_report.md`, updated with E2); paper decisions open | — |
 | (D) Non-periodic input representation | 4–8 | not started | differs from padded FNO? (month 8) |
 | (A) Pole layer and linear validation | 5–10 | not started | dispersion relations recovered (month 10) |
-| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits, a bootstrap-calibrated order, certificate and order test), E3 deep first pass done (`experiments/C/theory/`) | — |
+| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits, a bootstrap-calibrated order, certificate and order test; reduction-path unresolved rules fail), E3 deep first pass done (`experiments/C/theory/`) | — |
 | (A) Application 1: process dynamics | 11–16 | not started | — |
 | (D) Initial conditions and rollout | 13–19 | not started | — |
 | (A) Application 2: Cahn–Hilliard | 17–22 | not started | recover k_c, k_max (month 20) |
@@ -78,8 +78,11 @@ Suggested next steps (in order):
    bootstrap-calibrated order test (`--hold foh_eivo`) all 32 input-noise groups report the
    consensus, pass the order test and contain exactly the true poles; the test rejects all 108
    missing-pole models (ratio ≥ 112 vs ≤ 0.91). It holds on p4 up to η_u = 30 η_y (−1 biased
-   8–11 %) but breaks on p6 E1 at 10 η_y (−1 / −2 merged or spurious, aliased poles). Next:
-   report close pairs as unresolved; noise-dependent release; linear probe (RQ4).
+   8–11 %) but breaks on p6 E1 at 10 η_y (−1 / −2 merged or spurious, aliased poles).
+   Truth-free rules on the reduction path (aliasing fold, "unresolved" flags, `--hold
+   foh_eivu`, `e4_absorb.py`) do not fix it: a merged close pair and an EIV-biased isolated
+   pole look the same there. Next: an information-side unresolved rule (bootstrap spread vs
+   pair spacing); noise-dependent release; linear probe (RQ4).
 4. Optional E1 extras: log-parameterised decay rate; untied models with 64 steady modes
    (H1); weight decay excluded from poles; deep LNO v1 at its published size.
 
@@ -92,6 +95,27 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-16 — (C) E4: aliasing fold and unresolved flags (negative result)
+
+- Done: `e4_profile.py --hold foh_eivu` (= `foh_eivo` + aliasing fold of every run + an
+  "unresolved" flag from calibration-only drops of a neighbouring pole) on the 20 groups of
+  p6 E1 η_u = 0.1 / 0.03 and p4 η_u = 0.1 / 0.3; `e4_absorb.py` (a second flag rule, from the
+  stored steps). README section "E4, sixteenth pass". `src/lfo/` unchanged.
+- Results:
+  - p6 E1 at 0.1 is not fixed. The folded aliased pole refits to a fast real pair
+    (−127 ± 1.3i) and is kept; false poles 6 → 8. The −1 / −2 merge is never flagged (the
+    dropped pole −5.7 is not a neighbour of the merged −0.69).
+  - The flag fires on the controls: 5/8 p4 groups at 0.1 and 1/4 at 0.3 flag a
+    well-identified true pole (near-duplicate or spurious fast pole dropped at ΔS > χ²).
+  - The absorb rule (a slow pole moving > 10 % in a calibration-only drop) catches the p6
+    merge in 3/4 groups but also fires in 4/4 p4 groups at 0.3 (EIV bias of −1: −1.12 → −0.89).
+- Decisions: `foh_eivo` stays the reference pipeline; `foh_eivu` is kept as a recorded
+  negative result.
+- Next: an information-side unresolved rule (bootstrap spread of a merged pole vs the pair
+  spacing, or the local EIV CRB); the EIV bias at 30 η_y; calibrated profile intervals;
+  exact time-domain EIV ML; coloured input noise; noise-dependent release; zero-order hold;
+  joint intervals; RQ4.
 
 ### 2026-11-16 — (C) E4: stronger input noise; where the calibrated pipeline breaks
 

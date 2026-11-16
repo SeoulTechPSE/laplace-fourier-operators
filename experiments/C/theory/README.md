@@ -1554,6 +1554,58 @@ about 103 for p4 at 0.3 (38 at 0.1) and 30 for p6 at 0.1.)
     own bootstrap spread.
   - It also needs a check against poles above the Nyquist frequency.
 
+## E4, sixteenth pass: aliasing fold and "unresolved" flags (negative result)
+
+`e4_profile.py --hold foh_eivu` is `foh_eivo` with two truth-free rules aimed at the two p6 E1
+failures of the fifteenth pass:
+
+- **Aliasing fold.** Before its calibrated reduction, every run's poles with |Im μ| > π/dt are
+  folded into (−π/dt, π/dt], since sampled data cannot tell them apart.
+- **Unresolved flag.** Consider a calibration-only drop: the step is accepted, its ΔS is above
+  χ²_Δp(0.99), and it passes only because of κ. If such a drop removes a pole next to a kept
+  one (|z_removed − z_kept| ≤ |z_kept|), the kept pole is flagged. A reported pole is
+  unresolved if the report's own steps or any certified run flag it. An unresolved pole counts
+  as neither identified nor false.
+
+Same 20 groups as before: p6 E1 at η_u = 0.1 and 0.03, and p4 multisine at 0.1 (8 groups) and
+0.3. The rest of the pipeline is unchanged, and the reports of all 16 other groups are identical
+to `foh_eivo`.
+
+| data | η_u | unresolved flags | report vs `foh_eivo` | false identified (`foh_eivo` → `foh_eivu`) |
+|---|---|---|---|---|
+| p4 multisine | 0.1 | 5 of 8 groups, on a true pole (−0.2 in 4, −1 in 1) | same | 0 → 0, but −0.2 identified 8 → 4 |
+| p4 multisine | 0.3 | 1 of 4 groups (−0.2) | same | 1 → 1 |
+| p6 E1 | 0.03 | none | same | 0 → 0 |
+| p6 E1 | 0.1 | none | two groups changed | 6 → 8 |
+
+(`results/e4_profile_foh_eivu.md`, `results/e4_absorb.md`.)
+
+**Neither rule works.**
+
+- **The fold does not remove the aliased pole.** In the two groups that reported −50 ± 325i, the
+  folded pole refits to −127 ± 1.3i, i.e. a fast real pair. The calibration keeps it, since
+  under input noise it lowers S as much as the earlier extra poles. Those groups now report it
+  together with −2 at −2.3 / −2.5 instead of −2.1 / −2.0, so the false count rises.
+- **The flag fires on the controls and misses the merge.**
+  - In the p4 controls, a near-duplicate of −0.2 (−0.197, dropped at ΔS = 25 against
+    χ² = 9.2) or a spurious fast pole flags a well-identified true pole.
+  - In p6 E1 at 0.1, the merge of −1 / −2 is never flagged. The merged pole at −0.69 is kept
+    while a *distant* pole is dropped: −5.7, with ΔS = 1929, is more than |z_kept| away.
+- **A second rule from the same path fails as well** (`e4_absorb.py`, re-read from the stored
+  steps). It flags a kept slow pole that moves by more than 10 % in a calibration-only drop.
+  - It catches the p6 merge in 3 of 4 groups (−0.84 → −0.69, −1.22 → −0.84).
+  - But it also fires in all 4 p4 groups at η_u = 0.3, where −1 moves −1.12 → −0.89 when a fast
+    spurious pole is dropped (ΔS ≈ 8400). That is the EIV bias of a well-identified pole.
+  - On the reduction path the two cases look the same: a slow real pole absorbs the
+    contribution of a dropped fast one at a ΔS far above χ².
+
+**Reading.** The reduction path alone cannot separate "a close pair merged" from "an isolated
+pole biased by input noise". The separation has to come from the information side. The
+candidates are the bootstrap spread of the merged pole compared with the pair's spacing, or
+the local CRB under EIV noise (`e4_eiv.py` gives a 16 % spread for −2 at η_u = 0.1, but 1 %
+for p4 −1 at 0.3). `foh_eivo` stays the reference pipeline, and `foh_eivu` is kept only as a
+recorded negative result.
+
 ## E3, deep setting: first pass
 
 `e3_deep.py`. The E1 deep models (ALNO / LFNO, 5,977 parameters, four layers) are trained
