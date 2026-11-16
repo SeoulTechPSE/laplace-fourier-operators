@@ -74,9 +74,10 @@ import e2_floor as F  # noqa: E402
 
 P, RS, T, E = F.P, F.RS, F.T, F.E
 OUT = T.R.RESULTS / "e4_profile"
-HOLDS = ("band", "foh", "band_red", "foh_eiv", "foh_ml", "foh_eivb", "foh_eivc")
+HOLDS = ("band", "foh", "band_red", "foh_eiv", "foh_ml", "foh_eivb", "foh_eivc", "foh_eivo")
 # foh_eiv: EIV-whitened refits (eiv_weights); foh_ml: EIVML refits; foh_eivb: foh_eiv + calibrated_reduce of the report;
-# foh_eivc: foh_eivb + calibrated_reduce of every run before the certificate (calibrated certificate)
+# foh_eivc: foh_eivb + calibrated_reduce of every run before the certificate (calibrated certificate);
+# foh_eivo: foh_eivc with the order test calibrated by a bootstrap of the reference (calibrated_order)
 N_CAL = 16                                          # bootstrap draws per calibrated elimination step
 STAGE, VARIANT = "rescue_na", "damp8_ms"
 CLEAN_STAGE = "rescue"                              # noise-free data: ratio-rule restarts
@@ -497,6 +498,34 @@ def calibrated_reduce(vp, theta, real, data, sig2_y, sig2_u, device, n_cal=N_CAL
     return theta, real, steps
 
 
+def calibrated_order(vp, theta, real, ref_poles, data, sig2_y, sig2_u, device, n_cal=N_CAL, seed=0):
+    """Bootstrap calibration of the order test: what the reference model (the best run's full first-order-hold
+    model, ref_poles) gains over the candidate (theta, real) on EIV data generated from the candidate's fit
+    (denoised stored inputs as clean inputs, as in calibrated_reduce). Per draw the reference model is fitted
+    from two starts, its own poles and the candidate's poles plus the reference poles not near any of them;
+    dS* = max(S*_candidate - S*_reference, 0). Returns (kappa_o = max(1, mean dS* / dp), dS* list)."""
+    x, y = (a.double().cpu() for a in data["train"])
+    xh = denoise_input(x, sig2_u)
+    vpx = vp.like({"train": (xh, y)})
+    gen = torch.Generator().manual_seed(seed)
+    nz = lambda a, s2: a + math.sqrt(s2) * a.norm(dim=1, keepdim=True) * torch.randn(a.shape, generator=gen,
+                                                                                    dtype=a.dtype)
+    ref = [complex(z) for z in ref_poles]
+    cur = unpack_theta(theta, real)
+    nested = list(cur) + [z for z in ref if min(abs(z - c) for c in cur) >= F.MERGE * abs(z)]
+    starts = [pack(ref), pack(nested)]
+    dp = max(n_eff([z.imag == 0 for z in ref]) - n_eff(real), 1)
+    with torch.no_grad():
+        yc = (vpx.pred(torch.tensor(theta, device=device), real).reshape(y.shape) / vpx.scale).cpu()
+    d = []
+    for _ in range(n_cal):
+        vb = vp.like({"train": (nz(xh, sig2_u), nz(yc, sig2_y))})
+        S_c = vb.fit(theta, real)[1]
+        S_r = min(vb.fit(a, b)[1] for a, b in starts)
+        d.append(max(S_c - S_r, 0.0))
+    return max(1.0, float(np.mean(d)) / dp), [float(v) for v in d]
+
+
 def pack(poles):
     real = [z.imag == 0 for z in poles]
     theta = [v for z in poles for v in ((z.real,) if z.imag == 0 else (z.real, abs(z.imag)))]
@@ -596,7 +625,7 @@ def run(cond, g0, device, hold="band", reuse=None):
     p = n_eff(list(mask == 0))                               # effective free parameters of the 8-slot layer
     vp = VarPro(data, t, device, hold)
     sig2_y = sig2
-    if hold in ("foh_eiv", "foh_eivb", "foh_eivc"):
+    if hold in ("foh_eiv", "foh_eivb", "foh_eivc", "foh_eivo"):
         # weights from the best run's refit (unweighted FOH); then every S is in noise units, sigma^2 = 1
         best0 = min(runs, key=lambda r: r["S"])
         th0, re0 = pack(list(best0["eff"]))
@@ -615,10 +644,11 @@ def run(cond, g0, device, hold="band", reuse=None):
     ref = None
     if hold != "band":                                       # runs replaced by their reduced refits
         for r in runs:
+            r["eff_full"] = r["eff"]
             r["eff"], r["S"], r["S_full"], r["p_full"] = reduce(vp, r["eff"], sig2)
         p = max(r["p_full"] for r in runs)
         ref = min(runs, key=lambda r: r["S_full"])
-    if hold == "foh_eivc":
+    if hold in ("foh_eivc", "foh_eivo"):
         # calibrated certificate: every run is reduced with bootstrap-calibrated thresholds first, so runs that
         # differ only by spurious poles (whose S drop is far above chi2 sigma^2 under input noise) agree in
         # their poles and S; identical reduced runs (within MERGE) share one calibration
@@ -650,7 +680,7 @@ def run(cond, g0, device, hold="band", reuse=None):
         # the lowest S; with chi2 sigma^2 alone it alone is certified and the order test fails for every report.
         acc = [st["kappa"] for r in runs for st in r["steps"] if st["removed"]]
         kappa_g = max(1.0, float(np.median(acc))) if acc else 1.0
-    if hold != "foh_eivc":
+    if hold not in ("foh_eivc", "foh_eivo"):
         kappa_g = 1.0
     s_min = min(r["S"] for r in runs)
     cert = [r for r in runs if r["S"] - s_min <= kappa_g * chi2.ppf(0.99, p) * sig2]
@@ -665,18 +695,23 @@ def run(cond, g0, device, hold="band", reuse=None):
         theta, real = pack(list(rep))
         theta, S_fit = vp.fit(theta, real)
         dS, dp = S_fit - S_ref, max(p_ref - n_eff(real), 1)
+        kappa_o, extra = kappa_g, {}
+        if hold == "foh_eivo":
+            kappa_o, d = calibrated_order(vp, theta, real, ref["eff_full"], data, sig2_y, sig2_u, device,
+                                          seed=200 + len(tried))
+            extra = dict(kappa_o=kappa_o, dS_boot=d)
         tried.append(dict(source=src, theta=theta, real=real, S=S_fit, dS=dS / sig2, dp=dp,
-                          order_ok=bool(dS <= kappa_g * chi2.ppf(0.99, dp) * sig2),
-                          ratio=float(dS / (kappa_g * chi2.ppf(0.99, dp) * sig2))))
+                          order_ok=bool(dS <= kappa_o * chi2.ppf(0.99, dp) * sig2),
+                          ratio=float(dS / (kappa_o * chi2.ppf(0.99, dp) * sig2)), **extra))
         if tried[-1]["order_ok"]:
             break
     # every candidate failed: foh_eivc takes the least violating one (smallest dS / threshold); the
     # last tried (the best run) can be the run whose own bootstrap missed its spurious poles
-    fallback = min(tried, key=lambda x: x["ratio"]) if hold == "foh_eivc" else tried[-1]
+    fallback = min(tried, key=lambda x: x["ratio"]) if hold in ("foh_eivc", "foh_eivo") else tried[-1]
     chosen = next((x for x in tried if x["order_ok"]), fallback)
     theta, real = chosen["theta"], chosen["real"]
     calib = {}
-    if hold in ("foh_eivb", "foh_eivc"):
+    if hold in ("foh_eivb", "foh_eivc", "foh_eivo"):
         theta, real, steps = calibrated_reduce(vp, theta, real, data, sig2_y, sig2_u, device)
         calib = dict(calibrated_steps=steps, report_before=[[float(z.real), float(z.imag)]
                                                             for z in unpack_theta(chosen["theta"], chosen["real"])])
@@ -694,7 +729,7 @@ def run(cond, g0, device, hold="band", reuse=None):
             pr["boot_std"] = float(sk)
             pr["interval_boot"] = [pr["mu"][0] - 1.96 * float(sk), pr["mu"][0] + 1.96 * float(sk)]
     eiv = {}
-    if F.NOISY(cond) and hold in ("foh", "foh_eiv", "foh_ml", "foh_eivb", "foh_eivc") and cond in EIV_CONDS:
+    if F.NOISY(cond) and hold in ("foh", "foh_eiv", "foh_ml", "foh_eivb", "foh_eivc", "foh_eivo") and cond in EIV_CONDS:
         add_eiv(eiv, profs, vp, data, t, theta, real, sig2_y, device)
     true = E.true_folded(mu_true, beta_true)[0]
     res = dict(cond=cond, group=g0, system=system, eta_hat=float(np.sqrt(data["train"][1].shape[1] * sig2_y)),
@@ -705,6 +740,7 @@ def run(cond, g0, device, hold="band", reuse=None):
                               "kappa": [s["kappa"] for s in r["steps"]], "steps": r["steps"]} if "steps" in r else {}))
                      for r in runs], kappa_group=kappa_g,
                tried=[dict(source=x["source"], S=x["S"], dS=x["dS"], dp=x["dp"], order_ok=x["order_ok"], ratio=x["ratio"],
+                           **{k: x[k] for k in ("kappa_o", "dS_boot") if k in x},
                            poles=[[float(z.real), float(z.imag)] for z in unpack_theta(x["theta"], x["real"])])
                       for x in tried],
                source=chosen["source"], order_ok=chosen["order_ok"],
@@ -778,7 +814,8 @@ def summarize_hold(hold):
                  "foh_eiv": ", first-order-hold refits, errors-in-variables weighting",
                  "foh_ml": ", first-order-hold refits, errors-in-variables ML",
                  "foh_eivb": ", first-order-hold refits, EIV weighting and bootstrap-calibrated reduction",
-                 "foh_eivc": ", first-order-hold refits, EIV weighting and a bootstrap-calibrated certificate"}[hold], "",
+                 "foh_eivc": ", first-order-hold refits, EIV weighting and a bootstrap-calibrated certificate",
+                 "foh_eivo": ", first-order-hold refits, EIV weighting, calibrated certificate and order test"}[hold], "",
              *(["Refits, certificate and order-test reference use the exact first-order-hold response "
                 "(the data generator's input model) instead of the layer's band-limited one. Each run is refitted "
                 "and reduced (backward elimination) before the certificate.", ""]
@@ -804,6 +841,11 @@ def summarize_hold(hold):
                 "fails the order test, the least violating one (smallest ΔS / threshold) is reported (flagged). "
                 "The report is reduced once more as with `foh_eivb`.", ""]
                if hold == "foh_eivc" else []),
+             *(["As `--hold foh_eivc`, but the order test is calibrated by a bootstrap of its reference "
+                f"(`calibrated_order`, {N_CAL} EIV draws from the candidate's fit with a denoised input): each "
+                "draw refits the candidate and the reference run's full first-order-hold model (two starts), "
+                "ΔS* = S*_candidate − S*_reference; the test is ΔS ≤ κ_o χ²_Δp(0.99), κ_o = max(1, mean ΔS* / Δp).", ""]
+               if hold == "foh_eivo" else []),
              *(["Control: refits with the band-limited (layer) model, each run refitted and reduced (backward "
                 "elimination) before the certificate, as with `--hold foh`.", ""]
                if hold == "band_red" else []),
@@ -847,7 +889,7 @@ def summarize_hold(hold):
                          f"{sum(r['source'] == 'consensus' for r in gr)}/{len(gr)} | {sum(r['order_ok'] for r in gr)}/{len(gr)} | "
                          + " | ".join(cells) + f" | {sum(s[1] for s in sc)} |")
         lines.append("")
-    for system, conds in (EIV.items() if hold in ("foh", "foh_eiv", "foh_ml", "foh_eivb", "foh_eivc") else ()):
+    for system, conds in (EIV.items() if hold in ("foh", "foh_eiv", "foh_ml", "foh_eivb", "foh_eivc", "foh_eivo") else ()):
         g = [r for r in rs if r["cond"] in conds.values()]
         if not g:
             continue

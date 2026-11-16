@@ -11,7 +11,7 @@ Each session appends one entry using the template at the bottom.
 | (C) Pole audit of existing models | 3–5 | **in progress**: E1 done, draft report (`E1_report.md`, updated with E2); paper decisions open | — |
 | (D) Non-periodic input representation | 4–8 | not started | differs from padded FNO? (month 8) |
 | (A) Pole layer and linear validation | 5–10 | not started | dispersion relations recovered (month 10) |
-| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits, a bootstrap-calibrated order and certificate), E3 deep first pass done (`experiments/C/theory/`) | — |
+| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits, a bootstrap-calibrated order, certificate and order test), E3 deep first pass done (`experiments/C/theory/`) | — |
 | (A) Application 1: process dynamics | 11–16 | not started | — |
 | (D) Initial conditions and rollout | 13–19 | not started | — |
 | (A) Application 2: Cahn–Hilliard | 17–22 | not started | recover k_c, k_max (month 20) |
@@ -74,9 +74,10 @@ Suggested next steps (in order):
    repair it up to η_u = 3 η_y; at 10 × a bootstrap-calibrated reduction (`--hold foh_eivb`)
    removes every false pole (4/4 groups end at the true order); report bootstrap intervals
    there (profile 5/12, bootstrap 11/12). Calibrating every run before the certificate with
-   a pooled κ (`--hold foh_eivc`) certifies 5/5 runs in 8/8 groups at η_u = 0.1, with a
-   consensus in 8/8 and 0 false poles. The pooled-κ order test still flags 3/8 correct
-   reports. Next: calibrated order test; noise-dependent release; linear probe (RQ4).
+   a pooled κ (`--hold foh_eivc`) certifies 5/5 runs in 8/8 groups at η_u = 0.1; with a
+   bootstrap-calibrated order test (`--hold foh_eivo`) all 32 input-noise groups report the
+   consensus, pass the order test and contain exactly the true poles. Next: power of that
+   test; noise-dependent release; linear probe (RQ4).
 4. Optional E1 extras: log-parameterised decay rate; untied models with 64 steady modes
    (H1); weight decay excluded from poles; deep LNO v1 at its published size.
 
@@ -89,6 +90,24 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-16 — (C) E4: a bootstrap-calibrated order test under input noise
+
+- Done: `e4_profile.py`: `calibrated_order` and `--hold foh_eivo` (as `foh_eivc`, order test
+  ΔS ≤ κ_o χ²_Δp(0.99) with κ_o from 16 EIV draws from the candidate refitted with the
+  candidate and the reference's full FOH model, two starts). 32 groups (per-run calibrations
+  reused from `foh_eivc`). README section "E4, thirteenth pass". `src/lfo/` unchanged.
+- Results:
+  - All 32 groups (p4 multisine η_u = 0–0.1, p6 E1 η_u = 0–0.03): 5/5 certified, report from
+    the consensus, order test passed, exactly the true poles, 0 false.
+  - η_u = 0.1 (8 groups): κ_o = 60–142, ratios 0.20–0.91 (`foh_eivc`: order test 5/8).
+    Small input noise: κ_o = 1.0–3.7, ratios ≤ 0.51.
+  - Coverage unchanged (η_u = 0.1: profile 8/24, bootstrap 21/24).
+- Decisions: none.
+- Next: power of the calibrated order test against a missed true pole; stronger input noise
+  and E1 inputs at η_u ≥ 10 η_y; calibrated profile intervals; exact time-domain EIV ML;
+  coloured input noise; close real pairs at the limit; noise-dependent release; zero-order
+  hold; joint intervals; RQ4 linear probe.
 
 ### 2026-11-16 — (C) E4: calibrated certificate, fallback and more input-noise data
 
