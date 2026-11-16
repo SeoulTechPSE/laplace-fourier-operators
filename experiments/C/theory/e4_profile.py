@@ -89,7 +89,7 @@ E1_NOISY = {s: (f"{s}_e1_T20", {float(e): f"{s}_e1_T20_n{e}" for e in es})      
             for s, es in (("p4", ("1e-1", "3e-1")), ("p6", ("1e-2", "3e-2", "1e-1")))}
 N_BOOT = 32                                         # bootstrap draws per group (noise-free: dithers; noisy: EIV)
 EIV = {s: {u: f"{base}_u{u}" for u in us} | {"0": base}                           # input noise, eta_y = 1e-2
-       for s, base, us in (("p4", "p4_ms16_T20_n1e-2", ("1e-2", "1e-1")), ("p6", "p6_e1_T20_n1e-2", ("1e-2", "3e-2")))}
+       for s, base, us in (("p4", "p4_ms16_T20_n1e-2", ("1e-2", "3e-2", "1e-1")), ("p6", "p6_e1_T20_n1e-2", ("1e-2", "3e-2")))}
 EIV_CONDS = {c for d in EIV.values() for c in d.values()}
 
 
@@ -666,10 +666,14 @@ def run(cond, g0, device, hold="band", reuse=None):
         theta, S_fit = vp.fit(theta, real)
         dS, dp = S_fit - S_ref, max(p_ref - n_eff(real), 1)
         tried.append(dict(source=src, theta=theta, real=real, S=S_fit, dS=dS / sig2, dp=dp,
-                          order_ok=bool(dS <= kappa_g * chi2.ppf(0.99, dp) * sig2)))
+                          order_ok=bool(dS <= kappa_g * chi2.ppf(0.99, dp) * sig2),
+                          ratio=float(dS / (kappa_g * chi2.ppf(0.99, dp) * sig2))))
         if tried[-1]["order_ok"]:
             break
-    chosen = next((x for x in tried if x["order_ok"]), tried[-1])
+    # every candidate failed: foh_eivc takes the least violating one (smallest dS / threshold); the
+    # last tried (the best run) can be the run whose own bootstrap missed its spurious poles
+    fallback = min(tried, key=lambda x: x["ratio"]) if hold == "foh_eivc" else tried[-1]
+    chosen = next((x for x in tried if x["order_ok"]), fallback)
     theta, real = chosen["theta"], chosen["real"]
     calib = {}
     if hold in ("foh_eivb", "foh_eivc"):
@@ -700,7 +704,7 @@ def run(cond, g0, device, hold="band", reuse=None):
                           **({"poles_before": [[float(z.real), float(z.imag)] for z in r["eff_before"]],
                               "kappa": [s["kappa"] for s in r["steps"]], "steps": r["steps"]} if "steps" in r else {}))
                      for r in runs], kappa_group=kappa_g,
-               tried=[dict(source=x["source"], S=x["S"], dS=x["dS"], dp=x["dp"], order_ok=x["order_ok"],
+               tried=[dict(source=x["source"], S=x["S"], dS=x["dS"], dp=x["dp"], order_ok=x["order_ok"], ratio=x["ratio"],
                            poles=[[float(z.real), float(z.imag)] for z in unpack_theta(x["theta"], x["real"])])
                       for x in tried],
                source=chosen["source"], order_ok=chosen["order_ok"],
@@ -796,8 +800,9 @@ def summarize_hold(hold):
              *(["As `--hold foh_eivb`, but every run is reduced by `calibrated_reduce` too (after its FOH reduction, "
                 "before the certificate; runs with the same poles share one calibration). The certificate and the "
                 "order test use κ_g χ²_p(0.99), κ_g = max(1, median κ of the elimination steps taken in the group's "
-                "runs), the pooled bootstrap estimate of what a spurious pole buys on these data; the report is "
-                "reduced once more as with `foh_eivb`.", ""]
+                "runs), the pooled bootstrap estimate of what a spurious pole buys on these data. If every candidate "
+                "fails the order test, the least violating one (smallest ΔS / threshold) is reported (flagged). "
+                "The report is reduced once more as with `foh_eivb`.", ""]
                if hold == "foh_eivc" else []),
              *(["Control: refits with the band-limited (layer) model, each run refitted and reduced (backward "
                 "elimination) before the certificate, as with `--hold foh`.", ""]

@@ -235,7 +235,7 @@ CONDITIONS = {
        for s, es in (("p4", ("1e-1", "3e-1")), ("p6", ("1e-2", "3e-2", "1e-1"))) for e in es},
     # E4: input noise (errors-in-variables) on the train / validation inputs, under output noise 1e-2
     **{f"p4_ms16_T20_n1e-2_u{e}": ("p4", "multisine", 20.0, 16, 1024, dict(noise=1e-2, in_noise=float(e)))
-       for e in ("1e-2", "1e-1")},
+       for e in ("1e-2", "3e-2", "1e-1")},
     **{f"p6_e1_T20_n1e-2_u{e}": ("p6", "e1", 20.0, 0, 1024, dict(noise=1e-2, in_noise=float(e)))
        for e in ("1e-2", "3e-2")},
     # E3 / E4: partial tie under noise (released from the noise-aware tied runs; no Adam runs of their own)

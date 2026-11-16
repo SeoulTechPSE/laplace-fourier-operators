@@ -1393,6 +1393,37 @@ The pooled κ was added for this; the per-run calibrations were reused (`--reuse
 - **Limits.** κ_g is a pooled median; how sensitive the result is to that choice (e.g. min /
   mean of the accepted κ) was not tested. Only four groups at one input-noise level.
 
+**Fallback and more data.** Two additions:
+
+- **Fallback.** When every candidate fails the calibrated order test, `foh_eivc` reports the
+  least violating one (smallest ΔS / threshold), still flagged. The first version reported the
+  last candidate tried, the best run. Results before this change are in
+  `runs/archive/e4_profile_foh_eivc_v2`.
+- **More data.** 40 new runs with the same recipe: p4 multisine at η_u = 0.03 (groups 10–25),
+  a new level, and 4 more groups at η_u = 0.1 (seeds 30–49).
+
+| η_u | groups | `foh_eivb`: certified (mean), consensus, order test | `foh_eivc`: κ_g, certified (mean), consensus formed / reported, order test | false poles (both) | covered: profile / bootstrap |
+|---|---|---|---|---|---|
+| 0.03 | 4 | 5.0, 4/4, 4/4 | 1, 5.0, 4/4 / 4/4, 4/4 | 0 | 12 / 11 of 12 |
+| 0.1 | 8 | 1.4, 1/8, 8/8 | 52–81, **5.0, 8/8 / 6/8**, 5/8 | 0 | 8 / 21 of 24 |
+
+- **With the fallback, every group reports exactly the three true poles.** In g20 the consensus
+  (1.14 × its threshold) replaces the best run (2.0 ×), which had three false poles.
+- **The certificate is fixed; the order test is not.** At η_u = 0.1, 39 of 40 runs end at the
+  three true poles, and every group certifies all 5 runs (`foh_eivb`: 1.4).
+- **Three groups fail the order test although their runs agree.** In g30 and g45 all five
+  runs agree on the true poles, yet the report misses the order test (1.66 and 1.16 × the
+  threshold). In two groups the label reads "best run" because the consensus and the best run
+  are the same model with a tied ratio.
+  - The reference of the order test is the best uncalibrated 8-slot run, and its gain over
+    the report is not well described by κ_g per parameter.
+  - So the order test is conservative here: it flags correct reports.
+  - The calibrated chain of eliminations is itself an order test. Using it in place of the
+    pooled one, or calibrating the 8-slot reference directly, is open.
+- **At η_u = 0.03 nothing needs calibration.** κ = 1 and both holds agree with `foh_eiv`.
+- **The bootstrap interval is still the one to report.** At η_u = 0.1 the profile intervals
+  cover 8 of 24 and the bootstrap intervals 21 of 24.
+
 ## E3, deep setting: first pass
 
 `e3_deep.py`. The E1 deep models (ALNO / LFNO, 5,977 parameters, four layers) are trained
@@ -1436,8 +1467,8 @@ dead; NaN and dead runs count as not recovered.)
 - E3 layer: a noise-dependent release (δ chosen by the χ² order test, or released only
   when the tied fit fails the certificate); the steady branch untied above the residual
   band; whether the release needs the restarts.
-- E4: the fallback when every report fails the calibrated order test (g20 at η_u = 0.1);
-  more groups and input-noise levels for the calibrated certificate; calibrated profile intervals (or the bootstrap as the reported interval); the exact
+- E4: a calibrated order test under input noise (the pooled κ_g flags correct reports in
+  3/8 groups at η_u = 0.1); calibrated profile intervals (or the bootstrap as the reported interval); the exact
   time-domain EIV ML; coloured input noise; resolving close real pairs at the CRB limit
   (p6 −1 / −2 at η = 0.1);
   a zero-order-hold variant; simultaneous (joint) intervals; more groups for the

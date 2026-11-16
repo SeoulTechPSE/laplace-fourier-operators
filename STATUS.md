@@ -74,9 +74,9 @@ Suggested next steps (in order):
    repair it up to η_u = 3 η_y; at 10 × a bootstrap-calibrated reduction (`--hold foh_eivb`)
    removes every false pole (4/4 groups end at the true order); report bootstrap intervals
    there (profile 5/12, bootstrap 11/12). Calibrating every run before the certificate with
-   a pooled κ (`--hold foh_eivc`) certifies 5/5 runs and gives consensus in 3/4 groups; the
-   fourth fails the calibrated order test (flagged) and keeps 3 false poles. Next: the
-   fallback rule; noise-dependent release; linear probe (RQ4).
+   a pooled κ (`--hold foh_eivc`) certifies 5/5 runs in 8/8 groups at η_u = 0.1, with a
+   consensus in 8/8 and 0 false poles. The pooled-κ order test still flags 3/8 correct
+   reports. Next: calibrated order test; noise-dependent release; linear probe (RQ4).
 4. Optional E1 extras: log-parameterised decay rate; untied models with 64 steady modes
    (H1); weight decay excluded from poles; deep LNO v1 at its published size.
 
@@ -89,6 +89,28 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-16 — (C) E4: calibrated certificate, fallback and more input-noise data
+
+- Done: `foh_eivc` fallback: when every candidate fails the calibrated order test, report the
+  least violating one (flagged; earlier results archived in `runs/archive/e4_profile_foh_eivc_v2`).
+  New condition `p4_ms16_T20_n1e-2_u3e-2` (groups 10–25) and 4 more groups at η_u = 0.1
+  (seeds 30–49): 40 runs, full recipe; `foh_eivb` and `foh_eivc` on them. README "E4, twelfth
+  pass" extended. `src/lfo/` unchanged.
+- Results:
+  - η_u = 0.03: κ = 1, both holds 5/5 certified, consensus 4/4, 0 false.
+  - η_u = 0.1, 8 groups: `foh_eivc` certifies 5.0 runs per group (`foh_eivb` 1.4); consensus
+    formed 8/8 (reported 6/8, 2 ties with the identical best run), 0 false poles in both
+    holds. 39/40 runs end at the three true poles.
+  - With the fallback g20 reports the three true poles (before: 3 false).
+  - The pooled-κ order test fails in 3/8 groups even where all runs agree (ratio 1.14–1.66).
+    It is conservative, not calibrated.
+  - Coverage at η_u = 0.1: profile 8/24, bootstrap 21/24.
+- Decisions: none.
+- Next: a calibrated order test (the calibrated elimination chain, or a bootstrap of the
+  8-slot reference); calibrated profile intervals; exact time-domain EIV ML; coloured input
+  noise; close real pairs at the limit; noise-dependent release; zero-order hold; joint
+  intervals; RQ4 linear probe.
 
 ### 2026-11-16 — (C) E1: finding 3 restated
 
