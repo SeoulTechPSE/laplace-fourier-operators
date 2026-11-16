@@ -1693,7 +1693,7 @@ the groups):
 
 | data | η_u | groups | `foh_eivo` report | + split flags | + duplicate / alias | + bias-corrected values |
 |---|---|---|---|---|---|---|
-| p4 multisine | 0 … 0.1 | 20 | 84/84, 0 | same | same | same |
+| p4 multisine | 0 … 0.1 | 20 | 60/60, 0 | same | same | same |
 | p4 multisine | 0.3 | 4 | 11/12, 1 | 11/12, 1 | 11/12, 1 | **12/12, 0** |
 | p6 E1 | 0 … 0.03 | 12 | 48/48, 0 | same | same | same |
 | p6 E1 | 0.1 | 4 | 12/16, 6 | 12/16, 5 | **12/16, 1** | 12/16, 1 |
