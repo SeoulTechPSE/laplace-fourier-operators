@@ -50,25 +50,21 @@ or not their poles are right.
 *Fig. 2. Fraction of runs recovering each true pole (relative error < 0.1).
 Shaded: real poles. Only the warm start recovers the fast real poles −1 and −2.*
 
-**3. Fast real poles are not identified, and the E1 data cannot identify them.** Without
-a warm start, −1 and −2 are recovered in 0–10 % of runs in every setting, including the
-tied layer with enough travel. The models still fit (tied p6: test 8e-3 without −2).
-At the truth, a 10 % change of −1 / −2 that the other parameters may compensate costs
-4.9e-4 / 1.6e-4 relative error, below the layer's own floor. Fixing Re of −2 anywhere in
-[−6, −1] costs at most 2.1e-3 (Fig. 3). The poles are unique in principle (a warm start
-converges to them, consistent with H2) but practically non-identifiable from these data.
-E2 (below) shows this is specific to the E1 data and grid: with richer inputs or a finer
-grid the poles become identifiable, and the remaining failure is optimisation.
+**3. Fast real poles are not found by the published recipes, but the E1 data identify them.**
+Without a warm start, −1 and −2 are recovered in 0–10 % of runs in every E1 setting,
+including the tied layer with enough travel, while the models still fit (tied p6: test 8e-3
+without −2). The flat profiles (Fig. 3) are the layer's band-limited input hold, not a
+property of the data: with the E2 recipe the same data give −1 / −2 in 95 / 70 % of runs
+(p6), and a truth-free first-order-hold refit reports every pole in 4/4 groups. Under
+relative output noise the limit is the Cramér–Rao bound: p6 −2 is identified up to
+η ≈ 0.03 (4/4 groups, intervals covering) and lost near 0.1, −1 holds to ≈ 0.1, and the p4
+real poles to at least 0.3. (`experiments/C/theory/README.md`, "E4, sixth pass" and "E4,
+eighth pass".)
 
-*Note (2026-11-15, open decision):* E2 / E4 later found that the E1 data do identify −1
-and −2 when there is no output noise. With the E2 recipe (damping bound, polish, restarts)
-the band layer recovers them in 95 / 70 % of runs on the E1 data (p6), and a truth-free
-first-order-hold refit with a float32-precision term reports every pole in 4/4 groups. The
-"floor" above is the layer's band-limited input hold, not a property of the data. Under output
-noise the limit is the Cramér–Rao bound: −2 stays identifiable (4/4 groups, intervals
-covering) up to a relative noise of η ≈ 0.03 and is lost near η ≈ 0.1; −1 holds to ≈ 0.1. (An
-earlier per-sample estimate, η* ≈ 1.5e-5, was far too strict.) See
-`experiments/C/theory/README.md`, "E4, sixth pass" and "E4, eighth pass". The wording of this finding is not yet revised.
+*E1 analysis (band-limited layer), kept for reference:* at the truth, a 10 % change of
+−1 / −2 that the other parameters may compensate costs 4.9e-4 / 1.6e-4 relative error, below
+that layer's floor, and fixing Re of −2 anywhere in [−6, −1] costs at most 2.1e-3 (Fig. 3).
+The floor is the layer's input hold (E4, sixth pass).
 
 ![Fig. 3](figures/fig3_profile.png)
 

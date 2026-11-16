@@ -22,7 +22,7 @@ Each session appends one entry using the template at the bottom.
 - [ ] Staffing (affects schedule adjustments in `docs/integrated_schedule_ACD.qmd`, Section 4)
 - [x] Whether ALNO / LFNO code is public: **not public** (2026-11-12); both re-implemented in `lfo.models.hybrid`
 - [ ] E1 paper: reported set; deep "closest pooled pole" in main text; waive the budget rule for the minimal layer setting? E2 in the same paper? (`experiments/C/e1_audit/E1_report.md`, decisions 1–4)
-- [ ] E1 finding 3 (2026-11-15): the E1 data identify −1 / −2 without noise (E2 recipe; FOH-refit certificate 4/4 groups); restate as "not found by the published recipes; identifiable from noise-free data and under relative output noise up to η ≈ 0.03 (p6 −2, CRB limit; confirmed in 4/4 groups at 0.03)"? (η* ≈ 1.5e-5 of the sixth pass was a per-sample criterion, corrected 2026-11-15; `experiments/C/theory/README.md`, E4 sixth and eighth passes)
+- [x] E1 finding 3: **restated** (2026-11-16): "not found by the published recipes, but the E1 data identify them"; noise limit = CRB (p6 −2 to η ≈ 0.03, −1 ≈ 0.1, p4 real poles ≥ 0.3); `E1_report.md` finding 3, the E1 README and the web page updated
 - [x] Ask the LFNO authors? **No** (2026-11-12): paper not formally published; use the reconstruction and document it
 
 ## Handoff (2026-11-12, after E1 first run) — start here in the next session
@@ -89,6 +89,14 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-16 — (C) E1: finding 3 restated
+
+- Done: `E1_report.md` finding 3 rewritten ("not found by the published recipes, but the E1
+  data identify them"; noise limit = CRB); the E1 band-layer analysis kept as a reference
+  paragraph; the note removed. E1 README table row qualified; web page updated.
+- Decisions: E1 finding 3 wording (option A, the user, 2026-11-16).
+- Next: as the previous entry.
 
 ### 2026-11-16 — (C) E4: a calibrated certificate between runs under strong input noise
 

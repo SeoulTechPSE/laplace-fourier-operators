@@ -125,7 +125,7 @@ Re μ of one pole fixed at c × truth, all else re-fitted with L-BFGS from the t
 
 | finding | evidence |
 |---|---|
-| **Fast real poles are practically non-identifiable in p6** | 10 % change of −1 / −2, profiled: e = 4.9e-4 / 1.6e-4 — below the representation floor (8.2e-4); fixed: 7.6e-2 / 3.4e-2, i.e. the other poles compensate 150–200× |
+| **Fast real poles are practically non-identifiable in p6** (for the band-limited layer only; the E1 data identify them, see `E1_report.md` finding 3) | 10 % change of −1 / −2, profiled: e = 4.9e-4 / 1.6e-4 — below the representation floor (8.2e-4); fixed: 7.6e-2 / 3.4e-2, i.e. the other poles compensate 150–200× |
 | The loss is flat along Re of −2 over a factor 6 | profile, Re μ from −1 to −6: e ≤ 2.1e-3 (truth 8.2e-4); −1 from −0.25 to −1.25: e ≤ 3.3e-3. Both below the E1 test errors of good-fit runs (≈ 8e-3) |
 | In p4 the real poles are weakly identifiable | −1 profiled 6.3e-3 (fixed 1.6e-1); profile not monotone (c = 0.25 lower than 0.5: second basin) |
 | Frequencies are always well identified | Im μ of every complex pole: profiled e ≈ 1e-2 – 9e-2 for 10 %; profiles of complex Re μ are sharp |
