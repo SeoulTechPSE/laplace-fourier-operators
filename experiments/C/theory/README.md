@@ -1497,7 +1497,7 @@ rule) with κ = 1, the pooled κ_g, and κ_o calibrated from the dropped-pole ca
   η_u = 0.1, κ_o is 26–67, at or below the correct reports' 60–142. The bootstrap from a model
   without that pole does not reward the pole back. For a missing complex pair κ_o is 174–340.
 - **Reading.** Under input noise the hard direction of the order test is false alarms, not
-  power: a missed true pole costs 10²–10⁸ noise units, a spurious one 10²–10³. Calibration
+  power: a missed true pole costs ΔS = 6e3–2e8 (noise units), a spurious one 10²–10³. Calibration
   was needed for the first; the second holds even with χ².
 - **Limits.** One pole dropped at a time, with the other poles at the truth. It was not tested
   near the CRB limit (p6 at η = 0.1, where −2 is lost) or at stronger input noise.
