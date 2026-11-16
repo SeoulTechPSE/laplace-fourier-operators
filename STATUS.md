@@ -76,8 +76,9 @@ Suggested next steps (in order):
    there (profile 5/12, bootstrap 11/12). Calibrating every run before the certificate with
    a pooled κ (`--hold foh_eivc`) certifies 5/5 runs in 8/8 groups at η_u = 0.1; with a
    bootstrap-calibrated order test (`--hold foh_eivo`) all 32 input-noise groups report the
-   consensus, pass the order test and contain exactly the true poles. Next: power of that
-   test; noise-dependent release; linear probe (RQ4).
+   consensus, pass the order test and contain exactly the true poles; the test rejects all 108
+   missing-pole models (ratio ≥ 112 vs ≤ 0.91). Next: stronger input noise; noise-dependent
+   release; linear probe (RQ4).
 4. Optional E1 extras: log-parameterised decay rate; untied models with 64 steady modes
    (H1); weight decay excluded from poles; deep LNO v1 at its published size.
 
@@ -90,6 +91,21 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-16 — (C) E4: power of the calibrated order test
+
+- Done: `e4_power.py`. The `foh_eivo` report of each of the 32 input-noise groups minus one
+  true pole, refitted and put through the order test (χ², pooled κ_g, calibrated κ_o). README
+  section "E4, fourteenth pass". `src/lfo/` unchanged.
+- Results:
+  - All 108 missing-pole models are rejected by every κ.
+  - Smallest calibrated ratio 112 (p6 E1 η_u = 0.03, a real pole of the −1 / −2 pair), against
+    ≤ 0.91 for the correct reports.
+  - The hard direction under input noise is false alarms, not power.
+- Decisions: none.
+- Next: stronger input noise and E1 inputs at η_u ≥ 10 η_y; the order test near the CRB limit;
+  calibrated profile intervals; exact time-domain EIV ML; coloured input noise; close real
+  pairs; noise-dependent release; zero-order hold; joint intervals; RQ4 linear probe.
 
 ### 2026-11-16 — (C) E4: a bootstrap-calibrated order test under input noise
 

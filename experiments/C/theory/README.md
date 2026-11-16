@@ -16,6 +16,7 @@ families) make the poles practically identifiable, and does training then recove
 | `e2_rescue.py` | truth-free single-slot restarts of polished runs; `--rule noise`: noise-aware acceptance (E4); `--start reset/release`: partial tie with R_res reset / released from the tied run (E3), also under noise with `--rule noise` | `results/e2_rescue{,_na,_rr,_rel,_na_rel}/*.json`, `results/e2_rescue{,_na,_rr,_rel,_na_rel}.md` |
 | `e2_floor.py` | floor certificate without the truth: estimated floor + consensus poles; ratio and χ² (noise) rules | `results/e2_floor.md` / `.json` |
 | `e2_polish.py` | L-BFGS-B polish of saved Adam checkpoints (paired before/after), floor-certificate table | `results/e2_polish/*.json`, `results/e2_polish.md` |
+| `e4_power.py` | E4, input noise: power of the calibrated order test; the `foh_eivo` report minus one true pole, refitted and tested (χ², pooled κ_g, calibrated κ_o) | `results/e4_power/*.json`, `results/e4_power.md` |
 | `e4_profile.py` | E4: minimal-form refit of the certified report, order test, per-pole profile intervals (VarPro); `--hold foh`: refits with the data generator's first-order-hold input, with backward order reduction per run; `--hold band_red`: band-limited refits with the same reduction (control); noise-free conditions use σ² = float32 rounding of the outputs, Newton-finished fits and bootstrap intervals; E1 data under output noise (eighth pass); EIV bootstrap per group and `--hold foh_eiv` (EIV-weighted refits) for input noise (tenth pass); `--hold foh_eivb` (bootstrap-calibrated reduction) and `EIVML` (eleventh pass); `--hold foh_eivc` (calibrated certificate between runs, twelfth pass); `--hold foh_eivo` (bootstrap-calibrated order test, thirteenth pass) | `results/e4_profile{,_foh,_band_red}/*.json`, `results/e4_profile{,_foh,_band_red}.md` |
 | `e4_bias.py` | E4: the noise-free pole bias, float32 rounding of inputs vs outputs (exact vs stored data, Monte Carlo, truth-free bootstrap) | `results/e4_bias.md` / `.json` |
 | `e4_eiv.py` | E4: input noise (errors-in-variables) under output noise: Monte-Carlo coverage of the E4, residual-σ² and truth-free EIV-bootstrap intervals (minimal FOH refit) | `results/e4_eiv/*.json`, `results/e4_eiv.md` |
@@ -1469,6 +1470,38 @@ conditions and the new ones of the twelfth pass.
   Only white input noise. The bootstrap is from the candidate, so it tests "no extra poles
   beyond the candidate", and its power against a missed true pole was not checked.
 
+## E4, fourteenth pass: power of the calibrated order test
+
+A test that passes every report is only useful if it fails wrong ones. `e4_power.py` takes
+each `foh_eivo` report (exactly the true poles) in the 32 input-noise groups and drops one
+pole at a time. The truth is used only to pick what to drop; the test is truth-free. The
+reduced model is refitted and put through the same order test (same reference, same Δp
+rule) with κ = 1, the pooled κ_g, and κ_o calibrated from the dropped-pole candidate.
+
+| data | η_u | groups | reported model: ratio (max) | missing pole rejected (χ² / pooled / calibrated) | ratio of the missing-pole model, calibrated (min) | κ_o |
+|---|---|---|---|---|---|---|
+| p4 multisine | 0, 0.01, 0.03 | 12 | 0.51 | 36 / 36 / 36 of 36 | 1.3e5 | 1.0–3.2 |
+| p4 multisine | 0.1 | 8 | 0.91 | 24 / 24 / 24 of 24 | 374 | 26–340 |
+| p6 E1 | 0, 0.01 | 8 | 0.44 | 32 / 32 / 32 of 32 | 692 | 1.0–2.4 |
+| p6 E1 | 0.03 | 4 | 0.38 | 16 / 16 / 16 of 16 | 112 | 1.7–4.8 |
+
+(`results/e4_power.md`; ratio = ΔS / (κ χ²_Δp(0.99)), > 1 rejects.)
+
+- **The test has power.** Every one of the 108 missing-pole models is rejected, by every κ. The
+  smallest calibrated ratio is 112, against at most 0.91 for the correct reports, so the two
+  are separated by more than 100 ×.
+- **The hardest case is the p6 real pair.** Dropping −1 or −2 gives the same ΔS: the
+  remaining real pole moves between them. At η_u = 0.03 that ΔS is 6e3 (ratio 112–280). It
+  falls with input noise (4e4 at 0, 2e4 at 0.01), as the CRB limit predicts.
+- **κ_o is smaller for the wrong model where it matters.** For a missing slow pole on p4 at
+  η_u = 0.1, κ_o is 26–67, at or below the correct reports' 60–142. The bootstrap from a model
+  without that pole does not reward the pole back. For a missing complex pair κ_o is 174–340.
+- **Reading.** Under input noise the hard direction of the order test is false alarms, not
+  power: a missed true pole costs 10²–10⁸ noise units, a spurious one 10²–10³. Calibration
+  was needed for the first; the second holds even with χ².
+- **Limits.** One pole dropped at a time, with the other poles at the truth. It was not tested
+  near the CRB limit (p6 at η = 0.1, where −2 is lost) or at stronger input noise.
+
 ## E3, deep setting: first pass
 
 `e3_deep.py`. The E1 deep models (ALNO / LFNO, 5,977 parameters, four layers) are trained
@@ -1512,8 +1545,7 @@ dead; NaN and dead runs count as not recovered.)
 - E3 layer: a noise-dependent release (δ chosen by the χ² order test, or released only
   when the tied fit fails the certificate); the steady branch untied above the residual
   band; whether the release needs the restarts.
-- E4: the power of the calibrated order test against a missed true pole; stronger input noise
-  and E1 inputs at η_u ≥ 10 η_y; calibrated profile intervals (or the bootstrap as the reported interval); the exact
+- E4: stronger input noise and E1 inputs at η_u ≥ 10 η_y; the order test near the CRB limit; calibrated profile intervals (or the bootstrap as the reported interval); the exact
   time-domain EIV ML; coloured input noise; resolving close real pairs at the CRB limit
   (p6 −1 / −2 at η = 0.1);
   a zero-order-hold variant; simultaneous (joint) intervals; more groups for the
