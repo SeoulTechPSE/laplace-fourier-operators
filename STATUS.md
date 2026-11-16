@@ -103,7 +103,7 @@ Things to know:
     poles. −1 biased to −0.89 … −0.92 (EIV bias). Missing-pole models all rejected, margin
     about 9 × (ratio ≥ 5.6 vs ≤ 0.63). Profile intervals cover 0/12, bootstrap 10/12.
   - p6 E1, η_u = 10 η_y: wrong in 4/4 groups. `calibrated_reduce` merges −1 / −2 into −0.69
-    in 9/20 runs (the first true pole removed). Other runs keep spurious poles, including an
+    in 7/20 runs (the first true pole removed). Other runs keep spurious poles, including an
     aliased pair at −50 ± 325i (2π/dt = 322). −2 is beyond the information limit there (local
     spread 16 %), but the pipeline reports wrong values instead of "unresolved".
 - Decisions: none.

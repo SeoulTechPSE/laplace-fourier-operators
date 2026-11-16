@@ -1532,7 +1532,7 @@ about 103 for p4 at 0.3 (38 at 0.1) and 30 for p6 at 0.1.)
 
 **p6 E1 at 10 × η_y: the pipeline breaks, with two failure modes.**
 
-- **A true pole is removed.** In 9 of 20 runs `calibrated_reduce` merges −1 / −2 into one real
+- **A true pole is removed.** In 7 of 20 runs `calibrated_reduce` merges −1 / −2 into one real
   pole at −0.69. With κ ≈ 230 at that step, the pair's evidence falls below the threshold.
   This is the first time the calibrated reduction removes a true pole.
 - **Spurious poles stay.** In the other runs the bootstrap gives κ ≈ 1–10 and they keep extra
