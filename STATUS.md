@@ -11,7 +11,7 @@ Each session appends one entry using the template at the bottom.
 | (C) Pole audit of existing models | 3–5 | **in progress**: E1 done, draft report (`E1_report.md`, updated with E2); paper decisions open | — |
 | (D) Non-periodic input representation | 4–8 | not started | differs from padded FNO? (month 8) |
 | (A) Pole layer and linear validation | 5–10 | not started | dispersion relations recovered (month 10) |
-| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits, a bootstrap-calibrated order, certificate and order test; reduction-path unresolved rules fail), E3 deep first pass done (`experiments/C/theory/`) | — |
+| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits, a bootstrap-calibrated order, certificate and order test; reduction-path unresolved rules fail, a location-calibrated split test flags the merge), E3 deep first pass done (`experiments/C/theory/`) | — |
 | (A) Application 1: process dynamics | 11–16 | not started | — |
 | (D) Initial conditions and rollout | 13–19 | not started | — |
 | (A) Application 2: Cahn–Hilliard | 17–22 | not started | recover k_c, k_max (month 20) |
@@ -81,8 +81,11 @@ Suggested next steps (in order):
    8–11 %) but breaks on p6 E1 at 10 η_y (−1 / −2 merged or spurious, aliased poles).
    Truth-free rules on the reduction path (aliasing fold, "unresolved" flags, `--hold
    foh_eivu`, `e4_absorb.py`) do not fix it: a merged close pair and an EIV-biased isolated
-   pole look the same there. Next: an information-side unresolved rule (bootstrap spread vs
-   pair spacing); noise-dependent release; linear probe (RQ4).
+   pole look the same there. A location-calibrated split test of each reported real pole
+   (`e4_split.py`, 40 groups) flags the merged pole (ratio 2.9) and, among the controls, only
+   an already-wrong pole (p4 30 η_y −0.892, ratio 1.14); the split refit does not resolve the
+   pair, so it reads "unresolved". Its null undershoots at strong input noise (control gain
+   up to 5 × the null mean). Next: a better-calibrated null; noise-dependent release; RQ4.
 4. Optional E1 extras: log-parameterised decay rate; untied models with 64 steady modes
    (H1); weight decay excluded from poles; deep LNO v1 at its published size.
 
@@ -95,6 +98,31 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-17 — (C) E4: location-calibrated split test
+
+- Done: `e4_split.py` on the `foh_eivo` reports of all 40 input-noise groups (p4 η_u = 0 …
+  0.3, p6 E1 0 … 0.1). Per reported real pole z, a real pole held at w = f z (f = 0.25 … 4),
+  gain G(w) against 16 EIV draws from the report's fit; flagged if G > max(1, mean G*/2)
+  χ²_2(0.99). README section "E4, seventeenth pass". `src/lfo/` unchanged.
+- Results:
+  - p6 E1 η_u = 0.1: the merged −0.686 (g15) is flagged at every site (ratio 1.6–2.9,
+    G / mean G* = 7–13). With w free it refits to a double pole at −0.44, not −1 / −2:
+    unresolved, not resolved.
+  - Controls: 35 of 36 groups have no flag (max ratio 0.97). The one flag (p4 η_u = 0.3 g10,
+    −0.892, ratio 1.14) is on the EIV-biased −1, already false under the 10 % rule.
+  - As a reporting rule (flag = open interval): false poles 6 → 5 (p6 0.1), 1 → 0 (p4 0.3),
+    no true pole lost.
+  - The null undershoots at strong input noise: the largest control G / mean G* is about 1 at
+    η_u = 0.01, 4.5 at 0.1, 5.3 at 0.3. The margin over the merge at 30 η_y is about 2 ×.
+  - Not covered: the duplicated pair of p6 g25 (redundancy, not missing structure); complex
+    and aliased poles.
+- Decisions: keep the split test as a post-report check; do not fold it into `e4_profile.py`
+  yet.
+- Next: a null that includes the input-noise effect on the real data (no denoising, or
+  draws from the full reference model); a check for duplicated and aliased poles; the EIV
+  bias at 30 η_y; calibrated profile intervals; exact time-domain EIV ML; coloured input
+  noise; noise-dependent release; zero-order hold; joint intervals; RQ4.
 
 ### 2026-11-16 — (C) E4: aliasing fold and unresolved flags (negative result)
 

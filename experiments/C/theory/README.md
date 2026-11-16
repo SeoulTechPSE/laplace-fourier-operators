@@ -1606,6 +1606,66 @@ the local CRB under EIV noise (`e4_eiv.py` gives a 16 % spread for −2 at η_u 
 for p4 −1 at 0.3). `foh_eivo` stays the reference pipeline, and `foh_eivu` is kept only as a
 recorded negative result.
 
+## E4, seventeenth pass: a location-calibrated split test
+
+`e4_split.py` reads the `foh_eivo` report of every input-noise group (40 groups: p4 multisine at
+η_u = 0 … 0.3, p6 E1 at 0 … 0.1). For each reported real pole z it asks whether the data hold
+more structure near z than the report. The test is truth-free:
+
+- **Gain.** A real pole is added and held at w = f z, f ∈ {0.25, 0.4, 0.63, 1.6, 2.5, 4}
+  (sites within 10 % of a reported pole are skipped). Everything else is refitted, and the gain
+  is G(w) = S_report − S_split(w).
+- **Null.** The same gain is computed on 16 EIV draws from the report's fit (denoised stored
+  inputs as clean inputs, as `calibrated_order`). This gives G*(w).
+- **Test.** κ_w = max(1, mean G*(w) / 2) and ratio(w) = G(w) / (κ_w χ²_2(0.99)). z is flagged
+  if max_w ratio > 1.
+
+The difference from the calibrated reduction: its κ comes from the move it takes, usually a
+spurious fast pole whose gain under input noise is large. Here the null is computed at the
+location tested.
+
+| data | η_u | groups | flagged poles | max ratio of the unflagged poles |
+|---|---|---|---|---|
+| p4 multisine | 0, 0.01, 0.03 | 12 | none | 0.36 |
+| p4 multisine | 0.1 | 8 | none | 0.97 |
+| p4 multisine | 0.3 | 4 | −0.892 in g10 (ratio 1.14) | 0.83 |
+| p6 E1 | 0, 0.01, 0.03 | 12 | none | 0.53 |
+| p6 E1 | 0.1 | 4 | the merged −0.686 in g15 (ratio 2.89) | 0.30 |
+
+(`results/e4_split.md`. About 40 s per group for p6 E1 and up to 11 min for p4 at η_u = 0.3.)
+
+**It finds the merge.**
+
+- The merged pole −0.686 is flagged at every site: G / mean G* = 7–13, and the ratio is 1.6–2.9.
+- **But it does not resolve the pair.** With w freed, the split model refits to a double pole
+  at −0.44 / −0.44, not to −1 / −2. The honest report is therefore "unresolved" (an open
+  interval), not two values.
+
+**Its one control flag is on a pole that is already wrong.**
+
+- In p4 at η_u = 0.3 g10, the flagged pole −0.892 is the EIV-biased −1. Its error is 10.8 %,
+  so it already counts as false under the 10 % rule; it is the one false pole of that row.
+- The gain sits at one site only (w = −1.43, G / mean G* = 5.3). With w freed, the pole moves
+  back to −1.12.
+
+**Calibration.** The null is not exact at strong input noise:
+
+- The largest G / mean G* in the controls grows with η_u: about 1 at 0.01, up to 4.5 at 0.1 and
+  up to 5.3 at 0.3.
+- The merged pair stands out at 7–13, but the margin over the controls at 30 × η_y is about 2 ×.
+- One likely cause: the bootstrap draws take the denoised inputs as clean, so they miss part of
+  the input-noise effect on the real data.
+
+**What it does not cover.**
+
+- The duplicated real pair of p6 g25 (−1.23 twice, with −16.4) is not flagged (ratio 0.20). The
+  test asks for missing structure, and a duplicate is redundancy, not missing structure.
+- Complex and aliased poles are not tested.
+
+**As a reporting rule** (flagged = unresolved, an open interval), the false poles drop from 6 to
+5 for p6 E1 at 0.1 and from 1 to 0 for p4 at 0.3, with no true pole lost in any group. It is
+kept as a post-report check, not folded into `e4_profile.py`.
+
 ## E3, deep setting: first pass
 
 `e3_deep.py`. The E1 deep models (ALNO / LFNO, 5,977 parameters, four layers) are trained
