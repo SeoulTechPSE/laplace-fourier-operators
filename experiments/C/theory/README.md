@@ -1666,6 +1666,59 @@ location tested.
 5 for p6 E1 at 0.1 and from 1 to 0 for p4 at 0.3, with no true pole lost in any group. It is
 kept as a post-report check, not folded into `e4_profile.py`.
 
+## E4, eighteenth pass: bias-corrected null, duplicate / aliasing checks, a combined report rule
+
+Three additions to `e4_split.py`, run on the same 40 `foh_eivo` reports:
+
+- **`--null bc`.** The split-test draws are generated from the bias-corrected fit
+  2θ − mean θ*, with a first pass of 16 EIV draws from the report's fit. Under strong input
+  noise the report is EIV-biased, and draws from it lack the structure by which the real data
+  differ from the biased fit.
+- **Checks without refits.** A reported pole within 10 % of another is a duplicate. A complex
+  pole with |Im μ| > π/dt is aliased (above the Nyquist frequency). Both are read as unresolved.
+- **Bias-corrected values.** Each pole is reported at its bias-corrected value, where its EIV
+  bootstrap 95 % half-width (stored by `foh_eivo`) is within the identification tolerance
+  (10 % |z|).
+
+**Split test with the bias-corrected null.**
+
+- Controls (36 groups): no flag, max ratio 0.80 (`denoise` null: one flag at 1.14).
+- The merged −0.686 is still flagged, at ratio 3.02, so the margin grows from about 2.5 × to
+  about 3.8 ×.
+- G / mean G* in the controls is 1.1–3.6 at η_u = 0.3 (`denoise`: 3.2–5.3). So the null is
+  closer but still not exact.
+
+**Scored** (`results/e4_split.md`, `bc` null; identified true poles / false identified, over
+the groups):
+
+| data | η_u | groups | `foh_eivo` report | + split flags | + duplicate / alias | + bias-corrected values |
+|---|---|---|---|---|---|---|
+| p4 multisine | 0 … 0.1 | 20 | 84/84, 0 | same | same | same |
+| p4 multisine | 0.3 | 4 | 11/12, 1 | 11/12, 1 | 11/12, 1 | **12/12, 0** |
+| p6 E1 | 0 … 0.03 | 12 | 48/48, 0 | same | same | same |
+| p6 E1 | 0.1 | 4 | 12/16, 6 | 12/16, 5 | **12/16, 1** | 12/16, 1 |
+
+**What each rule fixes.**
+
+- **The bias correction** moves the p4 −1 at 30 × η_y from −0.89 … −0.92 to −0.990 … −1.007.
+  This is the last p4 false pole.
+- **The split flag** removes the merged −0.686.
+- **The alias check** removes the two complex poles at −50 ± 325i.
+- **The duplicate check** removes the doubled −1.23.
+- **The one false pole left** is a spurious real pole at −16.4 in p6 g25, beside that duplicate.
+  None of the rules covers it.
+- **No true pole is lost** anywhere.
+
+**Two caveats.**
+
+- **The bias-correction gate was set after looking at the p6 data.** Without it, the correction
+  pushes the p6 pair at η_u = 0.1 apart: −1 → −0.67 / −0.77 and −2 → −2.4 / −2.5, giving 8/16
+  and 5 false. Those poles have bootstrap spreads of 9–18 %, so the bootstrap is too non-linear
+  there for a first-order correction. The 10 % gate is the existing identification tolerance,
+  not a tuned value, but it has been checked only on these 40 groups.
+- **The −1 / −2 pair in p6 g10 / g20 at η_u = 0.1 counts as identified.** Its intervals are
+  closed but wide (bootstrap half-widths 18–36 %).
+
 ## E3, deep setting: first pass
 
 `e3_deep.py`. The E1 deep models (ALNO / LFNO, 5,977 parameters, four layers) are trained
