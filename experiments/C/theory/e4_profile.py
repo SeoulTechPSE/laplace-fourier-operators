@@ -74,8 +74,9 @@ import e2_floor as F  # noqa: E402
 
 P, RS, T, E = F.P, F.RS, F.T, F.E
 OUT = T.R.RESULTS / "e4_profile"
-HOLDS = ("band", "foh", "band_red", "foh_eiv", "foh_ml", "foh_eivb")
-# foh_eiv: EIV-whitened refits (eiv_weights); foh_ml: EIVML refits; foh_eivb: foh_eiv + calibrated_reduce of the report
+HOLDS = ("band", "foh", "band_red", "foh_eiv", "foh_ml", "foh_eivb", "foh_eivc")
+# foh_eiv: EIV-whitened refits (eiv_weights); foh_ml: EIVML refits; foh_eivb: foh_eiv + calibrated_reduce of the report;
+# foh_eivc: foh_eivb + calibrated_reduce of every run before the certificate (calibrated certificate)
 N_CAL = 16                                          # bootstrap draws per calibrated elimination step
 STAGE, VARIANT = "rescue_na", "damp8_ms"
 CLEAN_STAGE = "rescue"                              # noise-free data: ratio-rule restarts
@@ -580,7 +581,7 @@ def out_dir(hold):
     return OUT if hold == "band" else OUT.with_name(f"{OUT.name}_{hold}")
 
 
-def run(cond, g0, device, hold="band"):
+def run(cond, g0, device, hold="band", reuse=None):
     out = out_dir(hold)
     if (out / f"{cond}_g{g0}.json").exists():
         return
@@ -595,7 +596,7 @@ def run(cond, g0, device, hold="band"):
     p = n_eff(list(mask == 0))                               # effective free parameters of the 8-slot layer
     vp = VarPro(data, t, device, hold)
     sig2_y = sig2
-    if hold in ("foh_eiv", "foh_eivb"):
+    if hold in ("foh_eiv", "foh_eivb", "foh_eivc"):
         # weights from the best run's refit (unweighted FOH); then every S is in noise units, sigma^2 = 1
         best0 = min(runs, key=lambda r: r["S"])
         th0, re0 = pack(list(best0["eff"]))
@@ -617,8 +618,42 @@ def run(cond, g0, device, hold="band"):
             r["eff"], r["S"], r["S_full"], r["p_full"] = reduce(vp, r["eff"], sig2)
         p = max(r["p_full"] for r in runs)
         ref = min(runs, key=lambda r: r["S_full"])
+    if hold == "foh_eivc":
+        # calibrated certificate: every run is reduced with bootstrap-calibrated thresholds first, so runs that
+        # differ only by spurious poles (whose S drop is far above chi2 sigma^2 under input noise) agree in
+        # their poles and S; identical reduced runs (within MERGE) share one calibration
+        same = lambda a, b: len(a) == len(b) and all(np.min(np.abs(np.asarray(a) - z)) < F.MERGE * abs(z) for z in b)
+        old = {}
+        if reuse is not None and (reuse / f"{cond}_g{g0}.json").exists():   # per-run calibrations of an earlier output
+            old = {x["seed"]: x for x in json.loads((reuse / f"{cond}_g{g0}.json").read_text())["runs"]}
+        done = []
+        for i, r in enumerate(runs):
+            prev = next((d for d in done if same(d[0], r["eff"])), None)
+            o = old.get(r["seed"])
+            if prev is None and o is not None and same([complex(*z) for z in o["poles_before"]], r["eff"]):
+                th, re_ = pack([complex(*z) for z in o["poles"]])
+                steps = o.get("steps") or [dict(kappa=k, removed=j < len(o["kappa"]) - 1 or len(o["poles"]) == 1)
+                                           for j, k in enumerate(o["kappa"])]
+                th, S = vp.fit(th, re_)
+                prev = (np.array(r["eff"]), np.array(unpack_theta(th, re_)), S, steps)
+                done.append(prev)
+            if prev is None:
+                th, re_ = pack(list(r["eff"]))
+                th, re_, steps = calibrated_reduce(vp, th, re_, data, sig2_y, sig2_u, device, seed=100 + i)
+                th, S = vp.fit(th, re_)
+                prev = (np.array(r["eff"]), np.array(unpack_theta(th, re_)), S, steps)
+                done.append(prev)
+            r["eff_before"], r["eff"], r["S"], r["steps"] = r["eff"], prev[1], prev[2], prev[3]
+        # pooled calibration of the certificate and the order test: what a spurious pole buys on these data,
+        # the median kappa of the elimination steps that were taken in the group's runs (1 if none). A run
+        # whose own bootstrap does not reproduce its extra poles (kappa ~ 1 at its first step) keeps them and
+        # the lowest S; with chi2 sigma^2 alone it alone is certified and the order test fails for every report.
+        acc = [st["kappa"] for r in runs for st in r["steps"] if st["removed"]]
+        kappa_g = max(1.0, float(np.median(acc))) if acc else 1.0
+    if hold != "foh_eivc":
+        kappa_g = 1.0
     s_min = min(r["S"] for r in runs)
-    cert = [r for r in runs if r["S"] - s_min <= chi2.ppf(0.99, p) * sig2]
+    cert = [r for r in runs if r["S"] - s_min <= kappa_g * chi2.ppf(0.99, p) * sig2]
     best = min(runs, key=lambda r: r["S"])
     S_ref, p_ref = (best["S"], p) if ref is None else (ref["S_full"], ref["p_full"])   # order-test reference
     # candidate reports: the consensus (>= 2 certified runs), then the best run's effective poles
@@ -631,13 +666,13 @@ def run(cond, g0, device, hold="band"):
         theta, S_fit = vp.fit(theta, real)
         dS, dp = S_fit - S_ref, max(p_ref - n_eff(real), 1)
         tried.append(dict(source=src, theta=theta, real=real, S=S_fit, dS=dS / sig2, dp=dp,
-                          order_ok=bool(dS <= chi2.ppf(0.99, dp) * sig2)))
+                          order_ok=bool(dS <= kappa_g * chi2.ppf(0.99, dp) * sig2)))
         if tried[-1]["order_ok"]:
             break
     chosen = next((x for x in tried if x["order_ok"]), tried[-1])
     theta, real = chosen["theta"], chosen["real"]
     calib = {}
-    if hold == "foh_eivb":
+    if hold in ("foh_eivb", "foh_eivc"):
         theta, real, steps = calibrated_reduce(vp, theta, real, data, sig2_y, sig2_u, device)
         calib = dict(calibrated_steps=steps, report_before=[[float(z.real), float(z.imag)]
                                                             for z in unpack_theta(chosen["theta"], chosen["real"])])
@@ -655,13 +690,16 @@ def run(cond, g0, device, hold="band"):
             pr["boot_std"] = float(sk)
             pr["interval_boot"] = [pr["mu"][0] - 1.96 * float(sk), pr["mu"][0] + 1.96 * float(sk)]
     eiv = {}
-    if F.NOISY(cond) and hold in ("foh", "foh_eiv", "foh_ml", "foh_eivb") and cond in EIV_CONDS:
+    if F.NOISY(cond) and hold in ("foh", "foh_eiv", "foh_ml", "foh_eivb", "foh_eivc") and cond in EIV_CONDS:
         add_eiv(eiv, profs, vp, data, t, theta, real, sig2_y, device)
     true = E.true_folded(mu_true, beta_true)[0]
     res = dict(cond=cond, group=g0, system=system, eta_hat=float(np.sqrt(data["train"][1].shape[1] * sig2_y)),
                sigma2=sig2, p=p, n_cert=len(cert), best_seed=best["seed"], best_S=best["S"], S_ref=S_ref, p_ref=p_ref,
                runs=[dict(seed=r["seed"], S=r["S"], S_full=r.get("S_full"), certified=any(r is c for c in cert),
-                          poles=[[float(z.real), float(z.imag)] for z in r["eff"]]) for r in runs],
+                          poles=[[float(z.real), float(z.imag)] for z in r["eff"]],
+                          **({"poles_before": [[float(z.real), float(z.imag)] for z in r["eff_before"]],
+                              "kappa": [s["kappa"] for s in r["steps"]], "steps": r["steps"]} if "steps" in r else {}))
+                     for r in runs], kappa_group=kappa_g,
                tried=[dict(source=x["source"], S=x["S"], dS=x["dS"], dp=x["dp"], order_ok=x["order_ok"],
                            poles=[[float(z.real), float(z.imag)] for z in unpack_theta(x["theta"], x["real"])])
                       for x in tried],
@@ -735,7 +773,8 @@ def summarize_hold(hold):
              + {"band": "", "foh": ", first-order-hold refits", "band_red": ", band-limited refits with reduction",
                  "foh_eiv": ", first-order-hold refits, errors-in-variables weighting",
                  "foh_ml": ", first-order-hold refits, errors-in-variables ML",
-                 "foh_eivb": ", first-order-hold refits, EIV weighting and bootstrap-calibrated reduction"}[hold], "",
+                 "foh_eivb": ", first-order-hold refits, EIV weighting and bootstrap-calibrated reduction",
+                 "foh_eivc": ", first-order-hold refits, EIV weighting and a bootstrap-calibrated certificate"}[hold], "",
              *(["Refits, certificate and order-test reference use the exact first-order-hold response "
                 "(the data generator's input model) instead of the layer's band-limited one. Each run is refitted "
                 "and reduced (backward elimination) before the certificate.", ""]
@@ -754,6 +793,12 @@ def summarize_hold(hold):
                 "fit with a denoised input): drop the cheapest pole / make it real while ΔS ≤ κ χ²_Δp(0.99), "
                 "κ = max(1, mean ΔS* / Δp).", ""]
                if hold == "foh_eivb" else []),
+             *(["As `--hold foh_eivb`, but every run is reduced by `calibrated_reduce` too (after its FOH reduction, "
+                "before the certificate; runs with the same poles share one calibration). The certificate and the "
+                "order test use κ_g χ²_p(0.99), κ_g = max(1, median κ of the elimination steps taken in the group's "
+                "runs), the pooled bootstrap estimate of what a spurious pole buys on these data; the report is "
+                "reduced once more as with `foh_eivb`.", ""]
+               if hold == "foh_eivc" else []),
              *(["Control: refits with the band-limited (layer) model, each run refitted and reduced (backward "
                 "elimination) before the certificate, as with `--hold foh`.", ""]
                if hold == "band_red" else []),
@@ -797,7 +842,7 @@ def summarize_hold(hold):
                          f"{sum(r['source'] == 'consensus' for r in gr)}/{len(gr)} | {sum(r['order_ok'] for r in gr)}/{len(gr)} | "
                          + " | ".join(cells) + f" | {sum(s[1] for s in sc)} |")
         lines.append("")
-    for system, conds in (EIV.items() if hold in ("foh", "foh_eiv", "foh_ml", "foh_eivb") else ()):
+    for system, conds in (EIV.items() if hold in ("foh", "foh_eiv", "foh_ml", "foh_eivb", "foh_eivc") else ()):
         g = [r for r in rs if r["cond"] in conds.values()]
         if not g:
             continue
@@ -876,6 +921,7 @@ def main():
     ap.add_argument("--group", nargs="+", type=int, default=[10, 15, 20, 25])
     ap.add_argument("--hold", choices=HOLDS, default="band")
     ap.add_argument("--summarize", action="store_true")
+    ap.add_argument("--reuse", type=Path, help="foh_eivc: reuse the per-run calibrations of an earlier output dir")
     ap.add_argument("--add-boot", action="store_true", help="EIV bootstrap for existing FOH groups")
     a = ap.parse_args()
     if a.summarize:
@@ -888,7 +934,7 @@ def main():
         return
     for c in a.cond:
         for g in a.group:
-            run(c, g, device, a.hold)
+            run(c, g, device, a.hold, a.reuse)
 
 
 if __name__ == "__main__":

@@ -16,7 +16,7 @@ families) make the poles practically identifiable, and does training then recove
 | `e2_rescue.py` | truth-free single-slot restarts of polished runs; `--rule noise`: noise-aware acceptance (E4); `--start reset/release`: partial tie with R_res reset / released from the tied run (E3), also under noise with `--rule noise` | `results/e2_rescue{,_na,_rr,_rel,_na_rel}/*.json`, `results/e2_rescue{,_na,_rr,_rel,_na_rel}.md` |
 | `e2_floor.py` | floor certificate without the truth: estimated floor + consensus poles; ratio and χ² (noise) rules | `results/e2_floor.md` / `.json` |
 | `e2_polish.py` | L-BFGS-B polish of saved Adam checkpoints (paired before/after), floor-certificate table | `results/e2_polish/*.json`, `results/e2_polish.md` |
-| `e4_profile.py` | E4: minimal-form refit of the certified report, order test, per-pole profile intervals (VarPro); `--hold foh`: refits with the data generator's first-order-hold input, with backward order reduction per run; `--hold band_red`: band-limited refits with the same reduction (control); noise-free conditions use σ² = float32 rounding of the outputs, Newton-finished fits and bootstrap intervals; E1 data under output noise (eighth pass); EIV bootstrap per group and `--hold foh_eiv` (EIV-weighted refits) for input noise (tenth pass); `--hold foh_eivb` (bootstrap-calibrated reduction) and `EIVML` (eleventh pass) | `results/e4_profile{,_foh,_band_red}/*.json`, `results/e4_profile{,_foh,_band_red}.md` |
+| `e4_profile.py` | E4: minimal-form refit of the certified report, order test, per-pole profile intervals (VarPro); `--hold foh`: refits with the data generator's first-order-hold input, with backward order reduction per run; `--hold band_red`: band-limited refits with the same reduction (control); noise-free conditions use σ² = float32 rounding of the outputs, Newton-finished fits and bootstrap intervals; E1 data under output noise (eighth pass); EIV bootstrap per group and `--hold foh_eiv` (EIV-weighted refits) for input noise (tenth pass); `--hold foh_eivb` (bootstrap-calibrated reduction) and `EIVML` (eleventh pass); `--hold foh_eivc` (calibrated certificate between runs, twelfth pass) | `results/e4_profile{,_foh,_band_red}/*.json`, `results/e4_profile{,_foh,_band_red}.md` |
 | `e4_bias.py` | E4: the noise-free pole bias, float32 rounding of inputs vs outputs (exact vs stored data, Monte Carlo, truth-free bootstrap) | `results/e4_bias.md` / `.json` |
 | `e4_eiv.py` | E4: input noise (errors-in-variables) under output noise: Monte-Carlo coverage of the E4, residual-σ² and truth-free EIV-bootstrap intervals (minimal FOH refit) | `results/e4_eiv/*.json`, `results/e4_eiv.md` |
 | `e2_noise.py` | E4: pole error under output noise vs the Cramér–Rao bound of the minimal-form layer, both restart rules | `results/e2_noise.md` / `.json` |
@@ -1337,6 +1337,62 @@ per step.)
   not calibrated. Only one input-noise level was tested on the multisine, and white input
   noise only.
 
+## E4, twelfth pass: a calibrated certificate between runs under strong input noise
+
+After the eleventh pass the report at η_u = 10 η_y had the right order, but runs still did not
+agree: 1.8 certified runs per group, consensus 1/4. The cause is in the runs. Each run carries
+0–4 spurious fast poles of its own. Under input noise each one lowers S by 10²–10³ (in noise
+units), so the runs' S differ by hundreds to thousands, against χ²_p(0.99) ≈ 40 for the
+certificate.
+
+**`--hold foh_eivc`.** As `foh_eivb`, with two changes:
+
+- **Per-run calibration.** Every run goes through `calibrated_reduce` after its FOH reduction
+  and before the certificate. Runs with the same poles (within 10 %) share one calibration.
+- **Pooled κ.** The certificate and the order test use κ_g χ²(0.99). Here κ_g = max(1, median
+  κ of the elimination steps taken in the group's runs), the bootstrap estimate of what one
+  spurious pole buys on these data.
+
+A first version had the per-run calibration only (results in
+`runs/archive/e4_profile_foh_eivc_v1`).
+
+- 18 of the 20 runs at η_u = 0.1 ended at the three true poles.
+- In g20 and g25 one run each kept its spurious poles: at its first step the bootstrap did not
+  reproduce them (κ = 1.4 and 1.0).
+- That run had the lowest S, so it alone was certified and became the report. In g20 the
+  report included an unstable pole (+0.19 + 0.81i), which is worse than `foh_eivb`.
+- In g10 / g15 all runs were certified, but the uncalibrated order test failed (ΔS 666 /
+  1558).
+
+The pooled κ was added for this; the per-run calibrations were reused (`--reuse`).
+
+| data | η_u | κ_g | certified runs (mean) | report from consensus | order test passed | all true poles | false poles | covered: profile / bootstrap |
+|---|---|---|---|---|---|---|---|---|
+| p4 multisine | 0, 0.01 | 1 | 5.0 | 4/4 | 4/4 | 4/4 | 0 | 11 / 11 and 12 / 11 of 12 |
+| p4 multisine | 0.1 | 54–81 | **5.0** (`foh_eivb`: 1.8) | **3/4** (1/4) | 3/4 (4/4) | 4/4 | 3, one flagged group (0) | 5 / 11 of 12 |
+| p6 E1 | 0, 0.01, 0.03 | 1 | 5.0 | 4/4 | 4/4 | 4/4 | 0 | 16 / 16, 16 / 16, 16 / 15 |
+
+(`results/e4_profile_foh_eivc.md`. At small input noise no elimination step is taken, so κ_g =
+1 and the results equal `foh_eivb`. At η_u = 0.1 the spurious steps had κ = 5–650.)
+
+- **The runs agree once each one is reduced at its calibrated order.** At η_u = 0.1 every run
+  is certified in every group (from 1.8 per group). In three groups the consensus is exactly
+  the three true poles and passes the calibrated order test.
+- **The remaining group fails visibly.** In g20 the consensus misses the calibrated order
+  test by 14 % (ΔS 1618 against κ_g χ²₁₂(0.99) = 1416). The fallback is the best run, the one
+  whose own bootstrap did not reproduce its spurious poles: three false poles, one of them
+  unstable. The report is flagged (order test failed). `foh_eivb` had reduced that group to
+  the true order because its report came from a different run.
+- **Reading.** A bootstrap calibration from a fit cannot calibrate poles the bootstrap world
+  does not produce. Pooling over the runs of the data set covers this in three of four groups.
+  It does not fix the fallback rule ("best run" when every candidate fails).
+- **Intervals unchanged.** At η_u = 0.1 the profile intervals cover 5 of 12 true poles and the
+  bootstrap 11 of 12, as in `foh_eivb`.
+- **Cost.** Per-run calibration took 35–40 min per group at η_u = 0.1, against 2–23 min for
+  `foh_eivb`.
+- **Limits.** κ_g is a pooled median; how sensitive the result is to that choice (e.g. min /
+  mean of the accepted κ) was not tested. Only four groups at one input-noise level.
+
 ## E3, deep setting: first pass
 
 `e3_deep.py`. The E1 deep models (ALNO / LFNO, 5,977 parameters, four layers) are trained
@@ -1380,8 +1436,8 @@ dead; NaN and dead runs count as not recovered.)
 - E3 layer: a noise-dependent release (δ chosen by the χ² order test, or released only
   when the tied fit fails the certificate); the steady branch untied above the residual
   band; whether the release needs the restarts.
-- E4: a calibrated certificate between runs under input noise (consensus at η_u ≫ η_y);
-  calibrated profile intervals (or the bootstrap as the reported interval); the exact
+- E4: the fallback when every report fails the calibrated order test (g20 at η_u = 0.1);
+  more groups and input-noise levels for the calibrated certificate; calibrated profile intervals (or the bootstrap as the reported interval); the exact
   time-domain EIV ML; coloured input noise; resolving close real pairs at the CRB limit
   (p6 −1 / −2 at η = 0.1);
   a zero-order-hold variant; simultaneous (joint) intervals; more groups for the

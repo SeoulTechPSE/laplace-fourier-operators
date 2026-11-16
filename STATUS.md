@@ -11,7 +11,7 @@ Each session appends one entry using the template at the bottom.
 | (C) Pole audit of existing models | 3–5 | **in progress**: E1 done, draft report (`E1_report.md`, updated with E2); paper decisions open | — |
 | (D) Non-periodic input representation | 4–8 | not started | differs from padded FNO? (month 8) |
 | (A) Pole layer and linear validation | 5–10 | not started | dispersion relations recovered (month 10) |
-| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits and a bootstrap-calibrated order), E3 deep first pass done (`experiments/C/theory/`) | — |
+| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits, a bootstrap-calibrated order and certificate), E3 deep first pass done (`experiments/C/theory/`) | — |
 | (A) Application 1: process dynamics | 11–16 | not started | — |
 | (D) Initial conditions and rollout | 13–19 | not started | — |
 | (A) Application 2: Cahn–Hilliard | 17–22 | not started | recover k_c, k_max (month 20) |
@@ -73,8 +73,10 @@ Suggested next steps (in order):
    pipeline the certificate breaks for η_u > η_y; EIV-weighted refits (`--hold foh_eiv`)
    repair it up to η_u = 3 η_y; at 10 × a bootstrap-calibrated reduction (`--hold foh_eivb`)
    removes every false pole (4/4 groups end at the true order); report bootstrap intervals
-   there (profile 5/12, bootstrap 11/12). Next: calibrated certificate between runs;
-   noise-dependent release; linear probe (RQ4).
+   there (profile 5/12, bootstrap 11/12). Calibrating every run before the certificate with
+   a pooled κ (`--hold foh_eivc`) certifies 5/5 runs and gives consensus in 3/4 groups; the
+   fourth fails the calibrated order test (flagged) and keeps 3 false poles. Next: the
+   fallback rule; noise-dependent release; linear probe (RQ4).
 4. Optional E1 extras: log-parameterised decay rate; untied models with 64 steady modes
    (H1); weight decay excluded from poles; deep LNO v1 at its published size.
 
@@ -87,6 +89,31 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-16 — (C) E4: a calibrated certificate between runs under strong input noise
+
+- Done: `e4_profile.py --hold foh_eivc`: `calibrated_reduce` on every run before the
+  certificate (runs with the same poles share one calibration); certificate and order test
+  with κ_g χ²(0.99), κ_g = max(1, median κ of the elimination steps taken in the group's
+  runs); `--reuse` for earlier per-run calibrations. 24 groups (first version without κ_g
+  archived in `runs/archive/e4_profile_foh_eivc_v1`). README section "E4, twelfth pass".
+  `src/lfo/` unchanged.
+- Results:
+  - Small input noise (20 groups): κ_g = 1, identical to `foh_eivb` (5/5 certified,
+    consensus 4/4, 0 false).
+  - p4 multisine, η_u = 0.1: 18/20 runs end at the three true poles. Certified runs 5.0 per
+    group (`foh_eivb` 1.8), consensus 3/4 (1/4), κ_g = 54–81.
+  - g20 fails: one run's own bootstrap did not reproduce its spurious poles (κ = 1.4). The
+    consensus misses the calibrated order test by 14 % (1618 vs 1416), and the fallback (best
+    run) reports 3 false poles, one unstable. The group is flagged (order test failed);
+    `foh_eivb` had it right. Total false poles 3 (`foh_eivb` 0).
+  - Without κ_g (first version) two groups had a single certified run with spurious poles.
+  - Coverage unchanged: profile 5/12, bootstrap 11/12.
+- Decisions: none.
+- Next: the fallback when every candidate fails the calibrated order test; more groups and
+  input-noise levels; sensitivity to the κ_g summary (median / min / mean); calibrated
+  profile intervals; exact time-domain EIV ML; coloured input noise; close real pairs at the
+  limit; noise-dependent release; zero-order hold; joint intervals; RQ4 linear probe.
 
 ### 2026-11-16 — (C) E4: bootstrap-calibrated order under strong input noise
 
