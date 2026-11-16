@@ -1502,6 +1502,58 @@ rule) with κ = 1, the pooled κ_g, and κ_o calibrated from the dropped-pole ca
 - **Limits.** One pole dropped at a time, with the other poles at the truth. It was not tested
   near the CRB limit (p6 at η = 0.1, where −2 is lost) or at stronger input noise.
 
+## E4, fifteenth pass: stronger input noise, and where the calibrated pipeline breaks
+
+Two new conditions, 4 groups each, 40 runs with the full recipe:
+
+- p4 multisine at η_u = 0.3, i.e. 30 η_y.
+- p6 E1 at η_u = 0.1, i.e. 10 η_y. On E1 data the earlier passes went only up to 3 η_y.
+
+Both went through `--hold foh_eivo`, and p4 also through `e4_power.py`.
+
+| data | η_u | certified (mean) | report from consensus | order test (ratio) | report | missing-pole ratio (min) | covered: profile / bootstrap |
+|---|---|---|---|---|---|---|---|
+| p4 multisine | 0.3 | 5.0 | 4/4 | 4/4 (0.47–0.63) | the 3 true poles; −1 at −0.89 … −0.92 | 5.6 (12/12 rejected) | 0 / 10 of 12 |
+| p6 E1 | 0.1 | 3.5 | 2/4 | 4/4 | wrong in 4/4 groups | – | 8 / 9 of 16 |
+
+(`results/e4_profile_foh_eivo.md`, `results/e4_power.md`. Run-level training loss / oracle:
+about 103 for p4 at 0.3 (38 at 0.1) and 30 for p6 at 0.1.)
+
+**p4 at 30 × η_y: right order, biased real pole.**
+
+- **Order.** Every run reduces to three poles. κ_g is 930–2760 and κ_o is 930–1330. The report
+  passes, and every missing-pole model is rejected, but the margin has shrunk from > 100 × to
+  about 9 × (5.6 against 0.63).
+- **Bias.** −1 is biased by 8–11 %: −0.89 … −0.92, against a spread of about 1 %. This is the
+  errors-in-variables bias of the fit, so one group counts as "not identified, one false pole"
+  under the 10 % rule.
+- **Intervals.** The profile intervals cover 0 of 12. The bias-corrected bootstrap covers 10 of
+  12, and −1 in 4 of 4.
+
+**p6 E1 at 10 × η_y: the pipeline breaks, with two failure modes.**
+
+- **A true pole is removed.** In 9 of 20 runs `calibrated_reduce` merges −1 / −2 into one real
+  pole at −0.69. With κ ≈ 230 at that step, the pair's evidence falls below the threshold.
+  This is the first time the calibrated reduction removes a true pole.
+- **Spurious poles stay.** In the other runs the bootstrap gives κ ≈ 1–10 and they keep extra
+  poles. These include a complex pole at −50 ± 325i, near twice the Nyquist frequency (2π / dt
+  = 322 rad/s), i.e. an aliased fast real decay of the sampled model.
+- **The groups mix both.** Two groups report the 4 true poles plus that aliased pole (the
+  consensus of merged runs fails the calibrated order test at ratio 31–34). Two report a merged
+  or duplicated real pair from only 2 certified runs.
+- **Reading.** At this noise level −2 is already beyond what the data identify: in the local
+  diagnosis (`e4_eiv.py`, η_u = 0.1) its spread is 16 %, so a 95 % half-width of about 31 %.
+  Not resolving −1 / −2 is therefore correct. The failure is that the pipeline reports a wrong
+  value or a spurious pole instead of "unresolved". The noise-only pipeline handled the same
+  limit (E4 third pass, output noise 0.1) with open intervals.
+
+- **Limits of the calibrated pipeline.**
+  - It holds where the true poles are well identified: p4 up to 30 × η_y, p6 E1 up to 3 × η_y.
+  - Beyond that it needs a rule that reports a close pair as unresolved, not merged. One
+    option is to stop the calibrated reduction when a merge raises S by more than the pair's
+    own bootstrap spread.
+  - It also needs a check against poles above the Nyquist frequency.
+
 ## E3, deep setting: first pass
 
 `e3_deep.py`. The E1 deep models (ALNO / LFNO, 5,977 parameters, four layers) are trained
@@ -1545,7 +1597,9 @@ dead; NaN and dead runs count as not recovered.)
 - E3 layer: a noise-dependent release (δ chosen by the χ² order test, or released only
   when the tied fit fails the certificate); the steady branch untied above the residual
   band; whether the release needs the restarts.
-- E4: stronger input noise and E1 inputs at η_u ≥ 10 η_y; the order test near the CRB limit; calibrated profile intervals (or the bootstrap as the reported interval); the exact
+- E4: close real pairs beyond the limit under input noise (report unresolved, not merged:
+  p6 E1 at η_u = 10 η_y); an aliasing check (|Im μ| near 2π/dt); the EIV bias of −1 at
+  η_u = 30 η_y; the order test near the CRB limit; calibrated profile intervals (or the bootstrap as the reported interval); the exact
   time-domain EIV ML; coloured input noise; resolving close real pairs at the CRB limit
   (p6 −1 / −2 at η = 0.1);
   a zero-order-hold variant; simultaneous (joint) intervals; more groups for the

@@ -77,8 +77,9 @@ Suggested next steps (in order):
    a pooled κ (`--hold foh_eivc`) certifies 5/5 runs in 8/8 groups at η_u = 0.1; with a
    bootstrap-calibrated order test (`--hold foh_eivo`) all 32 input-noise groups report the
    consensus, pass the order test and contain exactly the true poles; the test rejects all 108
-   missing-pole models (ratio ≥ 112 vs ≤ 0.91). Next: stronger input noise; noise-dependent
-   release; linear probe (RQ4).
+   missing-pole models (ratio ≥ 112 vs ≤ 0.91). It holds on p4 up to η_u = 30 η_y (−1 biased
+   8–11 %) but breaks on p6 E1 at 10 η_y (−1 / −2 merged or spurious, aliased poles). Next:
+   report close pairs as unresolved; noise-dependent release; linear probe (RQ4).
 4. Optional E1 extras: log-parameterised decay rate; untied models with 64 steady modes
    (H1); weight decay excluded from poles; deep LNO v1 at its published size.
 
@@ -91,6 +92,24 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-16 — (C) E4: stronger input noise; where the calibrated pipeline breaks
+
+- Done: conditions `p4_ms16_T20_n1e-2_u3e-1` and `p6_e1_T20_n1e-2_u1e-1` (4 groups each, 40
+  runs, full recipe), `foh_eivo` on both, `e4_power.py` on p4. README section "E4, fifteenth
+  pass". `src/lfo/` unchanged.
+- Results:
+  - p4 multisine, η_u = 30 η_y: 5/5 certified, consensus 4/4, order test 4/4, exactly 3
+    poles. −1 biased to −0.89 … −0.92 (EIV bias). Missing-pole models all rejected, margin
+    about 9 × (ratio ≥ 5.6 vs ≤ 0.63). Profile intervals cover 0/12, bootstrap 10/12.
+  - p6 E1, η_u = 10 η_y: wrong in 4/4 groups. `calibrated_reduce` merges −1 / −2 into −0.69
+    in 9/20 runs (the first true pole removed). Other runs keep spurious poles, including an
+    aliased pair at −50 ± 325i (2π/dt = 322). −2 is beyond the information limit there (local
+    spread 16 %), but the pipeline reports wrong values instead of "unresolved".
+- Decisions: none.
+- Next: report close pairs as unresolved under input noise (a merge stop rule); an aliasing
+  check; the EIV bias at 30 η_y; calibrated profile intervals; exact time-domain EIV ML;
+  coloured input noise; noise-dependent release; zero-order hold; joint intervals; RQ4.
 
 ### 2026-11-16 — (C) E4: power of the calibrated order test
 
