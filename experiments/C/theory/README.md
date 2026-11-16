@@ -1447,7 +1447,7 @@ conditions and the new ones of the twelfth pass.
 
 | data | η_u | groups | κ_o | ΔS / threshold | certified (mean) | report from consensus | order test passed | false poles | covered: profile / bootstrap |
 |---|---|---|---|---|---|---|---|---|---|
-| p4 multisine | 0, 0.01, 0.03 | 12 | 1.0–2.3 | 0.04–0.51 | 5.0 | 12/12 | 12/12 | 0 | 35 / 32 of 36 |
+| p4 multisine | 0, 0.01, 0.03 | 12 | 1.0–2.3 | 0.04–0.51 | 5.0 | 12/12 | 12/12 | 0 | 35 / 33 of 36 |
 | p4 multisine | 0.1 | 8 | 60–142 | 0.20–0.91 | 5.0 | **8/8** | **8/8** (`foh_eivc`: 5/8) | 0 | 8 / 21 of 24 |
 | p6 E1 | 0, 0.01, 0.03 | 12 | 1.0–3.7 | 0.00–0.44 | 5.0 | 12/12 | 12/12 | 0 | 48 / 47 of 48 |
 
