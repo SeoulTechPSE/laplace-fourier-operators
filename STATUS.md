@@ -11,7 +11,7 @@ Each session appends one entry using the template at the bottom.
 | (C) Pole audit of existing models | 3–5 | **in progress**: E1 done, draft report (`E1_report.md`, updated with E2); paper decisions open | — |
 | (D) Non-periodic input representation | 4–8 | not started | differs from padded FNO? (month 8) |
 | (A) Pole layer and linear validation | 5–10 | not started | dispersion relations recovered (month 10) |
-| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits, a bootstrap-calibrated order, certificate and order test; reduction-path unresolved rules fail, a location-calibrated split test flags the merge, a combined post-report rule leaves 1 false pole in 40 groups but does not carry over to new p6 E1 groups; an EIVML refit of the reports removes the EIV bias; EIVML through the whole pipeline helps only up to η_u = 0.05; an EIVML elimination of the calibrated report leaves 0 false poles up to p4 30 η_y and p6 E1 0.05, with EIV-bootstrap intervals covering 33/36 at p4 30 η_y), E3 deep first pass done; H1–H3 theory draft (`experiments/C/theory/H1_H2.md`) | — |
+| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits, a bootstrap-calibrated order, certificate and order test; reduction-path unresolved rules fail, a location-calibrated split test flags the merge, a combined post-report rule leaves 1 false pole in 40 groups but does not carry over to new p6 E1 groups; an EIVML refit of the reports removes the EIV bias; EIVML through the whole pipeline helps only up to η_u = 0.05; an EIVML elimination of the calibrated report leaves 0 false poles up to p4 30 η_y and p6 E1 0.05, with EIV-bootstrap intervals covering 33/36 at p4 30 η_y), E3 deep first pass done; H1–H3 theory draft (`experiments/C/theory/H1_H2.md`), E5 first pass (`experiments/C/e5_probe/`) | — |
 | (A) Application 1: process dynamics | 11–16 | not started | — |
 | (D) Initial conditions and rollout | 13–19 | not started | — |
 | (A) Application 2: Cahn–Hilliard | 17–22 | not started | recover k_c, k_max (month 20) |
@@ -112,8 +112,13 @@ Suggested next steps (in order):
    in the plan's "any ε" form for ≥ 2 inputs, with the profiled information formula (E1 set:
    23–72 % of the tied layer's). H3 (Theorem 6): the partial tie moves the poles from the
    tied estimate by −H⁻¹G R̂_δ ≤ C δ (checked to two digits; saturates at δ_sat ≈ 2–4e-3; with
-   exact data no movement); C is truth-free (p6 −2: 711). Next: E5 / RQ4 (Duffing
-   linear-probe poles); E1 paper decisions.
+   exact data no movement); C is truth-free (p6 −2: 711).
+6. E5 / RQ4 first pass (`experiments/C/e5_probe/`): on damped Duffing the original LNO's 256
+   layer poles stay at their initialisation (0/256 within 10 % of the linearised pole), while
+   the average impulse response of its small-signal Jacobian gives the pole within 10 % in 3/5
+   seeds; the operator is far from causal LTI (76–90 % non-causal Jacobian), so a causal LTI
+   probe fails. Next: probes on models whose poles move (lr × 10, damp8, tied layer);
+   operating-point probes; E1 paper decisions.
 
 Things to know:
 
@@ -124,6 +129,26 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-17 — (C) E5 / RQ4: linear-probe poles of the Duffing LNO (first pass)
+
+- Done: `experiments/C/e5_probe/` (`e5_probe.py`, README). `reproduce_lno.py` gained the case
+  `duffing_c05` (same configuration as c0); 5 LNO seeds trained (tag `e5`, test 0.13–0.37).
+  Linearised pole from the 4 smallest-amplitude training samples: −0.2500 ± 0.9684i (theory
+  −0.25 ± 0.9682i). Probes: stored layer poles; causal LTI fit of the odd small-signal response
+  (ε = 0.01 … 3); Jacobian at x = 0 (non-causal share, Toeplitz residual, impulse-response
+  pencil). `src/lfo/` unchanged.
+- Results:
+  - Layer poles stay at the initialisation (|μ| ≈ 0.1, 200–237 of 256 unstable); 0/256
+    within 10 % of the linearised pole in every seed (E1 finding 1 in a nonlinear model).
+  - The trained operator is not causal LTI: 76–90 % of ‖J‖ above the diagonal, Toeplitz
+    residual 0.58–0.97; a causal LTI probe leaves 80–98 % unexplained at every scale.
+  - The average impulse response of J gives −0.15 … −0.25 ± 0.76 … 1.07i: within 10 % in 3/5
+    seeds.
+- Decisions: the probe–layer disagreement is the RQ4 indicator; causality and shift invariance
+  of J are checked before a probe is trusted.
+- Next: probes on models whose poles move (pole lr × 10, damp8 recipe, tied single layer);
+  operating-point probes; Duffing c = 0.
 
 ### 2026-11-17 — (C) Theory: H3, the partial tie (draft)
 
