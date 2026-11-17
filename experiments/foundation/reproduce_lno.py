@@ -66,6 +66,11 @@ CASES = {
     "pendulum_c05": Case("1D_Pendulum_c05", dim=1, batch_size=40, epochs=1200,
                          lno_kwargs=dict(width=4, modes=8, use_grid=True, activation="sin", transient_sign=-1.0),
                          fno_modes=(4, 6, 8, 12, 16)),
+    # forced Lorenz, rho = 5 (LNO paper Eq. 22: z' = xy - beta z - f, x(0) = 1, y(0) = z(0) = 0, output x), original
+    # 1D_Lorenz_rho5/main.py: grid input, tanh, 16 modes, lr 0.005; used by (C) E5 (ninth pass, experiments/C/e5_probe)
+    "lorenz_rho5": Case("1D_Lorenz_rho5", dim=1, batch_size=20, lr=0.005,
+                        lno_kwargs=dict(width=4, modes=16, use_grid=True, activation="tanh", transient_sign=-1.0),
+                        fno_modes=(8, 12, 16, 24, 32)),
     "diffusion": Case("2D_Diffusion", dim=2, batch_size=50,
                       lno_kwargs=dict(width=16, modes1=4, modes2=4, transient_sign=1.0),
                       fno_modes=(4, 6, 8, 12, 16)),

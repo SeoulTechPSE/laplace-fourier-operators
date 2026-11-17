@@ -31,13 +31,20 @@ import e5_train as TR  # noqa: E402
 EP = P.EP
 LOW_FRAC, LOW_RESID, SHIFT = 0.2, 0.1, 0.1     # SHIFT was 0.05 in the first run (see README, seventh pass)
 SETS = ("small", "mixed", "medium", "moderate", "pend_orig", "pend_medium", "pend_large", "wide", "pend_wide",
-        "c0_orig", "c0_small", "c0_medium")
+        "c0_orig", "c0_small", "c0_medium", "lz_orig", "lz_small", "lz_wide")
 
 
-def eq_pole(f, u, t, device):
+STARTS = ([complex(-0.3, 1.0)], [complex(-0.25, 0.97)], [complex(-0.5, 1.5)])
+STARTS_LZ = ([complex(-0.9, 4.0)], [complex(-0.5, 5.0)], [complex(-1.5, 3.0)])
+
+
+def eq_pole(f, u, t, device, center=False):
+    """center (Lorenz, ninth pass): fit u - mean(u) to f - mean(f), which removes the common zero-input response."""
+    if center:
+        f, u = f - f.mean(0), u - u.mean(0)
     vp = EP.VarPro({"train": (torch.tensor(f), torch.tensor(u))}, t, device, "foh")
     best = None
-    for z0 in ([complex(-0.3, 1.0)], [complex(-0.25, 0.97)], [complex(-0.5, 1.5)]):
+    for z0 in (STARTS_LZ if center else STARTS):
         th, re_ = EP.pack(z0)
         th, S = vp.fit(th, re_)
         if best is None or S < best[1]:
@@ -54,8 +61,9 @@ def gates(tag, device):
     t = np.asarray(grids["t"], float).ravel()
     amp = np.abs(f).max(1)
     low = np.argsort(amp)[: int(LOW_FRAC * len(amp))]
-    mu_all, r_all = eq_pole(f, u, t, device)
-    mu_low, r_low = eq_pole(f[low], u[low], t, device)
+    c = tag.startswith("lz_")
+    mu_all, r_all = eq_pole(f, u, t, device, c)
+    mu_low, r_low = eq_pole(f[low], u[low], t, device, c)
     shift = abs(mu_all - mu_low) / abs(mu_low)
     return dict(mu_all=[mu_all.real, mu_all.imag], r_all=r_all, mu_low=[mu_low.real, mu_low.imag], r_low=r_low,
                 low_amp=float(amp[low].max()), shift=shift, v2=r_all < P.GATE,
@@ -86,7 +94,7 @@ def summarize(res):
              f"v2 gate: all-sample linear residual < {P.GATE:g}. v3 gate: lowest {LOW_FRAC:.0%} of samples by peak |f| "
              f"linear (residual < {LOW_RESID:g}) and equivalent-pole shift all vs low < {SHIFT:g}. A trusted run is "
              "correct if its Jacobian pole is within 10 % of the small-signal pole: −0.25 ± 0.9682i (damped Duffing, "
-             "pendulum) or ± i (`c0_*`, undamped Duffing).", "",
+             "pendulum), ± i (`c0_*`, undamped Duffing) or −0.9287 ± 4.1476i (`lz_*`, Lorenz ρ = 5 at C+; centred data).", "",
              "| set | all: pole, resid | low band (peak |f| ≤): pole, resid | shift | v2 | v3 | v1 trusted: correct / all "
              "(errors) | v2 false / missed | v3 false / missed |", "|---|---|---|---|---|---|---|---|---|"]
     tot = dict(v1f=0, v2f=0, v2m=0, v3f=0, v3m=0)

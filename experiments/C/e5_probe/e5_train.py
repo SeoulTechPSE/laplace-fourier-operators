@@ -35,13 +35,14 @@ import e1_audit as E  # noqa: E402
 import reproduce_lno as RL  # noqa: E402
 
 CASE = "duffing_c05"
-ORIG = {"orig": "duffing_c05", "pend_orig": "pendulum_c05", "c0_orig": "duffing_c0"}     # data tags that are original LNO data
+ORIG = {"orig": "duffing_c05", "pend_orig": "pendulum_c05", "c0_orig": "duffing_c0", "lz_orig": "lorenz_rho5"}     # data tags that are original LNO data
 
 
 def case_of(data_tag):
     """LNO case for a data tag: pendulum sets use the pendulum LNO (grid input, 8 modes); c0_* the undamped Duffing
     case (same architecture as duffing_c05, its own data)."""
-    return "pendulum_c05" if data_tag.startswith("pend") else "duffing_c0" if data_tag.startswith("c0_") else CASE
+    return ("pendulum_c05" if data_tag.startswith("pend") else "duffing_c0" if data_tag.startswith("c0_")
+            else "lorenz_rho5" if data_tag.startswith("lz_") else CASE)
 VARIANTS = {"base": ("lno", "original", 1.0),
             "lno_plr10": ("lno", "original", 10.0),
             "lno_stable_plr10": ("lno", "stable", 10.0),
@@ -67,6 +68,20 @@ def tag(variant, data_tag):
     return variant if data_tag == "orig" else f"{data_tag}_{variant}"
 
 
+class Offset(torch.nn.Module):
+    """Tied layer + a learned output offset b(t) (ninth pass, Lorenz): the data are x(t) about a nonzero operating
+    point, which a linear layer cannot output. b does not depend on the input, so the probes (odd part, Jacobian at
+    f = 0) see only the layer."""
+
+    def __init__(self, layer, n):
+        super().__init__()
+        self.layer, self.pr = layer, layer.pr
+        self.offset = torch.nn.Parameter(torch.zeros(n))
+
+    def forward(self, x):
+        return self.layer(x) + self.offset[None, :, None]
+
+
 @torch.no_grad()
 def stable_init(mu_param, t, gen):
     """E1 "stable" init in place: Re mu = -exp(U[log 1/T, log 10/T]), Im mu ~ U[0, pi / (4 dt)]."""
@@ -87,6 +102,8 @@ def build(variant, grids, seed, data_tag="orig"):
             stable_init(model.conv0.weights_pole, t, gen)
     else:
         model = E.Layer1("tied", 4, t, "stable")
+        if data_tag.startswith("lz_"):
+            model = Offset(model, t.numel())
     return model
 
 
@@ -127,7 +144,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--variant", nargs="+", default=list(VARIANTS))
     ap.add_argument("--seeds", nargs="+", type=int, default=[0, 1, 2, 3, 4])
-    ap.add_argument("--data", default="orig", choices=["orig", "small", "mixed", "medium", "moderate", "pend_orig", "pend_medium", "pend_large", "wide", "pend_wide", "c0_orig", "c0_small", "c0_medium"])
+    ap.add_argument("--data", default="orig", choices=["orig", "small", "mixed", "medium", "moderate", "pend_orig", "pend_medium", "pend_large", "wide", "pend_wide", "c0_orig", "c0_small", "c0_medium", "lz_orig", "lz_small", "lz_wide"])
     a = ap.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     for v in a.variant:

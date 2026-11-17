@@ -45,6 +45,7 @@ SEEDS = (0, 1, 2, 3, 4)
 VARIANTS = ("base", "lno_plr10", "lno_stable_plr10", "tied4_stable_plr10")
 MU_TRUE = complex(-0.25, math.sqrt(1 - 0.0625))
 MU_TRUE_C0 = complex(0.0, 1.0)              # undamped Duffing (eighth pass): poles on the imaginary axis
+MU_TRUE_LZ = complex(-0.9287, 4.1476)       # forced Lorenz rho = 5 at C+ (ninth pass): dominant pair (+ -11.81)
 TRUST_D, TRUST_TEST = 0.1, 0.5         # RQ4 trust rule: valid probe, d(probe, layer) < TRUST_D, test < TRUST_TEST
 GATE = 0.1                             # rule v2 (fixed before the medium / moderate runs): the data's own best linear
                                        # pair must leave < GATE of the output, else no linear pole is read as physical
@@ -115,15 +116,19 @@ def jacobian_probe(model, n, dt, device):
                 h_poles=[[u.real, u.imag] for u in pencil_poles(h[1:800], dt)])
 
 
-def equivalent_linear(f, u, t, device):
-    """Best linear pair (first-order hold, per-sample relative weights) for the training data by amplitude band."""
+def equivalent_linear(f, u, t, device, center=False):
+    """Best linear pair (first-order hold, per-sample relative weights) for the training data by amplitude band.
+    center (Lorenz): fit u - mean(u) to f - mean(f) within each band, which removes the zero-input response."""
     amp = np.abs(f).max(1)
     out = {}
     for lab, sel in (("all", amp > 0), ("A <= 1", amp <= 1), ("1 < A <= 3", (amp > 1) & (amp <= 3)), ("A > 3", amp > 3)):
         if sel.sum() < 4 or (lab != "all" and sel.all()):
             continue
-        vp = EP.VarPro({"train": (torch.tensor(f[sel]), torch.tensor(u[sel]))}, t, device, "foh")
-        th, re_ = EP.pack([complex(-0.3, 1.0)])
+        fs, us = f[sel], u[sel]
+        if center:
+            fs, us = fs - fs.mean(0), us - us.mean(0)
+        vp = EP.VarPro({"train": (torch.tensor(fs), torch.tensor(us))}, t, device, "foh")
+        th, re_ = EP.pack([complex(-1.0, 4.0) if center else complex(-0.3, 1.0)])
         th, _ = vp.fit(th, re_)
         with torch.no_grad():
             pred = vp.pred(torch.tensor(th, device=device), re_)
@@ -156,7 +161,7 @@ def main(data_tag="orig"):
     t = np.asarray(grids["t"], float).ravel()
     mu_lin, amp_max = linearised(f, u, t, device)
     if data_tag != "orig":                                  # simulated sets: the exact small-signal pole
-        mu_lin = MU_TRUE_C0 if data_tag.startswith("c0_") else MU_TRUE
+        mu_lin = MU_TRUE_C0 if data_tag.startswith("c0_") else MU_TRUE_LZ if data_tag.startswith("lz_") else MU_TRUE
     print(f"linearised pole {mu_lin:.4f} (from |f| <= {amp_max:.2f})", flush=True)
     P = probe_inputs(t, np.random.default_rng(0))
     out = {}
@@ -190,7 +195,7 @@ def main(data_tag="orig"):
                   f"Toeplitz {jp['toeplitz_resid']:.2f}, IR pole {[complex(*z) for z in jp['h_poles']]}", flush=True)
         out[v] = rows
     res = dict(case=TR.case_of(data_tag), data=data_tag, mu_lin=[mu_lin.real, mu_lin.imag], amp_max=amp_max, eps=list(EPS), variants=out,
-               equivalent=equivalent_linear(f, u, t, device))
+               equivalent=equivalent_linear(f, u, t, device, center=data_tag.startswith("lz_")))
     RESULTS.mkdir(parents=True, exist_ok=True)
     (RESULTS / f"e5_probe{suffix(data_tag)}.json").write_text(json.dumps(res, indent=1))
     summarize(res)
@@ -227,6 +232,12 @@ def summarize(res):
               else f"`e5_data.py` set `{data}` (diverse E1 waveforms)") + ", 5 seeds per variant. Reference: the exact "
               "small-signal pole **± i** (on the imaginary axis).")
              if data.startswith("c0_") else
+             (f"Forced Lorenz ρ = 5 (z' = xy − 8/3 z − f, output x), " + ("the original LNO data (`1D_Lorenz_rho5`, from "
+              "x(0) = 1, y(0) = z(0) = 0, inputs A sin 5t)" if data == "lz_orig" else f"`e5_data.py` set `{data}` (diverse "
+              "E1 waveforms, started at the equilibrium C+)") + ", Lorenz LNO architecture (grid input, tanh, 16 modes), 5 "
+              "seeds per variant; the tied layer has a learned output offset. Reference: the dominant pole of the "
+              "linearisation at C+, **−0.9287 ± 4.1476i** (third pole −11.81). Equivalent poles from centred data.")
+             if data.startswith("lz_") else
              (f"Simulated damped Duffing x'' + 0.5 x' + x + x³ = f, `e5_data.py` set `{data}` (diverse E1 waveforms), 5 "
               f"seeds per variant. Reference: the exact small-signal pole **−0.25 ± 0.9682i**."),
              "Errors in brackets: relative distance to it.", "",

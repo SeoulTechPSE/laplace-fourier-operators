@@ -27,12 +27,20 @@ stored samples to 6.6e-4 (A = 0.05) ... 1.2e-1 (A = 10); small-signal poles +-i,
 bands from a data-only gate scan: `c0_small` peak |f| ~ U[0.02, 0.1] (both gates pass), `c0_medium` U[0.05, 0.3]
 (both fail, but the equivalent pole is within 6 % of i).
 
+Ninth pass, forced Lorenz rho = 5 (LNO paper Eq. 22: x' = 10 (y - x), y' = x (5 - z) - y, z' = x y - 8/3 z - f, output
+x; the LNO data `1D_Lorenz_rho5` checked here: from x(0) = 1, y(0) = z(0) = 0 a simulation reproduces stored samples
+to 3.0e-4 ... 7.8e-4; inputs A sin 5t). The new sets start at the stable equilibrium C+ (x = y = 3.266, z = 4), so the
+operating point is fixed; its linearisation from f to x has poles -0.9287 +- 4.1476i and -11.81. Data seed 5, bands
+from a data-only scan of centred linear fits: `lz_small` peak |f| ~ U[0.05, 0.5] (both gates pass), `lz_wide`
+U[0.5, 5] (all-sample residual 0.17, low band 0.05, shift 0.02: v2 fails, v3 passes).
+
 Splits 200 / 50 / 130 (train / vali / test); data seed 0 for `small` / `mixed`, 1 for `medium` / `moderate`. Stored in runs/C/e5_data/<name>.npz (git-ignored).
 
     python experiments/C/e5_probe/e5_data.py
 """
 from __future__ import annotations
 
+import math
 import sys
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
@@ -50,7 +58,9 @@ C, K, K3 = 0.5, 1.0, 1.0
 N_T, DT = 2048, 0.01
 SETS = {"small": (0.02, 0.1, 0), "mixed": (0.05, 5.0, 0), "medium": (0.1, 0.5, 1), "moderate": (0.2, 1.0, 1),
         "pend_medium": (0.1, 0.5, 2), "pend_large": (0.3, 1.0, 2), "wide": (0.05, 0.6, 3), "pend_wide": (0.05, 1.0, 3),
-        "c0_small": (0.02, 0.1, 4), "c0_medium": (0.05, 0.3, 4)}
+        "c0_small": (0.02, 0.1, 4), "c0_medium": (0.05, 0.3, 4), "lz_small": (0.05, 0.5, 5), "lz_wide": (0.5, 5.0, 5)}
+RHO, BETA, SIGMA = 5.0, 8 / 3, 10.0
+LZ_EQ = [math.sqrt(BETA * (RHO - 1)), math.sqrt(BETA * (RHO - 1)), RHO - 1]     # C+, the stable equilibrium
 SPLIT = (200, 50, 130)
 OUT = ROOT / "runs" / "C" / "e5_data"
 
@@ -60,12 +70,16 @@ def grid():
 
 
 def system_of(name):
-    """pend_*: driven pendulum; c0_*: undamped Duffing (c = 0); otherwise damped Duffing."""
-    return "pendulum" if name.startswith("pend") else "duffing_c0" if name.startswith("c0_") else "duffing"
+    """pend_*: driven pendulum; c0_*: undamped Duffing (c = 0); lz_*: forced Lorenz; otherwise damped Duffing."""
+    return ("pendulum" if name.startswith("pend") else "duffing_c0" if name.startswith("c0_")
+            else "lorenz" if name.startswith("lz_") else "duffing")
 
 
 def simulate(f, system="duffing"):
     t = grid()
+    if system == "lorenz":             # LNO paper Eq. 22, started at C+ (output x)
+        rhs = lambda s, z: [SIGMA * (z[1] - z[0]), z[0] * (RHO - z[2]) - z[1], z[0] * z[1] - BETA * z[2] - np.interp(s, t, f)]
+        return solve_ivp(rhs, (0, t[-1]), LZ_EQ, t_eval=t, rtol=1e-9, atol=1e-11, max_step=DT).y[0]
     spring = np.sin if system == "pendulum" else (lambda x: K * x + K3 * x ** 3)
     c = 0.0 if system == "duffing_c0" else C
     rhs = lambda s, z: [z[1], np.interp(s, t, f) - c * z[1] - spring(z[0])]
