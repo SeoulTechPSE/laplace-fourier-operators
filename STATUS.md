@@ -124,8 +124,13 @@ Suggested next steps (in order):
    RQ4 rule: trust = valid probe ∧ agreement ∧ good fit. Third pass (secant probes along the
    amplitude): the original LNO, poles at init, reproduces the data's equivalent pole and its
    hardening drift (0.968 → 1.20 up to A = 7) within 0.1–1.5 %, out of sample too; the linear
-   tied layer stays at 1.116. Next: small-amplitude / diverse Duffing set; Duffing c = 0;
-   pendulum / Lorenz; E1 paper decisions.
+   tied layer stays at 1.116. Fourth pass (new simulated sets, k₃ = 1, diverse E1 waveforms,
+   rule fixed before training): `small` (|x| ≤ 0.23) 6 trusted, all within 1 % of the
+   small-signal pole, no false trust; `mixed` (|f| ≤ 5) 2 trusted tied layers 43 / 86 % off
+   (equivalent pole of data whose best linear fit leaves 44 %): the fit criterion (test < 0.5)
+   is too lax. Stable init + pole lr × 10 gives LNO poles within 10 % in 4/5 seeds on both sets.
+   Next: a third set for a stricter fit criterion; Duffing c = 0; pendulum / Lorenz; E1 paper
+   decisions.
 
 Things to know:
 
@@ -136,6 +141,26 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-17 — (C) E5 / RQ4: the trust rule on new Duffing data
+
+- Done: `experiments/C/e5_probe/e5_data.py` (k₃ = 1 checked against the LNO data; sets `small`,
+  peak |f| 0.02–0.1, and `mixed`, 0.05–5, E1 input families, 200 / 50 / 130); `e5_train.py
+  --data` (+ `base` variant); `e5_probe.py <set>` with the trust rule fixed before the runs
+  (valid J ∧ d < 0.1 ∧ test < 0.5). 40 runs. `src/lfo/` unchanged.
+- Results:
+  - `small`: 6 trusted (tied 5/5, stable-init LNO 1/5), all within 1 % of −0.25 ± 0.9682i; no
+    false trust; 3 more LNO runs at 3–4 % excluded by a slightly non-causal J (0.13–0.21).
+  - `mixed`: 2 trusted tied layers, 43 % and 86 % from the small-signal pole, near the data's
+    equivalent linear pole (−0.89 + 1.75i, best linear fit residual 0.44); test 0.43.
+  - Stable init + pole lr × 10 LNOs: poles within 10 % in 4/5 seeds on both sets and the best
+    fits (0.009–0.16), but invalid probes.
+- Decisions: the rule holds in the linear regime; its fit criterion is too lax for strongly
+  nonlinear data. A stricter criterion (the data's best linear fit must itself fit) is a
+  post-hoc candidate for a third set.
+- Problems: two wait loops (`pgrep -f e5_train.py`) matched their own command line and never
+  ended; replaced by a script without self-matching waits.
+- Next: third set for the stricter fit criterion; Duffing c = 0; pendulum / Lorenz.
 
 ### 2026-11-17 — (C) E5 / RQ4: equivalent-linear (secant) probes along the amplitude
 

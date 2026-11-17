@@ -33,6 +33,9 @@ python experiments/foundation/reproduce_lno.py --case duffing_c05 --model lno --
 python experiments/C/e5_probe/e5_train.py                                                             # 3 variants x 5 seeds, ~2 min each
 python experiments/C/e5_probe/e5_probe.py                                                             # results/e5_probe.md
 python experiments/C/e5_probe/e5_oppoint.py                                                           # results/e5_oppoint.md
+python experiments/C/e5_probe/e5_data.py                                                              # runs/C/e5_data/{small,mixed}.npz
+python experiments/C/e5_probe/e5_train.py --data small                                                # and --data mixed; 20 runs each
+python experiments/C/e5_probe/e5_probe.py small                                                       # results/e5_probe_small.md (and mixed)
 ```
 
 ## First pass (2026-11-17)
@@ -203,9 +206,68 @@ Median relative error of the model's equivalent frequency against the data's:
   - The secant probe needs only input–response pairs from the model. It describes the operating
     regime of those inputs.
 
+## Fourth pass (2026-11-17): the trust rule on new data
+
+**Data** (`e5_data.py`; the npz files are kept in `runs/C/e5_data/`).
+
+- The LNO data follow x″ + 0.5x′ + x + k₃x³ = f with **k₃ = 1**. A `solve_ivp` simulation
+  reproduces stored training samples to 2.5e-4 (A = 0.05), 4.5e-3 (A = 3) and 1.2e-2 (A = 10).
+- Two new sets on the same grid use the four E1 input families (step, ramp, PRBS, smooth
+  random), 200 / 50 / 130 samples:
+  - `small`: peak |f| in [0.02, 0.1], so |x| ≤ 0.23 and k₃x²/k ≤ 0.05;
+  - `mixed`: peak |f| in [0.05, 5].
+- A first `small` version used |f| ≤ 0.5. It reached |x| = 0.88, where the cubic term is no
+  longer small, and was replaced before any training.
+- The same 4 variants were trained, 5 seeds each (`e5_train.py --data small | mixed`), 40 runs.
+
+**Rule, fixed before these runs** (`e5_probe.py`: `TRUST_D`, `TRUST_TEST`):
+
+- trusted = J valid (non-causal and Toeplitz shares < 0.1) ∧ d(probe, layer) < 0.1 ∧ test rel. L2 < 0.5;
+- prediction: on `small`, a trusted pole is within 10 % of the small-signal pole −0.25 ± 0.9682i.
+
+| set | variant | test rel. L2 | layer poles ≤ 10 % from the small-signal pole | J valid | trusted | trusted pole → small-signal pole |
+|---|---|---|---|---|---|---|
+| `small` | `base` | 0.41–0.53 | 0/5 | 0/5 | 0 | – |
+| `small` | `lno_plr10` | 0.14–0.95 | 0/5 | 0/5 | 0 | – |
+| `small` | `lno_stable_plr10` | **0.009–0.10** | 4/5 (up to 7 poles) | 1/5 (others: non-causal 0.13–0.21) | 1 | 0.01 |
+| `small` | `tied4_stable_plr10` | 0.005–0.007 | 5/5 | 5/5 | 5 | 0.00 (all) |
+| `mixed` | `base` | 0.34–0.42 | 0/5 | 1/5 | 0 | – |
+| `mixed` | `lno_plr10` | 0.25–0.28 | 3/5 | 0/5 | 0 | – |
+| `mixed` | `lno_stable_plr10` | 0.14–0.16 | 4/5 | 0/5 | 0 | – |
+| `mixed` | `tied4_stable_plr10` | 0.43–0.44 | 0/5 | 5/5 | 2 | **0.86, 0.43** |
+
+**Findings.**
+
+1. **On nearly linear data the rule works, and it is conservative.**
+   - All 6 trusted runs are within 1 % of the small-signal pole: 5 tied layers, plus the LNO
+     with stable init and pole lr × 10.
+   - Three more of those LNO runs have an impulse-response pole within 3–4 % but are not trusted,
+     because their Jacobian is slightly non-causal (0.13–0.21).
+   - The original LNO (original init, poles at the initialisation) fits these data poorly
+     (test 0.41–0.53) and is never trusted.
+2. **On strongly nonlinear data the rule fails as a small-signal statement.**
+   - Two tied layers are trusted, with poles 43 % and 86 % from the small-signal pole.
+   - They agree with the data's own equivalent linear pole (−0.89 + 1.75i for the whole set). So
+     the rule's reading, "a trusted pole is the equivalent linearisation", holds.
+   - But the best linear fit of the data leaves 44 % of the output unexplained, and the tied
+     layers' test error is 0.43. The fit criterion (test < 0.5) was too lax: at that error a
+     linear model's pole is not a meaningful summary.
+3. **Stable init with pole lr × 10 is what makes an LNO's poles physical.** On both sets those
+   LNOs hold poles within 10 % of the small-signal pole in 4/5 seeds, and they fit best
+   (`small` 0.009–0.10, `mixed` 0.14–0.16). Their Jacobians are valid probes in only 1 of 10 runs,
+   however (non-causal 0.05–0.40), so the rule certifies one of them.
+
+**Reading for RQ4.**
+
+- **The three-part rule is sound in the linear regime.** It produced no false trust and
+  recovered the pole to 1 %.
+- **Its fit criterion has to be stricter, or relative to the nonlinearity.** One candidate:
+  require that the best linear model of the data itself fits (residual < 0.1) before any
+  linear-model pole is read as physical. This candidate is set after seeing these results, so
+  it would need a third data set.
+
 **Next.**
 
-- A Duffing training set with small amplitudes or diverse waveforms, where the small-signal pole
-  is identifiable.
+- A third data set to test a stricter fit criterion.
 - Duffing c = 0 (undamped, poles on the axis) as a boundary case.
 - Secant probes on other nonlinear LNO benchmarks (pendulum, Lorenz).

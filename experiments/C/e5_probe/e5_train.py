@@ -8,7 +8,8 @@ Damped Duffing (`1D_Duffing_c05`, original split), E1 training protocol `common`
 | lno_stable_plr10 | original 1-layer LNO | E1 "stable": Re mu = -exp(U[log 1/T, log 10/T]), Im mu ~ U[0, pi / (4 dt)] | x 10 |
 | tied4_stable_plr10 | E1 tied single layer, 4 slots (LNO v1 layer, linear) | E1 "stable" | x 10 |
 
-The base variant (original init, pole lr x 1) is the first pass (`reproduce_lno.py --tag e5`).
+On the LNO data the base variant (original init, pole lr x 1) is the first pass (`reproduce_lno.py --tag e5`);
+on the e5_data.py sets (`--data small | mixed`) `base` is trained here, with the same protocol.
 
     python experiments/C/e5_probe/e5_train.py --variant lno_plr10 --seeds 0 1 2 3 4
 """
@@ -33,17 +34,29 @@ import e1_audit as E  # noqa: E402
 import reproduce_lno as RL  # noqa: E402
 
 CASE = "duffing_c05"
-VARIANTS = {"lno_plr10": ("lno", "original", 10.0),
+VARIANTS = {"base": ("lno", "original", 1.0),
+            "lno_plr10": ("lno", "original", 10.0),
             "lno_stable_plr10": ("lno", "stable", 10.0),
             "tied4_stable_plr10": ("tied4", "stable", 10.0)}
 CKPT = ROOT / "runs" / "C" / "e5"
 RESULTS = HERE / "results" / "e5_train"
 
 
-def data_and_grid():
+def data_and_grid(data_tag="orig"):
+    """orig: the LNO data (original split); small / mixed: e5_data.py sets (same grid). Tensors (b, n)."""
     split, grids = RL.load(RL.CASES[CASE], None, "ood")
-    data = {k: tuple(a.reshape(a.shape[0], -1).float() for a in v) for k, v in split.items()}
+    if data_tag == "orig":
+        data = {k: tuple(a.reshape(a.shape[0], -1).float() for a in v) for k, v in split.items()}
+    else:
+        z = np.load(ROOT / "runs" / "C" / "e5_data" / f"{data_tag}.npz")
+        s = np.cumsum([0, *z["split"]])
+        data = {k: (torch.tensor(z["f"][a:b]).float(), torch.tensor(z["u"][a:b]).float())
+                for k, a, b in zip(("train", "vali", "test"), s[:-1], s[1:])}
     return data, grids
+
+
+def tag(variant, data_tag):
+    return variant if data_tag == "orig" else f"{data_tag}_{variant}"
 
 
 @torch.no_grad()
@@ -79,11 +92,12 @@ def poles_of(model):
     return np.where(mu.imag < 0, mu.conj(), mu)
 
 
-def run(variant, seed, device):
-    out = RESULTS / f"{variant}_seed{seed}.json"
+def run(variant, seed, device, data_tag="orig"):
+    name = tag(variant, data_tag)
+    out = RESULTS / f"{name}_seed{seed}.json"
     if out.exists():
         return
-    data, grids = data_and_grid()
+    data, grids = data_and_grid(data_tag)
     model = build(variant, grids, seed).to(device)
     mu0 = poles_of(model)
     t0 = time.time()
@@ -91,13 +105,13 @@ def run(variant, seed, device):
     xte, yte = (a.to(device)[..., None] for a in data["test"])
     test = E.evaluate(model, xte, yte)
     CKPT.mkdir(parents=True, exist_ok=True)
-    torch.save(model.state_dict(), CKPT / f"{variant}_seed{seed}.pt")
+    torch.save(model.state_dict(), CKPT / f"{name}_seed{seed}.pt")
     mu = poles_of(model)
-    res = dict(variant=variant, seed=seed, test_rel_l2=test, train_hist=hist, seconds=round(time.time() - t0, 1),
+    res = dict(variant=variant, data=data_tag, seed=seed, test_rel_l2=test, train_hist=hist, seconds=round(time.time() - t0, 1),
                travel_median=float(np.median(np.abs(mu - mu0))), n_poles=int(mu.size))
     RESULTS.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(res, indent=1))
-    print(f"{variant} s{seed}: test {test:.3f}, median pole travel {res['travel_median']:.3f} ({res['seconds']:.0f}s)",
+    print(f"{name} s{seed}: test {test:.3f}, median pole travel {res['travel_median']:.3f} ({res['seconds']:.0f}s)",
           flush=True)
 
 
@@ -105,11 +119,12 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--variant", nargs="+", default=list(VARIANTS))
     ap.add_argument("--seeds", nargs="+", type=int, default=[0, 1, 2, 3, 4])
+    ap.add_argument("--data", default="orig", choices=["orig", "small", "mixed"])
     a = ap.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     for v in a.variant:
         for s in a.seeds:
-            run(v, s, device)
+            run(v, s, device, a.data)
 
 
 if __name__ == "__main__":

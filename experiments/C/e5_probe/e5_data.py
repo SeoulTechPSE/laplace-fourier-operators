@@ -1,0 +1,73 @@
+"""(C) E5, fourth pass: new damped-Duffing data sets with diverse waveforms, to test the RQ4 trust rule out of sample.
+
+The LNO data `1D_Duffing_c05` follow x'' + 0.5 x' + x + k3 x^3 = f with k3 = 1 (checked here: a solve_ivp
+simulation reproduces stored training samples to 2.5e-4 (A = 0.05), 4.5e-3 (A = 3) and 1.2e-2 (A = 10), and a
+test sample to 4.3e-3, relative L2). Small-signal poles: -0.25 +- 0.9682i.
+
+New sets, same grid (T = 20.47, dt = 0.01, n = 2048), zero initial state, inputs of the four E1 families (step,
+ramp, PRBS, smooth random; `e1_audit.make_inputs`, times scaled to this window), each scaled to a random peak |f|:
+
+- `small`: peak |f| ~ U[0.02, 0.1], so peak |x| <= 0.23 and k3 x^2 / k <= 0.05 (nearly linear; a first version
+  with |f| <= 0.5 reached |x| = 0.88, where the cubic term is 0.8 k x);
+- `mixed`: peak |f| ~ U[0.05, 5].
+
+Splits 200 / 50 / 130 (train / vali / test), data seed 0. Stored in runs/C/e5_data/<name>.npz (git-ignored).
+
+    python experiments/C/e5_probe/e5_data.py
+"""
+from __future__ import annotations
+
+import sys
+from concurrent.futures import ProcessPoolExecutor
+from pathlib import Path
+
+import numpy as np
+from scipy.integrate import solve_ivp
+
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parents[2]
+sys.path.insert(0, str(HERE.parent / "e1_audit"))
+sys.path.insert(0, str(ROOT / "src"))
+import e1_audit as E  # noqa: E402
+
+C, K, K3 = 0.5, 1.0, 1.0
+N_T, DT = 2048, 0.01
+SETS = {"small": (0.02, 0.1), "mixed": (0.05, 5.0)}
+SPLIT = (200, 50, 130)
+OUT = ROOT / "runs" / "C" / "e5_data"
+
+
+def grid():
+    return np.arange(N_T) * DT
+
+
+def simulate(f):
+    t = grid()
+    rhs = lambda s, z: [z[1], np.interp(s, t, f) - C * z[1] - K * z[0] - K3 * z[0] ** 3]
+    return solve_ivp(rhs, (0, t[-1]), [0.0, 0.0], t_eval=t, rtol=1e-9, atol=1e-11, max_step=DT).y[0]
+
+
+def inputs(n, rng):
+    """E1 input families on this window: E1's times scale with T_END (20), so pass a rescaled grid."""
+    t = grid()
+    u = E.make_inputs(t * (E.T_END / t[-1]), n, rng)
+    return u
+
+
+def make(name, seed=0):
+    lo, hi = SETS[name]
+    rng = np.random.default_rng(seed)
+    n = sum(SPLIT)
+    f = inputs(n, rng)
+    f = f / np.abs(f).max(1, keepdims=True) * rng.uniform(lo, hi, (n, 1))
+    with ProcessPoolExecutor(16) as ex:
+        u = np.array(list(ex.map(simulate, f, chunksize=8)))
+    OUT.mkdir(parents=True, exist_ok=True)
+    np.savez(OUT / f"{name}.npz", f=f, u=u, t=grid(), split=np.array(SPLIT))
+    print(name, f.shape, "peak |f|", f"{np.abs(f).max(1).min():.2f}-{np.abs(f).max(1).max():.2f}",
+          "peak |u|", f"{np.abs(u).max(1).min():.3f}-{np.abs(u).max(1).max():.3f}", flush=True)
+
+
+if __name__ == "__main__":
+    for s in sys.argv[1:] or SETS:
+        make(s)

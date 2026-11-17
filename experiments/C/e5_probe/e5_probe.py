@@ -43,6 +43,8 @@ import e5_train as TR  # noqa: E402
 CASE = "duffing_c05"
 SEEDS = (0, 1, 2, 3, 4)
 VARIANTS = ("base", "lno_plr10", "lno_stable_plr10", "tied4_stable_plr10")
+MU_TRUE = complex(-0.25, math.sqrt(1 - 0.0625))
+TRUST_D, TRUST_TEST = 0.1, 0.5         # RQ4 trust rule: valid probe, d(probe, layer) < TRUST_D, test < TRUST_TEST
 EPS = (0.01, 0.1, 0.3, 1.0, 3.0)
 N_PROBE = 16
 CKPT = ROOT / "runs" / "foundation" / "ood" / "e5" / CASE / "lno"
@@ -115,6 +117,8 @@ def equivalent_linear(f, u, t, device):
     amp = np.abs(f).max(1)
     out = {}
     for lab, sel in (("all", amp > 0), ("A <= 1", amp <= 1), ("1 < A <= 3", (amp > 1) & (amp <= 3)), ("A > 3", amp > 3)):
+        if sel.sum() < 4 or (lab != "all" and sel.all()):
+            continue
         vp = EP.VarPro({"train": (torch.tensor(f[sel]), torch.tensor(u[sel]))}, t, device, "foh")
         th, re_ = EP.pack([complex(-0.3, 1.0)])
         th, _ = vp.fit(th, re_)
@@ -125,35 +129,38 @@ def equivalent_linear(f, u, t, device):
     return out
 
 
-def load_variant(variant, seed, case, grids, device):
-    """(model, test error, stored poles folded to Im >= 0). base = first pass (reproduce_lno, tag e5)."""
-    if variant == "base":
+def load_variant(variant, seed, case, grids, device, data_tag="orig"):
+    """(model, test error, stored poles folded to Im >= 0). base on the LNO data = first pass (reproduce_lno, tag e5)."""
+    if variant == "base" and data_tag == "orig":
         model, _ = RL.build("lno", case, grids)
         model.load_state_dict(torch.load(CKPT / f"seed{seed}.pt", map_location="cpu"))
         test = json.loads((RL.RESULTS / "ood" / "e5" / f"{CASE}_lno_seed{seed}.json").read_text())["test_rel_l2"]
     else:
         model = TR.build(variant, grids, seed)
-        model.load_state_dict(torch.load(TR.CKPT / f"{variant}_seed{seed}.pt", map_location="cpu"))
-        test = json.loads((TR.RESULTS / f"{variant}_seed{seed}.json").read_text())["test_rel_l2"]
+        name = TR.tag(variant, data_tag)
+        model.load_state_dict(torch.load(TR.CKPT / f"{name}_seed{seed}.pt", map_location="cpu"))
+        test = json.loads((TR.RESULTS / f"{name}_seed{seed}.json").read_text())["test_rel_l2"]
     model = model.to(device).eval()
     return model, test, TR.poles_of(model)
 
 
-def main():
+def main(data_tag="orig"):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     case = RL.CASES[CASE]
-    split, grids = RL.load(case, None, "ood")
+    split, grids = TR.data_and_grid(data_tag)
     xtr, ytr = split["train"]
     f, u = (a.double().reshape(a.shape[0], -1).numpy() for a in (xtr, ytr))
     t = np.asarray(grids["t"], float).ravel()
     mu_lin, amp_max = linearised(f, u, t, device)
+    if data_tag != "orig":                                  # simulated sets: the exact small-signal pole
+        mu_lin = MU_TRUE
     print(f"linearised pole {mu_lin:.4f} (from |f| <= {amp_max:.2f})", flush=True)
     P = probe_inputs(t, np.random.default_rng(0))
     out = {}
     for v in VARIANTS:
         rows = []
         for s in SEEDS:
-            model, test, mu = load_variant(v, s, case, grids, device)
+            model, test, mu = load_variant(v, s, case, grids, device, data_tag)
             d = np.abs(mu - mu_lin) / abs(mu_lin)
             layer = dict(closest=[float(mu[d.argmin()].real), float(mu[d.argmin()].imag)], closest_err=float(d.min()),
                          within10=int((d < 0.1).sum()), n=int(mu.size), stable=int((mu.real < 0).sum()))
@@ -170,6 +177,8 @@ def main():
             ir = complex(*jp["h_poles"][0]) if jp["h_poles"] else None
             jp["d_probe_layer"] = float(np.min(np.abs(mu - ir)) / abs(ir)) if ir is not None else None
             jp["valid"] = bool(jp["noncausal"] < 0.1 and jp["toeplitz_resid"] < 0.1)
+            jp["trusted"] = bool(jp["valid"] and jp["d_probe_layer"] is not None and jp["d_probe_layer"] < TRUST_D
+                                 and test < TRUST_TEST)
             rows.append(dict(seed=s, test=test, layer=layer, jac=jp, probes=probes))
             pr = complex(*probes[str(EPS[0])]["pair"]["poles"][0])
             print(f"{v} s{s}: test {test:.3f}; layer within 10 % {layer['within10']}/{layer['n']} "
@@ -177,21 +186,34 @@ def main():
                   f"(resid {probes[str(EPS[0])]['pair']['rel']:.2f}); J non-causal {jp['noncausal']:.2f}, "
                   f"Toeplitz {jp['toeplitz_resid']:.2f}, IR pole {[complex(*z) for z in jp['h_poles']]}", flush=True)
         out[v] = rows
-    res = dict(case=CASE, mu_lin=[mu_lin.real, mu_lin.imag], amp_max=amp_max, eps=list(EPS), variants=out,
+    res = dict(case=CASE, data=data_tag, mu_lin=[mu_lin.real, mu_lin.imag], amp_max=amp_max, eps=list(EPS), variants=out,
                equivalent=equivalent_linear(f, u, t, device))
     RESULTS.mkdir(parents=True, exist_ok=True)
-    (RESULTS / "e5_probe.json").write_text(json.dumps(res, indent=1))
+    (RESULTS / f"e5_probe{suffix(data_tag)}.json").write_text(json.dumps(res, indent=1))
     summarize(res)
+
+
+def trusted(r):
+    j = r["jac"]
+    return bool(j["valid"] and j["d_probe_layer"] is not None and j["d_probe_layer"] < TRUST_D and r["test"] < TRUST_TEST)
+
+
+def suffix(data_tag):
+    return "" if data_tag == "orig" else f"_{data_tag}"
 
 
 def summarize(res):
     mu_lin = complex(*res["mu_lin"])
     err = lambda z: abs(complex(*z) - mu_lin) / abs(mu_lin)
     fmt = lambda z: f"{z[0]:.3f}{z[1]:+.3f}i ({err(z):.2f})"
-    lines = ["# E5: linear-probe poles of Duffing models", "",
-             f"Damped Duffing (`1D_Duffing_c05`), original split, 5 seeds per variant. Linearised pole from the 4 "
-             f"smallest-amplitude training samples (|f| ≤ {res['amp_max']:.2f}): **{mu_lin.real:.4f} ± "
-             f"{abs(mu_lin.imag):.4f}i** (theory −0.25 ± 0.9682i). Errors in brackets: relative distance to it.", "",
+    data = res.get("data", "orig")
+    lines = ["# E5: linear-probe poles of Duffing models" + ("" if data == "orig" else f", `{data}` data set"), "",
+             (f"Damped Duffing (`1D_Duffing_c05`), original split, 5 seeds per variant. Linearised pole from the 4 "
+              f"smallest-amplitude training samples (|f| ≤ {res['amp_max']:.2f}): **{mu_lin.real:.4f} ± "
+              f"{abs(mu_lin.imag):.4f}i** (theory −0.25 ± 0.9682i).") if data == "orig" else
+             (f"Simulated damped Duffing x'' + 0.5 x' + x + x³ = f, `e5_data.py` set `{data}` (diverse E1 waveforms), 5 "
+              f"seeds per variant. Reference: the exact small-signal pole **−0.25 ± 0.9682i**."),
+             "Errors in brackets: relative distance to it.", "",
              "- **layer**: stored poles within 10 % / all, and the closest.",
              f"- **LTI probe**: odd part (G(εu) − G(−εu)) / 2ε on {N_PROBE} smooth random inputs, one complex pair "
              "fitted (first-order hold); pole at ε = " + f"{res['eps'][0]:g}" + ", and the relative fit residual "
@@ -206,10 +228,11 @@ def summarize(res):
              "amplitude band: " + "; ".join(f"{k} ({v['n']}): {v['pole'][0]:.3f}{v['pole'][1]:+.3f}i, residual "
                                             f"{v['rel']:.2f}" for k, v in res["equivalent"].items()) + ".", "",
              "RQ4 indicator: d = distance from the J impulse-response pole to the nearest stored pole (relative); "
-             "valid = J causal and shift-invariant (both shares < 0.1).", "",
+             "valid = J causal and shift-invariant (both shares < 0.1). Trusted (rule fixed before the `small` and "
+             f"`mixed` runs): valid ∧ d < {TRUST_D:g} ∧ test rel. L2 < {TRUST_TEST:g}.", "",
              "| variant | seed | test rel. L2 | layer: within 10 %, closest | LTI probe: pole, residual | "
-             "J: non-causal, Toeplitz residual | J impulse-response pole | valid, d |",
-             "|---|---|---|---|---|---|---|---|"]
+             "J: non-causal, Toeplitz residual | J impulse-response pole | valid, d | trusted |",
+             "|---|---|---|---|---|---|---|---|---|"]
     for v, rows in res["variants"].items():
         for r in rows:
             L, j = r["layer"], r["jac"]
@@ -219,10 +242,15 @@ def summarize(res):
                          f"{fmt(pr['poles'][0])}, {min(rel):.2f}–{max(rel):.2f} | {j['noncausal']:.2f}, "
                          f"{j['toeplitz_resid']:.2f} | " + (fmt(j["h_poles"][0]) if j["h_poles"] else "–")
                          + f" | {'yes' if j['valid'] else 'no'}, "
-                         + (f"{j['d_probe_layer']:.2f}" if j["d_probe_layer"] is not None else "–") + " |")
-    (RESULTS / "e5_probe.md").write_text("\n".join(lines) + "\n")
+                         + (f"{j['d_probe_layer']:.2f}" if j["d_probe_layer"] is not None else "–")
+                         + f" | {'**yes**' if trusted(r) else 'no'} |")
+    tr = [(v, r) for v, rows in res["variants"].items() for r in rows if trusted(r)]
+    lines += ["", f"Trusted runs: {len(tr)} of {sum(len(x) for x in res['variants'].values())}. "
+              + ("Their J impulse-response pole vs the reference: "
+                 + ", ".join(f"{v} s{r['seed']} {err(r['jac']['h_poles'][0]):.2f}" for v, r in tr) if tr else "")]
+    (RESULTS / f"e5_probe{suffix(res.get('data', 'orig'))}.md").write_text("\n".join(lines) + "\n")
     print("\n".join(lines))
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1] if len(sys.argv) > 1 else "orig")
