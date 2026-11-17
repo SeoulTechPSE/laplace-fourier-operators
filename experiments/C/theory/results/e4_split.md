@@ -47,7 +47,7 @@ Per reported real pole z of the `foh_eivo` report: a real pole added at w = f z,
 | p6_e1_T20_n1e-2_u3e-2 | 20 | -2.02: 0.0714, -0.999: 0.055 | 0.521 | – | – / – |
 | p6_e1_T20_n1e-2_u3e-2 | 25 | -1.91: 0.107, -1.01: 0.0912 | 0.494 | – | – / – |
 
-Scored (truth used only here): identified true poles / false identified, over the groups.
+Scored (truth used only here): identified true poles / false identified, over the groups. (new groups): out of sample, run after the rule was fixed.
 
 | condition | groups | report | report, split flags unresolved | + dup / alias unresolved |
 |---|---|---|---|---|
@@ -85,6 +85,10 @@ Scored (truth used only here): identified true poles / false identified, over th
 | p4_ms16_T20_n1e-2_u3e-1 | 15 | -0.201: 0.782, -0.915: 0.672 | 3.6 | – | – / – |
 | p4_ms16_T20_n1e-2_u3e-1 | 20 | -0.901: 0.276, -0.204: 0.296 | 1.36 | – | – / – |
 | p4_ms16_T20_n1e-2_u3e-1 | 25 | -0.206: 0.23, -0.906: 0.239 | 1.1 | – | – / – |
+| p4_ms16_T20_n1e-2_u3e-1 | 30 | -0.882: 0.254, -0.207: 0.159 | 1.17 | – | – / – |
+| p4_ms16_T20_n1e-2_u3e-1 | 35 | -0.212: 0.604, -0.865: 0.479 | 2.78 | – | – / – |
+| p4_ms16_T20_n1e-2_u3e-1 | 40 | -0.208: 0.116, -0.881: 0.284 | 1.31 | – | – / – |
+| p4_ms16_T20_n1e-2_u3e-1 | 45 | -0.207: 0.248, -0.898: 0.293 | 1.35 | – | – / – |
 | p4_ms16_T20_n1e-2_u3e-2 | 10 | -0.2: 0.56, -1: 0.499 | 3 | – | – / – |
 | p4_ms16_T20_n1e-2_u3e-2 | 15 | -0.2: 0.0433, -1: 0.0376 | 0.33 | – | – / – |
 | p4_ms16_T20_n1e-2_u3e-2 | 20 | -0.2: 0.0979, -1: 0.104 | 0.924 | – | – / – |
@@ -97,6 +101,10 @@ Scored (truth used only here): identified true poles / false identified, over th
 | p6_e1_T20_n1e-2_u1e-1 | 15 | -0.686: 3.02 **F** | 13.9 | -0.686 → -0.436, -0.435 | – / – |
 | p6_e1_T20_n1e-2_u1e-1 | 20 | -0.985: 0.033, -1.97: 0.0298 | 0.152 | – | – / -47.5+328i |
 | p6_e1_T20_n1e-2_u1e-1 | 25 | -1.23: 0.229, -16.4: 0.223, -1.23: 0.229 | 1.05 | – | -1.23, -1.23 / – |
+| p6_e1_T20_n1e-2_u1e-1 | 30 | -2.11: 0.987, -0.975: 0.921, -4.3e+04: 0.000497, -47.9: 0.968 | 14.2 | – | – / – |
+| p6_e1_T20_n1e-2_u1e-1 | 35 | -2.45: 0.331, -0.951: 0.44, +0.298: 1.53 **F** | 4.84 | +0.298 → -2.23, -0.993, +0.285, +0.285 | – / – |
+| p6_e1_T20_n1e-2_u1e-1 | 40 | -2.45: 0.993, -0.943: 0.952 | 7.95 | – | – / – |
+| p6_e1_T20_n1e-2_u1e-1 | 45 | -2.07: 0.373, -0.968: 0.279, -51.6: 0.611, -5.02e+04: 0.00073 | 14.9 | – | – / – |
 | p6_e1_T20_n1e-2_u1e-2 | 10 | -1: 0.235, -1.99: 0.0796 | 1.96 | – | – / – |
 | p6_e1_T20_n1e-2_u1e-2 | 15 | -2.06: 0.112, -0.989: 0.0472 | 0.819 | – | – / – |
 | p6_e1_T20_n1e-2_u1e-2 | 20 | -1: 0.00731, -1.99: 0.00614 | 0.141 | – | – / – |
@@ -105,18 +113,25 @@ Scored (truth used only here): identified true poles / false identified, over th
 | p6_e1_T20_n1e-2_u3e-2 | 15 | -0.978: 0.23, -2.13: 0.288 | 2.36 | – | – / – |
 | p6_e1_T20_n1e-2_u3e-2 | 20 | -2.02: 0.0646, -0.999: 0.055 | 0.298 | – | – / – |
 | p6_e1_T20_n1e-2_u3e-2 | 25 | -1.91: 0.128, -1.01: 0.0976 | 0.59 | – | – / – |
+| p6_e1_T20_n1e-2_u5e-2 | 10 | -0.981: 0.736, -2.21: 0.269 | 4.78 | – | – / – |
+| p6_e1_T20_n1e-2_u5e-2 | 15 | -0.955: 0.261, -2.33: 0.261 | 1.26 | – | – / – |
+| p6_e1_T20_n1e-2_u5e-2 | 20 | -2.22: 0.143, -0.974: 0.142 | 0.66 | – | – / – |
+| p6_e1_T20_n1e-2_u5e-2 | 25 | -2.03: 0.199, -0.996: 0.218 | 1.01 | – | – / – |
 
-Scored (truth used only here): identified true poles / false identified, over the groups.
+Scored (truth used only here): identified true poles / false identified, over the groups. (new groups): out of sample, run after the rule was fixed.
 
-| condition | groups | report | report, split flags unresolved | + dup / alias unresolved | + bias-corrected values |
-|---|---|---|---|---|---|
-| p4_ms16_T20_n1e-2 | 4 | 12/12, 0 false | 12/12, 0 false | 12/12, 0 false | 12/12, 0 false |
-| p4_ms16_T20_n1e-2_u1e-1 | 8 | 24/24, 0 false | 24/24, 0 false | 24/24, 0 false | 24/24, 0 false |
-| p4_ms16_T20_n1e-2_u1e-2 | 4 | 12/12, 0 false | 12/12, 0 false | 12/12, 0 false | 12/12, 0 false |
-| p4_ms16_T20_n1e-2_u3e-1 | 4 | 11/12, 1 false | 11/12, 1 false | 11/12, 1 false | 12/12, 0 false |
-| p4_ms16_T20_n1e-2_u3e-2 | 4 | 12/12, 0 false | 12/12, 0 false | 12/12, 0 false | 12/12, 0 false |
-| p6_e1_T20_n1e-2 | 4 | 16/16, 0 false | 16/16, 0 false | 16/16, 0 false | 16/16, 0 false |
-| p6_e1_T20_n1e-2_u1e-1 | 4 | 12/16, 6 false | 12/16, 5 false | 12/16, 1 false | 12/16, 1 false |
-| p6_e1_T20_n1e-2_u1e-2 | 4 | 16/16, 0 false | 16/16, 0 false | 16/16, 0 false | 16/16, 0 false |
-| p6_e1_T20_n1e-2_u3e-2 | 4 | 16/16, 0 false | 16/16, 0 false | 16/16, 0 false | 16/16, 0 false |
+| condition | groups | report | report, split flags unresolved | + dup / alias unresolved | + bias-corrected values | + wide unresolved (post hoc) |
+|---|---|---|---|---|---|---|
+| p4_ms16_T20_n1e-2 | 4 | 12/12, 0 false | 12/12, 0 false | 12/12, 0 false | 12/12, 0 false | 12/12, 0 false |
+| p4_ms16_T20_n1e-2_u1e-1 | 8 | 24/24, 0 false | 24/24, 0 false | 24/24, 0 false | 24/24, 0 false | 24/24, 0 false |
+| p4_ms16_T20_n1e-2_u1e-2 | 4 | 12/12, 0 false | 12/12, 0 false | 12/12, 0 false | 12/12, 0 false | 12/12, 0 false |
+| p4_ms16_T20_n1e-2_u3e-1 | 4 | 11/12, 1 false | 11/12, 1 false | 11/12, 1 false | 12/12, 0 false | 12/12, 0 false |
+| p4_ms16_T20_n1e-2_u3e-1 (new groups) | 4 | 8/12, 4 false | 8/12, 4 false | 8/12, 4 false | 12/12, 0 false | 12/12, 0 false |
+| p4_ms16_T20_n1e-2_u3e-2 | 4 | 12/12, 0 false | 12/12, 0 false | 12/12, 0 false | 12/12, 0 false | 12/12, 0 false |
+| p6_e1_T20_n1e-2 | 4 | 16/16, 0 false | 16/16, 0 false | 16/16, 0 false | 16/16, 0 false | 16/16, 0 false |
+| p6_e1_T20_n1e-2_u1e-1 | 4 | 12/16, 6 false | 12/16, 5 false | 12/16, 1 false | 12/16, 1 false | 8/16, 1 false |
+| p6_e1_T20_n1e-2_u1e-1 (new groups) | 4 | 14/16, 7 false | 14/16, 6 false | 14/16, 6 false | 14/16, 6 false | 9/16, 4 false |
+| p6_e1_T20_n1e-2_u1e-2 | 4 | 16/16, 0 false | 16/16, 0 false | 16/16, 0 false | 16/16, 0 false | 16/16, 0 false |
+| p6_e1_T20_n1e-2_u3e-2 | 4 | 16/16, 0 false | 16/16, 0 false | 16/16, 0 false | 16/16, 0 false | 16/16, 0 false |
+| p6_e1_T20_n1e-2_u5e-2 (new groups) | 4 | 13/16, 3 false | 13/16, 3 false | 13/16, 3 false | 13/16, 3 false | 12/16, 0 false |
 

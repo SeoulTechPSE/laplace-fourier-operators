@@ -11,7 +11,7 @@ Each session appends one entry using the template at the bottom.
 | (C) Pole audit of existing models | 3–5 | **in progress**: E1 done, draft report (`E1_report.md`, updated with E2); paper decisions open | — |
 | (D) Non-periodic input representation | 4–8 | not started | differs from padded FNO? (month 8) |
 | (A) Pole layer and linear validation | 5–10 | not started | dispersion relations recovered (month 10) |
-| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits, a bootstrap-calibrated order, certificate and order test; reduction-path unresolved rules fail, a location-calibrated split test flags the merge, a combined post-report rule leaves 1 false pole in 40 groups), E3 deep first pass done (`experiments/C/theory/`) | — |
+| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits, a bootstrap-calibrated order, certificate and order test; reduction-path unresolved rules fail, a location-calibrated split test flags the merge, a combined post-report rule leaves 1 false pole in 40 groups but does not carry over to new p6 E1 groups), E3 deep first pass done (`experiments/C/theory/`) | — |
 | (A) Application 1: process dynamics | 11–16 | not started | — |
 | (D) Initial conditions and rollout | 13–19 | not started | — |
 | (A) Application 2: Cahn–Hilliard | 17–22 | not started | recover k_c, k_max (month 20) |
@@ -87,9 +87,11 @@ Suggested next steps (in order):
    pair, so it reads "unresolved". With a bias-corrected null, duplicate / alias checks and
    bias-corrected values (gated by the bootstrap width), the 40 reports reach every true pole
    at η_u ≤ 30 η_y on p4 (12/12, 0 false at 0.3) and leave 1 false pole on p6 E1 at 10 η_y
-   (was 6); the gate was set after seeing the p6 data. Next: a spurious isolated real pole
-   (p6 g25 −16.4); fold the post-report rules into the pipeline and test on new groups;
-   noise-dependent release; RQ4.
+   (was 6); the gate was set after seeing the p6 data. Out of sample (12 new groups) the
+   bias correction holds on p4 at 30 η_y (12/12, 0 false; report 8/12, 4 false), but on p6 E1
+   at 0.1 the rule removes 1 of 7 false poles: spurious fast poles (−48 … −121) with narrow
+   bootstrap intervals remain. Next: a truth-free check of fast poles against the input
+   bandwidth and dt; noise-dependent release; RQ4.
 4. Optional E1 extras: log-parameterised decay rate; untied models with 64 steady modes
    (H1); weight decay excluded from poles; deep LNO v1 at its published size.
 
@@ -102,6 +104,27 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-17 — (C) E4: the combined input-noise rule out of sample
+
+- Done: 12 new groups (60 runs, full recipe → `foh_eivo` → `e4_split.py --null bc`): p4
+  η_u = 0.3 and p6 E1 η_u = 0.1 with seeds 30–49, and a new level p6 E1 η_u = 0.05
+  (`p6_e1_T20_n1e-2_u5e-2`, registered in `e2_train` / `e2_polish` / `e2_floor` / `e2_rescue` /
+  `e4_profile`). `e4_split.py` summary marks the new groups and adds a post-hoc width column.
+  README section "E4, nineteenth pass". `src/lfo/` unchanged.
+- Results (identified / false, new groups):
+  - p4 η_u = 0.3: report 8/12, 4 false (−1 at −0.865 … −0.898) → combined rule 12/12, 0 false.
+  - p6 E1 η_u = 0.1: 14/16, 7 false → 14/16, 6 false. Spurious fast poles (−48, −52,
+    −108 ± 48i, −121 ± 1.2i; bootstrap spread 2.5–4 %) and −2 at −2.45 remain; one split flag
+    (an unstable +0.30).
+  - p6 E1 η_u = 0.05: 13/16, 3 false (−2 at −2.21 … −2.33, half-width 12 % > 10 % gate) →
+    unchanged. A post-hoc width rule (half-width > 10 % → unresolved) gives 12/16, 0 false
+    here, 9/16, 4 false at 0.1, and changes nothing elsewhere.
+- Decisions: the bias correction (gated) is kept for multisine inputs; the split / duplicate /
+  alias rules are not validated on E1 inputs; the width rule is recorded as post hoc.
+- Next: a truth-free check of spurious fast poles (time constant vs input bandwidth and dt);
+  then the width rule on fresh groups; calibrated profile intervals; exact time-domain EIV ML;
+  coloured input noise; noise-dependent release; zero-order hold; joint intervals; RQ4.
 
 ### 2026-11-17 — (C) E4: bias-corrected split null and a combined report rule
 

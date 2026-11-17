@@ -91,7 +91,7 @@ E1_NOISY = {s: (f"{s}_e1_T20", {float(e): f"{s}_e1_T20_n{e}" for e in es})      
             for s, es in (("p4", ("1e-1", "3e-1")), ("p6", ("1e-2", "3e-2", "1e-1")))}
 N_BOOT = 32                                         # bootstrap draws per group (noise-free: dithers; noisy: EIV)
 EIV = {s: {u: f"{base}_u{u}" for u in us} | {"0": base}                           # input noise, eta_y = 1e-2
-       for s, base, us in (("p4", "p4_ms16_T20_n1e-2", ("1e-2", "3e-2", "1e-1", "3e-1")), ("p6", "p6_e1_T20_n1e-2", ("1e-2", "3e-2", "1e-1")))}
+       for s, base, us in (("p4", "p4_ms16_T20_n1e-2", ("1e-2", "3e-2", "1e-1", "3e-1")), ("p6", "p6_e1_T20_n1e-2", ("1e-2", "3e-2", "5e-2", "1e-1")))}
 EIV_CONDS = {c for d in EIV.values() for c in d.values()}
 
 

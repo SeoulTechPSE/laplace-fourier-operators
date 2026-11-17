@@ -237,7 +237,7 @@ CONDITIONS = {
     **{f"p4_ms16_T20_n1e-2_u{e}": ("p4", "multisine", 20.0, 16, 1024, dict(noise=1e-2, in_noise=float(e)))
        for e in ("1e-2", "3e-2", "1e-1", "3e-1")},
     **{f"p6_e1_T20_n1e-2_u{e}": ("p6", "e1", 20.0, 0, 1024, dict(noise=1e-2, in_noise=float(e)))
-       for e in ("1e-2", "3e-2", "1e-1")},
+       for e in ("1e-2", "3e-2", "5e-2", "1e-1")},
     # E3 / E4: partial tie under noise (released from the noise-aware tied runs; no Adam runs of their own)
     **{f"p6_ms16_T80_N4096_{k}_pt03_n{e}": ("p6", "multisine", 80.0, 16, 4096,
                                             dict(kind=f"{k}_pt", modes=256, delta=0.3, noise=float(e)))

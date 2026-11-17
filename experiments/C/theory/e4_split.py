@@ -53,6 +53,10 @@ FACTORS = (0.25, 0.4, 0.63, 1.6, 2.5, 4.0)
 DP = 2
 N_CAL = EP.N_CAL
 NULLS = ("denoise", "bc")
+# out-of-sample check of the combined rule (set on the 40 groups before): new seeds and a new level
+OOS = {("p4_ms16_T20_n1e-2_u3e-1", g) for g in (30, 35, 40, 45)} | \
+      {("p6_e1_T20_n1e-2_u1e-1", g) for g in (30, 35, 40, 45)} | \
+      {("p6_e1_T20_n1e-2_u5e-2", g) for g in (10, 15, 20, 25)}
 
 
 def out_dir(null):
@@ -158,6 +162,14 @@ def checks(r):
     return dup, alias
 
 
+def wide(r):
+    """Reported poles whose EIV bootstrap 95 % half-width (stored by foh_eivo) exceeds the identification
+    tolerance T.RECOVERED |z| (added after the out-of-sample groups: a post-hoc rule)."""
+    g = json.loads((SRC / f"{r['cond']}_g{r['group']}.json").read_text())
+    return [complex(*p["mu"]) for p in g["profiles"]
+            if p.get("boot_std") and 1.96 * p["boot_std"] > T.RECOVERED * abs(p["mu"][0])]
+
+
 def rescore(r, flagged, bc=False):
     """EP.score of the foh_eivo group with the flagged poles read as unresolved; bc: every pole moved to
     its bias-corrected value (theta_gen of the `bc` null; the relative profile interval moves with it), where
@@ -214,22 +226,26 @@ def summarize():
             split = [complex(*x["pole"]) for x in r["rows"] if x["flagged"]]
             for name, fl, bc in (("report", [], False), ("split", split, False),
                                  ("split + checks", split + dup + alias, False),
-                                 ("bc values", split + dup + alias, True)):
+                                 ("bc values", split + dup + alias, True),
+                                 ("wide", split + dup + alias + wide(r), True)):
                 if bc and null != "bc":
                     continue
                 per, false = rescore(r, fl, bc)
                 ident = sum(v is not None and v["closed"] for v in per.values())
-                t_ = tally.setdefault((r["cond"], name), [0, 0, 0, 0])
+                key = r["cond"] + (" (new groups)" if (r["cond"], r["group"]) in OOS else "")
+                t_ = tally.setdefault((key, name), [0, 0, 0, 0])
                 t_[0] += 1
                 t_[1] += ident
                 t_[2] += len(per)
                 t_[3] += false
-        lines += ["", "Scored (truth used only here): identified true poles / false identified, over the groups.", "",
+        lines += ["", "Scored (truth used only here): identified true poles / false identified, over the groups. "
+                  "(new groups): out of sample, run after the rule was fixed.", "",
                   "| condition | groups | report | report, split flags unresolved | + dup / alias unresolved |"
-                  + (" + bias-corrected values |" if null == "bc" else ""),
-                  "|---|---|---|---|---|" + ("---|" if null == "bc" else "")]
+                  + (" + bias-corrected values | + wide unresolved (post hoc) |" if null == "bc" else ""),
+                  "|---|---|---|---|---|" + ("---|---|" if null == "bc" else "")]
         for cond in dict.fromkeys(c for c, _ in tally):
-            v = [tally[(cond, n)] for n in ("report", "split", "split + checks", "bc values") if (cond, n) in tally]
+            v = [tally[(cond, n)] for n in ("report", "split", "split + checks", "bc values", "wide")
+                 if (cond, n) in tally]
             lines.append(f"| {cond} | {v[0][0]} | " + " | ".join(f"{a[1]}/{a[2]}, {a[3]} false" for a in v) + " |")
         lines.append("")
     (T.R.RESULTS / "e4_split.md").write_text("\n".join(lines) + "\n")

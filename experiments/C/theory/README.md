@@ -1719,6 +1719,71 @@ the groups):
 - **The −1 / −2 pair in p6 g10 / g20 at η_u = 0.1 counts as identified.** Its intervals are
   closed but wide (bootstrap half-widths 18–36 %).
 
+## E4, nineteenth pass: the combined rule out of sample
+
+The combined rule of the eighteenth pass was set on 40 groups. Here it is applied unchanged to
+12 new groups (60 runs, full recipe, then `foh_eivo`, then `e4_split.py --null bc`):
+
+- p4 multisine at η_u = 0.3 with new seeds 30–49.
+- p6 E1 at η_u = 0.1 with new seeds 30–49.
+- p6 E1 at a new level, η_u = 0.05 (condition `p6_e1_T20_n1e-2_u5e-2`, seeds 10–29).
+
+| data | η_u | new groups | `foh_eivo` report | combined rule | + wide unresolved (post hoc) |
+|---|---|---|---|---|---|
+| p4 multisine | 0.3 | 4 | 8/12, 4 false | **12/12, 0 false** | 12/12, 0 false |
+| p6 E1 | 0.1 | 4 | 14/16, 7 false | 14/16, 6 false | 9/16, 4 false |
+| p6 E1 | 0.05 | 4 | 13/16, 3 false | 13/16, 3 false | 12/16, 0 false |
+
+(identified true poles / false identified; `results/e4_split.md`, `results/e4_profile_foh_eivo.md`)
+
+**p4: the rule holds.**
+
+- −1 is biased more strongly in the new groups (−0.865 … −0.898), so it counts as a false pole
+  in all four.
+- The gated bias correction brings it to −0.97 … −1.0 in every group.
+- No split flag fires (max ratio 0.60).
+
+**p6 E1 at 0.1: the rule does not carry over.** The new groups fail in other ways than the four
+the rule was built on (a merged pair, aliased poles, a duplicate):
+
+- **Spurious fast poles** stay in all four groups, either real (−48, −52) or complex
+  (−108 ± 48i, −121 ± 1.2i). Their bootstrap spread is 2.5–4 %, so their intervals are narrow,
+  and no split, duplicate or alias rule touches them. These are the same class as the −16.4 left
+  in g25 of the first groups.
+- **−2 is reported at −2.45** in two groups. The bootstrap spread is 14–16 %, and the gate
+  correctly keeps the bias correction off.
+- **An unstable real pole at +0.30** (g35) is flagged by the split test. That is the only flag
+  in the new groups.
+
+**p6 E1 at 0.05 (a new level): −2 is biased by +11 … +16 %** in 3 of 4 groups (−2.21 … −2.33),
+with a bootstrap spread of about 6 %.
+
+- The 95 % half-width is about 12 %, just above the 10 % gate, so no correction is applied.
+- Ungated, the correction gives −1.98 … −2.04 in those three groups but moves g25 from −2.03
+  to −1.75. The gate costs 3 poles there and saves 1.
+
+**A post-hoc width rule.**
+
+- **The rule:** a pole whose bootstrap 95 % half-width exceeds 10 % |z| is read as unresolved.
+  It was added after seeing these groups, so it is not validated.
+- **Where it helps:** p6 at 0.05 goes to 12/16 with 0 false, since −2 becomes unresolved
+  instead of wrong. p6 at 0.1 goes to 9/16 with 4 false.
+- **No side effects:** p4 and the other p6 groups are unchanged.
+- **What it leaves:** the spurious fast poles.
+
+**Reading.**
+
+- **Multisine inputs.** The bias correction is the part of the rule that generalises: p4 at
+  30 × η_y is exact in 8 of 8 groups.
+- **E1 inputs.** The split, duplicate and alias rules fixed the four groups they were built on,
+  but not new ones. Above η_u ≈ 0.03 the E1 reports fail in several ways at once:
+  - spurious fast poles that look well identified;
+  - a biased −2 that is near the information limit;
+  - occasionally a merged or unstable pole.
+- **Next.** The spurious fast poles are the open problem. Under input noise they carry real S
+  gain (input-noise structure) at time scales near dt, so the next check is truth-free:
+  compare their time constant with the input's bandwidth and sampling step.
+
 ## E3, deep setting: first pass
 
 `e3_deep.py`. The E1 deep models (ALNO / LFNO, 5,977 parameters, four layers) are trained
