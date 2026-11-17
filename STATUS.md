@@ -8,7 +8,7 @@ Each session appends one entry using the template at the bottom.
 | Work package | Months | Status | Gate |
 |---|---|---|---|
 | Shared foundation | 1–4 | nearly done: LNO v1/v2 reproduced (gate met), ALNO/LFNO 1D re-implemented; LTI/PDE/process generators partly | reproduce original LNO results (month 4) — **met** |
-| (C) Pole audit of existing models | 3–5 | **in progress**: E1 done, draft report (`E1_report.md`, updated with E2); paper decisions open | — |
+| (C) Pole audit of existing models | 3–5 | **in progress**: E1 done, draft report (`E1_report.md`, updated with E2); paper decisions made (2026-11-18); workshop paper text next | — |
 | (D) Non-periodic input representation | 4–8 | not started | differs from padded FNO? (month 8) |
 | (A) Pole layer and linear validation | 5–10 | not started | dispersion relations recovered (month 10) |
 | (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits, a bootstrap-calibrated order, certificate and order test; reduction-path unresolved rules fail, a location-calibrated split test flags the merge, a combined post-report rule leaves 1 false pole in 40 groups but does not carry over to new p6 E1 groups; an EIVML refit of the reports removes the EIV bias; EIVML through the whole pipeline helps only up to η_u = 0.05; an EIVML elimination of the calibrated report leaves 0 false poles up to p4 30 η_y and p6 E1 0.05, with EIV-bootstrap intervals covering 33/36 at p4 30 η_y), E3 deep first pass done; H1–H3 theory draft (`experiments/C/theory/H1_H2.md`), E5 first pass (`experiments/C/e5_probe/`) | — |
@@ -21,7 +21,7 @@ Each session appends one entry using the template at the bottom.
 
 - [ ] Staffing (affects schedule adjustments in `docs/integrated_schedule_ACD.qmd`, Section 4)
 - [x] Whether ALNO / LFNO code is public: **not public** (2026-11-12); both re-implemented in `lfo.models.hybrid`
-- [ ] E1 paper: reported set; deep "closest pooled pole" in main text; waive the budget rule for the minimal layer setting? E2 in the same paper? (`experiments/C/e1_audit/E1_report.md`, decisions 1–4)
+- [x] E1 paper: **decided** (2026-11-18): selected table in the main text, full grid in an appendix; deep "closest pooled pole" in the main text as an optimistic upper bound; budget rule waived for the layer setting only; workshop paper = E1 + an E2 paragraph, main (C) paper = E2–E5 + H1–H3 (`experiments/C/e1_audit/E1_report.md`, "Decisions for the paper")
 - [x] E1 finding 3: **restated** (2026-11-16): "not found by the published recipes, but the E1 data identify them"; noise limit = CRB (p6 −2 to η ≈ 0.03, −1 ≈ 0.1, p4 real poles ≥ 0.3); `E1_report.md` finding 3, the E1 README and the web page updated
 - [x] Ask the LFNO authors? **No** (2026-11-12): paper not formally published; use the reconstruction and document it
 
@@ -139,7 +139,8 @@ Suggested next steps (in order):
    (pole-shift gate: low-amplitude fifth linear, all-sample equivalent pole within 10 % of it),
    pre-registered on new sets where v2 and v3 disagree: v3 trusts 12 runs, all correct (2–7 %).
    Over 9 sets / 160 runs: v1 6 false; v2 0 false, 20 missed; v3 0 false, 0 missed. RQ4 rule =
-   v3. Next: Duffing c = 0; Lorenz (probe about its operating point); E1 paper decisions.
+   v3. E1 paper decisions made (2026-11-18). Next: E1 workshop paper text; Duffing c = 0;
+   Lorenz (probe about its operating point).
 
 Things to know:
 
@@ -150,6 +151,20 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-18 — (C) E1: paper decisions
+
+- Done: the four open E1 paper decisions settled with the user; `experiments/C/e1_audit/E1_report.md`
+  ("Decisions for the paper"; the E2 follow-up updated: the slot-count prior is removed by the prior-free
+  recipe), `CLAUDE.md` (budget-rule exception for the E1 layer setting).
+- Decisions:
+  1. Main text: the selected table (published protocols, pole lr × 10, warm start); full grid in an appendix.
+  2. Deep "closest pooled pole" in the main text, labelled as an optimistic upper bound.
+  3. Same-budget rule waived for the layer setting only (minimal model, compares poles); deep setting
+     keeps matched budgets.
+  4. Workshop paper = E1 + one E2 paragraph (data identify the fast real poles; prior-free recipe; CRB
+     limit under noise). Main (C) paper = E2–E5 and H1–H3.
+- Next: workshop paper text from `E1_report.md`; Duffing c = 0; Lorenz.
 
 ### 2026-11-18 — (C) E5 / RQ4: a pole-shift gate (rule v3)
 

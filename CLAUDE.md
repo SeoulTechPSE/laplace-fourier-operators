@@ -52,6 +52,8 @@ docs/               research plans (Quarto .qmd) and figures
   and `iid` (re-split); see `lfo.data.lno_bench`.
 - Every reported number: same parameter budget across models, ≥ 3 seeds,
   mean ± standard deviation.
+  Exception: the (C) E1 *layer* setting (one minimal pole-residue layer per model) compares
+  poles, not accuracy, and does not match budgets (decision 2026-11-18 in `STATUS.md`).
 - Experiment outputs (checkpoints, large arrays) go in `runs/` (git-ignored).
   Commit configs and small result summaries only.
 - Run `pytest` before committing changes to `src/lfo/`.

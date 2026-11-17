@@ -93,14 +93,16 @@ Details: `experiments/C/theory/README.md`. Tied single layer, same systems; 10�
   validation loss among 5 independent runs: all poles recovered in 8/10 groups (p4) and
   7/10 (p6) on independent seeds, from 0 % with the E1 recipe. Repulsion, merge-and-split,
   sparsity / pruning and fewer slots add nothing.
-- **Open:** the recipe sizes the slots from the true number of real poles. Without it
-  (fixed 4 + 4 slots, or a learned real/complex gate) recovery falls to 0–15 %: spare
-  complex slots take the slow decays, and the gate is compensated by Im μ̃.
+- **The slot-count prior was later removed.** Without it (fixed 4 + 4 slots, or a learned
+  real/complex gate) recovery first fell to 0–15 %: spare complex slots took the slow decays.
+  A damping bound on the complex slots (`damp8`), an L-BFGS polish, truth-free single-slot
+  restarts (`e2_rescue.py`) and a truth-free floor certificate with consensus over 5 runs
+  (`e2_floor.py`) report all p6 poles in 4/4 groups with no false pole
+  (`experiments/C/theory/README.md`).
 
-Revised message for part 3: under the E1 data the fast real poles are practically
-non-identifiable; with identifiable data they are still not found by the published
-recipes, because complex slots absorb real decays. A real-constrained parameterisation
-with the right slot count recovers them; doing so without that prior is open.
+Revised message for part 3 (as in the finding above): the fast real poles are not found by
+the published recipes, but the E1 data identify them. A prior-free recipe recovers them, and
+under noise the limit is the Cramér–Rao bound.
 
 ## Main numbers (proposed reported set)
 
@@ -136,13 +138,17 @@ unstable (Re μ > 0), and 10 of 30 deep LFNO runs diverged mid-training. Weight 
 - LNO v1 at the matched 5.9k budget does not train from its original init; its published
   1.8k configuration was not run here.
 
-## Open decisions for the paper
+## Decisions for the paper (2026-11-18)
 
-1. Reported set: the table above (published protocols + pole-lr control + warm start),
-   or the full grid in `results/summary.md` as an appendix.
-2. Whether "deep, closest pooled pole" is shown in the main text (optimistic by design)
-   or only the layer setting.
-3. Whether the parameter-budget rule (CLAUDE.md) is waived for the layer setting, where
-   the model is the minimal one by design.
-4. Whether E2 goes into the same paper (as "follow-up / remedy") or into a separate one;
-   the E2 recipe uses a slot-count prior that a deployable method would have to remove.
+1. **Reported set:** the table above in the main text (published protocols, pole-lr × 10
+   control, warm start). The full grid (`results/summary.md`) goes in an appendix.
+2. **Deep "closest pooled pole":** in the main text, labelled in the table and caption as an
+   optimistic upper bound (closest of ≈ 800–1,000 pooled poles). It is the only deep-setting
+   evidence for part 2.
+3. **Parameter budget:** the same-budget rule is waived for the layer setting only. That
+   setting is the minimal model by design and compares poles, not accuracy (8–56
+   parameters). The deep setting keeps matched budgets (5,927–5,977). The paper states this.
+4. **Paper split** (as planned in `docs/proposal_C_identifiability.qmd`):
+   - workshop paper: E1 (three-part message) plus one E2 paragraph: the E1 data identify the
+     fast real poles, a prior-free recipe recovers them, and noise is limited by the CRB;
+   - main (C) paper: E2–E5 in full, with the theory H1–H3.
