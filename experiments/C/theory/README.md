@@ -1943,6 +1943,61 @@ In the eleventh pass, the gain of 66 on E1 inputs was for much faster poles (−
 - **The candidate for input noise stays `foh_eivo` plus an EIVML refit of its report.** Whole-
   pipeline EIVML is better only at η_u ≤ 0.05.
 
+## E4, twenty-second pass: backward elimination under EIVML from the calibrated report
+
+**Method** (`e4_mlelim.py` → `results/e4_mlelim.md`).
+
+- The `foh_eivo` report of each group is refitted under EIVML.
+- Then the cheapest move (drop a pole, or make a complex pole real) is taken while
+  ΔS ≤ χ²_Δp(0.99), in noise units with no calibration.
+- Intervals are 95 % EIVML profile intervals of Re μ.
+- Duplicate (10 %), aliased and undamped (|Re μ| T_rec < 1) poles are unresolved.
+- The rule was fixed before any group was run. EIVML only refits and reduces a calibrated
+  report; it does not search, which avoids the degenerate directions of the twenty-first pass.
+
+| data | η_u | groups | EIVML elimination: identified / false (unresolved) | `foh_eivo`: identified / false |
+|---|---|---|---|---|
+| p4 multisine | 0, 0.01, 0.03, 0.1 | 4, 4, 4, 8 | all, 0 | all, 0 |
+| p4 multisine | 0.3 | 8 | **24/24, 0** | 19/24, 5 |
+| p4 multisine | 0.3, fresh | 4 | **12/12, 0** | 9/12, 3 |
+| p6 E1 | 0, 0.01, 0.03 | 4 each | 16/16, 0 each | 16/16, 0 each |
+| p6 E1 | 0.05 | 4 | 15/16, 1 | 13/16, 3 |
+| p6 E1 | 0.05, fresh | 4 | **16/16, 0** | 13/16, 3 |
+| p6 E1 | 0.1 | 8 | 23/32, 4 (6) | 26/32, 13 |
+| p6 E1 | 0.1, fresh | 4 | 8/16, 1 (6) | 12/16, 6 |
+
+**What it does.**
+
+- **It removes every spurious fast pole of the reports.** Examples: −32.5, −2.8e4,
+  −68 ± 140i, and the −48 … −121 of the E1 reports. S / n is 0.99–1.03 in every group.
+- **Multisine at 30 × η_y is identified completely.**
+  - All 12 groups, fresh ones included, end with the true model, 3 poles, 0 false.
+  - The −1 is refitted to −0.97 … −1.03.
+- **E1 at 0.05 is identified completely on the fresh groups** (16/16, 0 false).
+- **E1 at 0.1: the −1 / −2 pair is what remains.**
+  - The complex poles are always found.
+  - The pair ends as a duplicate in 5 of 12 groups (−1.27 … −1.32, twice; unresolved).
+  - It is merged into −0.73 in 2 groups (1 false each).
+  - It is off by more than 10 % in 2 groups (−1.12 / −1.48, −2.24).
+  - It is resolved in 3 groups.
+  - Two aliased fast poles stay supported, but they are read as unresolved.
+- **The intervals undercover under strong input noise.**
+  - Profile intervals cover 17 of 36 true Re μ at p4 0.3, and 18 of 24 at p4 0.1; the mean
+    half-width is 0.2–0.5 %.
+  - At η_u ≤ 0.05 they cover 29/31 to 16/16.
+  - The EIVML curvature is too sharp once σ_u dominates: the concentrated likelihood treats
+    the estimated inputs as known.
+
+**Reading.**
+
+- **This is the best input-noise pipeline so far.** It has the calibrated `foh_eivo` search
+  first, then an uncalibrated EIVML elimination. It identifies multisine up to 30 × η_y and E1
+  up to 5 × with 0 false poles on fresh groups.
+- **E1 at 10 × stays beyond reach.** The −1 / −2 pair is unresolved or wrong in most groups,
+  now with 1 false pole in 4 fresh groups instead of 6.
+- **Open.** The intervals at η_u ≥ 0.1 need calibration, for example the EIV bootstrap
+  (`eiv_bootstrap`) around the EIVML fit.
+
 ## E3, deep setting: first pass
 
 `e3_deep.py`. The E1 deep models (ALNO / LFNO, 5,977 parameters, four layers) are trained

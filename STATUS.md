@@ -11,7 +11,7 @@ Each session appends one entry using the template at the bottom.
 | (C) Pole audit of existing models | 3–5 | **in progress**: E1 done, draft report (`E1_report.md`, updated with E2); paper decisions open | — |
 | (D) Non-periodic input representation | 4–8 | not started | differs from padded FNO? (month 8) |
 | (A) Pole layer and linear validation | 5–10 | not started | dispersion relations recovered (month 10) |
-| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits, a bootstrap-calibrated order, certificate and order test; reduction-path unresolved rules fail, a location-calibrated split test flags the merge, a combined post-report rule leaves 1 false pole in 40 groups but does not carry over to new p6 E1 groups; an EIVML refit of the reports removes the EIV bias; EIVML through the whole pipeline helps only up to η_u = 0.05), E3 deep first pass done (`experiments/C/theory/`) | — |
+| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits, a bootstrap-calibrated order, certificate and order test; reduction-path unresolved rules fail, a location-calibrated split test flags the merge, a combined post-report rule leaves 1 false pole in 40 groups but does not carry over to new p6 E1 groups; an EIVML refit of the reports removes the EIV bias; EIVML through the whole pipeline helps only up to η_u = 0.05; an EIVML elimination of the calibrated report leaves 0 false poles up to p4 30 η_y and p6 E1 0.05), E3 deep first pass done (`experiments/C/theory/`) | — |
 | (A) Application 1: process dynamics | 11–16 | not started | — |
 | (D) Initial conditions and rollout | 13–19 | not started | — |
 | (A) Application 2: Cahn–Hilliard | 17–22 | not started | recover k_c, k_max (month 20) |
@@ -96,8 +96,11 @@ Suggested next steps (in order):
    poles; p6 E1 at 0.1 stays unresolved. EIVML through the whole pipeline (plain χ², 12
    fresh groups) beats `foh_eivo` at p6 E1 0.05 (15/16, 1 false) but is worse at 0.1 / 0.3:
    undamped poles on the DFT grid remove lines from the cost; a finite-record variance
-   (`EIVMLT`) degenerates too. Next: EIVML refit of the `foh_eivo` report as a backward
-   elimination; noise-dependent release; RQ4.
+   (`EIVMLT`) degenerates too. Backward elimination under EIVML from the `foh_eivo` report
+   (plain χ²) removes every spurious fast pole: p4 30 η_y 24/24 + 12/12 fresh, 0 false; p6 E1
+   0.05 fresh 16/16, 0; p6 E1 0.1 fresh 8/16, 1 false, 6 unresolved (the −1 / −2 pair). Its
+   profile intervals undercover at η_u ≥ 0.1 (17/36 at p4 0.3). Next: EIV-bootstrap intervals
+   around the EIVML fit; noise-dependent release; RQ4.
 4. Optional E1 extras: log-parameterised decay rate; untied models with 64 steady modes
    (H1); weight decay excluded from poles; deep LNO v1 at its published size.
 
@@ -110,6 +113,25 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-17 — (C) E4: backward elimination under EIVML from the calibrated report
+
+- Done: `e4_mlelim.py`. The `foh_eivo` report of each of 64 groups (52 development, 12 fresh)
+  refitted under EIVML and reduced by backward elimination with plain χ²_Δp(0.99); EIVML profile
+  intervals; duplicates, aliased and undamped poles unresolved; rule fixed before running.
+  README section "E4, twenty-second pass". `src/lfo/` unchanged.
+- Results (identified / false, `foh_eivo` in brackets):
+  - p4 0.3: 24/24, 0 (19/24, 5); fresh 12/12, 0 (9/12, 3). p4 ≤ 0.1, p6 ≤ 0.03: all, 0.
+  - p6 E1 0.05: 15/16, 1 (13/16, 3); fresh 16/16, 0 (13/16, 3).
+  - p6 E1 0.1: 23/32, 4, 6 unresolved (26/32, 13); fresh 8/16, 1, 6 unresolved (12/16, 6). The
+    −1 / −2 pair is duplicated (5/12), merged (2/12), off > 10 % (2/12) or resolved (3/12).
+  - Every spurious fast pole is removed; S / n 0.99–1.03.
+  - Profile intervals undercover at η_u ≥ 0.1: 17/36 (p4 0.3), 18/24 (p4 0.1); η_u ≤ 0.05:
+    29/31 – 16/16.
+- Decisions: the input-noise pipeline is `foh_eivo` followed by the EIVML elimination;
+  intervals at η_u ≥ 0.1 are not yet trusted.
+- Next: EIV-bootstrap intervals around the EIVML fit; noise-dependent release; zero-order hold;
+  joint intervals; RQ4.
 
 ### 2026-11-17 — (C) E4: EIVML through the whole pipeline, fresh groups
 
