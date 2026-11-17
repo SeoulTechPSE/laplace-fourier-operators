@@ -504,7 +504,90 @@ Test rel. L2 by variant (5 seeds):
 - **The fit criterion did the work on `c0_orig`.** Valid, self-consistent probes (the tied layers) were
   excluded only by test error. The three parts of v1 are all needed.
 
+## Ninth pass (2026-11-18): forced Lorenz (ρ = 5), a nonzero operating point
+
+Pre-registered in `results/e5_lorenz_prereg.md`, before any training. Rule v3 unchanged.
+
+**System and data.**
+
+- LNO Eq. 22: x′ = 10(y − x), y′ = x(5 − z) − y, z′ = xy − (8/3)z − f; output x. Unforced, the state settles to
+  C+ = (3.266, 3.266, 4). The linearisation at C+ has poles **−0.9287 ± 4.1476i** (reference) and −11.81.
+- `lz_orig`: the LNO data `1D_Lorenz_rho5` (from x(0) = 1, inputs A sin 5t). `lz_small` (peak |f| 0.05–0.5) and
+  `lz_wide` (0.5–5): `e5_data.py`, started at C+, E1 input families, data seed 5.
+- The gates fit centred data. The tied layer has a learned output offset b(t) (`e5_train.Offset`). The LNO uses the
+  Lorenz architecture (grid input, tanh, 16 modes). Same 4 variants × 5 seeds, 60 runs.
+
+| set | all: pole, resid | low fifth: pole, resid | shift | v2 | v3 | v1 trusted: correct / all (errors) |
+|---|---|---|---|---|---|---|
+| `lz_orig` | −0.661 + 3.883i, 0.527 | −1.484 + 4.722i, 0.179 | 0.238 | fail | fail | 0 / 0 |
+| `lz_small` | −0.999 + 4.055i, 0.027 | −1.008 + 4.066i, 0.016 | 0.003 | pass | pass | 0 / 0 |
+| `lz_wide` | −1.115 + 4.023i, 0.183 | −1.027 + 4.083i, 0.041 | 0.025 | fail | pass | **0 / 1** (96 %) |
+
+Test rel. L2 by variant (5 seeds), and of a trivial predictor (the training-mean trajectory):
+
+| set | `base` | `lno_plr10` | `lno_stable_plr10` | `tied4_stable_plr10` | mean trajectory |
+|---|---|---|---|---|---|
+| `lz_orig` | 0.016–0.035 | 0.015–0.098 | 0.025–0.042 | 0.363–0.515 | 0.106 |
+| `lz_small` | 0.005 | 0.004–0.005 | 0.001–0.002 | 0.539–0.540 | 0.011 |
+| `lz_wide` | 0.044–0.046 | 0.022–0.032 | 0.010–0.014 | 0.533–0.536 | 0.110 |
+
+**Predictions against results.**
+
+1. `lz_small`: every v1-trusted run is correct. **Holds, but vacuously**: v1 trusts no run. The stable-init LNOs
+   have J poles 8–16 % from the reference; the one with a valid Jacobian (s2, 8 %) has d = 0.13. The others are
+   non-causal (0.14–0.32).
+2. `lz_wide`: v3 passes where v2 fails, and every v1-trusted run is correct. **Fails.** v1 trusts one run,
+   `base` s3, and v3 lets it through. Its J pole −0.115 + 0.168i is 96 % from the reference. This is v3's
+   first false trust.
+3. `lz_orig`: v3 abstains, and v1 trusts few or no runs. **Holds.**
+   - v1 trusts none.
+   - The Toeplitz residual is large for `base` and `lno_plr10` (0.21–0.91), as predicted.
+   - The stable-init LNOs are invalid by non-causality (0.11–0.25) rather than by the Toeplitz residual.
+   - The tied layers are valid but fail on d or fit.
+4. Reported, not predicted:
+   - **Fast pole.** No stored pole of any run is within 10 % of −11.81. The original-init LTI probes on `lz_orig`
+     return real poles −8.7 … −13.7, but with fit residuals of about 0.8, so they mean little.
+   - **Offset.** The tied layer's offset stops at about 1.5, against a mean output of 3.27. The `common`
+     protocol halves the learning rate every 100 epochs, which caps how far any parameter can move. This is the
+     same travel bound that limits pole movement in E1. As a result the tied layers fit worse than the trivial
+     predictor (0.53–0.54 against 0.011–0.110).
+
+**The false trust.**
+
+- `base` s3 on `lz_wide`: test 0.046, Jacobian causal (0.00) and shift-invariant (0.02), d = 0.02.
+- Its J impulse response decays at a slow pole near the origin (−0.115 + 0.168i). A stored pole that barely moved
+  from the original init (−0.115 + 0.164i) matches it.
+- So the model-side consistency check agrees on a pole that is neither the system's nor the data's.
+- The data gate cannot catch this: it tests whether the data have a linear pole, not whether the model learned it.
+- The fit criterion did not catch it either. On Lorenz, rel. L2 < 0.5 is weak: the output has a large mean, and
+  even the mean trajectory scores 0.011–0.110.
+
+**Totals over 15 sets, 280 runs.**
+
+| rule | trusted | false trust (> 10 %) | correct runs not trusted |
+|---|---|---|---|
+| v1 (no gate) | 56 | 7 | 0 |
+| v2 (output-residual gate) | 24 | 0 | 25 |
+| v3 (pole-shift gate) | 45 | **1** | 5 (`c0_medium`) |
+
+**Reading for RQ4.**
+
+- **v3 is not sufficient for a system with a nonzero operating point.** Its data gate and the v1 model checks
+  were all met by a run whose pole is wrong.
+- **Two gaps show up, both in v1's model-side checks:**
+  - d tests agreement between the Jacobian and a stored pole, but a non-physical slow pole can satisfy it;
+  - the fit criterion is not measured against the output's fluctuation.
+- **A post-hoc observation (not adopted).** The LTI probe's pole and the J pole agree within 4 % in all 49
+  correct v1-trusted runs over the 15 sets. In the Lorenz false trust they differ by a factor of about 1900. The
+  six Duffing false trusts (`mixed`, `moderate`) agree to 2–18 %, and the data gates catch them, so probe
+  agreement complements the gates and does not replace them. A probe
+  agreement condition, a fit criterion on centred outputs, and an offset initialised at the training mean would
+  be a rule v4. It would have to be pre-registered and tested on new data.
+- **Missed physical poles.** The stable-init LNOs on `lz_wide` have J poles 5–8 % from the reference with good
+  fits (0.010–0.014). They are not trusted because their Jacobians are non-causal (0.12–0.20). The cause is not
+  established.
+
 **Next.**
 
-- Lorenz needs a different probe: its data start from x₀ = 1 and its output is not zero at zero input, so a
-  linearisation about x = 0 is not the system's.
+- Pre-register rule v4 (probe agreement, centred fit criterion, offset init) and test it on new Lorenz sets (new
+  data seed; possibly ρ = 10) plus a re-check on the existing 15 sets.

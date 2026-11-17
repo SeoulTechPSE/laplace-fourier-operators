@@ -1,0 +1,41 @@
+# E5: linear-probe poles of Duffing models, `lz_orig` data set
+
+Forced Lorenz ρ = 5 (z' = xy − 8/3 z − f, output x), the original LNO data (`1D_Lorenz_rho5`, from x(0) = 1, y(0) = z(0) = 0, inputs A sin 5t), Lorenz LNO architecture (grid input, tanh, 16 modes), 5 seeds per variant; the tied layer has a learned output offset. Reference: the dominant pole of the linearisation at C+, **−0.9287 ± 4.1476i** (third pole −11.81). Equivalent poles from centred data.
+Errors in brackets: relative distance to it.
+
+- **layer**: stored poles within 10 % / all, and the closest.
+- **LTI probe**: odd part (G(εu) − G(−εu)) / 2ε on 16 smooth random inputs, one complex pair fitted (first-order hold); pole at ε = 0.01, and the relative fit residual over all ε = 0.01, 0.1, 0.3, 1, 3 (how well a causal LTI model describes G).
+- **Jacobian** J = ∂G/∂x at x = 0: share of ‖J‖ above the diagonal (non-causal), residual of a shift-invariant fit of its causal part, and the order-2 matrix-pencil pole of its average impulse response (mean subdiagonals h_1 … h_799).
+
+Variants: `base` original LNO (original init, pole lr × 1; first pass); `lno_plr10` pole lr × 10; `lno_stable_plr10` E1 stable init + pole lr × 10; `tied4_stable_plr10` E1 tied single layer, 4 slots (linear), stable init + pole lr × 10 (`e5_train.py`).
+
+Equivalent linear pole of the training data (best linear pair, per-sample relative weights) by amplitude band: all (200): -0.661+3.883i, residual 0.53; A <= 1 (20): -1.410+4.854i, residual 0.14; 1 < A <= 3 (40): -1.515+4.441i, residual 0.23; A > 3 (140): -0.487+3.804i, residual 0.57.
+
+RQ4 indicator: d = distance from the J impulse-response pole to the nearest stored pole (relative); valid = J causal and shift-invariant (both shares < 0.1). Trusted (rule fixed before the `small` and `mixed` runs): valid ∧ d < 0.1 ∧ test rel. L2 < 0.5. Rule v2 (fixed before the `medium` and `moderate` runs) adds a gate on the data: its best linear pair must leave < 0.1.
+
+| variant | seed | test rel. L2 | layer: within 10 %, closest | LTI probe: pole, residual | J: non-causal, Toeplitz residual | J impulse-response pole | valid, d | trusted |
+|---|---|---|---|---|---|---|---|---|
+| base | 0 | 0.020 | 0/256, -0.095+0.261i (0.94) | -12.245-0.004i (2.84), 0.79–0.82 | 0.59, 0.33 | -0.025+0.174i (0.96) | no, 0.28 | no |
+| base | 1 | 0.016 | 0/256, -0.037+0.253i (0.94) | -8.696-0.003i (2.07), 0.79–0.80 | 0.54, 0.30 | -0.110+0.000i (0.99) | no, 0.23 | no |
+| base | 2 | 0.022 | 0/256, -0.123+0.147i (0.96) | -11.402-0.004i (2.65), 0.81–0.82 | 0.58, 0.31 | 0.096+0.278i (0.94) | no, 0.55 | no |
+| base | 3 | 0.022 | 0/256, -0.007+0.138i (0.97) | -12.568-0.005i (2.91), 0.80–0.83 | 0.62, 0.38 | -0.149+0.145i (0.96) | no, 0.47 | no |
+| base | 4 | 0.035 | 0/256, -0.023+0.119i (0.97) | -13.681-0.005i (3.16), 0.81–0.83 | 0.67, 0.39 | -0.044+0.000i (1.00) | no, 0.61 | no |
+| lno_plr10 | 0 | 0.033 | 0/256, -0.545+2.189i (0.47) | -1.557-0.000i (0.99), 0.74–0.79 | 0.49, 0.21 | -0.408+0.000i (0.98) | no, 0.28 | no |
+| lno_plr10 | 1 | 0.098 | 0/256, -0.153+0.604i (0.85) | -2.631+0.001i (1.05), 0.96–0.98 | 0.65, 0.91 | -0.191+0.345i (0.91) | no, 0.04 | no |
+| lno_plr10 | 2 | 0.027 | 0/256, -0.053+0.973i (0.77) | -11.831-0.004i (2.74), 0.86–0.87 | 0.41, 0.39 | 0.106+0.601i (0.87) | no, 0.20 | no |
+| lno_plr10 | 3 | 0.015 | 0/256, -0.007+0.931i (0.79) | -14.145-0.005i (3.26), 0.79–0.82 | 0.43, 0.24 | -0.019+0.116i (0.97) | no, 0.07 | no |
+| lno_plr10 | 4 | 0.021 | 0/256, -0.321+1.718i (0.59) | -0.652+0.000i (0.98), 0.70–0.74 | 0.42, 0.24 | -0.159+0.045i (0.98) | no, 0.06 | no |
+| lno_stable_plr10 | 0 | 0.030 | 6/256, -0.690+4.206i (0.06) | -5.058+9.801i (1.65), 0.51–0.51 | 0.16, 0.07 | -0.114+11.086i (1.64) | no, 0.02 | no |
+| lno_stable_plr10 | 1 | 0.042 | 1/256, -1.171+4.120i (0.06) | -66.981-0.000i (15.57), 0.67–0.73 | 0.17, 0.13 | -1.671+1.123i (0.73) | no, 0.47 | no |
+| lno_stable_plr10 | 2 | 0.025 | 2/256, -0.928+3.920i (0.05) | -5.720+0.002i (1.49), 0.68–0.68 | 0.25, 0.09 | -0.513+0.368i (0.89) | no, 0.59 | no |
+| lno_stable_plr10 | 3 | 0.028 | 0/256, -0.474+4.276i (0.11) | -6.696+16.228i (3.15), 0.59–0.59 | 0.11, 0.05 | -0.897+22.341i (4.28) | no, 0.03 | no |
+| lno_stable_plr10 | 4 | 0.034 | 2/256, -0.910+3.739i (0.10) | -19.131+0.011i (4.39), 0.73–0.73 | 0.23, 0.11 | -0.100+20.113i (3.76) | no, 0.01 | no |
+| tied4_stable_plr10 | 0 | 0.512 | 0/4, -1.224+5.247i (0.27) | -2.241+5.787i (0.49), 0.14–0.14 | 0.02, 0.01 | -0.142+34.046i (7.04) | yes, 0.00 | no |
+| tied4_stable_plr10 | 1 | 0.363 | 0/4, -2.167+7.649i (0.87) | -0.081+0.000i (1.00), 0.37–0.37 | 0.01, 0.02 | 0.040+0.000i (1.00) | yes, 1.60 | no |
+| tied4_stable_plr10 | 2 | 0.512 | 0/4, -1.340+4.366i (0.11) | -0.842+5.590i (0.34), 0.25–0.25 | 0.02, 0.01 | -0.165+20.916i (3.95) | yes, 0.00 | no |
+| tied4_stable_plr10 | 3 | 0.515 | 0/4, -0.651+3.581i (0.15) | -323.494-276.513i (100.60), 0.61–0.61 | 0.01, 0.01 | -0.524+24.382i (4.76) | yes, 0.04 | no |
+| tied4_stable_plr10 | 4 | 0.365 | 0/4, -0.669+1.596i (0.60) | -0.117-0.000i (0.99), 0.46–0.46 | 0.01, 0.02 | 0.027+0.000i (1.00) | yes, 2.32 | no |
+
+Trusted runs (rule v1): 0 of 20. 
+
+Rule v2 linearity gate: the data's best linear pair leaves 0.527 of the output (gate 0.1): **failed**, v2 reads no linear pole as physical on this set.
