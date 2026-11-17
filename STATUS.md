@@ -8,7 +8,7 @@ Each session appends one entry using the template at the bottom.
 | Work package | Months | Status | Gate |
 |---|---|---|---|
 | Shared foundation | 1–4 | nearly done: LNO v1/v2 reproduced (gate met), ALNO/LFNO 1D re-implemented; LTI/PDE/process generators partly | reproduce original LNO results (month 4) — **met** |
-| (C) Pole audit of existing models | 3–5 | **in progress**: E1 done, draft report (`E1_report.md`, updated with E2); paper decisions made (2026-11-18); workshop paper text next | — |
+| (C) Pole audit of existing models | 3–5 | **in progress**: E1 done, draft report (`E1_report.md`, updated with E2); paper decisions made (2026-11-18); workshop paper draft written (`paper/e1_workshop.qmd`) | — |
 | (D) Non-periodic input representation | 4–8 | not started | differs from padded FNO? (month 8) |
 | (A) Pole layer and linear validation | 5–10 | not started | dispersion relations recovered (month 10) |
 | (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits, a bootstrap-calibrated order, certificate and order test; reduction-path unresolved rules fail, a location-calibrated split test flags the merge, a combined post-report rule leaves 1 false pole in 40 groups but does not carry over to new p6 E1 groups; an EIVML refit of the reports removes the EIV bias; EIVML through the whole pipeline helps only up to η_u = 0.05; an EIVML elimination of the calibrated report leaves 0 false poles up to p4 30 η_y and p6 E1 0.05, with EIV-bootstrap intervals covering 33/36 at p4 30 η_y), E3 deep first pass done; H1–H3 theory draft (`experiments/C/theory/H1_H2.md`), E5 first pass (`experiments/C/e5_probe/`) | — |
@@ -139,8 +139,9 @@ Suggested next steps (in order):
    (pole-shift gate: low-amplitude fifth linear, all-sample equivalent pole within 10 % of it),
    pre-registered on new sets where v2 and v3 disagree: v3 trusts 12 runs, all correct (2–7 %).
    Over 9 sets / 160 runs: v1 6 false; v2 0 false, 20 missed; v3 0 false, 0 missed. RQ4 rule =
-   v3. E1 paper decisions made (2026-11-18). Next: E1 workshop paper text; Duffing c = 0;
-   Lorenz (probe about its operating point).
+   v3. E1 paper decisions made (2026-11-18); workshop paper draft
+   `experiments/C/e1_audit/paper/e1_workshop.qmd`. Next: review the draft (venue, length,
+   figures); Duffing c = 0; Lorenz (probe about its operating point).
 
 Things to know:
 
@@ -151,6 +152,19 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-18 — (C) E1: workshop paper draft
+
+- Done: `experiments/C/e1_audit/paper/e1_workshop.qmd` (Quarto; abstract, setup, three results, discussion,
+  limitations, references, Appendix A = `results/summary.md`), following the 2026-11-18 decisions. Fig. 2's deep
+  panel now says "closest pooled pole (optimistic upper bound)" (`figures.py`, figures regenerated). Fig. 3
+  (band-layer profile) left out of the draft: its flat profile is the layer's input hold, so part 3 is told
+  with the E2 numbers instead.
+- Every number is taken from the E1 README / summaries and `experiments/C/theory/README.md` (E1-data recipe:
+  damp8_ms + polish + restarts, −1 / −2 95 / 70 %; FOH-refit certificate 4/4 groups, 0 false; CRB limits).
+- Not done: no Quarto / LaTeX in this environment, so the draft is not rendered; venue and page limit not
+  chosen; references need full entries.
+- Next: user review of the draft (venue, length, figure 3); Duffing c = 0; Lorenz.
 
 ### 2026-11-18 — (C) E1: paper decisions
 

@@ -103,7 +103,7 @@ def fig2_recovery():
         ("single tied layer (LNO v1), 10 seeds", "layer", ("tied",),
          [("stable", "common", "published"), ("stable", "common+plr10", "pole lr × 10"),
           ("band", "common+plr10", "band init + pole lr × 10"), ("warm", "common", "warm start")]),
-        ("deep ALNO + LFNO (closest pooled pole), 5 seeds each", "deep", ("alno", "lfno"),
+        ("deep ALNO + LFNO, closest pooled pole (optimistic upper bound), 5 seeds each", "deep", ("alno", "lfno"),
          [("stable", "common", "published"), ("stable", "common+plr10", "pole lr × 10")]),
     ]
     labels = [f"{s}\n{z[0]:+g}{z[1]:+g}i" if z[1] else f"{s}\n{z[0]:+g}" for s, z in POLES]
