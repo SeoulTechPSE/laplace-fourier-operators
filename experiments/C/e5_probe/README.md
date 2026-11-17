@@ -38,6 +38,8 @@ python experiments/C/e5_probe/e5_train.py --data small                          
 python experiments/C/e5_probe/e5_probe.py small                                                       # results/e5_probe_small.md (and mixed)
 python experiments/C/e5_probe/e5_data.py medium moderate                                              # fifth pass; then --data medium | moderate, e5_probe.py medium | moderate
 python experiments/C/e5_probe/e5_data.py pend_medium pend_large                                       # sixth pass; then --data pend_orig | pend_medium | pend_large, e5_probe.py <set>
+python experiments/C/e5_probe/e5_data.py wide pend_wide                                               # seventh pass; train / probe as above, then
+python experiments/C/e5_probe/e5_gate.py                                                              # results/e5_gate.md (v2 / v3 gates, all sets)
 ```
 
 ## First pass (2026-11-17)
@@ -367,9 +369,78 @@ softens instead of hardening.
   band against the whole set. On `pend_orig` the |f| ≤ 1 band has residual 0.00 and gives −0.250 + 0.968i
   exactly. This is post hoc and would need new data.
 
+## Seventh pass (2026-11-18): a pole-shift gate (rule v3)
+
+`e5_gate.py` → `results/e5_gate.md`; pre-registered in `results/e5_rule_v3_prereg.md`.
+
+**Rule v3** = rule v1 ∧ a gate on the data:
+
+- the lowest-amplitude fifth of the training samples (by peak |f|) is linear (residual < 0.1);
+- the equivalent pole of all samples is within 10 % of that band's (shift < 0.1).
+
+The v2 gate asks how nonlinear the output is. The v3 gate asks how far the equivalent pole, which is what a
+trusted stored pole measures (fifth pass), has moved from its small-amplitude value.
+
+**Threshold history.**
+
+- v3 was first run on the seven earlier sets with shift < 0.05. That gave no false trust, but 11 correct runs
+  were not trusted (v2: 8).
+- Shift < 0.1 equals the 10 % accuracy the rule claims, and on those sets it leaves none untrusted. It was set
+  after seeing them, so two new sets were made.
+
+**New sets** (data seed 3). They come from a data-only scan for bands where v2 and v3 disagree:
+
+- `wide`: Duffing, peak |f| in [0.05, 0.6];
+- `pend_wide`: pendulum, peak |f| in [0.05, 1].
+
+Same 4 variants × 5 seeds, 40 runs.
+
+| set | all: pole, resid | low band: pole, resid | shift | v2 | v3 | v1-trusted runs within 10 % |
+|---|---|---|---|---|---|---|
+| `small` | −0.251 + 0.971i, 0.005 | −0.250 + 0.969i, 0.001 | 0.002 | pass | pass | 6 / 6 |
+| `mixed` | −0.893 + 1.753i, 0.439 | −0.424 + 1.161i, 0.263 | 0.611 | fail | fail | 0 / 2 |
+| `medium` | −0.280 + 1.044i, 0.095 | −0.253 + 0.981i, 0.016 | 0.067 | pass | pass | 6 / 6 |
+| `moderate` | −0.359 + 1.176i, 0.200 | −0.263 + 1.016i, 0.053 | 0.179 | fail | fail | 0 / 4 |
+| `pend_orig` | −0.255 + 0.924i, 0.121 | −0.250 + 0.967i, 0.004 | 0.043 | fail | pass | 3 / 3 |
+| `pend_medium` | −0.245 + 0.947i, 0.036 | −0.249 + 0.964i, 0.004 | 0.018 | pass | pass | 6 / 6 |
+| `pend_large` | −0.255 + 0.889i, 0.236 | −0.244 + 0.941i, 0.027 | 0.055 | fail | pass | 5 / 5 |
+| **`wide`** (new) | −0.294 + 1.063i, 0.132 | −0.251 + 0.974i, 0.007 | **0.098** | fail | pass | **7 / 7** (5–7 %) |
+| **`pend_wide`** (new) | −0.260 + 0.909i, 0.244 | −0.250 + 0.966i, 0.003 | 0.059 | fail | pass | **5 / 5** (2–3 %) |
+
+**Predictions against results.**
+
+1. On both new sets v2 fails and v3 passes: **holds**.
+2. Every v3-trusted run is within 10 % of the small-signal pole: **holds**. On `wide`, 7 runs are trusted at
+   5–7 % (5 tied layers, 2 stable-init LNOs); on `pend_wide`, 5 tied layers at 2–3 %.
+3. v2 abstains on 12 correct runs.
+
+**Totals over 9 sets, 160 runs.**
+
+| rule | trusted | false trust (> 10 %) | correct runs not trusted |
+|---|---|---|---|
+| v1 (no gate) | 44 | 6 | 0 |
+| v2 (output-residual gate) | 18 | 0 | 20 |
+| v3 (pole-shift gate) | 38 | 0 | 0 |
+
+**Reading for RQ4.**
+
+- **The trust rule is v3.** A stored pole is read as the system's small-signal pole when:
+  - the model's Jacobian probe is causal and shift-invariant;
+  - the probe agrees with a stored pole;
+  - the model fits (test < 0.5);
+  - the data's equivalent pole has not moved more than 10 % from its small-amplitude value.
+- **What it certifies.** A trusted pole is the equivalent linear pole of the training regime. The gate bounds
+  how far that is from the small-signal pole.
+- **Limits.**
+  - Two systems, both second-order oscillators with the same small-signal pole.
+  - `wide` passed with a shift of 0.098, right at the threshold, so the margin there is small.
+  - The gate needs low-amplitude samples in the training data. Without them it cannot be evaluated, and the
+    rule should abstain.
+  - Only the tied layer and the stable-init LNO were ever trusted. The LNO's Jacobian is usually slightly
+    non-causal (0.10–0.20), so the rule mostly certifies the linear layer.
+
 **Next.**
 
-- A pole-shift gate (band-wise equivalent poles) tested on new sets of both systems.
 - Duffing c = 0 (undamped, poles on the axis) as a boundary case.
 - Lorenz needs a different probe: its data start from x₀ = 1 and its output is not zero at zero input, so a
   linearisation about x = 0 is not the system's.

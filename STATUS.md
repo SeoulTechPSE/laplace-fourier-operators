@@ -135,8 +135,11 @@ Suggested next steps (in order):
    equivalent linear pole (2–7 %). Sixth pass (driven pendulum, pre-registered): `pend_medium`
    gate passes, 6 trusted within 1 %; `pend_large` / `pend_orig` gate fails and v2 abstains,
    although the 8 runs v1 would trust are correct (2–5 %). Across 120 runs v2 has no false
-   trust; its gate is sufficient but conservative for a softening spring. Next: pole-shift gate
-   (band-wise equivalent poles) on new data; Duffing c = 0; E1 paper decisions.
+   trust; its gate is sufficient but conservative for a softening spring. Seventh pass: rule v3
+   (pole-shift gate: low-amplitude fifth linear, all-sample equivalent pole within 10 % of it),
+   pre-registered on new sets where v2 and v3 disagree: v3 trusts 12 runs, all correct (2–7 %).
+   Over 9 sets / 160 runs: v1 6 false; v2 0 false, 20 missed; v3 0 false, 0 missed. RQ4 rule =
+   v3. Next: Duffing c = 0; Lorenz (probe about its operating point); E1 paper decisions.
 
 Things to know:
 
@@ -147,6 +150,24 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-18 — (C) E5 / RQ4: a pole-shift gate (rule v3)
+
+- Done: `experiments/C/e5_probe/e5_gate.py` → `results/e5_gate.md` (v2 and v3 gates from the data, against the
+  v1-trusted runs of every set); pre-registration `results/e5_rule_v3_prereg.md`; `e5_data.py` sets `wide`
+  (Duffing, |f| 0.05–0.6) and `pend_wide` (pendulum, 0.05–1), data seed 3, from a data-only scan for v2 / v3
+  disagreement; 40 runs. `src/lfo/` unchanged.
+- Results:
+  - v3 with shift < 0.05 (first choice) on the seven earlier sets: 0 false, 11 correct runs missed. With shift
+    < 0.1 (= the claimed 10 % accuracy, set after that run): 0 false, 0 missed.
+  - New sets: v2 fails both (0.132, 0.244), v3 passes both (shift 0.098, 0.059); v3 trusts 7 runs on `wide`
+    (5–7 %) and 5 on `pend_wide` (2–3 %), all correct.
+  - Totals, 9 sets / 160 runs: v1 44 trusted, 6 false; v2 18 trusted, 0 false, 20 missed; v3 38 trusted,
+    0 false, 0 missed.
+- Decisions: the RQ4 trust rule is v3 (valid J ∧ probe–layer agreement ∧ fit ∧ data pole shift < 0.1).
+  Limits: two oscillators with one small-signal pole; `wide` passed at 0.098; the gate needs low-amplitude
+  training samples.
+- Next: Duffing c = 0; Lorenz (probe about its operating point); E1 paper decisions.
 
 ### 2026-11-18 — (C) E5 / RQ4: rule v2 on the driven pendulum
 

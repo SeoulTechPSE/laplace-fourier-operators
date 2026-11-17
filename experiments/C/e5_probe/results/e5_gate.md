@@ -1,0 +1,17 @@
+# E5: data-side gates of the trust rule
+
+v2 gate: all-sample linear residual < 0.1. v3 gate: lowest 20% of samples by peak |f| linear (residual < 0.1) and equivalent-pole shift all vs low < 0.1. A trusted run is correct if its Jacobian pole is within 10 % of the small-signal pole −0.25 ± 0.9682i.
+
+| set | all: pole, resid | low band (peak |f| ≤): pole, resid | shift | v2 | v3 | v1 trusted: correct / all (errors) | v2 false / missed | v3 false / missed |
+|---|---|---|---|---|---|---|---|---|
+| `small` | -0.251+0.971i, 0.005 | (0.04) -0.250+0.969i, 0.001 | 0.002 | pass | pass | 6 / 6 (0.00–0.01) | 0 / 0 | 0 / 0 |
+| `mixed` | -0.893+1.753i, 0.439 | (1.01) -0.424+1.161i, 0.263 | 0.611 | fail | fail | 0 / 2 (0.43–0.86) | 0 / 0 | 0 / 0 |
+| `medium` | -0.280+1.044i, 0.095 | (0.18) -0.253+0.981i, 0.016 | 0.067 | pass | pass | 6 / 6 (0.05–0.06) | 0 / 0 | 0 / 0 |
+| `moderate` | -0.359+1.176i, 0.200 | (0.35) -0.263+1.016i, 0.053 | 0.179 | fail | fail | 0 / 4 (0.15–0.17) | 0 / 0 | 0 / 0 |
+| `pend_orig` | -0.255+0.924i, 0.121 | (2.00) -0.250+0.967i, 0.004 | 0.043 | fail | pass | 3 / 3 (0.02–0.02) | 0 / 3 | 0 / 0 |
+| `pend_medium` | -0.245+0.947i, 0.036 | (0.19) -0.249+0.964i, 0.004 | 0.018 | pass | pass | 6 / 6 (0.01–0.01) | 0 / 0 | 0 / 0 |
+| `pend_large` | -0.255+0.889i, 0.236 | (0.45) -0.244+0.941i, 0.027 | 0.055 | fail | pass | 5 / 5 (0.04–0.05) | 0 / 5 | 0 / 0 |
+| `wide` | -0.294+1.063i, 0.132 | (0.13) -0.251+0.974i, 0.007 | 0.098 | fail | pass | 7 / 7 (0.05–0.07) | 0 / 7 | 0 / 0 |
+| `pend_wide` | -0.260+0.909i, 0.244 | (0.20) -0.250+0.966i, 0.003 | 0.059 | fail | pass | 5 / 5 (0.02–0.03) | 0 / 5 | 0 / 0 |
+
+Totals: v1 alone 6 false trusts; v2 0 false, 20 correct runs not trusted; v3 0 false, 0 correct runs not trusted.

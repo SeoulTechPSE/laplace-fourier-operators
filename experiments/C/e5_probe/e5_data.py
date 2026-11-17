@@ -19,6 +19,9 @@ reproduces stored samples to 2.4e-4 (A = 0.05) ... 1.4e-2 (A = 10); same small-s
 data-only gate scan: `pend_medium` peak |f| ~ U[0.1, 0.5] (gate residual 0.04), `pend_large` U[0.3, 1] (0.26; the
 pendulum goes over the top).
 
+Seventh pass, data seed 3, bands where the v2 and v3 gates disagree in a data-only scan: `wide` (Duffing, peak |f| ~
+U[0.05, 0.6]) and `pend_wide` (pendulum, U[0.05, 1]).
+
 Splits 200 / 50 / 130 (train / vali / test); data seed 0 for `small` / `mixed`, 1 for `medium` / `moderate`. Stored in runs/C/e5_data/<name>.npz (git-ignored).
 
     python experiments/C/e5_probe/e5_data.py
@@ -41,7 +44,7 @@ import e1_audit as E  # noqa: E402
 C, K, K3 = 0.5, 1.0, 1.0
 N_T, DT = 2048, 0.01
 SETS = {"small": (0.02, 0.1, 0), "mixed": (0.05, 5.0, 0), "medium": (0.1, 0.5, 1), "moderate": (0.2, 1.0, 1),
-        "pend_medium": (0.1, 0.5, 2), "pend_large": (0.3, 1.0, 2)}
+        "pend_medium": (0.1, 0.5, 2), "pend_large": (0.3, 1.0, 2), "wide": (0.05, 0.6, 3), "pend_wide": (0.05, 1.0, 3)}
 SPLIT = (200, 50, 130)
 OUT = ROOT / "runs" / "C" / "e5_data"
 
