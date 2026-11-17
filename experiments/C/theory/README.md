@@ -1,5 +1,7 @@
 # (C) Identifiability theory: E2, data richness
 
+Theory: `H1_H2.md` states and proves H1 and H2 for one pole-residue layer (draft, 2026-11-17).
+
 Plan: `docs/proposal_C_identifiability.qmd`, RQ2 / H2 / E2. Builds on the E1 audit
 (`../e1_audit/`, especially `identifiability.py` and `E1_report.md`).
 
@@ -23,6 +25,7 @@ families) make the poles practically identifiable, and does training then recove
 | `e2_noise.py` | E4: pole error under output noise vs the Cramér–Rao bound of the minimal-form layer, both restart rules | `results/e2_noise.md` / `.json` |
 | `e2_figures.py` | figures: recovery by recipe stage; noise vs CRB | `results/figures/fig_e2_stages.png`, `fig_e4_noise.png` |
 | `e3_deep.py` | E3 deep first pass: bounded slots in full ALNO / LFNO stacks | `results/e3_deep/*.json`, `results/e3_deep.md` |
+| `h12_check.py` | numerical checks of the H1 / H2 statements in `H1_H2.md` (Lemma 1, exact recovery from a sparse input, local identifiability from one input, information with a free steady branch) | `results/h12_check.md` |
 | `e2_train.py` | phase 2: train the E1 tied layer on selected configurations, 10 seeds; `--variant` controls (warm, no spare slot, real-constrained slots); E3 steady branches and partial ties (`*_alno`, `*_lfno`, `*_pt*` conditions); tied layer with the first-order-hold response (`*_foh` conditions, `FOHPoleResidue`) | `results/e2_train/*.json`, `results/e2_train.md` |
 
 ```

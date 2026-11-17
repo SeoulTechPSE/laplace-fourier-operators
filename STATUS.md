@@ -11,7 +11,7 @@ Each session appends one entry using the template at the bottom.
 | (C) Pole audit of existing models | 3–5 | **in progress**: E1 done, draft report (`E1_report.md`, updated with E2); paper decisions open | — |
 | (D) Non-periodic input representation | 4–8 | not started | differs from padded FNO? (month 8) |
 | (A) Pole layer and linear validation | 5–10 | not started | dispersion relations recovered (month 10) |
-| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits, a bootstrap-calibrated order, certificate and order test; reduction-path unresolved rules fail, a location-calibrated split test flags the merge, a combined post-report rule leaves 1 false pole in 40 groups but does not carry over to new p6 E1 groups; an EIVML refit of the reports removes the EIV bias; EIVML through the whole pipeline helps only up to η_u = 0.05; an EIVML elimination of the calibrated report leaves 0 false poles up to p4 30 η_y and p6 E1 0.05, with EIV-bootstrap intervals covering 33/36 at p4 30 η_y), E3 deep first pass done (`experiments/C/theory/`) | — |
+| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits, a bootstrap-calibrated order, certificate and order test; reduction-path unresolved rules fail, a location-calibrated split test flags the merge, a combined post-report rule leaves 1 false pole in 40 groups but does not carry over to new p6 E1 groups; an EIVML refit of the reports removes the EIV bias; EIVML through the whole pipeline helps only up to η_u = 0.05; an EIVML elimination of the calibrated report leaves 0 false poles up to p4 30 η_y and p6 E1 0.05, with EIV-bootstrap intervals covering 33/36 at p4 30 η_y), E3 deep first pass done; H1–H2 theory draft (`experiments/C/theory/H1_H2.md`) | — |
 | (A) Application 1: process dynamics | 11–16 | not started | — |
 | (D) Initial conditions and rollout | 13–19 | not started | — |
 | (A) Application 2: Cahn–Hilliard | 17–22 | not started | recover k_c, k_max (month 20) |
@@ -105,6 +105,12 @@ Suggested next steps (in order):
    joint intervals; RQ4.
 4. Optional E1 extras: log-parameterised decay rate; untied models with 64 steady modes
    (H1); weight decay excluded from poles; deep LNO v1 at its published size.
+5. Theory draft `experiments/C/theory/H1_H2.md` (checks `h12_check.py`): H2 proved for the
+   tied layer (global uniqueness from one sparse input: every transient-excited pole; all poles
+   with persistent excitation of order M + M′; generic local identifiability from one input);
+   H1 proved in its exact form (per-line rank-one input set, e.g. one input) and shown false
+   in the plan's "any ε" form for ≥ 2 inputs, with the profiled information formula (E1 set:
+   23–72 % of the tied layer's). Next: H3 bound (partial tie) and the E3 trade-off curve.
 
 Things to know:
 
@@ -115,6 +121,29 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-17 — (C) Theory: H1 and H2 for one pole-residue layer (draft)
+
+- Done: `experiments/C/theory/H1_H2.md` (statements, proofs, mapping to the experiments) and
+  `h12_check.py` → `results/h12_check.md` (numerical checks). `src/lfo/` unchanged.
+- Results:
+  - Lemma 1: the tied layer is the zero-initial-state response to the trigonometric interpolant
+    of the input (checked to 1.6e-5 against an independent solve). The E1 / E2 floor is
+    therefore the input hold.
+  - Theorem 2 (H2): one input with DFT support S, |S| + M + M′ ≤ n, identifies every pole it
+    excites in the transient; with |S| ≥ M + M′ (persistent excitation) all poles. Excitation
+    is sufficient, not necessary (p6 recovered from one sinusoid by a matrix pencil, error
+    5e-13). Spare slots of an exact fit are dead or merged.
+  - Proposition 3: for a generic single input the tied layer is locally identifiable (full-rank
+    Jacobian; checked on E1, white-noise and grid inputs).
+  - Theorem 4 (H1): with a free steady symbol on all lines, the poles are completely
+    non-identifiable iff the input set has rank one per DFT line (e.g. one input). With ≥ 2
+    inputs they are locally identifiable; the plan's "for any ε" form does not hold in general.
+  - Proposition 5: profiled information = per-line projection off the input spectra; on the
+    E1 training set a free steady branch keeps 23–72 % of the tied information (p6 −2: 23 %).
+- Decisions: H1 is restated (exact in the rank-one case; otherwise reduced information plus
+  the truncation floor, the "weak form" of E3); H2 is restated with the transient route.
+- Next: H3 (partial tie) bound and the E3 trade-off curve; E5 / RQ4.
 
 ### 2026-11-17 — (C) E4: EIV-bootstrap intervals around the EIVML fit
 
