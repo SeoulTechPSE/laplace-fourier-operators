@@ -1784,6 +1784,87 @@ with a bootstrap spread of about 6 %.
   gain (input-noise structure) at time scales near dt, so the next check is truth-free:
   compare their time constant with the input's bandwidth and sampling step.
 
+## E4, twentieth pass: exact time-domain EIV cost (degenerate) and an EIVML refit of the reports
+
+**A bandwidth rule does not apply.** The E1 inputs are steps, so they are broadband. At
+η_u = 0.1 their per-line SNR stays above 1 up to about 70 rad/s, and the spurious poles at −48
+and −52 lie inside that band.
+
+**The exact time-domain EIV cost** (`e4_eivtd.py`, `EIVTD`).
+
+- **Construction.**
+  - The model is linear in the input, y_i = M_θ x_i. M_θ is the first-order-hold response
+    matrix with zero initial state; it agrees with the VarPro output to 3e-16.
+  - The residual of the stored input has covariance
+    C_i = σ_y² I + σ_u² (‖x_i‖/‖y_i‖)² M Mᵀ.
+  - The cost is Σ rᵀ C⁻¹ r, with poles and residues fitted jointly through a batched Cholesky
+    (0.85 s and 10 GB per evaluation).
+  - At the true model it gives S / n = 0.995, and 1.000 on simulated noise.
+- **Fitted, it degenerates.** The refitted true model reaches S / n = 0.00 on E1 inputs and 0.25
+  on multisine (`results/e4_eivtd.md`). Without a log det term the cost can be driven towards
+  zero by an ill-conditioned M (eigenvalues of M Mᵀ down to 1e-33). It is recorded as a
+  negative result.
+
+**The frequency-domain EIV ML does not support the spurious poles at this scale.** Truth data,
+η_u = 0.1, 2 draws:
+
+| data | added poles | χ²_Δp(0.99) | gain, FOH-EIV (pipeline) | gain, EIVML |
+|---|---|---|---|---|
+| p6 E1 | −50 | 9.2 | 107 / 6.5 | **0.7 / 0.1** |
+| p6 E1 | −50, −120 | 13.3 | fit failed (< 0) | 8.6 / 11.4 |
+| p4 multisine | −28 | 9.2 | 88 / 96 | 0.0 / 8.2 |
+| p4 multisine | −28, −244 | 13.3 | fit failed (< 0) | 23 / 59 |
+
+In the eleventh pass, the gain of 66 on E1 inputs was for much faster poles (−244, −1657).
+
+**EIVML drop test of the `foh_eivo` reports** (`e4_eivtd.py --drop`, 28 groups).
+
+- **Method.**
+  - Each report is refitted under EIVML.
+  - Each pole is dropped in turn and the model refitted; the pole is supported if
+    ΔS > χ²_Δp(0.99).
+  - The report keeps the supported poles. Duplicates (within 10 % of another pole) and aliased
+    poles (|Im μ| > π/dt) are read as unresolved.
+  - The rule is truth-free, has no gate and no bootstrap, and was fixed before scoring.
+
+| data | η_u | groups | EIVML report: identified / false | `e4_split.py` combined rule |
+|---|---|---|---|---|
+| p4 multisine | 0.1 | 4 | 12/12, 0 | 12/12, 0 |
+| p4 multisine | 0.3 (first / new groups) | 4 + 4 | 12/12, 0 and 12/12, 0 | 12/12, 0 and 12/12, 0 |
+| p6 E1 | 0.03 | 4 | 16/16, 0 | 16/16, 0 |
+| p6 E1 | 0.05 (new) | 4 | **15/16, 1** | 13/16, 3 |
+| p6 E1 | 0.1 (first / new groups) | 4 + 4 | 9/16, 2 and **11/16, 3** | 12/16, 1 and 14/16, 6 |
+
+**What the EIVML refit does.**
+
+- **It removes the EIV bias without a bootstrap.**
+  - p4 −1 at 30 × η_y refits to −0.97 … −1.03 in 8 of 8 groups (FOH-EIV gave −0.87 … −0.92).
+  - p6 −2 at 0.05 refits to −1.96 … −2.08 in 3 of 4 groups (FOH-EIV gave −2.21 … −2.33). The
+    fourth is −1.78.
+  - S_report / n is 0.99–1.03 in every group.
+- **True poles are always supported.** No true pole is dropped. The smallest gain for a true
+  pole is 570, for the p6 pair at 0.1, against χ² = 9.2.
+- **The drop test removes part of the spurious fast poles.**
+  - Unsupported: −4.3e4, −5.0e4, −290, −923 ± 30i, −49.6 ± 391i, and the −16.4 of g25.
+  - Still supported: −310 (ΔS = 56), −108 ± 48i (890) and −82.7 ± 289i (20.3; the last is above
+    Nyquist and therefore unresolved).
+- **The p6 pair at 0.1 does not resolve under ML either.**
+  - In three groups it refits to a near-duplicate (−1.25 / −1.25, −1.27 / −1.27, −1.35 / −1.29),
+    which the duplicate rule reads as unresolved.
+  - In two others it comes out off by 12 % (−1.76, −2.24), and in g15 as the merged −0.73.
+  - Those are the false poles left at 0.1, together with −310 and −108 ± 48i.
+
+**Reading.**
+
+- **The EIVML refit replaces the gated bias correction.** It is consistent, needs no gate, and
+  generalises from multisine to E1 inputs at 0.05.
+- **At 0.1 the E1 data are beyond what any rule tried here resolves.** The −1 / −2 pair is
+  merged, duplicated or biased in every group, and a few fast poles stay supported.
+- **Not done yet.**
+  - The drop test is a single pass, not a backward elimination.
+  - The reports come from the `foh_eivo` pipeline and are only refitted under EIVML; EIVML is
+    not run through the whole pipeline.
+
 ## E3, deep setting: first pass
 
 `e3_deep.py`. The E1 deep models (ALNO / LFNO, 5,977 parameters, four layers) are trained
