@@ -11,7 +11,7 @@ Each session appends one entry using the template at the bottom.
 | (C) Pole audit of existing models | 3–5 | **in progress**: E1 done, draft report (`E1_report.md`, updated with E2); paper decisions open | — |
 | (D) Non-periodic input representation | 4–8 | not started | differs from padded FNO? (month 8) |
 | (A) Pole layer and linear validation | 5–10 | not started | dispersion relations recovered (month 10) |
-| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits, a bootstrap-calibrated order, certificate and order test; reduction-path unresolved rules fail, a location-calibrated split test flags the merge, a combined post-report rule leaves 1 false pole in 40 groups but does not carry over to new p6 E1 groups; an EIVML refit of the reports removes the EIV bias; EIVML through the whole pipeline helps only up to η_u = 0.05; an EIVML elimination of the calibrated report leaves 0 false poles up to p4 30 η_y and p6 E1 0.05, with EIV-bootstrap intervals covering 33/36 at p4 30 η_y), E3 deep first pass done; H1–H2 theory draft (`experiments/C/theory/H1_H2.md`) | — |
+| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits, a bootstrap-calibrated order, certificate and order test; reduction-path unresolved rules fail, a location-calibrated split test flags the merge, a combined post-report rule leaves 1 false pole in 40 groups but does not carry over to new p6 E1 groups; an EIVML refit of the reports removes the EIV bias; EIVML through the whole pipeline helps only up to η_u = 0.05; an EIVML elimination of the calibrated report leaves 0 false poles up to p4 30 η_y and p6 E1 0.05, with EIV-bootstrap intervals covering 33/36 at p4 30 η_y), E3 deep first pass done; H1–H3 theory draft (`experiments/C/theory/H1_H2.md`) | — |
 | (A) Application 1: process dynamics | 11–16 | not started | — |
 | (D) Initial conditions and rollout | 13–19 | not started | — |
 | (A) Application 2: Cahn–Hilliard | 17–22 | not started | recover k_c, k_max (month 20) |
@@ -110,7 +110,10 @@ Suggested next steps (in order):
    with persistent excitation of order M + M′; generic local identifiability from one input);
    H1 proved in its exact form (per-line rank-one input set, e.g. one input) and shown false
    in the plan's "any ε" form for ≥ 2 inputs, with the profiled information formula (E1 set:
-   23–72 % of the tied layer's). Next: H3 bound (partial tie) and the E3 trade-off curve.
+   23–72 % of the tied layer's). H3 (Theorem 6): the partial tie moves the poles from the
+   tied estimate by −H⁻¹G R̂_δ ≤ C δ (checked to two digits; saturates at δ_sat ≈ 2–4e-3; with
+   exact data no movement); C is truth-free (p6 −2: 711). Next: E5 / RQ4 (Duffing
+   linear-probe poles); E1 paper decisions.
 
 Things to know:
 
@@ -121,6 +124,24 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-17 — (C) Theory: H3, the partial tie (draft)
+
+- Done: Theorem 6 in `experiments/C/theory/H1_H2.md` (now H1–H3) and `h3_check.py` →
+  `results/h3_check.md` (partial-tie estimator fitted directly over δ = 0 … 3, 64 modes, E2
+  training data p4 multisine and p6 E1). `src/lfo/` unchanged.
+- Results:
+  - Theorem 6: near a nondegenerate tied estimate θ̂₀, θ̂_δ − θ̂₀ = −H⁻¹G R̂_δ + O(δ²), so
+    |Δ Re μ_k| ≤ C_k δ with C_k = Σ_l |(H⁻¹G)_{k,l}|, computable without the truth. With exact
+    data the poles do not move; the deviation is driven by the mismatch and saturates at
+    δ_sat = ‖R̂_∞‖_∞.
+  - Check: deviation = first-order prediction to two digits for all δ (up to 16 %); bound
+    10–50 × loose; δ_sat ≈ 2e-3 (p4), 4e-3 (p6).
+  - Trade-off: p6 E1 fit 7.7e-4 → 6.1e-4 (−21 %) while −2's error goes 0.7 % → 9 % (C = 711;
+    −1: 120; pairs 1.6–7); p4 multisine stays within 0.2 % even saturated.
+- Decisions: H3 is stated as a bound on the deviation from the tied estimate (not from the
+  truth); E3's δ = 0.3 is beyond saturation, so its p6 failures are optimisation.
+- Next: E5 / RQ4 (Duffing linear-probe poles); E1 paper decisions.
 
 ### 2026-11-17 — (C) Theory: H1 and H2 for one pole-residue layer (draft)
 
