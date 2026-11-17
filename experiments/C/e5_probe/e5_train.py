@@ -35,14 +35,15 @@ import e1_audit as E  # noqa: E402
 import reproduce_lno as RL  # noqa: E402
 
 CASE = "duffing_c05"
-ORIG = {"orig": "duffing_c05", "pend_orig": "pendulum_c05", "c0_orig": "duffing_c0", "lz_orig": "lorenz_rho5"}     # data tags that are original LNO data
+ORIG = {"orig": "duffing_c05", "pend_orig": "pendulum_c05", "c0_orig": "duffing_c0", "lz_orig": "lorenz_rho5", "lz_r10_orig": "lorenz_rho10"}     # data tags that are original LNO data
 
 
 def case_of(data_tag):
     """LNO case for a data tag: pendulum sets use the pendulum LNO (grid input, 8 modes); c0_* the undamped Duffing
     case (same architecture as duffing_c05, its own data)."""
     return ("pendulum_c05" if data_tag.startswith("pend") else "duffing_c0" if data_tag.startswith("c0_")
-            else "lorenz_rho5" if data_tag.startswith("lz_") else CASE)
+            else "lorenz_rho10" if data_tag.startswith("lz_r10") else "lorenz_rho5" if data_tag.startswith("lz_")
+            else CASE)
 VARIANTS = {"base": ("lno", "original", 1.0),
             "lno_plr10": ("lno", "original", 10.0),
             "lno_stable_plr10": ("lno", "stable", 10.0),
@@ -126,6 +127,11 @@ def run(variant, seed, device, data_tag="orig"):
     model = build(variant, grids, seed, data_tag).to(device)
     mu0 = poles_of(model)
     t0 = time.time()
+    if isinstance(model, Offset) and data_tag.startswith("lz_r10"):
+        # tenth pass (rule v4): start the offset at the training-mean trajectory; under the `common` lr schedule a
+        # zero-initialised offset stopped at ~1.5 of 3.27 in the ninth pass (the travel bound)
+        with torch.no_grad():
+            model.offset.copy_(data["train"][1].mean(0).to(device))
     hist = E.train(model, data, E.PROTOCOLS["common"], device, pole_lr_mult=VARIANTS[variant][2])
     xte, yte = (a.to(device)[..., None] for a in data["test"])
     test = E.evaluate(model, xte, yte)
@@ -144,7 +150,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--variant", nargs="+", default=list(VARIANTS))
     ap.add_argument("--seeds", nargs="+", type=int, default=[0, 1, 2, 3, 4])
-    ap.add_argument("--data", default="orig", choices=["orig", "small", "mixed", "medium", "moderate", "pend_orig", "pend_medium", "pend_large", "wide", "pend_wide", "c0_orig", "c0_small", "c0_medium", "lz_orig", "lz_small", "lz_wide"])
+    ap.add_argument("--data", default="orig", choices=["orig", "small", "mixed", "medium", "moderate", "pend_orig", "pend_medium", "pend_large", "wide", "pend_wide", "c0_orig", "c0_small", "c0_medium", "lz_orig", "lz_small", "lz_wide", "lz_r10_orig", "lz_r10_small", "lz_r10_wide"])
     a = ap.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     for v in a.variant:

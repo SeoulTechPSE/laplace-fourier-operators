@@ -34,6 +34,10 @@ operating point is fixed; its linearisation from f to x has poles -0.9287 +- 4.1
 from a data-only scan of centred linear fits: `lz_small` peak |f| ~ U[0.05, 0.5] (both gates pass), `lz_wide`
 U[0.5, 5] (all-sample residual 0.17, low band 0.05, shift 0.02: v2 fails, v3 passes).
 
+Tenth pass, forced Lorenz rho = 10 (LNO data `1D_Lorenz_rho10`, checked here: same equations from x(0) = 1 reproduce
+stored samples to 5.1e-4 ... 2.7e-3; inputs A sin 5t, A 0.05-10). New sets start at C+ (x = y = 4.899, z = 9); the
+linearisation from f to x has poles -0.5955 +- 6.1742i and -12.48. Data seed 6, bands from a data-only gate scan.
+
 Splits 200 / 50 / 130 (train / vali / test); data seed 0 for `small` / `mixed`, 1 for `medium` / `moderate`. Stored in runs/C/e5_data/<name>.npz (git-ignored).
 
     python experiments/C/e5_probe/e5_data.py
@@ -58,9 +62,20 @@ C, K, K3 = 0.5, 1.0, 1.0
 N_T, DT = 2048, 0.01
 SETS = {"small": (0.02, 0.1, 0), "mixed": (0.05, 5.0, 0), "medium": (0.1, 0.5, 1), "moderate": (0.2, 1.0, 1),
         "pend_medium": (0.1, 0.5, 2), "pend_large": (0.3, 1.0, 2), "wide": (0.05, 0.6, 3), "pend_wide": (0.05, 1.0, 3),
-        "c0_small": (0.02, 0.1, 4), "c0_medium": (0.05, 0.3, 4), "lz_small": (0.05, 0.5, 5), "lz_wide": (0.5, 5.0, 5)}
+        "c0_small": (0.02, 0.1, 4), "c0_medium": (0.05, 0.3, 4), "lz_small": (0.05, 0.5, 5), "lz_wide": (0.5, 5.0, 5),
+        "lz_r10_small": (0.05, 0.5, 6), "lz_r10_wide": (0.5, 5.0, 6)}
 RHO, BETA, SIGMA = 5.0, 8 / 3, 10.0
 LZ_EQ = [math.sqrt(BETA * (RHO - 1)), math.sqrt(BETA * (RHO - 1)), RHO - 1]     # C+, the stable equilibrium
+
+
+def rho_of(name):
+    """Lorenz rho of a data tag: lz_r10_* (tenth pass) 10, other lz_* 5."""
+    return 10.0 if name.startswith("lz_r10") else RHO
+
+
+def lz_eq(rho):
+    e = math.sqrt(BETA * (rho - 1))
+    return [e, e, rho - 1]
 SPLIT = (200, 50, 130)
 OUT = ROOT / "runs" / "C" / "e5_data"
 
@@ -72,14 +87,15 @@ def grid():
 def system_of(name):
     """pend_*: driven pendulum; c0_*: undamped Duffing (c = 0); lz_*: forced Lorenz; otherwise damped Duffing."""
     return ("pendulum" if name.startswith("pend") else "duffing_c0" if name.startswith("c0_")
-            else "lorenz" if name.startswith("lz_") else "duffing")
+            else "lorenz10" if name.startswith("lz_r10") else "lorenz" if name.startswith("lz_") else "duffing")
 
 
 def simulate(f, system="duffing"):
     t = grid()
-    if system == "lorenz":             # LNO paper Eq. 22, started at C+ (output x)
-        rhs = lambda s, z: [SIGMA * (z[1] - z[0]), z[0] * (RHO - z[2]) - z[1], z[0] * z[1] - BETA * z[2] - np.interp(s, t, f)]
-        return solve_ivp(rhs, (0, t[-1]), LZ_EQ, t_eval=t, rtol=1e-9, atol=1e-11, max_step=DT).y[0]
+    if system in ("lorenz", "lorenz10"):             # LNO paper Eq. 22, started at C+ (output x)
+        rho = 10.0 if system == "lorenz10" else RHO
+        rhs = lambda s, z: [SIGMA * (z[1] - z[0]), z[0] * (rho - z[2]) - z[1], z[0] * z[1] - BETA * z[2] - np.interp(s, t, f)]
+        return solve_ivp(rhs, (0, t[-1]), lz_eq(rho), t_eval=t, rtol=1e-9, atol=1e-11, max_step=DT).y[0]
     spring = np.sin if system == "pendulum" else (lambda x: K * x + K3 * x ** 3)
     c = 0.0 if system == "duffing_c0" else C
     rhs = lambda s, z: [z[1], np.interp(s, t, f) - c * z[1] - spring(z[0])]

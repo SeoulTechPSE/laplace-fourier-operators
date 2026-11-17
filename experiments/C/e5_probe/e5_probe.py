@@ -46,6 +46,7 @@ VARIANTS = ("base", "lno_plr10", "lno_stable_plr10", "tied4_stable_plr10")
 MU_TRUE = complex(-0.25, math.sqrt(1 - 0.0625))
 MU_TRUE_C0 = complex(0.0, 1.0)              # undamped Duffing (eighth pass): poles on the imaginary axis
 MU_TRUE_LZ = complex(-0.9287, 4.1476)       # forced Lorenz rho = 5 at C+ (ninth pass): dominant pair (+ -11.81)
+MU_TRUE_LZ10 = complex(-0.5955, 6.1742)     # forced Lorenz rho = 10 at C+ (tenth pass): dominant pair (+ -12.48)
 TRUST_D, TRUST_TEST = 0.1, 0.5         # RQ4 trust rule: valid probe, d(probe, layer) < TRUST_D, test < TRUST_TEST
 GATE = 0.1                             # rule v2 (fixed before the medium / moderate runs): the data's own best linear
                                        # pair must leave < GATE of the output, else no linear pole is read as physical
@@ -54,6 +55,7 @@ N_PROBE = 16
 CKPT = ROOT / "runs" / "foundation" / "ood" / "e5" / CASE / "lno"
 RESULTS = HERE / "results"
 STARTS = ([complex(-0.3, 1.0)], [complex(-1.0, 3.0)], [complex(-0.1, 0.5)])
+STARTS_R10 = STARTS + ([complex(-0.5, 6.0)], [complex(-1.0, 8.0)])     # tenth pass (rho = 10): higher frequencies
 
 
 def linearised(f, u, t, device):
@@ -76,13 +78,13 @@ def probe_inputs(t, rng):
     return np.array(out)
 
 
-def fit_poles(u, g, t, device):
+def fit_poles(u, g, t, device, starts=STARTS):
     """Best of a few starts for one pair, then one pair + one real pole; (poles, relative residual) each."""
     vp = EP.VarPro({"train": (torch.tensor(u), torch.tensor(g))}, t, device, "foh")
     res = {}
     for name, extra in (("pair", []), ("pair+real", [complex(-2.0, 0.0)])):
         best = None
-        for s in STARTS:
+        for s in starts:
             th, re_ = EP.pack(s + extra)
             th, S = vp.fit(th, re_)
             if best is None or S < best[1]:
@@ -116,7 +118,7 @@ def jacobian_probe(model, n, dt, device):
                 h_poles=[[u.real, u.imag] for u in pencil_poles(h[1:800], dt)])
 
 
-def equivalent_linear(f, u, t, device, center=False):
+def equivalent_linear(f, u, t, device, center=False, start=None):
     """Best linear pair (first-order hold, per-sample relative weights) for the training data by amplitude band.
     center (Lorenz): fit u - mean(u) to f - mean(f) within each band, which removes the zero-input response."""
     amp = np.abs(f).max(1)
@@ -128,7 +130,7 @@ def equivalent_linear(f, u, t, device, center=False):
         if center:
             fs, us = fs - fs.mean(0), us - us.mean(0)
         vp = EP.VarPro({"train": (torch.tensor(fs), torch.tensor(us))}, t, device, "foh")
-        th, re_ = EP.pack([complex(-1.0, 4.0) if center else complex(-0.3, 1.0)])
+        th, re_ = EP.pack([start or (complex(-1.0, 4.0) if center else complex(-0.3, 1.0))])
         th, _ = vp.fit(th, re_)
         with torch.no_grad():
             pred = vp.pred(torch.tensor(th, device=device), re_)
@@ -161,7 +163,7 @@ def main(data_tag="orig"):
     t = np.asarray(grids["t"], float).ravel()
     mu_lin, amp_max = linearised(f, u, t, device)
     if data_tag != "orig":                                  # simulated sets: the exact small-signal pole
-        mu_lin = MU_TRUE_C0 if data_tag.startswith("c0_") else MU_TRUE_LZ if data_tag.startswith("lz_") else MU_TRUE
+        mu_lin = MU_TRUE_C0 if data_tag.startswith("c0_") else MU_TRUE_LZ10 if data_tag.startswith("lz_r10") else MU_TRUE_LZ if data_tag.startswith("lz_") else MU_TRUE
     print(f"linearised pole {mu_lin:.4f} (from |f| <= {amp_max:.2f})", flush=True)
     P = probe_inputs(t, np.random.default_rng(0))
     out = {}
@@ -177,7 +179,7 @@ def main(data_tag="orig"):
                 with torch.no_grad():
                     xp = torch.tensor(P, dtype=torch.float32, device=device)[..., None]
                     g = ((model(eps * xp) - model(-eps * xp)) / (2 * eps))[..., 0].double().cpu().numpy()
-                fp = fit_poles(P, g, t, device)
+                fp = fit_poles(P, g, t, device, STARTS_R10 if data_tag.startswith("lz_r10") else STARTS)
                 probes[str(eps)] = {k: dict(poles=[[z.real, z.imag] for z in w[0]], rel=w[1]) for k, w in fp.items()}
             jp = jacobian_probe(model, len(t), float(t[1] - t[0]), device)
             # RQ4 indicator: distance from the Jacobian impulse-response pole to the nearest stored pole, and whether
@@ -195,7 +197,8 @@ def main(data_tag="orig"):
                   f"Toeplitz {jp['toeplitz_resid']:.2f}, IR pole {[complex(*z) for z in jp['h_poles']]}", flush=True)
         out[v] = rows
     res = dict(case=TR.case_of(data_tag), data=data_tag, mu_lin=[mu_lin.real, mu_lin.imag], amp_max=amp_max, eps=list(EPS), variants=out,
-               equivalent=equivalent_linear(f, u, t, device, center=data_tag.startswith("lz_")))
+               equivalent=equivalent_linear(f, u, t, device, center=data_tag.startswith("lz_"),
+                                                start=complex(-0.6, 6.2) if data_tag.startswith("lz_r10") else None))
     RESULTS.mkdir(parents=True, exist_ok=True)
     (RESULTS / f"e5_probe{suffix(data_tag)}.json").write_text(json.dumps(res, indent=1))
     summarize(res)
@@ -232,6 +235,13 @@ def summarize(res):
               else f"`e5_data.py` set `{data}` (diverse E1 waveforms)") + ", 5 seeds per variant. Reference: the exact "
               "small-signal pole **± i** (on the imaginary axis).")
              if data.startswith("c0_") else
+             (f"Forced Lorenz ρ = 10 (z' = xy − 8/3 z − f, output x), " + ("the original LNO data (`1D_Lorenz_rho10`, from "
+              "x(0) = 1, y(0) = z(0) = 0, inputs A sin 5t)" if data == "lz_r10_orig" else f"`e5_data.py` set `{data}` (diverse "
+              "E1 waveforms, started at the equilibrium C+)") + ", Lorenz ρ = 10 LNO architecture (grid input, tanh, 84 "
+              "modes), 5 seeds per variant; the tied layer has a learned output offset started at the training mean. "
+              "Reference: the dominant pole of the linearisation at C+, **−0.5955 ± 6.1742i** (third pole −12.48). "
+              "Equivalent poles from centred data.")
+             if data.startswith("lz_r10") else
              (f"Forced Lorenz ρ = 5 (z' = xy − 8/3 z − f, output x), " + ("the original LNO data (`1D_Lorenz_rho5`, from "
               "x(0) = 1, y(0) = z(0) = 0, inputs A sin 5t)" if data == "lz_orig" else f"`e5_data.py` set `{data}` (diverse "
               "E1 waveforms, started at the equilibrium C+)") + ", Lorenz LNO architecture (grid input, tanh, 16 modes), 5 "

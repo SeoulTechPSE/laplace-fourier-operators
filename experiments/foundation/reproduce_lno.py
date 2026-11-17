@@ -71,6 +71,11 @@ CASES = {
     "lorenz_rho5": Case("1D_Lorenz_rho5", dim=1, batch_size=20, lr=0.005,
                         lno_kwargs=dict(width=4, modes=16, use_grid=True, activation="tanh", transient_sign=-1.0),
                         fno_modes=(8, 12, 16, 24, 32)),
+    # forced Lorenz, rho = 10 (LNO Example 6; same equations, x(0) = 1), original 1D_Lorenz_rho10/main.py: grid input,
+    # tanh, 84 modes, batch 10, lr 0.002; used by (C) E5 (tenth pass, experiments/C/e5_probe)
+    "lorenz_rho10": Case("1D_Lorenz_rho10", dim=1, batch_size=10,
+                         lno_kwargs=dict(width=4, modes=84, use_grid=True, activation="tanh", transient_sign=-1.0),
+                         fno_modes=(16, 32, 48, 64, 84)),
     "diffusion": Case("2D_Diffusion", dim=2, batch_size=50,
                       lno_kwargs=dict(width=16, modes1=4, modes2=4, transient_sign=1.0),
                       fno_modes=(4, 6, 8, 12, 16)),
