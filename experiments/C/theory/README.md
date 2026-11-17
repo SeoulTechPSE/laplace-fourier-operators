@@ -1865,6 +1865,84 @@ In the eleventh pass, the gain of 66 on E1 inputs was for much faster poles (−
   - The reports come from the `foh_eivo` pipeline and are only refitted under EIVML; EIVML is
     not run through the whole pipeline.
 
+## E4, twenty-first pass: EIVML through the whole pipeline (negative)
+
+**Method** (`e4_profile.py --hold foh_ml`, summary `e4_mlpipe.py` → `results/e4_mlpipe.md`).
+
+- Every refit, the backward elimination of each run, the certificate, the consensus, the order
+  test and the profile intervals use the EIVML cost.
+- All tests use plain χ² thresholds in noise units (σ² = 1), with no bootstrap calibration.
+- A reported pole within 10 % of another, or above Nyquist, is unresolved.
+- The rule was fixed before 12 fresh groups were trained: p4 multisine η_u = 0.3 and p6 E1 0.1
+  (groups 50–65), p6 E1 0.05 (groups 30–45). `foh_eivo` was run on the same fresh groups for
+  comparison.
+
+| data | η_u | groups | `foh_ml`: identified / false (unresolved) | `foh_eivo`: identified / false |
+|---|---|---|---|---|
+| p4 multisine | 0, 0.01, 0.03 | 4 each | 12/12, 0 each | 12/12, 0 each |
+| p4 multisine | 0.1 | 8 | 23/24, 2 | 24/24, 0 |
+| p4 multisine | 0.3 | 8 | 20/24, 11 (4) | 19/24, 5 |
+| p4 multisine | 0.3, fresh | 4 | 7/12, 3 (9) | 9/12, 3 |
+| p6 E1 | 0, 0.01, 0.03 | 4 each | 16/16, 0 each | 16/16, 0 each |
+| p6 E1 | 0.05 | 4 | 15/16, 1 | 13/16, 3 |
+| p6 E1 | 0.05, fresh | 4 | **15/16, 1** | 13/16, 3 |
+| p6 E1 | 0.1 | 8 | 26/32, 7 | 26/32, 13 |
+| p6 E1 | 0.1, fresh | 4 | 10/16, 5 (2) | 12/16, 6 |
+
+**What it shows.**
+
+- **Up to η_u = 0.05 it works without calibration.** At 0.05 it beats `foh_eivo` on fresh
+  groups too (15/16, 1 false against 13/16, 3), with plain χ² tests.
+- **At 0.1 (p4) and 0.3 it is worse than `foh_eivo`.**
+  - The reports carry undamped poles: Re μ ≈ 0 (1e-9 … 1e-5) at frequencies on the DFT grid
+    of the record (0.314, 0.628, 0.942, 1.57, 2.2, 2.83, 3.14, 3.46, 4.4 rad/s = k · 2π/20).
+  - In most groups only 1 or 2 runs are certified, and the report comes from the best run.
+
+**Why: a defect of the EIVML cost.**
+
+- The variance v_l uses the stationary |G(iω_l)|², but the residual is the zero-initial-state
+  response over the finite record.
+- For a pole at Re μ → 0 on line l, the first is unbounded and the second is not, so line l
+  drops out of the cost.
+- On p4 0.3, g40, two such poles (2.83i, 3.46i) take those lines from about 200 to 0.00. That
+  is a gain of 845 against χ²₈(0.99) = 20.1.
+- The twentieth pass did not see this, because it only refitted the `foh_eivo` reports, which
+  have no such poles.
+
+**Two remedies tried on development data (negative).**
+
+1. **Remove undamped poles** (|Re μ| T_rec < 1) from every run, and bound the fits to
+   Re μ ≤ −1/T_rec.
+   - The fits drift back to the axis, or stay at the bound, where the line is still mostly
+     removed.
+   - On g40, 2 runs are certified and the order test fails.
+2. **Finite-record variance** (`EIVMLT`, `--hold foh_mlt`).
+   - **Construction.**
+     - The variance is v_l = σ_y² + σ_u² (‖x_i‖/‖y_i‖)² mean_m |G_m(iω_l)|², the exact marginal
+       variance of line l over the record.
+     - G_m is the transfer of the impulse response truncated to m samples. Per FOH pole there is
+       a closed form, H_m = a1 + c q (1 − q^(m−1)) / (1 − q) with q = E e^(−iω dt). It agrees
+       with the exact response matrix to 0.5 %.
+     - Fits are bounded to stable poles (Re μ ≤ −1e-3).
+   - **What improves.**
+     - On g40 the undamped pair gains 47 unbounded and 24.7 with Re μ ≤ 0, against 845.
+     - S / n of the true model is 0.997, against 1.017 under EIVML.
+   - **What fails.** In the pipeline, run s44 of g40 reduces to two lightly damped poles
+     (−0.05 ± 14.8i, −0.05 ± 15.4i) with S / n = 0.85, 30 000 below the true model.
+     - Without the stationary pairing of residual and variance, the cost lowers itself by
+       inflating v over a wide band.
+     - This is the same failure as the time-domain exact cost (`EIVTD`, twentieth pass): a
+       concentrated EIV cost without a log det term is not bounded below by the truth.
+     - It is recorded as negative (`results/e4_profile_foh_mlt/`, one group).
+
+**Reading.**
+
+- **EIVML is consistent only near the truth.** Started from the calibrated `foh_eivo` reports
+  (twentieth pass) it removes the EIV bias. As a search cost over all runs it opens degenerate
+  directions (undamped poles on the DFT grid) that a χ² test cannot reject.
+- **The candidate for input noise stays `foh_eivo` plus an EIVML refit of its report.** Whole-
+  pipeline EIVML is better only at η_u ≤ 0.05.
+
 ## E3, deep setting: first pass
 
 `e3_deep.py`. The E1 deep models (ALNO / LFNO, 5,977 parameters, four layers) are trained

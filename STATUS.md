@@ -11,7 +11,7 @@ Each session appends one entry using the template at the bottom.
 | (C) Pole audit of existing models | 3–5 | **in progress**: E1 done, draft report (`E1_report.md`, updated with E2); paper decisions open | — |
 | (D) Non-periodic input representation | 4–8 | not started | differs from padded FNO? (month 8) |
 | (A) Pole layer and linear validation | 5–10 | not started | dispersion relations recovered (month 10) |
-| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits, a bootstrap-calibrated order, certificate and order test; reduction-path unresolved rules fail, a location-calibrated split test flags the merge, a combined post-report rule leaves 1 false pole in 40 groups but does not carry over to new p6 E1 groups; an EIVML refit of the reports removes the EIV bias), E3 deep first pass done (`experiments/C/theory/`) | — |
+| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits, a bootstrap-calibrated order, certificate and order test; reduction-path unresolved rules fail, a location-calibrated split test flags the merge, a combined post-report rule leaves 1 false pole in 40 groups but does not carry over to new p6 E1 groups; an EIVML refit of the reports removes the EIV bias; EIVML through the whole pipeline helps only up to η_u = 0.05), E3 deep first pass done (`experiments/C/theory/`) | — |
 | (A) Application 1: process dynamics | 11–16 | not started | — |
 | (D) Initial conditions and rollout | 13–19 | not started | — |
 | (A) Application 2: Cahn–Hilliard | 17–22 | not started | recover k_c, k_max (month 20) |
@@ -93,8 +93,11 @@ Suggested next steps (in order):
    bootstrap intervals remain. An exact time-domain EIV cost degenerates (S / n → 0); the
    frequency-domain EIV ML refit of the reports removes the EIV bias without a gate (p4 30 η_y
    12/12 in 8/8 groups, p6 E1 0.05 15/16, 1 false) and its drop test removes part of the fast
-   poles; p6 E1 at 0.1 stays unresolved. Next: EIVML through the whole pipeline (backward
-   elimination, certificate); noise-dependent release; RQ4.
+   poles; p6 E1 at 0.1 stays unresolved. EIVML through the whole pipeline (plain χ², 12
+   fresh groups) beats `foh_eivo` at p6 E1 0.05 (15/16, 1 false) but is worse at 0.1 / 0.3:
+   undamped poles on the DFT grid remove lines from the cost; a finite-record variance
+   (`EIVMLT`) degenerates too. Next: EIVML refit of the `foh_eivo` report as a backward
+   elimination; noise-dependent release; RQ4.
 4. Optional E1 extras: log-parameterised decay rate; untied models with 64 steady modes
    (H1); weight decay excluded from poles; deep LNO v1 at its published size.
 
@@ -107,6 +110,31 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-17 — (C) E4: EIVML through the whole pipeline, fresh groups
+
+- Done: `--hold foh_ml` run through the pipeline (EIVML refits, backward elimination, certificate,
+  order test, profile intervals, plain χ²; duplicates and aliased poles unresolved) on the 52
+  development groups and 12 fresh groups trained after the rule was fixed (p4 0.3 and p6 E1 0.1:
+  g50–65; p6 E1 0.05: g30–45), with `foh_eivo` on the fresh groups for comparison; summary
+  `e4_mlpipe.py` → `results/e4_mlpipe.md`. New `EIVMLT` (finite-record variance) and
+  `--hold foh_mlt`. README section "E4, twenty-first pass". `src/lfo/` unchanged.
+- Results:
+  - `foh_ml` vs `foh_eivo`, fresh groups: p6 E1 0.05 15/16, 1 false vs 13/16, 3; p6 E1 0.1
+    10/16, 5 vs 12/16, 6; p4 0.3 7/12, 3 (9 unresolved) vs 9/12, 3. Development: p4 0.1 23/24,
+    2 vs 24/24, 0; p4 0.3 20/24, 11 vs 19/24, 5; p6 0.1 26/32, 7 vs 26/32, 13. Clean and
+    η_u ≤ 0.03 conditions: all true poles, 0 false, both.
+  - Cause: undamped poles (Re μ ≈ 0) on DFT-grid frequencies; EIVML's stationary variance is
+    unbounded there while the finite-record residual is not, so the line drops out (g40: gain
+    845 vs χ²₈ 20.1).
+  - Removing undamped poles with a fit bound fails (drift back, or the bound still removes the
+    line). `EIVMLT` (exact marginal finite-record variance; closed form within 0.5 % of the
+    exact matrix) cuts that gain to 25–47 but degenerates in the pipeline: a run reduces to two
+    lightly damped high-frequency poles at S / n = 0.85.
+- Decisions: whole-pipeline EIVML is not adopted (better only at η_u ≤ 0.05); `foh_eivo` plus
+  an EIVML refit of its report stays the candidate; `EIVMLT` is not used.
+- Next: backward elimination under EIVML started from the `foh_eivo` report (the refit, not the
+  search); noise-dependent release; zero-order hold; joint intervals; RQ4.
 
 ### 2026-11-17 — (C) E4: exact time-domain EIV cost and an EIVML refit of the reports
 

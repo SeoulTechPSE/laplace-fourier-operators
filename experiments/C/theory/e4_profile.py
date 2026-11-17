@@ -74,11 +74,19 @@ import e2_floor as F  # noqa: E402
 
 P, RS, T, E = F.P, F.RS, F.T, F.E
 OUT = T.R.RESULTS / "e4_profile"
-HOLDS = ("band", "foh", "band_red", "foh_eiv", "foh_ml", "foh_eivb", "foh_eivc", "foh_eivo", "foh_eivu")
-# foh_eiv: EIV-whitened refits (eiv_weights); foh_ml: EIVML refits; foh_eivb: foh_eiv + calibrated_reduce of the report;
+HOLDS = ("band", "foh", "band_red", "foh_eiv", "foh_ml", "foh_eivb", "foh_eivc", "foh_eivo", "foh_eivu",
+         "foh_mlt")
+# foh_eiv: EIV-whitened refits (eiv_weights); foh_ml: EIVML refits (plain chi2 tests) + 'unresolved' flags for
+# duplicate (within DUP of another reported pole) and aliased (|Im mu| > pi / dt) poles; foh_eivb: foh_eiv + calibrated_reduce of the report;
 # foh_eivc: foh_eivb + calibrated_reduce of every run before the certificate (calibrated certificate);
 # foh_eivo: foh_eivc with the order test calibrated by a bootstrap of the reference (calibrated_order);
 # foh_eivu: foh_eivo + aliasing fold of every run + 'unresolved' flags from calibration-only merges
+# foh_mlt: EIVMLT refits (finite-record variance), stable poles (Re mu <= RE_MAX), plain chi2 tests; duplicate, aliased and
+# undamped (|Re mu| T_rec < 1) reported poles are unresolved
+RE_MAX = -1e-3                                      # foh_mlt fit bound on Re mu: stable poles; not 0, where the
+                                                    # FOH transfer of a real pole is 0 / 0 (I1 cancels below ~1e-3)
+UNDAMPED = 1.0                                      # foh_mlt: |Re mu| t_rec below this is undamped (unresolved)
+DUP = 0.1                                           # foh_ml: duplicate poles (relative distance)
 N_CAL = 16                                          # bootstrap draws per calibrated elimination step
 STAGE, VARIANT = "rescue_na", "damp8_ms"
 CLEAN_STAGE = "rescue"                              # noise-free data: ratio-rule restarts
@@ -328,7 +336,14 @@ class VarPro:
                 pass
             return BAD, np.zeros(free.sum())                  # unstable / degenerate poles: line search backs off
 
-        res = minimize(f, theta0[free], jac=True, method="L-BFGS-B",
+        bounds = None
+        if getattr(self, "re_max", None) is not None:          # foh_mlt: Re mu <= re_max (0: stable) for every pole
+            starts, i = set(), 0
+            for r in real:
+                starts.add(i)
+                i += 1 if r else 2
+            bounds = [(None, self.re_max) if j in starts else (None, None) for j in np.flatnonzero(free)]
+        res = minimize(f, theta0[free], jac=True, method="L-BFGS-B", bounds=bounds,
                        options=dict(maxiter=iters, ftol=0.0, gtol=1e-14, maxcor=20))
         th = theta0.copy()
         th[free] = res.x
@@ -392,7 +407,9 @@ class EIVML(VarPro):
         self.neg = (-torch.arange(self.n_t, device=device)) % self.n_t
 
     def like(self, data):
-        return EIVML(data, self.t_np, self.device, self.hold, self.sig2_y, self.sig2_u)
+        out = EIVML(data, self.t_np, self.device, self.hold, self.sig2_y, self.sig2_u)
+        out.re_max = getattr(self, "re_max", None)
+        return out
 
     @staticmethod
     def n_pole(real):
@@ -433,6 +450,64 @@ class EIVML(VarPro):
 
     def fit(self, theta0, real, fixed=None, iters=VP_ITERS):
         return super().fit(self.full(theta0, real), real, fixed, max(iters, 2000))
+
+
+class EIVMLT(EIVML):
+    """EIVML with the finite-record variance (`--hold foh_mlt`). EIVML's variance uses the stationary |G(i w_l)|^2,
+    while its residual is the zero-initial-state response over the record. For a pole near the axis on a frequency
+    line the first is unbounded and the second is not, so that line drops out of the cost (`foh_ml` reports keep
+    such undamped poles: p4 multisine eta_u = 0.3, g40, two of them gain 845 against chi2_8(0.99) = 20.1). Here
+    v_l uses the exact marginal variance of line l of the propagated input noise over the record:
+
+        v_l = sig2_y + sig2_u ratio_i mean_{m = 1..n_t} |G_m(i w_l)|^2,
+
+    G_m the transfer of the impulse response truncated to m samples (an input sample k is seen for n_t - k
+    samples). Per first-order-hold pole the response is h(0) = a1, h(s) = c E^s (s >= 1), so
+    H_m = a1 + c q (1 - q^(m-1)) / (1 - q), q = E e^(-i w dt): finite at q = 1. It agrees with the row norms of
+    the exact response matrix (e4_eivtd.EIVTD.matrix) to 0.5 %. Cross-line correlations are still ignored. On the
+    g40 report the two undamped poles gain 47 under EIVMLT (24.7 with Re mu <= 0), against 845 under EIVML;
+    S / n of the true model 0.997 (EIVML: 1.017). One value and gradient: 12 ms (EIVML 4 ms), 6 poles."""
+
+    def __init__(self, data, t, device, hold, sig2_y, sig2_u):
+        super().__init__(data, t, device, hold, sig2_y, sig2_u)
+        self.m1 = torch.arange(self.n_t, dtype=torch.float64, device=device)    # m - 1 = 0 .. n_t - 1
+
+    def like(self, data):
+        out = EIVMLT(data, self.t_np, self.device, self.hold, self.sig2_y, self.sig2_u)
+        out.re_max = getattr(self, "re_max", None)
+        return out
+
+    def trunc(self, mu):
+        """(n_t lines, n_t lengths, n poles): H_m(i w_l) per pole."""
+        dt = self.t[1] - self.t[0]
+        z = mu * dt
+        Ek = torch.exp(z)
+        I0, I1 = (Ek - 1) / mu, (Ek - 1 - z) / mu ** 2
+        a0, a1 = I0 - I1 / dt, I1 / dt
+        c = a1 + a0 / Ek
+        L = z[None] - (self.iw * dt)[:, None]                            # log q, (lines, poles)
+        q = torch.exp(L)
+        ratio = torch.expm1(self.m1[None, :, None] * L[:, None]) / torch.expm1(L)[:, None]   # (1 - q^(m-1)) / (1 - q)
+        return a1[None, None] + (c[None] * q)[:, None] * ratio
+
+    def gain2(self, thp, c, real):
+        """mean_m |G_m(i w_l)|^2, (lines,)."""
+        Hm = self.trunc(self.mu(thp, real))
+        b, i = [], 0
+        for r in real:
+            b.append(torch.complex(c[i], torch.zeros((), dtype=c.dtype, device=c.device)) if r
+                     else torch.complex(c[i], c[i + 1]))
+            i += 1 if r else 2
+        bk = torch.stack(b)
+        G = 0.5 * ((Hm * bk).sum(2) + torch.conj((Hm[self.neg] * bk).sum(2)))
+        return G.abs().pow(2).mean(1)
+
+    def S(self, theta, real):
+        thp, c = self.split(theta, real)
+        A = self.design(thp, real)
+        R = torch.fft.fft((self.y - A @ c).reshape(self.b, self.n_t), dim=1)
+        v = self.sig2_y + self.sig2_u * self.ratio[:, None] * self.gain2(thp, c, real)[None]
+        return (R.abs().pow(2) / v).sum() / self.n_t
 
 
 def denoise_input(x, sig2_u):
@@ -499,6 +574,13 @@ def calibrated_reduce(vp, theta, real, data, sig2_y, sig2_u, device, n_cal=N_CAL
             break
         theta, real, S_cur = a, b, S
     return theta, real, steps
+
+
+def undamped(poles, t_rec):
+    """Poles whose decay is not visible within the record (|Re mu| t_rec < 1); foh_mlt reports them as unresolved.
+    Under EIVML they come from a defect of the cost (see EIVMLT): on p4 multisine eta_u = 0.3, g40, two such poles
+    take the lines at 2.83 and 3.46 rad/s from ~200 to 0.00 (gain 845 against chi2_8(0.99) = 20.1)."""
+    return [z for z in poles if abs(z.real) * t_rec < UNDAMPED]
 
 
 def fold_alias(poles, dt):
@@ -663,12 +745,17 @@ def run(cond, g0, device, hold="band", reuse=None):
     if hold == "foh_ml":
         vp = EIVML(data, t, device, hold, sig2_y, noise_var_robust(data["train"][0]))
         sig2 = 1.0
+    if hold == "foh_mlt":
+        vp = EIVMLT(data, t, device, hold, sig2_y, noise_var_robust(data["train"][0]))
+        vp.re_max = RE_MAX                                   # stable poles only
+        sig2 = 1.0
     if not F.NOISY(cond):
         # S ~ 1e-13 here, so gtol = 1e-14 on S itself stops L-BFGS early: a fit started at the truth
         # ended above the fit started at the report (p6 fine: S 1.29352322e-13 vs 1.29352183e-13), and
         # pole errors of 1e-9 were off by up to 1e-8. Minimise S / (n sigma^2) = O(1) instead.
         vp.s_unit = data["train"][1].numel() * sig2
     ref = None
+    t_rec = float(t[1] - t[0]) * len(t)
     if hold != "band":                                       # runs replaced by their reduced refits
         for r in runs:
             r["eff_full"] = r["eff"]
@@ -757,6 +844,14 @@ def run(cond, g0, device, hold="band", reuse=None):
                         if np.min(np.abs(np.array(mu_fit) - z)) < F.MERGE * abs(z)]
         flagged = [m for m in mu_fit if any(abs(m - z) < F.MERGE * abs(z) for z in flagged)]
         calib["unresolved"] = [[float(z.real), float(z.imag)] for z in flagged]
+    if hold in ("foh_ml", "foh_mlt"):
+        # truth-free, fixed before the fresh groups: a reported pole within DUP of another (the pair cannot be
+        # told apart), above Nyquist (aliased) or, for foh_mlt, undamped is unresolved
+        dt = float(t[1] - t[0])
+        flagged = [z for i, z in enumerate(mu_fit) if abs(z.imag) > math.pi / dt
+                   or (hold == "foh_mlt" and bool(undamped([z], t_rec)))
+                   or any(abs(z - w) < DUP * abs(z) for j, w in enumerate(mu_fit) if j != i)]
+        calib["unresolved"] = [[float(z.real), float(z.imag)] for z in flagged]
     profs, k = [], 0
     for z, r in zip(mu_fit, real):
         cs, S = profile(vp, theta, real, k)
@@ -771,7 +866,7 @@ def run(cond, g0, device, hold="band", reuse=None):
             pr["boot_std"] = float(sk)
             pr["interval_boot"] = [pr["mu"][0] - 1.96 * float(sk), pr["mu"][0] + 1.96 * float(sk)]
     eiv = {}
-    if F.NOISY(cond) and hold in ("foh", "foh_eiv", "foh_ml", "foh_eivb", "foh_eivc", "foh_eivo", "foh_eivu") and cond in EIV_CONDS:
+    if F.NOISY(cond) and hold in ("foh", "foh_eiv", "foh_ml", "foh_eivb", "foh_eivc", "foh_eivo", "foh_eivu", "foh_mlt") and cond in EIV_CONDS:
         add_eiv(eiv, profs, vp, data, t, theta, real, sig2_y, device)
     true = E.true_folded(mu_true, beta_true)[0]
     res = dict(cond=cond, group=g0, system=system, eta_hat=float(np.sqrt(data["train"][1].shape[1] * sig2_y)),
@@ -821,7 +916,7 @@ def score(r):
     for pr in r["profiles"]:                         # interval recomputed from the stored profile
         z = complex(*pr["mu"])
         lo, hi = interval(np.array(pr["c"]), np.array(pr["dS"]), LEVEL)
-        if pr.get("unresolved"):                     # foh_eivu: reported as unresolved, i.e. an open interval
+        if pr.get("unresolved"):                     # foh_eivu / foh_ml: reported as unresolved, i.e. an open interval
             lo = hi = None
         fit.append((z, [None if lo is None else z.real * lo, None if hi is None else z.real * hi], pr.get("interval_boot")))
     per = {}
@@ -857,6 +952,7 @@ def summarize_hold(hold):
              + {"band": "", "foh": ", first-order-hold refits", "band_red": ", band-limited refits with reduction",
                  "foh_eiv": ", first-order-hold refits, errors-in-variables weighting",
                  "foh_ml": ", first-order-hold refits, errors-in-variables ML",
+                 "foh_mlt": ", first-order-hold refits, errors-in-variables ML with the finite-record variance",
                  "foh_eivb": ", first-order-hold refits, EIV weighting and bootstrap-calibrated reduction",
                  "foh_eivc": ", first-order-hold refits, EIV weighting and a bootstrap-calibrated certificate",
                  "foh_eivo": ", first-order-hold refits, EIV weighting, calibrated certificate and order test",
@@ -872,8 +968,16 @@ def summarize_hold(hold):
                if hold == "foh_eiv" else []),
              *(["As `--hold foh`, but every refit minimises the frequency-domain errors-in-variables ML cost "
                 "Σ |R|² / (σ_y² + σ_u² (‖x_i‖ / ‖y_i‖)² |G_θ(iω)|²) (`EIVML`; poles and residues jointly, the "
-                "weights move with θ). S is in noise units and every test uses σ² = 1.", ""]
+                "weights move with θ). S is in noise units and every test uses σ² = 1 (no calibration). A reported "
+                "pole within 10 % of another reported pole (duplicate) or with |Im μ| > π/dt (aliased) is "
+                "unresolved: neither identified nor false.", ""]
                if hold == "foh_ml" else []),
+             *(["As `--hold foh_ml`, but the cost is `EIVMLT`: the variance of each frequency line is the exact "
+                "marginal variance of the propagated input noise over the finite record (zero initial state), "
+                "σ_y² + σ_u² (‖x_i‖ / ‖y_i‖)² mean_m |G_m(iω)|², G_m the transfer of the impulse response truncated "
+                "to m samples; every fit is bounded to stable poles (Re μ ≤ −1e-3). A reported pole that is a duplicate, "
+                "aliased or undamped (|Re μ| T_rec < 1) is unresolved.", ""]
+               if hold == "foh_mlt" else []),
              *(["As `--hold foh_eiv`; then the report is reduced once more by backward elimination with "
                 f"bootstrap-calibrated thresholds (`calibrated_reduce`, {N_CAL} EIV draws per step from the reduced "
                 "fit with a denoised input): drop the cheapest pole / make it real while ΔS ≤ κ χ²_Δp(0.99), "
@@ -941,7 +1045,7 @@ def summarize_hold(hold):
                          f"{sum(r['source'] == 'consensus' for r in gr)}/{len(gr)} | {sum(r['order_ok'] for r in gr)}/{len(gr)} | "
                          + " | ".join(cells) + f" | {sum(s[1] for s in sc)} |")
         lines.append("")
-    for system, conds in (EIV.items() if hold in ("foh", "foh_eiv", "foh_ml", "foh_eivb", "foh_eivc", "foh_eivo", "foh_eivu") else ()):
+    for system, conds in (EIV.items() if hold in ("foh", "foh_eiv", "foh_ml", "foh_eivb", "foh_eivc", "foh_eivo", "foh_eivu", "foh_mlt") else ()):
         g = [r for r in rs if r["cond"] in conds.values()]
         if not g:
             continue
