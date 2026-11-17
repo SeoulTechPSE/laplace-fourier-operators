@@ -18,6 +18,21 @@ Each group's `foh_eivo` report refitted under EIVML, then the cheapest move (dro
 | p6_e1_T20_n1e-2_u5e-2 | 4 | 15/16, 1, 0 | 13/16, 3 |
 | p6_e1_T20_n1e-2_u5e-2 (fresh) | 4 | 16/16, 0, 0 | 13/16, 3 |
 
+Coverage of the true Re μ by the identified poles' intervals: 95 % EIVML profile / EIV bootstrap around the EIVML fit (`--boot`, 32 draws); mean relative half-width.
+
+| condition | identified poles | covered: profile / bootstrap | half-width: profile / bootstrap |
+|---|---|---|---|
+| p4_ms16_T20_n1e-2 | 12 | 11 / 11 (of 12) | 2.7e-04 / 2.5e-04 |
+| p4_ms16_T20_n1e-2_u1e-1 | 24 | 18 / 21 (of 24) | 2.3e-03 / 3.9e-03 |
+| p4_ms16_T20_n1e-2_u1e-2 | 12 | 12 / 10 (of 12) | 3.9e-04 / 3.7e-04 |
+| p4_ms16_T20_n1e-2_u3e-1 | 36 | 17 / 33 (of 36) | 5.3e-03 / 1.9e-02 |
+| p4_ms16_T20_n1e-2_u3e-2 | 12 | 12 / 12 (of 12) | 8.4e-04 / 8.7e-04 |
+| p6_e1_T20_n1e-2 | 16 | 16 / 16 (of 16) | 9.6e-03 / 9.4e-03 |
+| p6_e1_T20_n1e-2_u1e-1 | 31 | 20 / 20 (of 31) | 3.0e-02 / 3.3e-02 |
+| p6_e1_T20_n1e-2_u1e-2 | 16 | 16 / 16 (of 16) | 1.3e-02 / 1.3e-02 |
+| p6_e1_T20_n1e-2_u3e-2 | 16 | 15 / 15 (of 16) | 2.6e-02 / 2.9e-02 |
+| p6_e1_T20_n1e-2_u5e-2 | 31 | 29 / 29 (of 31) | 3.7e-02 / 4.4e-02 |
+
 | condition | group | poles | S / n | report ((u) = unresolved) | identified | false |
 |---|---|---|---|---|---|---|
 | p4_ms16_T20_n1e-2 | 10 | 3 → 3 | 1.008 | -0.4+3i, -0.2, -1 | 3/3 | 0 |

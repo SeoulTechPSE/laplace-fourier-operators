@@ -1998,6 +1998,48 @@ In the eleventh pass, the gain of 66 on E1 inputs was for much faster poles (−
 - **Open.** The intervals at η_u ≥ 0.1 need calibration, for example the EIV bootstrap
   (`eiv_bootstrap`) around the EIVML fit.
 
+## E4, twenty-third pass: EIV-bootstrap intervals around the EIVML fit
+
+**Method** (`e4_mlelim.py --boot`, 32 draws, fixed before it was run).
+
+- The clean inputs are the stored inputs, denoised (`denoise_input`).
+- Each draw is x* = x̂ + e_u*, y* = G_fit x̂ + e_y*, refitted under EIVML from the final fit.
+- The interval is Re μ ± 1.96 std.
+- `eiv_bootstrap` adds the input noise to the already noisy inputs, which doubles it. That is
+  inconsistent with a cost that uses σ_u², so it is not used here.
+
+| data | η_u | identified poles | covered: profile / bootstrap | mean half-width: profile / bootstrap |
+|---|---|---|---|---|
+| p4 multisine | 0.01, 0.03 | 12, 12 | 12 / 10, 12 / 12 | 4e-4 / 4e-4, 8e-4 / 9e-4 |
+| p4 multisine | 0.1 | 24 | 18 / **21** | 2.3e-3 / 3.9e-3 |
+| p4 multisine | 0.3 | 36 | 17 / **33** | 5.3e-3 / 1.9e-2 |
+| p6 E1 | 0.01, 0.03 | 16, 16 | 16 / 16, 15 / 15 | 1.3e-2 / 1.3e-2, 2.6e-2 / 2.9e-2 |
+| p6 E1 | 0.05 | 31 | 29 / 29 | 3.7e-2 / 4.4e-2 |
+| p6 E1 | 0.1 | 31 | 20 / 20 | 3.0e-2 / 3.3e-2 |
+
+**What it shows.**
+
+- **On multisine the bootstrap restores coverage.**
+  - At 30 × η_y it covers 33/36, against 17/36 for the profile. Its intervals are 3.6 × wider.
+  - At 10 × it covers 21/24, against 18/24.
+  - Where the profile already covers (η_u ≤ 0.05), the two agree.
+- **On E1 at 0.1 neither interval covers; the misses come from model error, not width.**
+  - The complex poles miss mainly when the −1 / −2 pair is wrong.
+  - In the 4 groups where the pair is identified, the complex poles are covered 7/8 by the
+    bootstrap.
+  - In the 8 groups where the pair is duplicated, merged or off, they are covered 8/16.
+  - A wrong pair biases the other poles, which no interval around the fit can repair.
+
+**Reading.**
+
+- **The input-noise pipeline is now complete up to p4 30 × η_y and p6 E1 5 ×.**
+  1. `foh_eivo` searches.
+  2. EIVML backward elimination reduces the report.
+  3. The EIV bootstrap around the EIVML fit gives the intervals.
+  - The result is 0 false poles on fresh groups, with coverage 33/36 at the strongest noise.
+- **E1 at 10 × stays the limit.** The −1 / −2 pair cannot be resolved, and when it is wrong
+  the other intervals are wrong too.
+
 ## E3, deep setting: first pass
 
 `e3_deep.py`. The E1 deep models (ALNO / LFNO, 5,977 parameters, four layers) are trained
