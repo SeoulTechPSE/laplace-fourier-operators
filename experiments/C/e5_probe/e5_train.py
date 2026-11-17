@@ -9,7 +9,8 @@ Damped Duffing (`1D_Duffing_c05`, original split), E1 training protocol `common`
 | tied4_stable_plr10 | E1 tied single layer, 4 slots (LNO v1 layer, linear) | E1 "stable" | x 10 |
 
 On the LNO data the base variant (original init, pole lr x 1) is the first pass (`reproduce_lno.py --tag e5`);
-on the e5_data.py sets (`--data small | mixed`) `base` is trained here, with the same protocol.
+on the e5_data.py sets (`--data small | mixed | ...`) `base` is trained here, with the same protocol. Pendulum tags
+(`pend_*`, sixth pass) use the pendulum LNO architecture (grid input, 8 modes) with the same `common` protocol.
 
     python experiments/C/e5_probe/e5_train.py --variant lno_plr10 --seeds 0 1 2 3 4
 """
@@ -34,6 +35,12 @@ import e1_audit as E  # noqa: E402
 import reproduce_lno as RL  # noqa: E402
 
 CASE = "duffing_c05"
+ORIG = {"orig": "duffing_c05", "pend_orig": "pendulum_c05"}     # data tags that are original LNO data
+
+
+def case_of(data_tag):
+    """LNO case (architecture) for a data tag: pendulum sets use the pendulum LNO (grid input, 8 modes)."""
+    return "pendulum_c05" if data_tag.startswith("pend") else CASE
 VARIANTS = {"base": ("lno", "original", 1.0),
             "lno_plr10": ("lno", "original", 10.0),
             "lno_stable_plr10": ("lno", "stable", 10.0),
@@ -44,8 +51,8 @@ RESULTS = HERE / "results" / "e5_train"
 
 def data_and_grid(data_tag="orig"):
     """orig: the LNO data (original split); small / mixed / medium / moderate: e5_data.py sets (same grid). Tensors (b, n)."""
-    split, grids = RL.load(RL.CASES[CASE], None, "ood")
-    if data_tag == "orig":
+    split, grids = RL.load(RL.CASES[case_of(data_tag)], None, "ood")
+    if data_tag in ORIG:
         data = {k: tuple(a.reshape(a.shape[0], -1).float() for a in v) for k, v in split.items()}
     else:
         z = np.load(ROOT / "runs" / "C" / "e5_data" / f"{data_tag}.npz")
@@ -68,13 +75,13 @@ def stable_init(mu_param, t, gen):
     mu_param.copy_(torch.complex(re, im).to(mu_param.dtype))
 
 
-def build(variant, grids, seed):
+def build(variant, grids, seed, data_tag="orig"):
     kind, init, _ = VARIANTS[variant]
     torch.manual_seed(seed)
     t = torch.as_tensor(np.asarray(grids["t"], float).ravel(), dtype=torch.float32)
     gen = torch.Generator().manual_seed(1000 + seed)
     if kind == "lno":
-        model, _ = RL.build("lno", RL.CASES[CASE], grids)
+        model, _ = RL.build("lno", RL.CASES[case_of(data_tag)], grids)
         if init == "stable":
             stable_init(model.conv0.weights_pole, t, gen)
     else:
@@ -98,7 +105,7 @@ def run(variant, seed, device, data_tag="orig"):
     if out.exists():
         return
     data, grids = data_and_grid(data_tag)
-    model = build(variant, grids, seed).to(device)
+    model = build(variant, grids, seed, data_tag).to(device)
     mu0 = poles_of(model)
     t0 = time.time()
     hist = E.train(model, data, E.PROTOCOLS["common"], device, pole_lr_mult=VARIANTS[variant][2])
@@ -119,7 +126,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--variant", nargs="+", default=list(VARIANTS))
     ap.add_argument("--seeds", nargs="+", type=int, default=[0, 1, 2, 3, 4])
-    ap.add_argument("--data", default="orig", choices=["orig", "small", "mixed", "medium", "moderate"])
+    ap.add_argument("--data", default="orig", choices=["orig", "small", "mixed", "medium", "moderate", "pend_orig", "pend_medium", "pend_large"])
     a = ap.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     for v in a.variant:

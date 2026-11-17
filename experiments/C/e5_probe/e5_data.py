@@ -14,6 +14,11 @@ ramp, PRBS, smooth random; `e1_audit.make_inputs`, times scaled to this window),
   - `medium`: peak |f| ~ U[0.1, 0.5], data residual just under the linearity gate (0.1);
   - `moderate`: peak |f| ~ U[0.2, 1], data residual above the gate.
 
+Sixth pass, driven pendulum x'' + 0.5 x' + sin x = f (the LNO data `1D_Pendulum_c05`, checked here: a simulation
+reproduces stored samples to 2.4e-4 (A = 0.05) ... 1.4e-2 (A = 10); same small-signal pole), data seed 2, bands from a
+data-only gate scan: `pend_medium` peak |f| ~ U[0.1, 0.5] (gate residual 0.04), `pend_large` U[0.3, 1] (0.26; the
+pendulum goes over the top).
+
 Splits 200 / 50 / 130 (train / vali / test); data seed 0 for `small` / `mixed`, 1 for `medium` / `moderate`. Stored in runs/C/e5_data/<name>.npz (git-ignored).
 
     python experiments/C/e5_probe/e5_data.py
@@ -35,7 +40,8 @@ import e1_audit as E  # noqa: E402
 
 C, K, K3 = 0.5, 1.0, 1.0
 N_T, DT = 2048, 0.01
-SETS = {"small": (0.02, 0.1, 0), "mixed": (0.05, 5.0, 0), "medium": (0.1, 0.5, 1), "moderate": (0.2, 1.0, 1)}
+SETS = {"small": (0.02, 0.1, 0), "mixed": (0.05, 5.0, 0), "medium": (0.1, 0.5, 1), "moderate": (0.2, 1.0, 1),
+        "pend_medium": (0.1, 0.5, 2), "pend_large": (0.3, 1.0, 2)}
 SPLIT = (200, 50, 130)
 OUT = ROOT / "runs" / "C" / "e5_data"
 
@@ -44,9 +50,10 @@ def grid():
     return np.arange(N_T) * DT
 
 
-def simulate(f):
+def simulate(f, system="duffing"):
     t = grid()
-    rhs = lambda s, z: [z[1], np.interp(s, t, f) - C * z[1] - K * z[0] - K3 * z[0] ** 3]
+    spring = (lambda x: K * x + K3 * x ** 3) if system == "duffing" else np.sin
+    rhs = lambda s, z: [z[1], np.interp(s, t, f) - C * z[1] - spring(z[0])]
     return solve_ivp(rhs, (0, t[-1]), [0.0, 0.0], t_eval=t, rtol=1e-9, atol=1e-11, max_step=DT).y[0]
 
 
@@ -64,7 +71,8 @@ def make(name):
     f = inputs(n, rng)
     f = f / np.abs(f).max(1, keepdims=True) * rng.uniform(lo, hi, (n, 1))
     with ProcessPoolExecutor(16) as ex:
-        u = np.array(list(ex.map(simulate, f, chunksize=8)))
+        system = "pendulum" if name.startswith("pend") else "duffing"
+        u = np.array(list(ex.map(simulate, f, [system] * n, chunksize=8)))
     OUT.mkdir(parents=True, exist_ok=True)
     np.savez(OUT / f"{name}.npz", f=f, u=u, t=grid(), split=np.array(SPLIT))
     print(name, f.shape, "peak |f|", f"{np.abs(f).max(1).min():.2f}-{np.abs(f).max(1).max():.2f}",

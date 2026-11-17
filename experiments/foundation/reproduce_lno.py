@@ -61,6 +61,11 @@ CASES = {
     "duffing_c05": Case("1D_Duffing_c05", dim=1, batch_size=20,
                         lno_kwargs=dict(width=4, modes=16, use_grid=False, activation="sin", transient_sign=-1.0),
                         fno_modes=(8, 12, 16, 24, 32)),
+    # driven pendulum (c = 0.5), original 1D_Pendulum_c05/main.py: grid input, 8 modes, batch 40, 1200 epochs;
+    # used by (C) E5 (sixth pass, experiments/C/e5_probe)
+    "pendulum_c05": Case("1D_Pendulum_c05", dim=1, batch_size=40, epochs=1200,
+                         lno_kwargs=dict(width=4, modes=8, use_grid=True, activation="sin", transient_sign=-1.0),
+                         fno_modes=(4, 6, 8, 12, 16)),
     "diffusion": Case("2D_Diffusion", dim=2, batch_size=50,
                       lno_kwargs=dict(width=16, modes1=4, modes2=4, transient_sign=1.0),
                       fno_modes=(4, 6, 8, 12, 16)),

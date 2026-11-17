@@ -138,7 +138,7 @@ def load_variant(variant, seed, case, grids, device, data_tag="orig"):
         model.load_state_dict(torch.load(CKPT / f"seed{seed}.pt", map_location="cpu"))
         test = json.loads((RL.RESULTS / "ood" / "e5" / f"{CASE}_lno_seed{seed}.json").read_text())["test_rel_l2"]
     else:
-        model = TR.build(variant, grids, seed)
+        model = TR.build(variant, grids, seed, data_tag)
         name = TR.tag(variant, data_tag)
         model.load_state_dict(torch.load(TR.CKPT / f"{name}_seed{seed}.pt", map_location="cpu"))
         test = json.loads((TR.RESULTS / f"{name}_seed{seed}.json").read_text())["test_rel_l2"]
@@ -148,7 +148,7 @@ def load_variant(variant, seed, case, grids, device, data_tag="orig"):
 
 def main(data_tag="orig"):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    case = RL.CASES[CASE]
+    case = RL.CASES[TR.case_of(data_tag)]
     split, grids = TR.data_and_grid(data_tag)
     xtr, ytr = split["train"]
     f, u = (a.double().reshape(a.shape[0], -1).numpy() for a in (xtr, ytr))
@@ -188,7 +188,7 @@ def main(data_tag="orig"):
                   f"(resid {probes[str(EPS[0])]['pair']['rel']:.2f}); J non-causal {jp['noncausal']:.2f}, "
                   f"Toeplitz {jp['toeplitz_resid']:.2f}, IR pole {[complex(*z) for z in jp['h_poles']]}", flush=True)
         out[v] = rows
-    res = dict(case=CASE, data=data_tag, mu_lin=[mu_lin.real, mu_lin.imag], amp_max=amp_max, eps=list(EPS), variants=out,
+    res = dict(case=TR.case_of(data_tag), data=data_tag, mu_lin=[mu_lin.real, mu_lin.imag], amp_max=amp_max, eps=list(EPS), variants=out,
                equivalent=equivalent_linear(f, u, t, device))
     RESULTS.mkdir(parents=True, exist_ok=True)
     (RESULTS / f"e5_probe{suffix(data_tag)}.json").write_text(json.dumps(res, indent=1))
@@ -218,6 +218,10 @@ def summarize(res):
              (f"Damped Duffing (`1D_Duffing_c05`), original split, 5 seeds per variant. Linearised pole from the 4 "
               f"smallest-amplitude training samples (|f| ≤ {res['amp_max']:.2f}): **{mu_lin.real:.4f} ± "
               f"{abs(mu_lin.imag):.4f}i** (theory −0.25 ± 0.9682i).") if data == "orig" else
+             (f"Driven pendulum x'' + 0.5 x' + sin x = f, " + ("the original LNO data (`1D_Pendulum_c05`)" if data == "pend_orig"
+              else f"`e5_data.py` set `{data}` (diverse E1 waveforms)") + ", pendulum LNO architecture (grid input, 8 "
+              "modes), 5 seeds per variant. Reference: the exact small-signal pole **−0.25 ± 0.9682i**.")
+             if data.startswith("pend") else
              (f"Simulated damped Duffing x'' + 0.5 x' + x + x³ = f, `e5_data.py` set `{data}` (diverse E1 waveforms), 5 "
               f"seeds per variant. Reference: the exact small-signal pole **−0.25 ± 0.9682i**."),
              "Errors in brackets: relative distance to it.", "",

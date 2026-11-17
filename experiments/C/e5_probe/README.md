@@ -37,6 +37,7 @@ python experiments/C/e5_probe/e5_data.py                                        
 python experiments/C/e5_probe/e5_train.py --data small                                                # and --data mixed; 20 runs each
 python experiments/C/e5_probe/e5_probe.py small                                                       # results/e5_probe_small.md (and mixed)
 python experiments/C/e5_probe/e5_data.py medium moderate                                              # fifth pass; then --data medium | moderate, e5_probe.py medium | moderate
+python experiments/C/e5_probe/e5_data.py pend_medium pend_large                                       # sixth pass; then --data pend_orig | pend_medium | pend_large, e5_probe.py <set>
 ```
 
 ## First pass (2026-11-17)
@@ -313,7 +314,62 @@ Same 4 variants × 5 seeds, 40 runs (`results/e5_probe_medium.md`, `results/e5_p
 - Limits: one system (Duffing, hardening), one gate threshold, and a bias that grows towards the threshold
   (6 % at 0.095).
 
+## Sixth pass (2026-11-18): rule v2 on the driven pendulum
+
+**System.** The LNO pendulum data follow x″ + 0.5x′ + sin x = f. A simulation reproduces stored samples to
+2.4e-4 (A = 0.05) and 1.4e-2 (A = 10). The small-signal pole is the Duffing one, −0.25 ± 0.9682i, but the spring
+softens instead of hardening.
+
+**Setup** (pre-registered in `results/e5_rule_v2_pendulum_prereg.md`; rule v2 unchanged):
+
+- the pendulum LNO architecture (`reproduce_lno.py` case `pendulum_c05`: grid input, 8 modes, 128 stored
+  poles), the same 4 variants, `common` protocol, 5 seeds;
+- `pend_orig`: the original LNO data;
+- `pend_medium`, `pend_large`: `e5_data.py`, E1 input families, data seed 2, peak |f| in [0.1, 0.5] and
+  [0.3, 1]. In `pend_large` the pendulum goes over the top (|x| up to 25 rad).
+
+60 runs (`results/e5_probe_pend_{orig,medium,large}.md`).
+
+| set | gate residual | data equivalent pole | v1 trusted | their J pole → small-signal pole | v2 |
+|---|---|---|---|---|---|
+| `pend_medium` | 0.036, passes | −0.245 + 0.947i | 6 (tied 5/5, stable LNO 1/5) | **0.01** | same 6 trusted |
+| `pend_large` | 0.236, fails | −0.255 + 0.889i | 5 (tied 5/5) | 0.04–0.05 | none trusted |
+| `pend_orig` | 0.121, fails | −0.255 + 0.924i | 3 (tied 3/5) | 0.02 | none trusted |
+
+**Predictions against results.**
+
+1. `pend_medium`, gate passes, v2-trusted poles within 10 %: **holds** (all 6 within 1 %).
+2. `pend_large` and `pend_orig`, gate fails, v2 trusts nothing: **holds**. The abstention is conservative
+   on both: the 8 runs v1 alone would trust are all correct (2–5 %).
+3. The grid input makes LNO Jacobians invalid: **holds only on `pend_orig`** (non-causal share 0.15–0.86).
+   On the simulated sets several LNO Jacobians are valid (e.g. `lno_plr10` on `pend_large`, 3/5), so the grid
+   channel alone does not break the probe. The original data's waveform family is the likelier cause; this was
+   not tested.
+
+**Further findings.**
+
+- **The agreement check does its job.** Valid but wrong LNO probes are rejected by d(probe, layer): for example
+  `base` s0 on `pend_medium` (valid J, pole 58 % off, d 0.32) and `lno_plr10` on `pend_large` (valid J, poles
+  14–19 % off, d 0.15–0.33).
+- **Stable init + pole lr × 10 is again the LNO variant with physical stored poles.** It has 1–9 stored poles
+  within 10 % in all 15 runs, and test 0.02 (`pend_medium`) and 0.11 (`pend_large`). On `pend_orig` this
+  variant fits poorly under the `common` protocol (test 0.43–0.58), and its J poles are far off.
+
+**Reading for RQ4.**
+
+- **Over 6 simulated or original sets (120 runs), v2 trusted 18 runs, all within 6 % of the small-signal pole,
+  with no false trust.** v1 alone made 6 false trusts, all on Duffing.
+- **The gate is sufficient here but not necessary.** The output residual of a linear fit measures how
+  nonlinear the data are, not how far the equivalent pole moves. A softening pendulum leaves large residuals
+  while its equivalent pole moves little (4.6 % on `pend_orig`). The hardening Duffing moves its pole far
+  (15–17 % on `moderate` at residual 0.20).
+- A sharper gate would measure the pole shift directly. One candidate: the equivalent pole of the lowest-amplitude
+  band against the whole set. On `pend_orig` the |f| ≤ 1 band has residual 0.00 and gives −0.250 + 0.968i
+  exactly. This is post hoc and would need new data.
+
 **Next.**
 
+- A pole-shift gate (band-wise equivalent poles) tested on new sets of both systems.
 - Duffing c = 0 (undamped, poles on the axis) as a boundary case.
-- Secant probes on other nonlinear LNO benchmarks (pendulum, Lorenz).
+- Lorenz needs a different probe: its data start from x₀ = 1 and its output is not zero at zero input, so a
+  linearisation about x = 0 is not the system's.

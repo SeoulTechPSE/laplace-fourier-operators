@@ -132,7 +132,11 @@ Suggested next steps (in order):
    Fifth pass (rule v2 = data linearity gate, best linear fit residual < 0.1, + v1; pre-registered):
    `medium` (gate 0.095) 6 trusted, 5–6 % from the small-signal pole; `moderate` (gate 0.20) v2
    abstains, where v1 alone trusts 4 tied layers 15–17 % off. Trusted poles track the data's
-   equivalent linear pole (2–7 %). Next: Duffing c = 0; pendulum / Lorenz; E1 paper decisions.
+   equivalent linear pole (2–7 %). Sixth pass (driven pendulum, pre-registered): `pend_medium`
+   gate passes, 6 trusted within 1 %; `pend_large` / `pend_orig` gate fails and v2 abstains,
+   although the 8 runs v1 would trust are correct (2–5 %). Across 120 runs v2 has no false
+   trust; its gate is sufficient but conservative for a softening spring. Next: pole-shift gate
+   (band-wise equivalent poles) on new data; Duffing c = 0; E1 paper decisions.
 
 Things to know:
 
@@ -143,6 +147,24 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-18 — (C) E5 / RQ4: rule v2 on the driven pendulum
+
+- Done: `reproduce_lno.py` case `pendulum_c05` (original pendulum LNO: grid input, 8 modes); `e5_data.py`
+  pendulum sets `pend_medium` (|f| 0.1–0.5) and `pend_large` (0.3–1), data seed 2; `e5_train.py` /
+  `e5_probe.py` take `pend_*` tags; pre-registration
+  `experiments/C/e5_probe/results/e5_rule_v2_pendulum_prereg.md`; 60 runs. `src/lfo/` unchanged.
+- Results:
+  - LNO pendulum data = x'' + 0.5x' + sin x = f (simulation 2.4e-4 … 1.4e-2); small-signal pole as Duffing.
+  - `pend_medium`: gate 0.036, passes; 6 trusted (tied 5/5, stable LNO 1/5), all within 1 %.
+  - `pend_large` (gate 0.236) and `pend_orig` (0.121): v2 abstains; v1 alone would trust 5 and 3 tied layers,
+    all correct (2–5 %).
+  - Grid input → invalid LNO Jacobian: only on `pend_orig`; several LNO probes are valid on simulated sets and
+    the agreement check rejects the wrong ones (d 0.15–0.33).
+- Decisions: rule v2 kept (120 runs, 18 trusted, no false trust). Its output-residual gate is conservative for
+  softening systems; a gate on the pole shift (band-wise equivalent poles) is a post-hoc candidate.
+- Next: pole-shift gate on new data of both systems; Duffing c = 0; Lorenz needs a probe about its own
+  operating point; E1 paper decisions.
 
 ### 2026-11-18 — (C) E5 / RQ4: rule v2 with a data linearity gate
 
