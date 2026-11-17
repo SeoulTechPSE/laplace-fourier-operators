@@ -7,6 +7,7 @@ format:
     papersize: a4
     geometry: margin=22mm
     number-sections: true
+    tbl-colwidths: false
   html:
     embed-resources: true
     number-sections: true
@@ -85,7 +86,7 @@ ALNO and LFNO have no public code and were re-implemented from the papers. Their
 | deep† | LFNO | `lfno_paper`, `stable` | 0.20 ± 0.01 | 0.44 ± 0.06 | 0.51 ± 0.01 | 4.3e-2 (3/5 diverged) |
 | deep | all | `lno` init | 0.94–0.97 | 0.87–0.94 | 0.95–0.97 | ≈ 1.0 (no training) |
 
-: Pole error (mean relative error after matching; mean ± std over seeds; diverged runs excluded). †Closest pooled pole, an optimistic upper bound. The full grid of models, protocols and initialisations is in Appendix A. {#tbl-main}
+: Pole error (mean relative error after matching; mean ± std over seeds; diverged runs excluded). †Closest pooled pole, an optimistic upper bound. The full grid of models, protocols and initialisations is in Appendix A. {#tbl-main tbl-colwidths="[8,12,20,14,14,14,18]"}
 
 ### Under the published protocols the poles cannot move far enough
 
@@ -163,7 +164,11 @@ All models, initialisations and protocols. Deep-setting pole errors use the clos
 
 mean ± std over seeds. pole error: relative, after folding and Hungarian matching (deep: closest pooled poles). spread: mean over true poles of `seed_spread`. Diverged runs (non-finite weights) are counted under seeds and excluded from the statistics.
 
-### layer
+```{=latex}
+\begingroup\scriptsize\setlength{\tabcolsep}{3pt}
+```
+
+### layer {.unnumbered}
 
 | system | model | init | protocol | n | params | seeds | test rel. L2 | pole error | seed spread | unstable | transient frac. |
 |---|---|---|---|---|---|---|---|---|---|---|---|
@@ -240,7 +245,7 @@ mean ± std over seeds. pole error: relative, after folding and Hungarian matchi
 | p6 | tied | stable | common+plr10 | 6 | 24 | 10 | 2.29e-02 ± 1.9e-02 | 0.826 ± 0.425 | 0.973 | 0.00 | 0.04 ± 0.00 |
 | p6 | tied | warm | common | 6 | 24 | 10 | 9.90e-04 ± 3.2e-04 | 0.042 ± 0.019 | 0.042 | 0.00 | 0.04 ± 0.00 |
 
-### deep
+### deep {.unnumbered}
 
 | system | model | init | protocol | n | params | seeds | test rel. L2 | pole error | seed spread | unstable | transient frac. |
 |---|---|---|---|---|---|---|---|---|---|---|---|
@@ -280,5 +285,9 @@ mean ± std over seeds. pole error: relative, after folding and Hungarian matchi
 | p6 | lfno | stable | lfno_paper+plr10 | – | 5977 | 5 (1 div.) | 8.63e-01 ± 1.4e+00 | 0.403 ± 0.155 | 0.242 | 0.45 | – |
 | p6 | lno_v1 | lno | common | – | 5927 | 5 | 9.55e-01 ± 6.5e-02 | 0.961 ± 0.004 | 0.010 | 0.67 | – |
 | p6 | lno_v1 | lno | common+plr10 | – | 5927 | 5 | 6.05e-01 ± 4.2e-01 | 0.472 ± 0.130 | 0.262 | 0.35 | – |
+
+```{=latex}
+\endgroup
+```
 
 Oracle (true poles in one layer), test rel. L2: p2 8.4e-04, p4 9.2e-04, p6 6.6e-04

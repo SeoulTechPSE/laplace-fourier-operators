@@ -18,5 +18,9 @@ docs/*.html
 docs/*.pdf
 docs/*_files/
 docs/.quarto/
+experiments/**/paper/*.pdf
+experiments/**/paper/*.html
+experiments/**/paper/*_files/
+experiments/**/paper/.quarto/
 
 .DS_Store
