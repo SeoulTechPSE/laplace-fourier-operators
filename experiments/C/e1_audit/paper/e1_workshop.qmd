@@ -117,13 +117,16 @@ The deep test error does not change (ALNO 1.6e-2 → 1.7e-2): the published mode
 
 Without a warm start the real poles −1 and −2 are recovered in 0–10 % of runs in every setting, including the tied layer with enough travel. Meanwhile the models still fit: the tied layer on p6 reaches a test error of 8e-3 without −2. The learned poles matched to −1 and −2 are lightly damped complex poles near $-0.5 \pm (0.1\text{–}0.9)i$.
 
-Is this a training failure or a limit of the data? Profiles of the layer's error in each real pole's decay rate are flat within a few times its representation floor. That floor, however, comes from the layer's band-limited input hold, not from the data. A follow-up study (to appear) shows that the E1 data do identify these poles:
+Is this a training failure or a limit of the data? Profiles of the layer's error in each real pole's decay rate are flat within a few times its representation floor (Fig. 3): fixing the decay rate of −2 anywhere in [−6, −1] costs at most 2.1e-3, below the test error of good-fit runs. The complex poles, by contrast, have sharp profiles. That floor, however, comes from the layer's band-limited input hold, not from the data. A follow-up study (to appear) shows that the E1 data do identify these poles:
+
 
 - A training recipe without prior knowledge of the poles recovers −1 / −2 on p6 in 95 / 70 % of runs. It uses real-constrained slots on a log grid of decay rates, a damping bound on complex slots, multi-start and an L-BFGS polish.
 - A truth-free certificate built on a first-order-hold refit reports every pole, with no false pole, in 4/4 groups of five runs.
 - Under relative output noise the limit is the Cramér–Rao bound: −2 is identified up to a noise level of about 0.03 and lost near 0.1, −1 holds to about 0.1, and the p4 real poles to at least 0.3.
 
 The fast real poles are therefore missed by the published recipes, not hidden by the data.
+
+![Profile of each p6 pole's decay rate for the tied single layer: $\operatorname{Re}\mu$ of one pole is fixed at c × truth and all other parameters are re-fitted. The complex poles have sharp minima; the real poles −1 and −2 stay within a few times the representation floor (dashed) over a wide range, below the test error of good-fit runs (dotted).](../figures/fig3_profile.png){#fig-profile width=72%}
 
 ## Discussion
 
