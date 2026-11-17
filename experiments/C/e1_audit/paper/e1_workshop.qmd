@@ -11,6 +11,8 @@ format:
   html:
     embed-resources: true
     number-sections: true
+bibliography: references.bib
+csl: ieee.csl
 ---
 
 <!-- Workshop paper draft (project C, E1). Decisions: STATUS.md 2026-11-18 and E1_report.md,
@@ -29,13 +31,13 @@ The models fit the data equally well whether their poles are right or wrong. A l
 
 ## Introduction
 
-Neural operators with a Laplace (pole–residue) branch represent a solution operator as a sum of exponentially decaying or oscillating modes, $\sum_n \beta_n / (s - \mu_n)$, often in parallel with a Fourier (steady-state) branch [1–4]. The poles $\mu_n$ are trainable. Their appeal is interpretability: if the learned $\mu_n$ are the system's poles, the model exposes natural frequencies and decay rates, which neither a Fourier neural operator nor a generic network can.
+Neural operators with a Laplace (pole–residue) branch represent a solution operator as a sum of exponentially decaying or oscillating modes, $\sum_n \beta_n / (s - \mu_n)$, often in parallel with a Fourier (steady-state) branch [@cao2024lno; @kim2026pilno; @ha2026lfno; @ha2025bestofboth]. The poles $\mu_n$ are trainable. Their appeal is interpretability: if the learned $\mu_n$ are the system's poles, the model exposes natural frequencies and decay rates, which neither a Fourier neural operator [@li2021fno] nor a generic network can.
 
 This claim is rarely tested. Benchmarks report test error, and test error does not depend on whether the poles are physical. Two branches that can take over each other's role, or many poles that jointly approximate one, give the same output with different poles. We ask a direct question: **on linear systems with known poles, do the poles learned by these models match the truth, and how much do they vary across seeds?**
 
 **Contributions.**
 
-1. An audit of LNO v1 [1], ALNO [2] and LFNO [3, 4] on three linear systems with 2, 4 and 6 known poles, under the published protocols and controls (900 runs).
+1. An audit of LNO v1 [@cao2024lno], ALNO [@kim2026pilno] and LFNO [@ha2026lfno; @ha2025bestofboth] on three linear systems with 2, 4 and 6 known poles, under the published protocols and controls (900 runs).
 2. A mechanism for the main failure: the learning-rate schedule bounds the total pole travel.
 3. A separation of what training fails to find from what the data cannot identify, for fast real poles.
 
@@ -117,7 +119,7 @@ The deep test error does not change (ALNO 1.6e-2 → 1.7e-2): the published mode
 
 Without a warm start the real poles −1 and −2 are recovered in 0–10 % of runs in every setting, including the tied layer with enough travel. Meanwhile the models still fit: the tied layer on p6 reaches a test error of 8e-3 without −2. The learned poles matched to −1 and −2 are lightly damped complex poles near $-0.5 \pm (0.1\text{–}0.9)i$.
 
-Is this a training failure or a limit of the data? Profiles of the layer's error in each real pole's decay rate are flat within a few times its representation floor (Fig. 3): fixing the decay rate of −2 anywhere in [−6, −1] costs at most 2.1e-3, below the test error of good-fit runs. The complex poles, by contrast, have sharp profiles. That floor, however, comes from the layer's band-limited input hold, not from the data. A follow-up study (to appear) shows that the E1 data do identify these poles:
+Is this a training failure or a limit of the data? Profiles [@raue2009profile] of the layer's error in each real pole's decay rate are flat within a few times its representation floor (Fig. 3): fixing the decay rate of −2 anywhere in [−6, −1] costs at most 2.1e-3, below the test error of good-fit runs. The complex poles, by contrast, have sharp profiles. That floor, however, comes from the layer's band-limited input hold, not from the data. A follow-up study (to appear) shows that the E1 data do identify these poles:
 
 
 - A training recipe without prior knowledge of the poles recovers −1 / −2 on p6 in 95 / 70 % of runs. It uses real-constrained slots on a log grid of decay rates, a damping bound on complex slots, multi-start and an L-BFGS polish.
@@ -153,11 +155,8 @@ For deep models, a pooled closest-pole match is only an upper bound and should b
 
 ## References {.unnumbered}
 
-1. Cao, Q., Goswami, S., Karniadakis, G. E. LNO: Laplace Neural Operator for Solving Differential Equations. arXiv:2303.10528.
-2. Kim, H. et al. Physics-Informed Laplace Neural Operator for Solving Partial Differential Equations. arXiv:2602.12706 (2026).
-3. Ha, J., Yoon, S., Lee, D. LFNO: Bridging Laplace and Fourier via Transient-Steady Decomposition. arXiv:2606.07601 (2026).
-4. Best of Both Worlds: Bridging Laplace and Fourier for Generalizable and Efficient Operator Learning. NeurIPS 2025 Workshop (ML4PS).
-5. Raue, A. et al. Structural and practical identifiability analysis of partially observed dynamical models by exploiting the profile likelihood. Bioinformatics 25, 1923 (2009).
+::: {#refs}
+:::
 
 ## Appendix A: full grid {.unnumbered}
 
