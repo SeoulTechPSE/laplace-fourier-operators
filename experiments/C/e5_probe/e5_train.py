@@ -35,12 +35,13 @@ import e1_audit as E  # noqa: E402
 import reproduce_lno as RL  # noqa: E402
 
 CASE = "duffing_c05"
-ORIG = {"orig": "duffing_c05", "pend_orig": "pendulum_c05"}     # data tags that are original LNO data
+ORIG = {"orig": "duffing_c05", "pend_orig": "pendulum_c05", "c0_orig": "duffing_c0"}     # data tags that are original LNO data
 
 
 def case_of(data_tag):
-    """LNO case (architecture) for a data tag: pendulum sets use the pendulum LNO (grid input, 8 modes)."""
-    return "pendulum_c05" if data_tag.startswith("pend") else CASE
+    """LNO case for a data tag: pendulum sets use the pendulum LNO (grid input, 8 modes); c0_* the undamped Duffing
+    case (same architecture as duffing_c05, its own data)."""
+    return "pendulum_c05" if data_tag.startswith("pend") else "duffing_c0" if data_tag.startswith("c0_") else CASE
 VARIANTS = {"base": ("lno", "original", 1.0),
             "lno_plr10": ("lno", "original", 10.0),
             "lno_stable_plr10": ("lno", "stable", 10.0),
@@ -126,7 +127,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--variant", nargs="+", default=list(VARIANTS))
     ap.add_argument("--seeds", nargs="+", type=int, default=[0, 1, 2, 3, 4])
-    ap.add_argument("--data", default="orig", choices=["orig", "small", "mixed", "medium", "moderate", "pend_orig", "pend_medium", "pend_large", "wide", "pend_wide"])
+    ap.add_argument("--data", default="orig", choices=["orig", "small", "mixed", "medium", "moderate", "pend_orig", "pend_medium", "pend_large", "wide", "pend_wide", "c0_orig", "c0_small", "c0_medium"])
     a = ap.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     for v in a.variant:

@@ -44,6 +44,7 @@ CASE = "duffing_c05"
 SEEDS = (0, 1, 2, 3, 4)
 VARIANTS = ("base", "lno_plr10", "lno_stable_plr10", "tied4_stable_plr10")
 MU_TRUE = complex(-0.25, math.sqrt(1 - 0.0625))
+MU_TRUE_C0 = complex(0.0, 1.0)              # undamped Duffing (eighth pass): poles on the imaginary axis
 TRUST_D, TRUST_TEST = 0.1, 0.5         # RQ4 trust rule: valid probe, d(probe, layer) < TRUST_D, test < TRUST_TEST
 GATE = 0.1                             # rule v2 (fixed before the medium / moderate runs): the data's own best linear
                                        # pair must leave < GATE of the output, else no linear pole is read as physical
@@ -155,7 +156,7 @@ def main(data_tag="orig"):
     t = np.asarray(grids["t"], float).ravel()
     mu_lin, amp_max = linearised(f, u, t, device)
     if data_tag != "orig":                                  # simulated sets: the exact small-signal pole
-        mu_lin = MU_TRUE
+        mu_lin = MU_TRUE_C0 if data_tag.startswith("c0_") else MU_TRUE
     print(f"linearised pole {mu_lin:.4f} (from |f| <= {amp_max:.2f})", flush=True)
     P = probe_inputs(t, np.random.default_rng(0))
     out = {}
@@ -222,6 +223,10 @@ def summarize(res):
               else f"`e5_data.py` set `{data}` (diverse E1 waveforms)") + ", pendulum LNO architecture (grid input, 8 "
               "modes), 5 seeds per variant. Reference: the exact small-signal pole **−0.25 ± 0.9682i**.")
              if data.startswith("pend") else
+             (f"Undamped Duffing x'' + x + x³ = f, " + ("the original LNO data (`1D_Duffing_c0`)" if data == "c0_orig"
+              else f"`e5_data.py` set `{data}` (diverse E1 waveforms)") + ", 5 seeds per variant. Reference: the exact "
+              "small-signal pole **± i** (on the imaginary axis).")
+             if data.startswith("c0_") else
              (f"Simulated damped Duffing x'' + 0.5 x' + x + x³ = f, `e5_data.py` set `{data}` (diverse E1 waveforms), 5 "
               f"seeds per variant. Reference: the exact small-signal pole **−0.25 ± 0.9682i**."),
              "Errors in brackets: relative distance to it.", "",

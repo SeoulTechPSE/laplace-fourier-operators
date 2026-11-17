@@ -30,7 +30,8 @@ import e5_train as TR  # noqa: E402
 
 EP = P.EP
 LOW_FRAC, LOW_RESID, SHIFT = 0.2, 0.1, 0.1     # SHIFT was 0.05 in the first run (see README, seventh pass)
-SETS = ("small", "mixed", "medium", "moderate", "pend_orig", "pend_medium", "pend_large", "wide", "pend_wide")
+SETS = ("small", "mixed", "medium", "moderate", "pend_orig", "pend_medium", "pend_large", "wide", "pend_wide",
+        "c0_orig", "c0_small", "c0_medium")
 
 
 def eq_pole(f, u, t, device):
@@ -84,7 +85,8 @@ def summarize(res):
     lines = ["# E5: data-side gates of the trust rule", "",
              f"v2 gate: all-sample linear residual < {P.GATE:g}. v3 gate: lowest {LOW_FRAC:.0%} of samples by peak |f| "
              f"linear (residual < {LOW_RESID:g}) and equivalent-pole shift all vs low < {SHIFT:g}. A trusted run is "
-             "correct if its Jacobian pole is within 10 % of the small-signal pole −0.25 ± 0.9682i.", "",
+             "correct if its Jacobian pole is within 10 % of the small-signal pole: −0.25 ± 0.9682i (damped Duffing, "
+             "pendulum) or ± i (`c0_*`, undamped Duffing).", "",
              "| set | all: pole, resid | low band (peak |f| ≤): pole, resid | shift | v2 | v3 | v1 trusted: correct / all "
              "(errors) | v2 false / missed | v3 false / missed |", "|---|---|---|---|---|---|---|---|---|"]
     tot = dict(v1f=0, v2f=0, v2m=0, v3f=0, v3m=0)
