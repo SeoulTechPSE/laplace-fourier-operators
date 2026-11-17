@@ -43,7 +43,7 @@ RESULTS = HERE / "results" / "e5_train"
 
 
 def data_and_grid(data_tag="orig"):
-    """orig: the LNO data (original split); small / mixed: e5_data.py sets (same grid). Tensors (b, n)."""
+    """orig: the LNO data (original split); small / mixed / medium / moderate: e5_data.py sets (same grid). Tensors (b, n)."""
     split, grids = RL.load(RL.CASES[CASE], None, "ood")
     if data_tag == "orig":
         data = {k: tuple(a.reshape(a.shape[0], -1).float() for a in v) for k, v in split.items()}
@@ -119,7 +119,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--variant", nargs="+", default=list(VARIANTS))
     ap.add_argument("--seeds", nargs="+", type=int, default=[0, 1, 2, 3, 4])
-    ap.add_argument("--data", default="orig", choices=["orig", "small", "mixed"])
+    ap.add_argument("--data", default="orig", choices=["orig", "small", "mixed", "medium", "moderate"])
     a = ap.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     for v in a.variant:

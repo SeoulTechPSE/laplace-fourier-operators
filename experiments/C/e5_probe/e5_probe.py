@@ -45,6 +45,8 @@ SEEDS = (0, 1, 2, 3, 4)
 VARIANTS = ("base", "lno_plr10", "lno_stable_plr10", "tied4_stable_plr10")
 MU_TRUE = complex(-0.25, math.sqrt(1 - 0.0625))
 TRUST_D, TRUST_TEST = 0.1, 0.5         # RQ4 trust rule: valid probe, d(probe, layer) < TRUST_D, test < TRUST_TEST
+GATE = 0.1                             # rule v2 (fixed before the medium / moderate runs): the data's own best linear
+                                       # pair must leave < GATE of the output, else no linear pole is read as physical
 EPS = (0.01, 0.1, 0.3, 1.0, 3.0)
 N_PROBE = 16
 CKPT = ROOT / "runs" / "foundation" / "ood" / "e5" / CASE / "lno"
@@ -198,6 +200,11 @@ def trusted(r):
     return bool(j["valid"] and j["d_probe_layer"] is not None and j["d_probe_layer"] < TRUST_D and r["test"] < TRUST_TEST)
 
 
+def gate(res):
+    """Rule v2 linearity gate: the data's best linear pair (all training samples) fits within GATE."""
+    return res["equivalent"]["all"]["rel"] < GATE
+
+
 def suffix(data_tag):
     return "" if data_tag == "orig" else f"_{data_tag}"
 
@@ -229,7 +236,8 @@ def summarize(res):
                                             f"{v['rel']:.2f}" for k, v in res["equivalent"].items()) + ".", "",
              "RQ4 indicator: d = distance from the J impulse-response pole to the nearest stored pole (relative); "
              "valid = J causal and shift-invariant (both shares < 0.1). Trusted (rule fixed before the `small` and "
-             f"`mixed` runs): valid ∧ d < {TRUST_D:g} ∧ test rel. L2 < {TRUST_TEST:g}.", "",
+             f"`mixed` runs): valid ∧ d < {TRUST_D:g} ∧ test rel. L2 < {TRUST_TEST:g}. Rule v2 (fixed before the "
+             f"`medium` and `moderate` runs) adds a gate on the data: its best linear pair must leave < {GATE:g}.", "",
              "| variant | seed | test rel. L2 | layer: within 10 %, closest | LTI probe: pole, residual | "
              "J: non-causal, Toeplitz residual | J impulse-response pole | valid, d | trusted |",
              "|---|---|---|---|---|---|---|---|---|"]
@@ -245,9 +253,15 @@ def summarize(res):
                          + (f"{j['d_probe_layer']:.2f}" if j["d_probe_layer"] is not None else "–")
                          + f" | {'**yes**' if trusted(r) else 'no'} |")
     tr = [(v, r) for v, rows in res["variants"].items() for r in rows if trusted(r)]
-    lines += ["", f"Trusted runs: {len(tr)} of {sum(len(x) for x in res['variants'].values())}. "
-              + ("Their J impulse-response pole vs the reference: "
-                 + ", ".join(f"{v} s{r['seed']} {err(r['jac']['h_poles'][0]):.2f}" for v, r in tr) if tr else "")]
+    g = res["equivalent"]["all"]
+    eq = complex(*g["pole"])
+    lines += ["", f"Trusted runs (rule v1): {len(tr)} of {sum(len(x) for x in res['variants'].values())}. "
+              + ("Their J impulse-response pole vs the reference (and vs the data's equivalent pole): "
+                 + ", ".join(f"{v} s{r['seed']} {err(r['jac']['h_poles'][0]):.2f} "
+                             f"({abs(complex(*r['jac']['h_poles'][0]) - eq) / abs(eq):.2f})" for v, r in tr) if tr else ""),
+              "", f"Rule v2 linearity gate: the data's best linear pair leaves {g['rel']:.3f} of the output "
+              f"(gate {GATE:g}): " + ("**passed**, v2 trusts the same runs as v1." if gate(res) else
+                                      "**failed**, v2 reads no linear pole as physical on this set.")]
     (RESULTS / f"e5_probe{suffix(res.get('data', 'orig'))}.md").write_text("\n".join(lines) + "\n")
     print("\n".join(lines))
 

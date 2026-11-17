@@ -9,9 +9,12 @@ ramp, PRBS, smooth random; `e1_audit.make_inputs`, times scaled to this window),
 
 - `small`: peak |f| ~ U[0.02, 0.1], so peak |x| <= 0.23 and k3 x^2 / k <= 0.05 (nearly linear; a first version
   with |f| <= 0.5 reached |x| = 0.88, where the cubic term is 0.8 k x);
-- `mixed`: peak |f| ~ U[0.05, 5].
+- `mixed`: peak |f| ~ U[0.05, 5];
+- fifth pass, data seed 1 (bands chosen from a data-only scan of the best-linear-fit residual, before any training):
+  - `medium`: peak |f| ~ U[0.1, 0.5], data residual just under the linearity gate (0.1);
+  - `moderate`: peak |f| ~ U[0.2, 1], data residual above the gate.
 
-Splits 200 / 50 / 130 (train / vali / test), data seed 0. Stored in runs/C/e5_data/<name>.npz (git-ignored).
+Splits 200 / 50 / 130 (train / vali / test); data seed 0 for `small` / `mixed`, 1 for `medium` / `moderate`. Stored in runs/C/e5_data/<name>.npz (git-ignored).
 
     python experiments/C/e5_probe/e5_data.py
 """
@@ -32,7 +35,7 @@ import e1_audit as E  # noqa: E402
 
 C, K, K3 = 0.5, 1.0, 1.0
 N_T, DT = 2048, 0.01
-SETS = {"small": (0.02, 0.1), "mixed": (0.05, 5.0)}
+SETS = {"small": (0.02, 0.1, 0), "mixed": (0.05, 5.0, 0), "medium": (0.1, 0.5, 1), "moderate": (0.2, 1.0, 1)}
 SPLIT = (200, 50, 130)
 OUT = ROOT / "runs" / "C" / "e5_data"
 
@@ -54,8 +57,8 @@ def inputs(n, rng):
     return u
 
 
-def make(name, seed=0):
-    lo, hi = SETS[name]
+def make(name):
+    lo, hi, seed = SETS[name]
     rng = np.random.default_rng(seed)
     n = sum(SPLIT)
     f = inputs(n, rng)
@@ -69,5 +72,5 @@ def make(name, seed=0):
 
 
 if __name__ == "__main__":
-    for s in sys.argv[1:] or SETS:
+    for s in sys.argv[1:] or ("small", "mixed"):
         make(s)

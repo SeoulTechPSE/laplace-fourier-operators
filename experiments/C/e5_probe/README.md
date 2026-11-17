@@ -36,6 +36,7 @@ python experiments/C/e5_probe/e5_oppoint.py                                     
 python experiments/C/e5_probe/e5_data.py                                                              # runs/C/e5_data/{small,mixed}.npz
 python experiments/C/e5_probe/e5_train.py --data small                                                # and --data mixed; 20 runs each
 python experiments/C/e5_probe/e5_probe.py small                                                       # results/e5_probe_small.md (and mixed)
+python experiments/C/e5_probe/e5_data.py medium moderate                                              # fifth pass; then --data medium | moderate, e5_probe.py medium | moderate
 ```
 
 ## First pass (2026-11-17)
@@ -266,8 +267,53 @@ Median relative error of the model's equivalent frequency against the data's:
   linear-model pole is read as physical. This candidate is set after seeing these results, so
   it would need a third data set.
 
+## Fifth pass (2026-11-18): rule v2 with a linearity gate on the data
+
+**Rule v2** (`e5_probe.py`: `GATE`; pre-registered in `results/e5_rule_v2_prereg.md` before training):
+
+- gate (data): the training data's own best linear pair (FOH VarPro, all samples) leaves < 0.1 of the output;
+- rule v1 (model): J valid ∧ d(probe, layer) < 0.1 ∧ test < 0.5.
+
+Applied to the fourth pass, the gate passes on `small` (0.005) and fails on `mixed` (0.44). Since the threshold
+was proposed after those results, two new sets were made (data seed 1, E1 input families). Their bands come
+from a data-only scan of the gate residual, with no models:
+
+- `medium`: peak |f| in [0.1, 0.5], gate residual **0.095** (passes, near the threshold);
+- `moderate`: peak |f| in [0.2, 1], gate residual **0.20** (fails).
+
+Same 4 variants × 5 seeds, 40 runs (`results/e5_probe_medium.md`, `results/e5_probe_moderate.md`).
+
+| set | data equivalent pole (resid) | v1 trusted | their J pole → small-signal pole | → data equivalent pole | v2 |
+|---|---|---|---|---|---|
+| `medium` | −0.280 + 1.044i (0.095) | 6 (tied 5/5, stable LNO 1/5) | 0.05–0.06 | 0.02–0.03 | gate passes: same 6 trusted |
+| `moderate` | −0.359 + 1.176i (0.20) | 4 (tied 4/5) | **0.15–0.17** | 0.06–0.07 | gate fails: none trusted |
+
+**Findings.**
+
+1. **Both predictions hold.**
+   - On `medium` every trusted pole is within 10 % of the small-signal pole (5–6 %). There is no false trust.
+   - On `moderate` rule v1 alone would have trusted 4 tied layers whose poles are 15–17 % off. The gate
+     rejects the set, so v2 trusts nothing.
+2. **What a trusted pole measures is the data's equivalent linear pole.** On both sets the trusted J poles are
+   2–7 % from it, and their distance to the small-signal pole grows with the amplitude band (≤ 1 % on `small`,
+   5–6 % on `medium`, 15–17 % on `moderate`). The gate bounds this bias: a residual below 0.1 kept it under
+   10 % here.
+3. **The LNOs with stable init and pole lr × 10 again hold physical poles.** Their J pole is 4–6 % from the
+   small-signal pole on `medium` in 4/5 seeds and 8–19 % on `moderate`, with test 0.04–0.09. But their
+   Jacobians are mostly slightly non-causal (0.08–0.30), and the rule certifies one of ten.
+4. **The original LNO and pole lr × 10 alone** (original init) are never trusted: invalid J, J poles 11–98 % off.
+
+**Reading for RQ4.**
+
+- Over four simulated sets (80 runs), rule v2 trusted 12 runs, all within 6 % of the small-signal pole, and it
+  abstained on the two sets where a linear summary is poor. Rule v1 alone gave 6 false trusts (2 on `mixed`,
+  4 on `moderate`).
+- The rule reads a stored pole as the system's equivalent linear pole over the training regime. That pole
+  equals the small-signal pole only to the extent the data are linear, which is what the gate checks.
+- Limits: one system (Duffing, hardening), one gate threshold, and a bias that grows towards the threshold
+  (6 % at 0.095).
+
 **Next.**
 
-- A third data set to test a stricter fit criterion.
 - Duffing c = 0 (undamped, poles on the axis) as a boundary case.
 - Secant probes on other nonlinear LNO benchmarks (pendulum, Lorenz).

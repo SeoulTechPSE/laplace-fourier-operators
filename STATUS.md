@@ -129,8 +129,10 @@ Suggested next steps (in order):
    small-signal pole, no false trust; `mixed` (|f| ≤ 5) 2 trusted tied layers 43 / 86 % off
    (equivalent pole of data whose best linear fit leaves 44 %): the fit criterion (test < 0.5)
    is too lax. Stable init + pole lr × 10 gives LNO poles within 10 % in 4/5 seeds on both sets.
-   Next: a third set for a stricter fit criterion; Duffing c = 0; pendulum / Lorenz; E1 paper
-   decisions.
+   Fifth pass (rule v2 = data linearity gate, best linear fit residual < 0.1, + v1; pre-registered):
+   `medium` (gate 0.095) 6 trusted, 5–6 % from the small-signal pole; `moderate` (gate 0.20) v2
+   abstains, where v1 alone trusts 4 tied layers 15–17 % off. Trusted poles track the data's
+   equivalent linear pole (2–7 %). Next: Duffing c = 0; pendulum / Lorenz; E1 paper decisions.
 
 Things to know:
 
@@ -141,6 +143,21 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-18 — (C) E5 / RQ4: rule v2 with a data linearity gate
+
+- Done: `e5_probe.py` `GATE` (rule v2 = data best-linear-pair residual < 0.1 ∧ rule v1), pre-registered in
+  `experiments/C/e5_probe/results/e5_rule_v2_prereg.md`; `e5_data.py` sets `medium` (|f| 0.1–0.5) and
+  `moderate` (0.2–1), data seed 1, bands from a data-only gate scan; 40 runs. `src/lfo/` unchanged.
+- Results:
+  - `medium`: gate 0.095, passes; 6 trusted (tied 5/5, stable-init LNO 1/5), J pole 5–6 % from
+    −0.25 ± 0.9682i, 2–3 % from the data's equivalent pole −0.280 + 1.044i.
+  - `moderate`: gate 0.20, fails, v2 trusts none; v1 alone trusts 4 tied layers 15–17 % off (6–7 % from
+    the equivalent pole −0.359 + 1.176i).
+  - Over the four simulated sets: v2 12 trusted, all ≤ 6 %, no false trust; v1 alone 6 false trusts.
+- Decisions: the RQ4 rule is v2. A trusted stored pole is the equivalent linear pole of the training regime;
+  the gate bounds its distance to the small-signal pole (< 10 % at gate residual < 0.1, on Duffing).
+- Next: Duffing c = 0; pendulum / Lorenz secant probes; E1 paper decisions.
 
 ### 2026-11-17 — (C) E5 / RQ4: the trust rule on new Duffing data
 
