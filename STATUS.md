@@ -11,7 +11,7 @@ Each session appends one entry using the template at the bottom.
 | (C) Pole audit of existing models | 3–5 | **in progress**: E1 done, draft report (`E1_report.md`, updated with E2); paper decisions made (2026-11-18); workshop paper draft written (`paper/e1_workshop.qmd`) | — |
 | (D) Non-periodic input representation | 4–8 | not started | differs from padded FNO? (month 8) |
 | (A) Pole layer and linear validation | 5–10 | not started | dispersion relations recovered (month 10) |
-| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits, a bootstrap-calibrated order, certificate and order test; reduction-path unresolved rules fail, a location-calibrated split test flags the merge, a combined post-report rule leaves 1 false pole in 40 groups but does not carry over to new p6 E1 groups; an EIVML refit of the reports removes the EIV bias; EIVML through the whole pipeline helps only up to η_u = 0.05; an EIVML elimination of the calibrated report leaves 0 false poles up to p4 30 η_y and p6 E1 0.05, with EIV-bootstrap intervals covering 33/36 at p4 30 η_y), E3 deep first pass done; H1–H3 theory draft (`experiments/C/theory/H1_H2.md`), E5 first pass (`experiments/C/e5_probe/`) | — |
+| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits, a bootstrap-calibrated order, certificate and order test; reduction-path unresolved rules fail, a location-calibrated split test flags the merge, a combined post-report rule leaves 1 false pole in 40 groups but does not carry over to new p6 E1 groups; an EIVML refit of the reports removes the EIV bias; EIVML through the whole pipeline helps only up to η_u = 0.05; an EIVML elimination of the calibrated report leaves 0 false poles up to p4 30 η_y and p6 E1 0.05, with EIV-bootstrap intervals covering 33/36 at p4 30 η_y), E3 deep first pass done; H1–H3 theory draft (`experiments/C/theory/H1_H2.md`), E5 passes 1–8 (`experiments/C/e5_probe/`; RQ4 rule v3) | — |
 | (A) Application 1: process dynamics | 11–16 | not started | — |
 | (D) Initial conditions and rollout | 13–19 | not started | — |
 | (A) Application 2: Cahn–Hilliard | 17–22 | not started | recover k_c, k_max (month 20) |
@@ -139,9 +139,13 @@ Suggested next steps (in order):
    (pole-shift gate: low-amplitude fifth linear, all-sample equivalent pole within 10 % of it),
    pre-registered on new sets where v2 and v3 disagree: v3 trusts 12 runs, all correct (2–7 %).
    Over 9 sets / 160 runs: v1 6 false; v2 0 false, 20 missed; v3 0 false, 0 missed. RQ4 rule =
-   v3. E1 paper decisions made (2026-11-18); workshop paper draft
-   `experiments/C/e1_audit/paper/e1_workshop.qmd`. Next: review the draft (venue, length,
-   figures); Duffing c = 0; Lorenz (probe about its operating point).
+   v3. Eighth pass (undamped Duffing c = 0, poles ± i, pre-registered): `c0_small` 6 trusted at
+   1 %; `c0_orig` nothing trusted (tied layers excluded by fit); `c0_medium` v3 abstains on 5
+   correct runs (4 %), since an undamped low band fails the residual test at a 1.4 % pole error.
+   Over 12 sets / 220 runs: v3 0 false, 5 missed. E1 paper decisions made (2026-11-18);
+   workshop paper draft `experiments/C/e1_audit/paper/e1_workshop.qmd`, rendered (8 pages,
+   Fig. 1–3, checked BibTeX references). Next: user review of the draft (venue, length);
+   Lorenz (probe about its operating point).
 
 Things to know:
 
@@ -152,6 +156,37 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-18 — (C) E5 / RQ4: undamped Duffing (c = 0)
+
+- Done: `e5_data.py` (undamped Duffing, sets `c0_small` peak |f| 0.02–0.1 and `c0_medium` 0.05–0.3, data seed 4,
+  from a data-only gate scan); `e5_train.py` / `e5_probe.py` / `e5_gate.py` accept `c0_orig` (LNO data
+  `1D_Duffing_c0`, checked: c = 0, k₃ = 1), `c0_small`, `c0_medium`; reference pole ± i. Pre-registration
+  `results/e5_c0_prereg.md` committed before training (6e8e6c5). 60 runs. `src/lfo/` unchanged.
+- Results (rule v3 unchanged):
+  - `c0_small`: gates pass; 6 trusted (5 tied, 1 stable-init LNO), all within 1 % of i.
+  - `c0_orig`: gates fail; v1 already trusts none: the tied layers' probes are valid and self-consistent but the
+    fit is poor (0.88–0.995), with poles 21–282 % from i.
+  - `c0_medium`: gates fail although the equivalent pole is within 5 % of i (low band residual 0.154 at a 1.4 %
+    pole error); v3 misses 5 correct tied layers (4 %).
+  - Stable init + pole lr × 10 puts LNO poles within 10 % of i in all 10 runs on the small / medium sets; on
+    `c0_orig` those LNOs keep poles near i but do not fit, and the best fits (original init) have none.
+  - Totals over 12 sets / 220 runs: v1 55 trusted, 6 false; v2 24, 0 false, 25 missed; v3 44, 0 false, 5 missed.
+- Decisions: rule v3 kept unchanged (as pre-registered). Its residual-based linearity test is conservative for
+  undamped poles; a pole-stability test of the low band is a post-hoc idea that would need new data.
+- Next: Lorenz (probe about its operating point); user review of the workshop draft.
+
+### 2026-11-18 — (C) E1: workshop paper rendered, references checked
+
+- Done: Quarto 1.11.9 and TeX Live 2025 installed (by the user; `/usr/local/bin` is missing from the JupyterHub
+  PATH, use `/opt/quarto/bin/quarto`). `paper/e1_workshop.qmd` renders to 8 pages: compact appendix table
+  (`tbl-colwidths: false`, scriptsize), fixed Table 1 widths, Fig. 3 (p6 profile) added to Section 3.3.
+  References moved to `paper/references.bib` (IEEE CSL), each checked against arXiv, doi.org / Crossref and the
+  NeurIPS 2025 page; FNO added, Raue cited. Proposal reference lists (A, C, D) updated the same way. Render
+  outputs are git-ignored.
+- Corrections found: LNO is published (Nat. Mach. Intell. 6, 631, 2024); PILNO is J. Comput. Phys. 566, 115291
+  (2026); the ML4PS workshop paper is by Ha and Lee.
+- Next: user review (venue, page limit).
 
 ### 2026-11-18 — (C) E1: workshop paper draft
 

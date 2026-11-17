@@ -39,6 +39,7 @@ python experiments/C/e5_probe/e5_probe.py small                                 
 python experiments/C/e5_probe/e5_data.py medium moderate                                              # fifth pass; then --data medium | moderate, e5_probe.py medium | moderate
 python experiments/C/e5_probe/e5_data.py pend_medium pend_large                                       # sixth pass; then --data pend_orig | pend_medium | pend_large, e5_probe.py <set>
 python experiments/C/e5_probe/e5_data.py wide pend_wide                                               # seventh pass; train / probe as above, then
+python experiments/C/e5_probe/e5_data.py c0_small c0_medium                                          # eighth pass; then --data c0_orig | c0_small | c0_medium, e5_probe.py <set>
 python experiments/C/e5_probe/e5_gate.py                                                              # results/e5_gate.md (v2 / v3 gates, all sets)
 ```
 
@@ -439,8 +440,71 @@ Same 4 variants × 5 seeds, 40 runs.
   - Only the tied layer and the stable-init LNO were ever trusted. The LNO's Jacobian is usually slightly
     non-causal (0.10–0.20), so the rule mostly certifies the linear layer.
 
+## Eighth pass (2026-11-18): undamped Duffing (c = 0), a boundary case
+
+Pre-registered in `results/e5_c0_prereg.md`, before any training. Rule v3 unchanged.
+
+**System and data.**
+
+- x″ + x + x³ = f, small-signal poles **± i**, on the imaginary axis. Without damping a small frequency error
+  accumulates into a large phase error over the 20.47 s window.
+- `c0_orig`: the LNO data `1D_Duffing_c0`, checked here (c = 0, k₃ = 1 reproduce stored samples to 6.6e-4 at
+  peak |f| = 0.05). Same input amplitudes as the damped case, 0.05–10.
+- `c0_small` (peak |f| 0.02–0.1) and `c0_medium` (0.05–0.3): `e5_data.py`, E1 input families, data seed 4, bands
+  from a data-only gate scan.
+- Same 4 variants × 5 seeds, 60 runs (`e5_train.py --data c0_*`, `e5_probe.py c0_*`, `e5_gate.py`).
+
+| set | all: pole, resid | low fifth: pole, resid | shift | v2 | v3 | v1 trusted: correct / all (errors) |
+|---|---|---|---|---|---|---|
+| `c0_orig` | −0.229 + 1.260i, 0.884 | −0.004 + 1.022i, 0.208 | 0.320 | fail | fail | 0 / 0 |
+| `c0_small` | −0.002 + 1.010i, 0.078 | −0.000 + 1.002i, 0.025 | 0.008 | pass | pass | **6 / 6** (1 %) |
+| `c0_medium` | −0.032 + 1.049i, 0.356 | −0.006 + 1.013i, 0.154 | 0.043 | fail | fail | 5 / 5 (4 %) |
+
+Test rel. L2 by variant (5 seeds):
+
+| set | `base` | `lno_plr10` | `lno_stable_plr10` | `tied4_stable_plr10` |
+|---|---|---|---|---|
+| `c0_orig` | 0.20–0.59 | 0.18–0.66 | 0.81–0.99 | 0.88–0.995 |
+| `c0_small` | 0.62–0.69 | 0.57–0.60 | **0.034–0.082** | 0.049 |
+| `c0_medium` | 0.60–0.66 | 0.48–0.60 | **0.155–0.249** | 0.247 |
+
+**Predictions against results.**
+
+1. `c0_small`: v3 passes, and every trusted run is within 10 % of i. **Holds**: 5 tied layers and 1 stable-init
+   LNO, all at 1 %.
+2. `c0_orig`: v3 abstains. **Holds, but it was not needed.** v1 trusts no run there: the tied layers have valid
+   Jacobians that agree with their stored poles (d ≤ 0.17), but they fit badly (test 0.88–0.995), and the fit
+   criterion excludes them. Their poles are 21–282 % from i.
+3. `c0_medium`: v3 abstains on a set whose equivalent pole is within 5 % of i. **Holds, and this is the cost.**
+   v1 trusts 5 tied layers, all at 4 % (correct), and v3 does not certify them. The low band fails the linearity
+   test (residual 0.154) although its pole is within 1.4 % of i. Without damping, a 1 % frequency error already
+   leaves a large output residual. As pre-registered, the threshold is not changed.
+4. Learning undamped poles (reported, not predicted):
+   - On the small and medium sets, the stable init with pole lr × 10 puts LNO poles within 10 % of i in all
+     10 runs (3–15 poles each).
+   - On `c0_orig`, the same LNOs also hold poles within 4–8 % of i but do not fit (0.81–0.99).
+   - The original-init LNOs fit `c0_orig` best (0.18–0.66), with no pole near i.
+   - So on the strongly nonlinear undamped data, the best fit and the physical poles come from different
+     models.
+
+**Totals over 12 sets, 220 runs.**
+
+| rule | trusted | false trust (> 10 %) | correct runs not trusted |
+|---|---|---|---|
+| v1 (no gate) | 55 | 6 | 0 |
+| v2 (output-residual gate) | 24 | 0 | 25 |
+| v3 (pole-shift gate) | 44 | 0 | 5 (`c0_medium`) |
+
+**Reading for RQ4.**
+
+- **v3 makes no false trust on the boundary case either.** It stays sound on poles on the imaginary axis.
+- **It is more conservative there.** Its linearity test measures output residuals, and for undamped poles
+  these overstate small pole errors. One alternative would gate on the low band's pole stability instead of its
+  residual. It is not adopted here: it would be set after seeing this result, and it would need new data.
+- **The fit criterion did the work on `c0_orig`.** Valid, self-consistent probes (the tied layers) were
+  excluded only by test error. The three parts of v1 are all needed.
+
 **Next.**
 
-- Duffing c = 0 (undamped, poles on the axis) as a boundary case.
 - Lorenz needs a different probe: its data start from x₀ = 1 and its output is not zero at zero input, so a
   linearisation about x = 0 is not the system's.
