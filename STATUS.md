@@ -121,8 +121,11 @@ Suggested next steps (in order):
    valid probe (J causal and shift-invariant), where probe and layer agree (d ≤ 0.06) on the
    amplitude-averaged equivalent pole (8–14 % from the small-signal one); a stable-init LNO
    with pole lr × 10 holds the physical pole in 3/5 seeds but no valid probe points to it.
-   RQ4 rule: trust = valid probe ∧ agreement ∧ good fit. Next: operating-point probes; a
-   small-amplitude / diverse Duffing set; E1 paper decisions.
+   RQ4 rule: trust = valid probe ∧ agreement ∧ good fit. Third pass (secant probes along the
+   amplitude): the original LNO, poles at init, reproduces the data's equivalent pole and its
+   hardening drift (0.968 → 1.20 up to A = 7) within 0.1–1.5 %, out of sample too; the linear
+   tied layer stays at 1.116. Next: small-amplitude / diverse Duffing set; Duffing c = 0;
+   pendulum / Lorenz; E1 paper decisions.
 
 Things to know:
 
@@ -133,6 +136,21 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-17 — (C) E5 / RQ4: equivalent-linear (secant) probes along the amplitude
+
+- Done: `experiments/C/e5_probe/e5_oppoint.py` → `results/e5_oppoint.md`: equivalent pole
+  (best linear pair, FOH VarPro, one sample) at A = 0.1 … 10 for the data and for each model's
+  own response, training and test waveforms, 4 variants × 5 seeds. `src/lfo/` unchanged.
+- Results:
+  - Data: Im 0.968 (A = 0.1) → 1.204 (A = 7) → 1.425 (A = 10), training waveform; test
+    waveform similar.
+  - Original LNO (layer poles at init): median error 0.1–1.5 % up to A = 7 (max over seeds
+    3.8 %), 4.7 % at A = 10; test waveform 0.6–1.2 %. LNO variants 0.1–5 %.
+  - Linear tied layer: constant 1.116, 1–15 % off (22 % at A = 10).
+- Decisions: for nonlinear operators, poles are read from probes (secant along the operating
+  regime; Jacobian at x = 0 when it is causal LTI), not from the stored layer poles.
+- Next: small-amplitude / diverse Duffing training set; Duffing c = 0; pendulum / Lorenz.
 
 ### 2026-11-17 — (C) E5 / RQ4: probes on Duffing models whose poles move
 

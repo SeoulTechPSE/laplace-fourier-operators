@@ -32,6 +32,7 @@ response, and compare them with the stored layer poles and with the poles of the
 python experiments/foundation/reproduce_lno.py --case duffing_c05 --model lno --seeds 0 1 2 3 4 --tag e5   # ~1 min each
 python experiments/C/e5_probe/e5_train.py                                                             # 3 variants x 5 seeds, ~2 min each
 python experiments/C/e5_probe/e5_probe.py                                                             # results/e5_probe.md
+python experiments/C/e5_probe/e5_oppoint.py                                                           # results/e5_oppoint.md
 ```
 
 ## First pass (2026-11-17)
@@ -144,10 +145,67 @@ small-signal pole. Under this rule the 3 good tied fits are trusted, and they li
 of the linearised pole. No LNO run is trusted. No run is trusted wrongly, because the two
 failed tied fits are excluded by (iii).
 
+## Third pass (2026-11-17): equivalent-linear (secant) poles along the amplitude
+
+`e5_oppoint.py` → `results/e5_oppoint.md`.
+
+**Why a secant probe.** At an operating point A sin 5t the Duffing linearisation is
+time-varying (stiffness k + 3k₃x₀(t)²), so it has no poles. The comparable quantity is the
+*equivalent pole*: the best linear pair (FOH VarPro) for one input–response pair at amplitude A.
+
+**Method.**
+
+- It is computed for the data's stored response and for each model's own response to the same
+  input.
+- The training waveform (in sample) and the test waveform (decaying envelope, out of sample) are
+  both used.
+- Amplitudes are A = 0.1 … 10.
+
+Im of the equivalent pole, training waveform (models: median over 5 seeds):
+
+| source | A = 0.1 | 0.5 | 1 | 2 | 3 | 5 | 7 | 10 |
+|---|---|---|---|---|---|---|---|---|
+| data | 0.968 | 0.970 | 0.975 | 0.995 | 1.024 | 1.104 | 1.204 | 1.425 |
+| `base` (layer poles at their init) | 0.975 | 0.957 | 0.968 | 0.993 | 1.028 | 1.110 | 1.203 | 1.358 |
+| `lno_stable_plr10` | 0.927 | 0.979 | 0.989 | 1.005 | 1.027 | 1.103 | 1.213 | 1.351 |
+| `tied4_stable_plr10` (linear) | 1.116 | 1.116 | 1.116 | 1.116 | 1.116 | 1.116 | 1.116 | 1.116 |
+
+Median relative error of the model's equivalent frequency against the data's:
+
+| variant | training waveform, A ≤ 7 | A = 10 | test waveform, A ≤ 7 | A = 8.9 |
+|---|---|---|---|---|
+| `base` | 0.1–1.5 % (max over seeds 3.8 %) | 4.7 % | 0.6–1.2 % (max 4.3 %) | 3.9 % |
+| `lno_plr10` | 0.4–3.6 % | 6.9 % | 1.0–2.2 % | 3.7 % |
+| `lno_stable_plr10` | 0.1–4.3 % | 5.2 % | 0.6–5.2 % | 6.2 % |
+| `tied4_stable_plr10` | 1.1–15 % | 22 % | 1.4–15 % | 17 % |
+
+**Findings.**
+
+1. **The LNO reproduces the amplitude-dependent dynamics, and a secant probe reads it out.**
+   - The original LNO's equivalent pole follows the data's hardening drift (0.968 → 1.20 up to
+     A = 7) within 0.1–1.5 % (median).
+   - It does so on the out-of-sample test waveform too (0.6–1.2 %).
+   - Its 256 stored poles have not moved from the initialisation.
+   - The dynamics, including the amplitude dependence, are carried by the nonlinearity and the
+     steady branch.
+2. **The linear tied layer cannot follow the drift.** Its equivalent pole is fixed at 1.116,
+     the compromise found in the second pass, and it is 15 % off at small amplitudes.
+3. **The secant probe is robust to the fit error.** The base model's output error at these
+   samples is 5–30 %, but its equivalent frequency is within 1.5 %.
+
+**Reading for RQ4.**
+
+- **The pole interpretation of a nonlinear operator should come from probes, not from its
+  stored poles.** For the published LNO, the stored poles are uninformative (first pass), while
+  its secant probes reproduce the system's amplitude-dependent equivalent pole to about 1 %.
+- **The two probes answer different questions.**
+  - The Jacobian probe at x = 0 needs a causal, shift-invariant Jacobian to be valid.
+  - The secant probe needs only input–response pairs from the model. It describes the operating
+    regime of those inputs.
+
 **Next.**
 
-- Probes around nonzero operating points (amplitude-dependent linearisation along the training
-  waveform), to read the equivalent-linear drift directly from a model.
 - A Duffing training set with small amplitudes or diverse waveforms, where the small-signal pole
   is identifiable.
 - Duffing c = 0 (undamped, poles on the axis) as a boundary case.
+- Secant probes on other nonlinear LNO benchmarks (pendulum, Lorenz).
