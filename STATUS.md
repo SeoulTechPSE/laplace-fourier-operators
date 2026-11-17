@@ -117,8 +117,12 @@ Suggested next steps (in order):
    layer poles stay at their initialisation (0/256 within 10 % of the linearised pole), while
    the average impulse response of its small-signal Jacobian gives the pole within 10 % in 3/5
    seeds; the operator is far from causal LTI (76–90 % non-causal Jacobian), so a causal LTI
-   probe fails. Next: probes on models whose poles move (lr × 10, damp8, tied layer);
-   operating-point probes; E1 paper decisions.
+   probe fails. Second pass (models whose poles move): only the linear tied layer gives a
+   valid probe (J causal and shift-invariant), where probe and layer agree (d ≤ 0.06) on the
+   amplitude-averaged equivalent pole (8–14 % from the small-signal one); a stable-init LNO
+   with pole lr × 10 holds the physical pole in 3/5 seeds but no valid probe points to it.
+   RQ4 rule: trust = valid probe ∧ agreement ∧ good fit. Next: operating-point probes; a
+   small-amplitude / diverse Duffing set; E1 paper decisions.
 
 Things to know:
 
@@ -129,6 +133,25 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-17 — (C) E5 / RQ4: probes on Duffing models whose poles move
+
+- Done: `experiments/C/e5_probe/e5_train.py` (variants `lno_plr10`, `lno_stable_plr10`,
+  `tied4_stable_plr10`, 5 seeds each, E1 protocol `common`); `e5_probe.py` over all 4 variants
+  with the RQ4 indicator (probe valid = J non-causal share and Toeplitz residual < 0.1; d =
+  impulse-response pole to nearest stored pole) and equivalent-linear fits of the training data
+  by amplitude band. `src/lfo/` unchanged.
+- Results:
+  - Equivalent linear pole: A ≤ 1 −0.250 + 0.971i; A > 3 −0.298 + 1.199i; all −0.304 + 1.137i
+    (hardening).
+  - Tied layer: valid probe in 5/5, d ≤ 0.06 in the 3 good fits, pole −0.27 + 1.09 … 1.11i
+    (8–14 % from the small-signal pole, between it and the equivalent pole); 2 failed fits
+    (test 0.9) agree internally too.
+  - LNO variants: probe invalid in 15/15 (non-causal 0.21–0.90). Stable init + pole lr × 10
+    holds a pole within 5 % of the linearised one in 3/5 seeds, but the probe lands elsewhere.
+- Decisions: RQ4 rule = valid probe ∧ probe–layer agreement ∧ good fit; a trusted pole is the
+  amplitude-averaged equivalent linearisation, not the small-signal pole.
+- Next: operating-point probes; a small-amplitude or diverse Duffing training set; Duffing c = 0.
 
 ### 2026-11-17 — (C) E5 / RQ4: linear-probe poles of the Duffing LNO (first pass)
 

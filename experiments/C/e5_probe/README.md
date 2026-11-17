@@ -30,6 +30,7 @@ response, and compare them with the stored layer poles and with the poles of the
 
 ```
 python experiments/foundation/reproduce_lno.py --case duffing_c05 --model lno --seeds 0 1 2 3 4 --tag e5   # ~1 min each
+python experiments/C/e5_probe/e5_train.py                                                             # 3 variants x 5 seeds, ~2 min each
 python experiments/C/e5_probe/e5_probe.py                                                             # results/e5_probe.md
 ```
 
@@ -74,10 +75,79 @@ python experiments/C/e5_probe/e5_probe.py                                       
   LTI fit is not a valid probe. The average impulse response then gives only a rough estimate,
   with an error of 8–22 %.
 
+## Second pass (2026-11-17): models whose poles move
+
+`e5_train.py` trains three more variants, 5 seeds each, with the E1 protocol `common`:
+
+| variant | model | init | pole lr |
+|---|---|---|---|
+| `lno_plr10` | original LNO | original | × 10 |
+| `lno_stable_plr10` | original LNO | E1 "stable" | × 10 |
+| `tied4_stable_plr10` | E1 tied single layer, 4 slots (linear) | E1 "stable" | × 10 |
+
+`e5_probe.py` probes all four variants, 20 runs (`results/e5_probe.md`).
+
+**RQ4 indicator** (defined after a first look at these runs, so the 20 runs are development data for it).
+
+- The probe is valid if J is causal and shift-invariant: the non-causal share and the Toeplitz
+  residual are both below 0.1.
+- d is the relative distance from J's impulse-response pole to the nearest stored pole.
+
+**Equivalent linear pole of the training data.** This is the best linear pair, fitted with
+per-sample relative weights:
+
+| amplitude band | samples | pole | residual |
+|---|---|---|---|
+| A ≤ 1 | 20 | −0.250 + 0.971i | 0.01 |
+| 1 < A ≤ 3 | 40 | −0.251 + 0.997i | 0.04 |
+| A > 3 | 140 | −0.298 + 1.199i | 0.28 |
+| all | 200 | −0.304 + 1.137i | 0.31 |
+
+The system is hardening, so the equivalent frequency rises with the amplitude.
+
+| variant | test rel. L2 | layer poles near the linearised pole (≤ 10 %) | J valid | d (probe ↔ layer) | probe pole → linearised |
+|---|---|---|---|---|---|
+| `base` | 0.13–0.37 | 0/5 runs (best 0.90–0.93) | 0/5 (non-causal 0.76–0.90) | 0.89–0.92 | 0.08–0.22 |
+| `lno_plr10` | 0.15–0.30 | 0/5 (best 0.32–0.68) | 0/5 (0.52–0.65) | 0.21–0.69 | 0.07–0.98 |
+| `lno_stable_plr10` | 0.33–0.50 | **3/5 (best 0.01–0.05)** | 0/5 (0.21–0.76) | 0.02–0.49 | 0.03–7.4 |
+| `tied4_stable_plr10` | 0.26–0.27 (3 seeds); 0.90–0.93 (2) | 1/5 (good fits: 0.08–0.12) | **5/5** (0.01–0.02) | **0.00–0.06** (good fits) | 0.12–0.14 (good fits) |
+
+**Findings.**
+
+1. **Only the linear tied layer gives a valid probe.**
+   - Its Jacobian is causal and shift-invariant to 1–2 %.
+   - Probe and stored poles agree (d ≤ 0.06 in the good fits).
+   - Every LNO variant fails the validity check (non-causal share 0.21–0.90), including the
+     ones whose poles moved.
+2. **Agreement is not correctness.**
+   - The tied layer's agreed pole, −0.27 + 1.09 … 1.11i, is 8–14 % from the small-signal pole.
+     It lies between that pole and the training set's equivalent linear pole (−0.30 + 1.14i).
+     A linear model trained over all amplitudes learns an amplitude-averaged pole, not the
+     linearisation at x = 0.
+   - The two failed tied fits (test 0.90–0.93) also agree with their probes (d 0.03–0.18) while
+     being far off. Agreement must be read together with the fit error.
+3. **A movable LNO can contain the physical pole, but nothing points to it.**
+   - With the stable init and pole lr × 10, the layer holds a pole within 5 % of the linearised
+     one in 3/5 seeds (best 0.01).
+   - Picking it out of 256 needs the truth: in all three of those seeds the invalid probe lands
+     elsewhere (0.40–1.49 from the linearised pole).
+   - The model is also less accurate (test 0.33–0.50 against 0.13–0.37).
+
+**Reading for RQ4.** A stored pole is trustworthy only if three conditions hold:
+
+- (i) the probe is valid, i.e. J is causal and shift-invariant;
+- (ii) probe and layer agree;
+- (iii) the model fits well.
+
+Even then, it is the equivalent linearisation over the training amplitudes, not the
+small-signal pole. Under this rule the 3 good tied fits are trusted, and they lie within 8–14 %
+of the linearised pole. No LNO run is trusted. No run is trusted wrongly, because the two
+failed tied fits are excluded by (iii).
+
 **Next.**
 
-- Apply the same probes to models whose poles do move: pole learning rate × 10, as in E1; the
-  `damp8` recipe; a tied single layer trained on Duffing.
-- Probe around nonzero operating points: amplitude-dependent linearisation along the training
-  waveform.
+- Probes around nonzero operating points (amplitude-dependent linearisation along the training
+  waveform), to read the equivalent-linear drift directly from a model.
+- A Duffing training set with small amplitudes or diverse waveforms, where the small-signal pole
+  is identifiable.
 - Duffing c = 0 (undamped, poles on the axis) as a boundary case.
