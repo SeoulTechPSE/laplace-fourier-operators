@@ -160,11 +160,11 @@ The goal is to submit one paper combining the audit and the linear theory within
 
 ## 8. References
 
-1. Cao, Q., Goswami, S., Karniadakis, G. E. LNO: Laplace Neural Operator for Solving Differential Equations. [arXiv:2303.10528](https://arxiv.org/abs/2303.10528); code on [GitHub](https://github.com/qianyingcao/Laplace-Neural-Operator)
-2. Kim, H. et al. Physics-Informed Laplace Neural Operator for Solving Partial Differential Equations. [arXiv:2602.12706](https://www.arxiv.org/abs/2602.12706) (2026)
-3. Ha, J., Yoon, S., Lee, D. LFNO: Bridging Laplace and Fourier via Transient-Steady Decomposition. [arXiv:2606.07601](https://papers.cool/arxiv/2606.07601) (2026)
-4. Best of Both Worlds: Bridging Laplace and Fourier for Generalizable and Efficient Operator Learning. [NeurIPS 2025](https://neurips.cc/virtual/2025/122846)
+1. Cao, Q., Goswami, S., Karniadakis, G. E. Laplace neural operator for solving differential equations. Nat. Mach. Intell. 6, 631 (2024). [doi:10.1038/s42256-024-00844-4](https://doi.org/10.1038/s42256-024-00844-4); [arXiv:2303.10528](https://arxiv.org/abs/2303.10528); code on [GitHub](https://github.com/qianyingcao/Laplace-Neural-Operator)
+2. Kim, H., Cao, Q., Shin, H., Lee, S., Karniadakis, G. E., Choi, M. Physics-informed Laplace neural operator for solving partial differential equations. J. Comput. Phys. 566, 115291 (2026). [doi:10.1016/j.jcp.2026.115291](https://doi.org/10.1016/j.jcp.2026.115291); [arXiv:2602.12706](https://arxiv.org/abs/2602.12706)
+3. Ha, J., Yoon, S., Lee, D. LFNO: Bridging Laplace and Fourier via Transient-Steady Decomposition. [arXiv:2606.07601](https://arxiv.org/abs/2606.07601) (2026)
+4. Ha, J., Lee, D. Best of Both Worlds: Bridging Laplace and Fourier for Generalizable and Efficient Operator Learning. NeurIPS 2025 Workshop on Machine Learning and the Physical Sciences. [NeurIPS 2025](https://neurips.cc/virtual/2025/122846)
 5. Ljung, L. System Identification: Theory for the User, 2nd ed. Prentice Hall (1999).
 6. Hua, Y., Sarkar, T. K. Matrix pencil method for estimating parameters of exponentially damped/undamped sinusoids in noise. IEEE Trans. ASSP 38, 814 (1990).
 7. Gustavsen, B., Semlyen, A. Rational approximation of frequency domain responses by vector fitting. IEEE Trans. Power Delivery 14, 1052 (1999).
-8. Raue, A. et al. Structural and practical identifiability analysis of partially observed dynamical models by exploiting the profile likelihood. Bioinformatics 25, 1923 (2009).
+8. Raue, A. et al. Structural and practical identifiability analysis of partially observed dynamical models by exploiting the profile likelihood. Bioinformatics 25, 1923 (2009). [doi:10.1093/bioinformatics/btp358](https://doi.org/10.1093/bioinformatics/btp358)

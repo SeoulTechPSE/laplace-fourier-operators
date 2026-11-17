@@ -156,11 +156,11 @@ The first six months cover non-periodic input representation and the last six co
 
 ## 8. References
 
-1. Cao, Q., Goswami, S., Karniadakis, G. E. LNO: Laplace Neural Operator for Solving Differential Equations. [arXiv:2303.10528](https://arxiv.org/abs/2303.10528); code on [GitHub](https://github.com/qianyingcao/Laplace-Neural-Operator)
+1. Cao, Q., Goswami, S., Karniadakis, G. E. Laplace neural operator for solving differential equations. Nat. Mach. Intell. 6, 631 (2024). [doi:10.1038/s42256-024-00844-4](https://doi.org/10.1038/s42256-024-00844-4); [arXiv:2303.10528](https://arxiv.org/abs/2303.10528); code on [GitHub](https://github.com/qianyingcao/Laplace-Neural-Operator)
 2. Li, Z. et al. Fourier Neural Operator for Parametric Partial Differential Equations. ICLR 2021. [arXiv:2010.08895](https://arxiv.org/abs/2010.08895)
 3. Gu, A., Goel, K., Ré, C. Efficiently Modeling Long Sequences with Structured State Spaces (S4). ICLR 2022. [arXiv:2111.00396](https://arxiv.org/abs/2111.00396)
 4. Gu, A. et al. HiPPO: Recurrent Memory with Optimal Polynomial Projections. NeurIPS 2020. [arXiv:2008.07669](https://arxiv.org/abs/2008.07669)
 5. Voelker, A., Kajić, I., Eliasmith, C. Legendre Memory Units: Continuous-Time Representation in Recurrent Neural Networks. NeurIPS 2019.
 6. Hochbruck, M., Ostermann, A. Exponential integrators. Acta Numerica 19, 209 (2010).
 7. Trefethen, L. N. Approximation Theory and Approximation Practice. SIAM (2013).
-8. State-space models are accurate and efficient neural operators for dynamical systems. [arXiv:2409.03231](https://arxiv.org/pdf/2409.03231)
+8. Hu, Z., Ahmadi Daryakenari, N., Shen, Q., Kawaguchi, K., Karniadakis, G. E. State-space models are accurate and efficient neural operators for dynamical systems. [arXiv:2409.03231](https://arxiv.org/abs/2409.03231) (2025)

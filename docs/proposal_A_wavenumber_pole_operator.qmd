@@ -45,11 +45,11 @@ The input is expanded in a Fourier series. The output is the sum of a steady res
 | [LNO v1](https://github.com/qianyingcao/Laplace-Neural-Operator) | pole–residue | same pole–residue | product of per-axis poles | limited expressivity for interpolation |
 | [LNO v2](https://github.com/qianyingcao/Laplace-Neural-Operator) (Burgers example) | pole–residue | FNO-style FRF | product of per-axis poles | consistency between branches not guaranteed |
 | [ALNO/PILNO](https://www.arxiv.org/abs/2602.12706) (Feb 2026) | pole–residue | Fourier multiplier | same | focus on physics-informed training |
-| [LFNO](https://papers.cool/arxiv/2606.07601) (May 2026) | pole–residue | Fourier integral operator + nonlinearity | same | strong on ODEs; on PDEs, comparable to FNO |
+| [LFNO](https://arxiv.org/abs/2606.07601) (May 2026) | pole–residue | Fourier integral operator + nonlinearity | same | strong on ODEs; on PDEs, comparable to FNO |
 
 : Existing Laplace–Fourier hybrids {#tbl-prior}
 
-**Relation to SSMs.** A rational kernel is close to a diagonal linear state-space model. [Work on SSMs as neural operators](https://arxiv.org/pdf/2409.03231) already compares against LNO, so SSM-based operators are included as baselines here.
+**Relation to SSMs.** A rational kernel is close to a diagonal linear state-space model. [Work on SSMs as neural operators](https://arxiv.org/abs/2409.03231) already compares against LNO, so SSM-based operators are included as baselines here.
 
 **Gap.** All of the models above focus on the transient/steady split in time. We have not found work that treats wavenumber-dependent poles, that is, the dispersion relation itself, as the learning target (to be re-checked with a systematic literature review at project start).
 
@@ -261,11 +261,11 @@ The largest risk is a speed race with groups working on the same topic. The proj
 ## 10. References
 
 1. Li, Z. et al. Fourier Neural Operator for Parametric Partial Differential Equations. ICLR 2021. [arXiv:2010.08895](https://arxiv.org/abs/2010.08895)
-2. Cao, Q., Goswami, S., Karniadakis, G. E. LNO: Laplace Neural Operator for Solving Differential Equations. [arXiv:2303.10528](https://arxiv.org/abs/2303.10528); code on [GitHub](https://github.com/qianyingcao/Laplace-Neural-Operator)
-3. Kim, H., Cao, Q., Shin, H., Lee, S., Karniadakis, G. E., Choi, M. Physics-Informed Laplace Neural Operator for Solving Partial Differential Equations. [arXiv:2602.12706](https://www.arxiv.org/abs/2602.12706) (2026)
-4. Best of Both Worlds: Bridging Laplace and Fourier for Generalizable and Efficient Operator Learning. [NeurIPS 2025](https://neurips.cc/virtual/2025/122846)
-5. Ha, J., Yoon, S., Lee, D. LFNO: Bridging Laplace and Fourier via Transient-Steady Decomposition. [arXiv:2606.07601](https://papers.cool/arxiv/2606.07601) (2026)
-6. State-space models are accurate and efficient neural operators for dynamical systems. [arXiv:2409.03231](https://arxiv.org/pdf/2409.03231)
+2. Cao, Q., Goswami, S., Karniadakis, G. E. Laplace neural operator for solving differential equations. Nat. Mach. Intell. 6, 631 (2024). [doi:10.1038/s42256-024-00844-4](https://doi.org/10.1038/s42256-024-00844-4); [arXiv:2303.10528](https://arxiv.org/abs/2303.10528); code on [GitHub](https://github.com/qianyingcao/Laplace-Neural-Operator)
+3. Kim, H., Cao, Q., Shin, H., Lee, S., Karniadakis, G. E., Choi, M. Physics-informed Laplace neural operator for solving partial differential equations. J. Comput. Phys. 566, 115291 (2026). [doi:10.1016/j.jcp.2026.115291](https://doi.org/10.1016/j.jcp.2026.115291); [arXiv:2602.12706](https://arxiv.org/abs/2602.12706)
+4. Ha, J., Lee, D. Best of Both Worlds: Bridging Laplace and Fourier for Generalizable and Efficient Operator Learning. NeurIPS 2025 Workshop on Machine Learning and the Physical Sciences. [NeurIPS 2025](https://neurips.cc/virtual/2025/122846)
+5. Ha, J., Yoon, S., Lee, D. LFNO: Bridging Laplace and Fourier via Transient-Steady Decomposition. [arXiv:2606.07601](https://arxiv.org/abs/2606.07601) (2026)
+6. Hu, Z., Ahmadi Daryakenari, N., Shen, Q., Kawaguchi, K., Karniadakis, G. E. State-space models are accurate and efficient neural operators for dynamical systems. [arXiv:2409.03231](https://arxiv.org/abs/2409.03231) (2025)
 7. Gu, A., Goel, K., Ré, C. Efficiently Modeling Long Sequences with Structured State Spaces (S4). ICLR 2022. [arXiv:2111.00396](https://arxiv.org/abs/2111.00396)
 8. Cahn, J. W., Hilliard, J. E. Free Energy of a Nonuniform System. I. Interfacial Free Energy. J. Chem. Phys. 28, 258 (1958).
 9. Gustavsen, B., Semlyen, A. Rational approximation of frequency domain responses by vector fitting. IEEE Trans. Power Delivery 14, 1052 (1999).
