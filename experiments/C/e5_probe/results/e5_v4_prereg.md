@@ -63,3 +63,31 @@ can move.
    - whether the stable-init LNOs again have correct J poles but non-causal Jacobians.
 
 If prediction 1 fails, v4 is not adopted as the RQ4 rule.
+
+## Addendum (written after the 60 runs above, before the addendum runs)
+
+**Outcome of the main test.**
+
+- Prediction 1 holds: v4 makes no false trust on `lz_r10_small` / `lz_r10_wide`, while v3 trusts one wrong pole
+  again.
+- Prediction 2 holds.
+- Prediction 3 fails: the tied layers end at test 0.64–0.65.
+
+**Diagnosis** (one diagnostic run, seed 0, 300 epochs).
+
+- The offset starts at the mean (4.90), and the training loss starts at 0.0066.
+- The `common` protocol's weight decay (1e-4, coupled L2 inside Adam) then pulls the offset towards zero. Its own
+  gradient is near zero at the optimum, so Adam's normalised step moves it at almost the full learning rate. The
+  loss rises to 0.57.
+- With weight decay 0 the loss falls to 0.0014, and the offset stays at 4.899.
+- The ninth-pass offset (zero-initialised, stopped at ~1.5) shows the same balance. The cause there was weight
+  decay too, not only the travel bound.
+
+**Addendum runs.** Variant `tied4o_stable_plr10` is the tied layer + offset with the offset excluded from weight
+decay (`e1_audit.param_groups(no_decay=("offset",))`); everything else is as `tied4_stable_plr10`. 5 seeds × the
+three ρ = 10 sets, 15 runs. Rule v4 is unchanged.
+
+**Addendum predictions.**
+
+1. On `lz_r10_small`: e_c < 0.5 in at least 3 of 5 seeds, and at least 3 of 5 runs v4-trusted and correct.
+2. Over all ρ = 10 runs, including these 15, v4 makes no false trust.

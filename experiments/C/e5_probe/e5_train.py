@@ -47,7 +47,9 @@ def case_of(data_tag):
 VARIANTS = {"base": ("lno", "original", 1.0),
             "lno_plr10": ("lno", "original", 10.0),
             "lno_stable_plr10": ("lno", "stable", 10.0),
-            "tied4_stable_plr10": ("tied4", "stable", 10.0)}
+            "tied4_stable_plr10": ("tied4", "stable", 10.0),
+            # tenth pass, addendum: tied layer whose output offset has no weight decay (Lorenz sets only)
+            "tied4o_stable_plr10": ("tied4", "stable", 10.0)}
 CKPT = ROOT / "runs" / "C" / "e5"
 RESULTS = HERE / "results" / "e5_train"
 
@@ -132,7 +134,8 @@ def run(variant, seed, device, data_tag="orig"):
         # zero-initialised offset stopped at ~1.5 of 3.27 in the ninth pass (the travel bound)
         with torch.no_grad():
             model.offset.copy_(data["train"][1].mean(0).to(device))
-    hist = E.train(model, data, E.PROTOCOLS["common"], device, pole_lr_mult=VARIANTS[variant][2])
+    hist = E.train(model, data, E.PROTOCOLS["common"], device, pole_lr_mult=VARIANTS[variant][2],
+                   no_decay=("offset",) if variant == "tied4o_stable_plr10" else ())
     xte, yte = (a.to(device)[..., None] for a in data["test"])
     test = E.evaluate(model, xte, yte)
     CKPT.mkdir(parents=True, exist_ok=True)
@@ -148,7 +151,7 @@ def run(variant, seed, device, data_tag="orig"):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--variant", nargs="+", default=list(VARIANTS))
+    ap.add_argument("--variant", nargs="+", default=[v for v in VARIANTS if v != "tied4o_stable_plr10"])
     ap.add_argument("--seeds", nargs="+", type=int, default=[0, 1, 2, 3, 4])
     ap.add_argument("--data", default="orig", choices=["orig", "small", "mixed", "medium", "moderate", "pend_orig", "pend_medium", "pend_large", "wide", "pend_wide", "c0_orig", "c0_small", "c0_medium", "lz_orig", "lz_small", "lz_wide", "lz_r10_orig", "lz_r10_small", "lz_r10_wide"])
     a = ap.parse_args()

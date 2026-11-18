@@ -167,7 +167,7 @@ def main(data_tag="orig"):
     print(f"linearised pole {mu_lin:.4f} (from |f| <= {amp_max:.2f})", flush=True)
     P = probe_inputs(t, np.random.default_rng(0))
     out = {}
-    for v in VARIANTS:
+    for v in VARIANTS + (("tied4o_stable_plr10",) if data_tag.startswith("lz_r10") else ()):
         rows = []
         for s in SEEDS:
             model, test, mu = load_variant(v, s, case, grids, device, data_tag)
@@ -260,7 +260,8 @@ def summarize(res):
              "response (mean subdiagonals h_1 … h_799).", "",
              "Variants: `base` original LNO (original init, pole lr × 1; first pass); `lno_plr10` pole lr × 10; "
              "`lno_stable_plr10` E1 stable init + pole lr × 10; `tied4_stable_plr10` E1 tied single layer, 4 slots "
-             "(linear), stable init + pole lr × 10 (`e5_train.py`).", "",
+             "(linear), stable init + pole lr × 10 (`e5_train.py`)" + ("; `tied4o_stable_plr10` the same with no weight decay on "
+             "the output offset (tenth-pass addendum)." if "tied4o_stable_plr10" in res["variants"] else "."), "",
              "Equivalent linear pole of the training data (best linear pair, per-sample relative weights) by "
              "amplitude band: " + "; ".join(f"{k} ({v['n']}): {v['pole'][0]:.3f}{v['pole'][1]:+.3f}i, residual "
                                             f"{v['rel']:.2f}" for k, v in res["equivalent"].items()) + ".", "",

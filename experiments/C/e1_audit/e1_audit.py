@@ -237,24 +237,26 @@ def layer_init(model: "Layer1", init: str, mu_true, beta_true, rng: np.random.Ge
 POLE_PARAMS = ("pr.mu", ".mu", "weights_pole")
 
 
-def param_groups(model, lr: float, pole_lr_mult: float):
-    """Poles (``*.mu``, LNO port ``weights_pole``) get lr * pole_lr_mult; everything else lr."""
-    poles, rest = [], []
+def param_groups(model, lr: float, pole_lr_mult: float, no_decay: tuple = ()):
+    """Poles (``*.mu``, LNO port ``weights_pole``) get lr * pole_lr_mult; everything else lr. Parameters whose names
+    end with a suffix in ``no_decay`` get their own group without weight decay (E5 tenth pass: output offset)."""
+    poles, rest, free = [], [], []
     for name, p in model.named_parameters():
-        (poles if name.endswith(POLE_PARAMS) else rest).append(p)
-    return [dict(params=poles, lr=lr * pole_lr_mult), dict(params=rest, lr=lr)]
+        (free if no_decay and name.endswith(no_decay) else poles if name.endswith(POLE_PARAMS) else rest).append(p)
+    groups = [dict(params=poles, lr=lr * pole_lr_mult), dict(params=rest, lr=lr)]
+    return groups + ([dict(params=free, lr=lr, weight_decay=0.0)] if free else [])
 
 
-def train(model, data, proto: dict, device, pole_lr_mult: float = 1.0, penalty=None, hook=None):
+def train(model, data, proto: dict, device, pole_lr_mult: float = 1.0, penalty=None, hook=None, no_decay: tuple = ()):
     """penalty(model, epoch) -> scalar added to the loss; hook(model, epoch) after each epoch
     (both optional, used by the E2 remedies; E1 runs use neither)."""
     (xtr, ytr), (xva, yva) = data["train"], data["vali"]
     xtr, ytr, xva, yva = (a.to(device)[..., None] for a in (xtr, ytr, xva, yva))
     if proto["optimizer"] == "complex_adam":
-        opt = ComplexAdam(param_groups(model, proto["lr"], pole_lr_mult), lr=proto["lr"],
+        opt = ComplexAdam(param_groups(model, proto["lr"], pole_lr_mult, no_decay), lr=proto["lr"],
                           weight_decay=proto["weight_decay"])
     else:
-        opt = torch.optim.Adam(param_groups(model, proto["lr"], pole_lr_mult), lr=proto["lr"],
+        opt = torch.optim.Adam(param_groups(model, proto["lr"], pole_lr_mult, no_decay), lr=proto["lr"],
                                weight_decay=proto["weight_decay"])
     sch = torch.optim.lr_scheduler.StepLR(opt, proto["step_size"], proto["gamma"])
     bs, n = proto["batch_size"], xtr.shape[0]
