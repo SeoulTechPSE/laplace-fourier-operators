@@ -174,6 +174,20 @@ Things to know:
 
 ## Log
 
+### 2026-11-18 — (A) deep operator: a pole learning rate fixes the WPO on Burgers
+
+- Done: `experiments/A/deep/a10_polelr.py` (predictions 295b41d). WPO pole coefficients at 30x the learning rate,
+  with the a9 layer or `stable=True`; 3 seeds each.
+- Results (`experiments/A/deep/results/a10_polelr.md`):
+  - Test error 0.048 (plr30) and 0.035 (plr30_stable), against 0.117 (a9 WPO) and 0.105 (a9 FNO, untuned).
+  - No extrapolation blow-up: (5, 10] / test ratio 2.0–2.4 with stable.
+  - Probe ν̂ = 0.111–0.114 with stable: systematically 11–14 % too damped. First-layer poles are 30–70 % off.
+  - Prediction 2 holds; 1 fails (probe bias); 3 fails narrowly for stable (2.04–2.43 vs ≤ 2).
+- Decisions: the WPO trains with a separate pole learning rate. Stable is the default for dissipative problems.
+  The accuracy comparison with FNO is not yet fair (no FNO tuning; both models short of convergence).
+- Next: a learning-rate sweep on the validation split for both models, plus longer training; then the probe bias
+  (weight of the small-amplitude samples).
+
 ### 2026-11-18 — (A) deep operator: first Burgers run; the WPO's poles do not train at a shared learning rate
 
 - Done:
