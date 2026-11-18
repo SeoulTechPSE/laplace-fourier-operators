@@ -673,8 +673,73 @@ covers.
 - **The tied layer needs an offset without weight decay** to fit outputs about a nonzero operating point. With
   it, 7 of 10 runs on the gated ρ = 10 sets are trusted and correct (2–3 %).
 
+## Eleventh pass (2026-11-18): why LNO Jacobians are non-causal, and a causal LNO layer
+
+Pre-registered: part A's predictions in the script `e5_causal.py` (4bd17c1), part B in
+`results/e5_causal_prereg.md` (0f1eeae). Rule v4 unchanged.
+
+**Part A, diagnosis** (`e5_causal.py`, `results/e5_causal.md`; 270 trained LNOs, no training).
+
+- **Mechanism.** LNO v1 computes a periodic steady response (FFT) plus a transient. For one pole the exact causal
+  response is y = y_periodic − C e^{μt}: a transient coefficient fixed by the whole input cancels the wrap-around
+  of the periodic term. The original code contracts the residue's output channel again with the pole's input
+  channel (quirk 1 in `lfo.models.lno`). Each coefficient therefore multiplies another pole's exponential, and
+  the wrap is not cancelled.
+- **Predicted: the layer as coded is non-causal.** Its non-causal share is 0.12–0.82 in all 268 finite runs.
+  **Holds.**
+- **Predicted: the textbook wiring is causal.** The same weights, wired as `PoleResidueTS1d`, give 0.005–0.025.
+  **Holds.** The steady terms of the two wirings agree to 2e-7. Two runs overflow (strongly unstable poles).
+- **Predicted: the full model's share tracks the layer's.** **Fails** (Spearman 0.00). The pointwise path `w0` is
+  causal, so the full share depends on how much a model uses its pole layer: 0.002–0.05 for original-init models
+  with unmoved poles, 0.11–0.32 for stable-init models with pole lr × 10.
+
+**Part B, a causal LNO** (`lnotb_stable_plr10`: the original LNO with `conv0` in the textbook wiring, stable init,
+pole lr × 10, `common` protocol; 5 seeds × 18 sets, 90 runs; `e5_probe.py --only`).
+
+| prediction | result |
+|---|---|
+| 1. full-model Jacobian causal (< 0.1) in ≥ 80 % of runs | **holds**: 90 / 90 (max 0.03) |
+| 2. valid (causal and Toeplitz < 0.1) in ≥ 60 % on the simulated sets | **holds**: 61 / 70 (87 %) |
+| 3. median test error within 2× of `lno_stable_plr10` on ≥ 15 of 18 sets | **holds**: 18 / 18; lower on all 18 (equal within 1 % on 3) |
+| 4. v4 makes no false trust and trusts ≥ 20 runs (original wiring: 7 / 90) | **holds**: 37 trusted, 0 false |
+
+Notes on the predictions:
+
+- "Simulated sets" in prediction 2 is 14 sets (70 runs), not 15 as the pre-registration says: four of the 18 sets
+  are original LNO data.
+- The fit is often much better than in the original wiring: `pend_orig` 0.071 vs 0.578, `c0_orig` 0.41 vs 0.91,
+  `lz_r10_orig` 0.21 vs 0.50.
+
+**Further findings.**
+
+- **Every rejection of a correct run was right.** Rule v1 trusts 4 runs on `mixed` that are 16–23 % off; the data
+  gate rejects them. On the gated sets, 15 runs with a correct Jacobian pole are not trusted:
+  - 3 because their Jacobian is not shift-invariant;
+  - 12 because no stored pole lies within 10 % of the Jacobian pole (d ≥ 0.1, mostly Lorenz).
+
+  There the model's small-signal response has the right pole, but its stored poles do not (closest 13–19 % off
+  on `lz_small` / `lz_wide`). The rule is about stored poles, so it declines, as it should.
+- Stored poles within 10 % of the small-signal pole: 73 of 90 runs.
+- On the original LNO data with a moving operating point (`lz_orig`, `lz_r10_orig`) and on `c0_orig`, Jacobians
+  are causal but not shift-invariant (Toeplitz residual up to 0.9), and the gate fails anyway.
+
+**Totals over 18 sets, 465 runs** (all variants). v3: 92 trusted, 3 false, 14 missed. **v4: 89 trusted, 0 false**,
+14 missed. By variant, v4 trusts:
+
+- tied layer 38, tied layer with an offset without weight decay 7;
+- textbook-wired LNO 37, original LNO 7.
+
+**Reading.**
+
+- **The non-causality of trained LNO Jacobians is a wiring quirk of the original code, not a property of
+  Laplace-type layers.** It also limited what the rule could certify.
+- With the textbook wiring, the LNO keeps (and mostly improves) its fit, its small-signal Jacobian becomes a valid
+  probe, and v4 certifies its stored poles in 37 of 90 runs, with no false trust.
+- So the rule now certifies a deep nonlinear operator, not only the linear tied layer.
+
 **Next.**
 
-- Write E5 up as a section (or companion note) to the E1 workshop paper: rule v1 → v4, with the false trusts each
-  part removes.
-- Open: why the stable-init LNOs' Jacobians are non-causal while their J poles are correct.
+- Fix the wiring in shared code as an option (`lfo.models.lno.LNO1d(textbook=True)`, with a test), keeping the
+  original as default for reproduction.
+- The ρ = 5 Lorenz LNOs have the right small-signal pole but no stored pole within 10 % (closest 13–19 %). Find
+  out why (fast-pole interaction? several stored poles sharing one mode?).

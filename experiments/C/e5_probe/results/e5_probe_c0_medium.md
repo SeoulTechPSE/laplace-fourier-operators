@@ -7,7 +7,7 @@ Errors in brackets: relative distance to it.
 - **LTI probe**: odd part (G(εu) − G(−εu)) / 2ε on 16 smooth random inputs, one complex pair fitted (first-order hold); pole at ε = 0.01, and the relative fit residual over all ε = 0.01, 0.1, 0.3, 1, 3 (how well a causal LTI model describes G).
 - **Jacobian** J = ∂G/∂x at x = 0: share of ‖J‖ above the diagonal (non-causal), residual of a shift-invariant fit of its causal part, and the order-2 matrix-pencil pole of its average impulse response (mean subdiagonals h_1 … h_799).
 
-Variants: `base` original LNO (original init, pole lr × 1; first pass); `lno_plr10` pole lr × 10; `lno_stable_plr10` E1 stable init + pole lr × 10; `tied4_stable_plr10` E1 tied single layer, 4 slots (linear), stable init + pole lr × 10 (`e5_train.py`).
+Variants: `base` original LNO (original init, pole lr × 1; first pass); `lno_plr10` pole lr × 10; `lno_stable_plr10` E1 stable init + pole lr × 10; `tied4_stable_plr10` E1 tied single layer, 4 slots (linear), stable init + pole lr × 10 (`e5_train.py`); `lnotb_stable_plr10` the LNO with its pole-residue layer in the textbook wiring (eleventh pass).
 
 Equivalent linear pole of the training data (best linear pair, per-sample relative weights) by amplitude band: all (200): -0.032+1.049i, residual 0.36.
 
@@ -35,7 +35,12 @@ RQ4 indicator: d = distance from the J impulse-response pole to the nearest stor
 | tied4_stable_plr10 | 2 | 0.247 | 1/4, -0.009+1.040i (0.04) | -0.004+1.047i (0.05), 0.25–0.25 | 0.01, 0.02 | -0.006+1.039i (0.04) | yes, 0.00 | **yes** |
 | tied4_stable_plr10 | 3 | 0.247 | 1/4, -0.008+1.041i (0.04) | -0.004+1.046i (0.05), 0.28–0.28 | 0.00, 0.02 | -0.006+1.039i (0.04) | yes, 0.00 | **yes** |
 | tied4_stable_plr10 | 4 | 0.247 | 1/4, -0.011+1.041i (0.04) | -0.006+1.036i (0.04), 0.08–0.08 | 0.01, 0.02 | -0.007+1.040i (0.04) | yes, 0.00 | **yes** |
+| lnotb_stable_plr10 | 0 | 0.115 | 5/256, 0.046+0.993i (0.05) | 0.001+1.015i (0.01), 0.21–0.90 | 0.00, 0.02 | -0.004+1.030i (0.03) | yes, 0.06 | **yes** |
+| lnotb_stable_plr10 | 1 | 0.099 | 2/256, -0.037+0.943i (0.07) | 0.007+1.010i (0.01), 0.09–0.92 | 0.00, 0.02 | 0.005+1.005i (0.01) | yes, 0.07 | **yes** |
+| lnotb_stable_plr10 | 2 | 0.117 | 9/256, 0.015+0.976i (0.03) | 0.002+1.016i (0.02), 0.09–0.88 | 0.00, 0.02 | -0.002+1.024i (0.02) | yes, 0.04 | **yes** |
+| lnotb_stable_plr10 | 3 | 0.116 | 6/256, -0.031+0.996i (0.03) | 0.000+1.018i (0.02), 0.16–0.88 | 0.01, 0.02 | -0.005+1.028i (0.03) | yes, 0.04 | **yes** |
+| lnotb_stable_plr10 | 4 | 0.228 | 6/256, 0.008+1.005i (0.01) | -0.007+1.045i (0.05), 0.13–0.72 | 0.01, 0.02 | -0.006+1.051i (0.05) | yes, 0.02 | **yes** |
 
-Trusted runs (rule v1): 5 of 20. Their J impulse-response pole vs the reference (and vs the data's equivalent pole): tied4_stable_plr10 s0 0.04 (0.03), tied4_stable_plr10 s1 0.04 (0.03), tied4_stable_plr10 s2 0.04 (0.03), tied4_stable_plr10 s3 0.04 (0.03), tied4_stable_plr10 s4 0.04 (0.03)
+Trusted runs (rule v1): 10 of 25. Their J impulse-response pole vs the reference (and vs the data's equivalent pole): tied4_stable_plr10 s0 0.04 (0.03), tied4_stable_plr10 s1 0.04 (0.03), tied4_stable_plr10 s2 0.04 (0.03), tied4_stable_plr10 s3 0.04 (0.03), tied4_stable_plr10 s4 0.04 (0.03), lnotb_stable_plr10 s0 0.03 (0.03), lnotb_stable_plr10 s1 0.01 (0.05), lnotb_stable_plr10 s2 0.02 (0.04), lnotb_stable_plr10 s3 0.03 (0.03), lnotb_stable_plr10 s4 0.05 (0.02)
 
 Rule v2 linearity gate: the data's best linear pair leaves 0.356 of the output (gate 0.1): **failed**, v2 reads no linear pole as physical on this set.

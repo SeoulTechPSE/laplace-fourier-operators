@@ -7,11 +7,11 @@ Errors in brackets: relative distance to it.
 - **LTI probe**: odd part (G(εu) − G(−εu)) / 2ε on 16 smooth random inputs, one complex pair fitted (first-order hold); pole at ε = 0.01, and the relative fit residual over all ε = 0.01, 0.1, 0.3, 1, 3 (how well a causal LTI model describes G).
 - **Jacobian** J = ∂G/∂x at x = 0: share of ‖J‖ above the diagonal (non-causal), residual of a shift-invariant fit of its causal part, and the order-2 matrix-pencil pole of its average impulse response (mean subdiagonals h_1 … h_799).
 
-Variants: `base` original LNO (original init, pole lr × 1; first pass); `lno_plr10` pole lr × 10; `lno_stable_plr10` E1 stable init + pole lr × 10; `tied4_stable_plr10` E1 tied single layer, 4 slots (linear), stable init + pole lr × 10 (`e5_train.py`).
+Variants: `base` original LNO (original init, pole lr × 1; first pass); `lno_plr10` pole lr × 10; `lno_stable_plr10` E1 stable init + pole lr × 10; `tied4_stable_plr10` E1 tied single layer, 4 slots (linear), stable init + pole lr × 10 (`e5_train.py`); `lnotb_stable_plr10` the LNO with its pole-residue layer in the textbook wiring (eleventh pass).
 
 Equivalent linear pole of the training data (best linear pair, per-sample relative weights) by amplitude band: all (200): -0.893+1.753i, residual 0.44; A <= 1 (39): -0.425+1.161i, residual 0.27; 1 < A <= 3 (91): -0.644+1.720i, residual 0.35; A > 3 (70): -0.808+2.137i, residual 0.34.
 
-RQ4 indicator: d = distance from the J impulse-response pole to the nearest stored pole (relative); valid = J causal and shift-invariant (both shares < 0.1). Trusted (rule fixed before the `small` and `mixed` runs): valid ∧ d < 0.1 ∧ test rel. L2 < 0.5.
+RQ4 indicator: d = distance from the J impulse-response pole to the nearest stored pole (relative); valid = J causal and shift-invariant (both shares < 0.1). Trusted (rule fixed before the `small` and `mixed` runs): valid ∧ d < 0.1 ∧ test rel. L2 < 0.5. Rule v2 (fixed before the `medium` and `moderate` runs) adds a gate on the data: its best linear pair must leave < 0.1.
 
 | variant | seed | test rel. L2 | layer: within 10 %, closest | LTI probe: pole, residual | J: non-causal, Toeplitz residual | J impulse-response pole | valid, d | trusted |
 |---|---|---|---|---|---|---|---|---|
@@ -35,5 +35,12 @@ RQ4 indicator: d = distance from the J impulse-response pole to the nearest stor
 | tied4_stable_plr10 | 2 | 0.434 | 0/4, -0.700+1.250i (0.53) | -0.655+1.473i (0.65), 0.44–0.44 | 0.03, 0.01 | -0.604+1.075i (0.37) | yes, 0.16 | no |
 | tied4_stable_plr10 | 3 | 0.436 | 0/4, -0.676+1.227i (0.50) | -0.740+1.414i (0.66), 0.33–0.33 | 0.02, 0.01 | -0.614+1.202i (0.43) | yes, 0.05 | **yes** |
 | tied4_stable_plr10 | 4 | 0.427 | 0/4, -0.936+0.364i (0.91) | -0.560+1.386i (0.52), 0.41–0.41 | 0.03, 0.01 | -0.726+1.777i (0.94) | yes, 0.36 | no |
+| lnotb_stable_plr10 | 0 | 0.121 | 1/256, -0.238+0.883i (0.09) | -0.298+1.087i (0.13), 0.28–0.30 | 0.00, 0.01 | -0.250+1.127i (0.16) | yes, 0.04 | **yes** |
+| lnotb_stable_plr10 | 1 | 0.137 | 4/256, -0.216+0.965i (0.03) | -0.293+1.076i (0.12), 0.30–0.33 | 0.01, 0.01 | -0.323+1.153i (0.20) | yes, 0.06 | **yes** |
+| lnotb_stable_plr10 | 2 | 0.133 | 2/256, -0.218+0.903i (0.07) | -0.311+1.128i (0.17), 0.30–0.33 | 0.01, 0.02 | -0.307+1.187i (0.23) | yes, 0.02 | **yes** |
+| lnotb_stable_plr10 | 3 | 0.127 | 3/256, -0.235+0.940i (0.03) | -0.278+1.072i (0.11), 0.26–0.31 | 0.01, 0.01 | -0.292+1.119i (0.16) | yes, 0.14 | no |
+| lnotb_stable_plr10 | 4 | 0.143 | 3/256, -0.217+0.962i (0.03) | -0.261+1.108i (0.14), 0.32–0.37 | 0.01, 0.02 | -0.316+1.168i (0.21) | yes, 0.03 | **yes** |
 
-Trusted runs: 2 of 20. Their J impulse-response pole vs the reference: tied4_stable_plr10 s0 0.86, tied4_stable_plr10 s3 0.43
+Trusted runs (rule v1): 6 of 25. Their J impulse-response pole vs the reference (and vs the data's equivalent pole): tied4_stable_plr10 s0 0.86 (0.09), tied4_stable_plr10 s3 0.43 (0.31), lnotb_stable_plr10 s0 0.16 (0.46), lnotb_stable_plr10 s1 0.20 (0.42), lnotb_stable_plr10 s2 0.23 (0.41), lnotb_stable_plr10 s4 0.21 (0.42)
+
+Rule v2 linearity gate: the data's best linear pair leaves 0.439 of the output (gate 0.1): **failed**, v2 reads no linear pole as physical on this set.

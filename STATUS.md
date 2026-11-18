@@ -153,7 +153,12 @@ Suggested next steps (in order):
    centred fit; on Lorenz ρ = 10 it makes no false trust where v3 makes 2. Over 18 sets / 375
    runs: v4 52 trusted, 0 false, 5 missed. The tied layer needs its output offset excluded from
    weight decay. RQ4 rule = v4. The E1 draft and the E5 note are merged into one working paper,
-   `experiments/C/paper/c_paper.qmd` (13 pages, 5 figures); submission postponed (user, 2026-11-18).
+   `experiments/C/paper/c_paper.qmd` (13 pages, 5 figures); submission postponed (user, 2026-11-18). Eleventh
+   pass: LNO Jacobians are non-causal because the original code attaches each transient coefficient
+   to another channel's pole (layer share 0.12–0.82; same weights in the textbook wiring 0.005–0.025).
+   A textbook-wired LNO (90 runs) has causal Jacobians in 90/90, fits better on all 18 sets, and v4
+   certifies 37 of its runs with no false trust (original wiring 7/90). Over 465 runs v4: 89
+   trusted, 0 false.
 
 Things to know:
 
@@ -164,6 +169,26 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-18 — (C) E5 / RQ4: causal LNO layer (eleventh pass)
+
+- Done: `e5_causal.py` (part A: non-causal share of each trained LNO's pole-residue layer, as coded and in the
+  textbook wiring with the same weights; 270 runs, no training); variant `lnotb_stable_plr10` in `e5_train.py`
+  (`conv0` = `PoleResidueTS1d`); `e5_probe.py --only` (merge new variants into existing results) and a chunked
+  Jacobian (the ρ = 10 textbook LNO needed 42 GB unchunked; same numbers). Pre-registrations 4bd17c1 (A),
+  0f1eeae (B). 90 runs. `src/lfo/` unchanged.
+- Results:
+  - A: layer as coded 0.12–0.82 non-causal, textbook wiring 0.005–0.025 (268 of 270; 2 overflow). The full-model
+    share does not track the layer's (Spearman 0.00; the pointwise path dilutes it).
+  - B: all 4 predictions hold. Causal 90/90; valid 61/70 on the simulated sets; median test error lower than the
+    original wiring on all 18 sets (`pend_orig` 0.071 vs 0.578); v4 trusts 37, 0 false (original wiring 7).
+  - 12 correct Jacobian poles (mostly Lorenz ρ = 5) are not trusted because no stored pole is within 10 %:
+    the rule correctly declines to read the stored poles there.
+  - Over 18 sets / 465 runs: v3 92 trusted, 3 false, 14 missed; v4 89, 0 false, 14 missed.
+- Decisions: the non-causality is attributed to the original code's channel-index quirk, not to Laplace layers.
+  The prediction 2 wording "15 simulated sets" should read 14 (70 runs); recorded, not changed.
+- Next: optional textbook wiring in `lfo.models.lno` with a test (original stays default); why the ρ = 5 Lorenz
+  LNO stores no pole within 10 % although its Jacobian pole is right; update the paper's Section 6.
 
 ### 2026-11-18 — (C) paper: E1 and E5 merged into one working paper
 

@@ -109,7 +109,7 @@ def jacobian_probe(model, n, dt, device):
     for q in model.parameters():
         q.requires_grad_(False)
     f = lambda x: model(x[None, :, None])[0, :, 0]
-    J = torch.func.jacrev(f)(torch.zeros(n, device=device)).detach().double().cpu().numpy()   # J[t_out, t_in]
+    J = torch.func.jacrev(f, chunk_size=128)(torch.zeros(n, device=device)).detach().double().cpu().numpy()   # J[t_out, t_in]
     noncausal = float(np.linalg.norm(np.triu(J, 1)) / np.linalg.norm(J))
     h = np.array([np.diag(J, -d).mean() for d in range(n)])
     Tz = sum(np.diag(np.full(n - d, h[d]), -d) for d in range(n))

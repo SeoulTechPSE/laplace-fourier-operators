@@ -52,8 +52,9 @@ within 4 %. It requires:
 - a good fit relative to the output's variation;
 - an equivalent linear pole of the data that stays near its small-amplitude value.
 
-The published LNO configuration never moves its poles, and the LNOs that do hold physical poles rarely have
-causal Jacobians, so the rule mostly certifies a linear pole–residue layer.
+The published LNO configuration never moves its poles. Its small-signal Jacobian is non-causal because of a
+channel-index quirk in the original code; with the textbook wiring the LNO fits better, and the rule certifies its
+stored poles in 37 of 90 runs, with no false trust.
 
 ## Introduction
 
@@ -293,12 +294,22 @@ cannot detect a bad fit when the output has a large mean: on Lorenz even the mea
   the travel bound of @sec-travel in a nonlinear model. The model still captures the dynamics: secant (equivalent-linear)
   probes of its response follow the data's amplitude-dependent pole to 0.1–1.5 % up to $A = 7$. The physics
   sits in the nonlinearity and the Fourier branch, not in the poles.
-- **A stable initialisation and a 10× pole learning rate put physical poles into the LNO.**
-  - On the oscillators and on Lorenz $\rho = 10$, most seeds store poles within 10 % of the small-signal pole.
-  - Their Jacobian poles are within 10 % in most runs on the simulated sets, and these LNOs give the best fits.
-  - But their Jacobians are usually slightly non-causal (0.05–0.43 of the norm above the diagonal). So v4
-    certifies only 7 of these 90 runs; of its 52 trusted runs, 45 are linear tied layers.
-  - Why these Jacobians are non-causal is open.
+- **A stable initialisation and a 10× pole learning rate put physical poles into the LNO.** On the oscillators and
+  on Lorenz $\rho = 10$, most seeds store poles within 10 % of the small-signal pole, and these LNOs fit best. But
+  their Jacobians are slightly non-causal (0.05–0.43 of the norm above the diagonal), so v4 certifies only 7 of
+  these 90 runs.
+- **The non-causality is a wiring quirk of the original code.** For one pole, the exact causal response is the
+  periodic (FFT) steady response minus $C e^{\mu t}$, where $C$ is fixed by the whole input. The textbook layer
+  attaches each such coefficient to its own pole, so the wrap-around cancels. The original LNO code contracts the
+  residue's output channel again with the pole's input channel, so each coefficient multiplies another pole's
+  exponential.
+  - In all 268 trained LNOs that did not overflow, the pole–residue layer as coded is 12–82 % non-causal. The same
+    weights in the textbook wiring give 0.5–2.5 %.
+  - Trained with the textbook wiring (90 further runs, pre-registered), the LNO has causal Jacobians in every run
+    and a lower median test error on all 18 sets.
+  - v4 certifies 37 of these runs, with no false trust. Over all 465 runs, v4 trusts 89 with no false trust.
+  - Where its Jacobian pole is right but no stored pole is within 10 % (12 runs, mostly Lorenz $\rho = 5$), the
+    rule declines to read the stored poles, as it should.
 - **No model stores the fast real Lorenz pole** ($-11.8$ and $-12.5$), as with the fast real poles of @sec-fastreal.
 - **Output offsets need care.** On Lorenz the output is $x(t)$ about $C_+ \approx 3.3$ or $4.9$. A learned offset
   with coupled weight decay is pulled towards zero at almost the full learning rate, because its own gradient
