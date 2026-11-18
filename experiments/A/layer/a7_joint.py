@@ -55,13 +55,15 @@ STARTS = {"diff": 16, "adr": 16, "beam": 16, "diff2d": 8, "adr2d": 8}
 OUT = HERE / "results" / "a7_joint.json"
 
 
-def build(system, t, device):
+def build(system, t, device, leak=0.0):
     if system in ("diff", "adr"):
-        return WavenumberPoleLayer1d(1, t, modes=A.MODES, re_max=A.RE_MAX, k_ref=16.0).to(device)
+        return WavenumberPoleLayer1d(1, t, modes=A.MODES, re_max=A.RE_MAX, k_ref=16.0, re_leak=leak).to(device)
     if system == "beam":
         return WavenumberPoleLayer1d(2, t, mu_degree=(3, 3), beta_degree=2, im_powers=(1, 2, 3), modes=A.MODES,
-                                     re_max=A.RE_MAX, k_ref=16.0).to(device)
-    return S.layer(t, device)
+                                     re_max=A.RE_MAX, k_ref=16.0, re_leak=leak).to(device)
+    m = S.layer(t, device)
+    m.re_leak = float(leak)
+    return m
 
 
 def data_for(system, ds):
@@ -113,13 +115,17 @@ def readout(system, m, device):
     return const, float(np.linalg.norm(mu - true) / np.linalg.norm(true))
 
 
-def fit(system, data, t, start, device):
+def fit(system, data, t, start, device, leak=0.0, stable_start=False):
+    """One start. `leak`: slope above the Re cap (a8). `stable_start`: Re coefficients -|N(0, SIGMA^2)|, so that the
+    start has Re mu <= 0 at every k (a8); the draws are otherwise those of a7."""
     torch.manual_seed(start)
-    m = build(system, t, device)
+    m = build(system, t, device, leak)
     with torch.no_grad():
         for name, q in m.named_parameters():
             if name != "beta":
                 q.normal_(0.0, SIGMA)
+        if stable_start:
+            m.mu_re.abs_().neg_()
     (xtr, ytr), (xva, yva), (xte, yte) = ((x.to(device) for x in data[k]) for k in ("train", "vali", "test"))
     opt = torch.optim.LBFGS(m.parameters(), max_iter=ITERS, line_search_fn="strong_wolfe", tolerance_grad=1e-12,
                             tolerance_change=1e-15, history_size=50)
