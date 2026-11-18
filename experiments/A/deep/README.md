@@ -243,3 +243,52 @@ FNO 0.033–0.035.)
   steps and PRBS jumps fall between samples, and a finer grid resolves them. The WPO gains the most (−20 %
   against −4 to −8 %). Its FOH recursion uses the finer dt exactly, while the FNO's temporal modes are fixed in
   number.
+
+## Cahn–Hilliard (2026-11-19): an unstable band (RQ3)
+
+`a16_cahn_hilliard.py` → `results/a16_cahn_hilliard.md` (predictions 1f52ba7). Forced 1D Cahn–Hilliard
+(`lfo.data.cahn_hilliard`), M = 0.1 and κ = 0.04, so λ(k) = M k²(1 − κ k²): k_c = 5, k_max = 3.54. The forcing
+scale is log-uniform over [0.009, 0.3]. Configurations come from a11 / a13 (no new sweep), 12000 steps, 3 seeds.
+Method check before training: the solver's own probe gives k_c = 5.107.
+
+| model | test | (5, 10] / test | probe k_c | signs (kept modes) | per-mode Re μ̂, k = 1..4 (truth 0.096, 0.336, 0.576, 0.576) |
+|---|---|---|---|---|---|
+| WPO (Re μ > 0 allowed) | 0.025–0.027 | 13.6–18.1 | **4.99–5.03** | right (3/3) | 0.095–0.098, 0.334–0.335, 0.578–0.579, 0.575–0.577 |
+| WPO stable (control) | 0.025–0.027 | 9.9–11.9 | nan, 1.9, 4.4 | right in 2/3 | 0.096–0.097, 0.334–0.335, 0.579, 0.575–0.576 |
+| TFNO (matched) | 0.025–0.032 | 20.4–25.7 | nan (3/3) | wrong (3/3) | seed 2 as WPO; seeds 0–1 noisy (residual 0.1–0.3) |
+
+**Predictions against results.**
+
+1. WPO: k_c within 5 % and every sign right in ≥ 2 of 3 seeds: **holds** (3 of 3; k_c within 0.7 %, better than
+   the solver's own probe).
+2. The stable control has a higher test error than the WPO in every seed: **fails.** It is equal (0.025–0.027).
+3. WPO mean test error ≤ TFNO's: **holds** (0.026 against 0.029).
+4. TFNO's k_c within 10 % in ≥ 2 of 3 seeds: **fails** (no k_c in any seed). In-band, its per-mode poles are right
+   in seed 2. But spurious poles above the band (k = 8–16) pass the cuts and spoil the {1, k², k⁴} fit, as on Burgers.
+5. WPO extrapolation ratio below the TFNO's in every seed: **holds** (paired by seed). All models extrapolate badly
+   here: phase separation continues past T = 5.
+
+**The stable control.** A network whose layer poles all have Re μ ≤ 0 reproduces the growing modes in the probe,
+to three digits, with residuals of 0.002. Its layer poles show how: in the unstable band they sit just below zero
+(Re μ ≈ −0.01 to −0.02 in layers 0–1), so they act as near-integrators. A cascade of near-integrators produces
+t^n growth, which matches e^{0.58 t} on [0, 5] to within the probe's resolution. The WPO with Re μ > 0 allowed
+instead puts positive poles in the band (0.1–0.33 per layer). No single layer pole equals λ(k): the growth is shared
+across layers.
+
+**Longer probe window.** `a16b_long_probe.py` (predictions 6a335a0) repeats the probe over T = 10 to separate true
+growth from emulated growth. It does not.
+- Prediction 1 **fails**: the solver itself turns nonlinear at k = 3, 4 over T = 10, because e^{0.576 · 10} ≈ 300
+  amplifies even ε = 0.003 into the cubic regime.
+- Both WPOs (trained on T = 5) break down similarly beyond the window. Prediction 2 holds for the stable control,
+  but the unstable one fails it too, so the test does not discriminate.
+
+**Reading.**
+
+- RQ3 holds for the WPO's probe: the unstable band (k_c, k_max, the sign of every mode) is recovered from a deep
+  nonlinear model.
+- **Identifiability limit.** Within a finite window, a deep stack can emulate an unstable pole with stable
+  near-integrators. The probe of the whole operator cannot tell the two apart, and an unstable linearisation
+  cannot be probed far beyond the window either, because it leaves the linear regime. So the claim "the model has
+  an unstable pole" needs either the layer structure (Re μ > 0 allowed and used) or data over longer windows. The
+  probe alone does not support it. This fits (C)'s finding that probe and layer readings must agree before a pole
+  is trusted.

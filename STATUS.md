@@ -174,6 +174,22 @@ Things to know:
 
 ## Log
 
+### 2026-11-19 — (A) deep operator: Cahn–Hilliard unstable band recovered; a stable stack can emulate it
+
+- Done: `lfo.data.cahn_hilliard` (forced 1D, IF-RK4, 1/2-rule dealiasing; tests: linear limit including growing
+  modes, saturation, mean). `experiments/A/deep/a16_cahn_hilliard.py` (predictions 1f52ba7) and
+  `a16b_long_probe.py` (6a335a0).
+- Results:
+  - WPO with Re μ > 0 allowed: probe k_c = 4.99–5.03 (truth 5), every sign right, in 3 of 3 seeds. Test error 0.026,
+    against 0.029 for the TFNO. The TFNO's probe fails: spurious out-of-band poles.
+  - Stable control: same test error, and its probe reproduces the growing modes to three digits. Its layer poles
+    sit just below zero (near-integrators), and a cascade of them emulates e^{λt} on the window.
+  - The T = 10 probe does not separate the two: the linearisation leaves the linear regime (growth ×300).
+  - a16: predictions 1, 3, 5 hold; 2, 4 fail. a16b: 1 fails, 2 is not discriminative.
+- Decisions: an unstable pole is claimed only when probe and layer structure agree (Re μ > 0 allowed and used). The
+  probe alone does not identify growth within a finite window.
+- Next: a14 (data efficiency) is running.
+
 ### 2026-11-18 — (A) deep operator: band-covering FNO baselines; WPO leads by 23 % in-window, 7x in extrapolation
 
 - Done: `experiments/A/deep/a13_baselines.py` (predictions 9055eb7): TFNO (Tucker, n_modes 32 × 64, 59 k
