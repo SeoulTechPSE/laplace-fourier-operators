@@ -21,6 +21,11 @@ For real fields this gives mu(-k) = conj(mu(k)), as needed. `stable=True` maps t
 -softplus(.) so Re mu_n(k) <= 0. Parameters are continuous in k, so the layer can be evaluated on a finer spatial
 grid than it was trained on.
 
+Options: `modes` keeps only the lowest `modes` rfft wavenumbers (like FNO truncation; the polynomial is not
+evaluated where the data carry no information, so a k^4 term cannot overflow there). `re_max` caps Re mu smoothly at
+re_max (soft minimum with temperature `re_tau`), which bounds the growth e^{Re mu T} while leaving the polynomial
+unchanged well below the cap.
+
 Input / output: (batch, n_x, n_t) real fields on a uniform periodic x grid of length `length` and a uniform t grid.
 """
 from __future__ import annotations
@@ -95,8 +100,10 @@ class WavenumberPoleLayer1d(nn.Module):
     """
 
     def __init__(self, n_poles: int, t, length: float = 2 * math.pi, mu_degree=(3, 2), beta_degree: int = 2,
-                 stable: bool = False, init_scale: float = 0.1):
+                 stable: bool = False, init_scale: float = 0.1, modes: int | None = None, re_max: float | None = None,
+                 re_tau: float = 0.05):
         super().__init__()
+        self.modes, self.re_max, self.re_tau = modes, re_max, re_tau
         t = torch.as_tensor(t, dtype=torch.float64).reshape(-1)
         self.register_buffer("t", t)
         self.length, self.stable = float(length), stable
@@ -117,6 +124,8 @@ class WavenumberPoleLayer1d(nn.Module):
         re = sum(self.mu_re[:, j, None] * k2 ** j for j in range(self.mu_re.shape[1]))
         if self.stable:
             re = -F.softplus(re)
+        elif self.re_max is not None:          # smooth cap Re mu <= re_max; identity to < 1e-6 below re_max - 15 tau
+            re = self.re_max - self.re_tau * F.softplus((self.re_max - re) / self.re_tau)
         im = sum(self.mu_im[:, j, None] * k * k2 ** j for j in range(self.mu_im.shape[1]))
         b = sum(torch.complex(self.beta[:, j, 0, None], self.beta[:, j, 1, None]) * k2 ** j
                 for j in range(self.beta.shape[1]))
@@ -126,7 +135,9 @@ class WavenumberPoleLayer1d(nn.Module):
         b_, n_x, n_t = f.shape
         dt = float(self.t[1] - self.t[0])
         fk = torch.fft.rfft(f.to(torch.float64), dim=1)                       # (b, K, n_t)
-        mu, beta = self.poles(self.wavenumbers(n_x))                          # (N, K)
+        K = fk.shape[1] if self.modes is None else min(self.modes, fk.shape[1])
+        fk = fk[:, :K]                                                        # modes beyond K are set to zero
+        mu, beta = self.poles(self.wavenumbers(n_x)[:K])                      # (N, K)
         g, c = foh_kernel(mu, n_t, dt)                                         # (N, K, n_t) each
         g, c = (beta[..., None] * g).sum(0), (beta[..., None] * c).sum(0)     # (K, n_t): sum_n beta_n (.)
         vk = foh_response(g[None], c[None], fk)                               # (b, K, n_t)

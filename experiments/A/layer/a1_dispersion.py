@@ -66,6 +66,8 @@ SPLIT = (200, 50, 100)
 BAND = np.arange(1, 17)
 SYSTEMS = {"diff": dict(v=0.0, D=0.1, kr=0.0), "adr": dict(v=0.5, D=0.05, kr=0.2)}
 STEPS, LR = 3000, 1e-2
+MODES, RE_MAX = 17, 0.5          # k = 0..16 (the forced band); Re mu <= 0.5 (smooth). Added after the first attempt
+                                 # gave NaN in all 20 runs: k^4 at k = 32 overflowed e^{mu T} (see README)
 OUT = HERE / "results" / "a1_dispersion.json"
 
 
@@ -128,7 +130,7 @@ def rel(a, b):
 def oracle(system, device):
     data, t = make_data(system)
     p = SYSTEMS[system]
-    m = WavenumberPoleLayer1d(1, t).to(device)
+    m = WavenumberPoleLayer1d(1, t, modes=MODES, re_max=RE_MAX).to(device)
     m.mu_re.zero_(), m.mu_im.zero_(), m.beta.zero_()
     m.mu_re[0, 0], m.mu_re[0, 1], m.mu_im[0, 0], m.beta[0, 0, 0] = -p["kr"], -p["D"], -p["v"], 1.0
     xte, yte = (a.to(device) for a in data["test"])
@@ -138,7 +140,7 @@ def oracle(system, device):
 def run(system, n_poles, seed, device):
     data, t = make_data(system)
     torch.manual_seed(seed)
-    model = WavenumberPoleLayer1d(n_poles, t).to(device)
+    model = WavenumberPoleLayer1d(n_poles, t, modes=MODES, re_max=RE_MAX).to(device)
     opt = torch.optim.Adam(model.parameters(), lr=LR)
     sch = torch.optim.lr_scheduler.CosineAnnealingLR(opt, STEPS)
     (xtr, ytr), (xte, yte) = ((a.to(device) for a in data[k]) for k in ("train", "test"))

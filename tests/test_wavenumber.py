@@ -76,3 +76,17 @@ def test_layer_transfers_to_a_finer_spatial_grid():
     with torch.no_grad():
         y32, y64 = layer(field(32)[None])[0], layer(field(64)[None])[0]
     assert torch.allclose(y32, y64[::2], atol=1e-12)
+
+
+def test_mode_truncation_and_growth_cap():
+    t = np.linspace(0, 5, 101)
+    layer = WavenumberPoleLayer1d(1, t, modes=5, re_max=0.5)
+    with torch.no_grad():
+        layer.mu_re.fill_(1.0)                                   # Re mu = 1 + k^2 + k^4 without the cap
+        k = layer.wavenumbers(32)[:5]
+        re = layer.poles(k)[0].real
+        f = torch.zeros(1, 32, 101, dtype=torch.float64)
+        f[0, :, 10] = torch.cos(9 * torch.arange(32, dtype=torch.float64) * 2 * math.pi / 32)   # only k = 9 (dropped)
+        out = layer(f)
+    assert re.max() <= 0.5 and torch.isfinite(re).all()
+    assert out.abs().max() < 1e-12
