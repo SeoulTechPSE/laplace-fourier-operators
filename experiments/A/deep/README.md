@@ -87,3 +87,49 @@ same budget, then decide on longer training for both models.
 - A fair comparison: learning-rate sweep on the validation split for both models (and the pole ratio for the WPO),
   longer training, 3 seeds.
 - Then the probe bias: probe at several amplitudes, and train with data that reach smaller scales.
+
+## Probe bias (2026-11-18): where it comes from
+
+**Probe-amplitude scan.** `a12_probe_amp.py` → `results/a12_probe_amp.md` (predictions dab403a). The a10 stable
+checkpoints were probed at ε = 0.003–0.3.
+
+- ν̂ is 0.1110, 0.1122 and 0.1137 at every ε ≤ 0.03, unchanged to four digits, and barely moves at 0.3. The
+  solver gives 0.1005 for ε ≤ 0.03.
+- Both predictions hold: the solver is within 1 %, and the WPO's ν̂ is flat in ε. The bias is not an amplitude
+  extrapolation.
+
+**Best linear fits to the data.** `a12b_linear_fit.py` → `results/a12b_linear_fit.md` (predictions d719c42). A
+single pole layer, fitted to all samples and to each quartile of forcing amplitude.
+
+| subset | linear test error | ν_lin (k² coefficient) | offset (extra uniform decay rate) |
+|---|---|---|---|
+| all | 0.18 | 0.0953 | 0.041 |
+| Q1 (smallest) | 0.029 | 0.0997 | 0.001 |
+| Q2 | 0.072 | 0.0997 | 0.008 |
+| Q3 | 0.16 | 0.1001 | 0.047 |
+| Q4 (largest) | 0.38 | 0.0756 | 0.365 |
+
+- Prediction 1 (all samples: ν_lin in [0.105, 0.13]) **fails**: 0.095.
+- Prediction 2 **fails in part.** Q1 is within 3 % (0.0997), but ν_lin does not rise with amplitude. In the
+  larger samples, the extra damping of the best linear model goes into the k-independent decay rate (offset 0.05
+  in Q3, 0.37 in Q4), not into ν.
+
+**Per-mode reading of the WPO probe** (from the a10 probe data, mode by mode against −ν k²):
+
+| k | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
+|---|---|---|---|---|---|---|---|---|
+| truth | −0.10 | −0.40 | −0.90 | −1.60 | −2.50 | −3.60 | −4.90 | −6.40 |
+| stable WPO, seeds 0–2 | −0.095 to −0.096 | −0.396 to −0.397 | −0.891 to −0.895 | −1.59 to −1.61 | −2.50 to −2.52 | −3.62 to −3.65 | −5.13 to −5.21 | −7.10 to −7.19 |
+
+**Reading.**
+
+- The deep model's linearisation is right to about 1 % for k ≤ 6. Over k = 7–8, the top of the forced band, it
+  is 5–12 % too damped.
+- The "ν̂ bias" is an artefact of summarising that curve with {1, k²}. The fit absorbs the curvature into a
+  positive offset (+0.19 to +0.26) and a larger k² coefficient. The per-mode probe is the better readout; the
+  polynomial summary needs a check of its residual.
+- The forcing amplitude falls as 1/k, so modes 7–8 are forced weakly. In the larger samples they are dominated
+  by energy transferred from lower k (the nonlinear cascade). The linear response the model learns there is
+  therefore less constrained, and the data's best linear description damps more there (the offsets above).
+- For the trust rule: report per-mode probe poles with the band that the data excite strongly, rather than a
+  single fitted constant.

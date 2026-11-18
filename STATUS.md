@@ -174,6 +174,21 @@ Things to know:
 
 ## Log
 
+### 2026-11-18 — (A) deep operator: the probe bias is a high-k effect, not a wrong viscosity
+
+- Done: `a12_probe_amp.py` (predictions dab403a), a probe-amplitude scan; `a12b_linear_fit.py` (predictions
+  d719c42), best linear fits to the Burgers data by amplitude quartile.
+- Results (`experiments/A/deep/README.md`, "Probe bias"):
+  - The stable WPO's ν̂ is flat in the probe amplitude (0.003–0.03): not an amplitude extrapolation (both
+    predictions hold).
+  - Mode by mode, the WPO's linearisation matches −ν k² to about 1 % for k ≤ 6. At k = 7–8, the weakly forced top
+    of the band, it is 5–12 % too damped. The {1, k²} summary turns that curvature into ν̂ = 0.111–0.114.
+  - Linear fits: Q1 gives ν_lin = 0.0997. Larger samples add a uniform decay rate (offset 0.37 in Q4), not
+    viscosity. a12b prediction 1 fails and 2 fails in part.
+- Decisions: report deep-model probes per mode, restricted to the strongly forced band; use the polynomial summary
+  only with its residual.
+- Next: a11 (fair comparison) is running.
+
 ### 2026-11-18 — (A) deep operator: a pole learning rate fixes the WPO on Burgers
 
 - Done: `experiments/A/deep/a10_polelr.py` (predictions 295b41d). WPO pole coefficients at 30x the learning rate,
