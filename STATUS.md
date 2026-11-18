@@ -174,6 +174,28 @@ Things to know:
 
 ## Log
 
+### 2026-11-18 — (A) pole layer: wavenumber-dependent pole layer and a first dispersion-recovery test
+
+- Decision recorded (user): D1 time axis = FOH recursion default, piecewise Chebyshev option.
+- Done:
+  - `lfo.models.wavenumber.WavenumberPoleLayer1d`: polynomial μ_n(k), β_n(k); FOH time axis by causal FFT
+    convolution plus a first-sample correction; options `modes`, `re_max`, `stable`.
+  - 6 tests; pytest 41/41. Two bugs found by the tests and fixed: an inverted small-|μΔt| branch, and float32
+    wavenumbers.
+  - `experiments/A/layer/a1_dispersion.py`: predictions cd2fa83; 1D diffusion and advection–diffusion–reaction,
+    truth on a 32× finer time grid.
+- Results:
+  - First attempt: NaN in all runs (k⁴ overflow at unforced k). Fixed with mode truncation and a smooth Re cap.
+  - Second attempt, diffusion N = 1: 3 of 5 seeds recover D = 0.09998 at the oracle floor (8.3e-3); 2 stop in
+    unstable basins.
+  - ADR N = 1: no seed fits (0.24–0.47).
+  - N = 2: the two poles share the mode.
+  - Both predictions fail.
+- Decisions: the failure is attributed to optimisation (non-convex polynomial fit, phase wrapping), not
+  representation.
+- Next: a two-stage identification (per-mode poles, then a polynomial least-squares fit) as the init or the
+  estimator; degree selection; then 2D diffusion and the beam.
+
 ### 2026-11-18 — (D1) third pass: Fourier vs FOH with the E2 recipe on fine-grid truth; paper update
 
 - Done:
