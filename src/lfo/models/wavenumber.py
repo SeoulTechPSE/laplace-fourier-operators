@@ -292,8 +292,13 @@ class WavenumberPoleConv1d(WavenumberPoleLayer1d):
         fk = fk[:, :, :K]                                                     # (b, c_in, K, n_t)
         mu, beta = self.poles(self.wavenumbers(n_x)[:K])                      # (N, K), (N, c_out, c_in, K)
         g, c = foh_kernel(mu, n_t, dt)                                         # (N, K, n_t)
-        r = foh_response(g[:, None, None], c[:, None, None], fk[None])        # (N, b, c_in, K, n_t)
-        vk = torch.einsum("noik,nbikt->bokt", beta, r)
+        # sum over poles first (the FOH response is linear in the kernel): one causal convolution per channel pair
+        # in the frequency domain, H_oi(k, w) = sum_n beta_noi(k) G_n(k, w), instead of N x c_in convolutions
+        H = torch.einsum("noik,nkw->oikw", beta, torch.fft.fft(g, 2 * n_t))   # (c_out, c_in, K, 2 n_t)
+        C = torch.einsum("noik,nkt->oikt", beta, c)                            # first-sample correction kernels
+        Fw = torch.fft.fft(fk, 2 * n_t)                                        # (b, c_in, K, 2 n_t)
+        vk = torch.fft.ifft(torch.einsum("oikw,bikw->bokw", H, Fw))[..., :n_t]
+        vk = vk - torch.einsum("oikt,bik->bokt", C, fk[..., 0])
         return torch.fft.irfft(vk, n=n_x, dim=2).to(f.dtype)
 
 
