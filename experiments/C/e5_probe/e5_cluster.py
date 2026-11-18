@@ -141,7 +141,7 @@ def main():
 
 def summarize(out):
     ref_of = lambda tag: P.MU_TRUE_LZ if tag.startswith("lz_") else P.MU_TRUE_C0 if tag.startswith("c0_") else P.MU_TRUE
-    lines = ["# E5: right Jacobian pole, no stored pole within 10 % (textbook-wired LNO, gated sets except ρ = 10)", "",
+    lines = [f"# E5: stored-pole decomposition of `{VARIANT}` (correct J pole, gated sets except ρ = 10)", "",
              f"Cluster = stored poles within {NEAR:.0%} of the small-signal pole; big = share ≥ {SHARE:.0%}.", "",
              "- **ridge** (pre-registered measure): ridge least squares of the Jacobian's average impulse response on "
              "the stored poles' exponentials.",
@@ -159,9 +159,12 @@ def summarize(out):
         lines.append(f"| `{x['set']}` | {x['seed']} | {x['d']:.2f} | {x['err']:.2f} | {x['fit_resid']:.3f}, "
                      f"{x['cluster_share']:.2f} | {x['a_recon_resid']:.3f}, {x['a_cluster_share']:.2f}, "
                      f"{x['a_n_near_big']} | {dr} | {poles} |")
-    (P.RESULTS / "e5_cluster.md").write_text("\n".join(lines) + "\n")
+    (OUT.with_suffix(".md")).write_text("\n".join(lines) + "\n")
     print("\n".join(lines))
 
 
 if __name__ == "__main__":
+    if len(sys.argv) > 1:                         # twelfth pass: another variant, its own output files
+        VARIANT = sys.argv[1]
+        OUT = P.RESULTS / f"e5_cluster_{VARIANT}.json"
     main()

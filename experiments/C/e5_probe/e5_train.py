@@ -53,7 +53,10 @@ VARIANTS = {"base": ("lno", "original", 1.0),
             "tied4o_stable_plr10": ("tied4", "stable", 10.0),
             # eleventh pass: original LNO with its pole-residue layer in the textbook wiring (each transient
             # coefficient on its own pole, `lfo.models.hybrid.PoleResidueTS1d`); same shapes and init distributions
-            "lnotb_stable_plr10": ("lnotb", "stable", 10.0)}
+            "lnotb_stable_plr10": ("lnotb", "stable", 10.0),
+            # twelfth pass: textbook wiring with one set of poles shared by all channel pairs (modes poles, not
+            # width^2 x modes); residues stay per channel pair
+            "lnots_stable_plr10": ("lnots", "stable", 10.0)}
 CKPT = ROOT / "runs" / "C" / "e5"
 RESULTS = HERE / "results" / "e5_train"
 
@@ -75,6 +78,23 @@ def tag(variant, data_tag):
     return variant if data_tag == "orig" else f"{data_tag}_{variant}"
 
 
+class SharedPoleTS1d(PoleResidueTS1d):
+    """Textbook pole-residue layer whose poles are shared by all channel pairs: one parameter `shared.mu` of shape
+    (modes,), seen through `mu` as (in, out, modes); residues `beta` stay per channel pair (twelfth pass)."""
+
+    def __init__(self, width, modes, t):
+        super().__init__(width, width, modes, t)
+        mu0 = self.mu.detach()[0, 0].clone()
+        del self.mu
+        self.shared = torch.nn.Module()
+        self.shared.mu = torch.nn.Parameter(mu0)
+
+    def __getattr__(self, name):
+        if name == "mu" and "shared" in self._modules:
+            return self._modules["shared"].mu.expand(self._parameters["beta"].shape)
+        return super().__getattr__(name)
+
+
 class Offset(torch.nn.Module):
     """Tied layer + a learned output offset b(t) (ninth pass, Lorenz): the data are x(t) about a nonzero operating
     point, which a linear layer cannot output. b does not depend on the input, so the probes (odd part, Jacobian at
@@ -90,7 +110,9 @@ class Offset(torch.nn.Module):
 
 
 def pole_param(conv0):
-    """The LNO layer's poles: `weights_pole` (original wiring) or `mu` (textbook wiring)."""
+    """The LNO layer's pole parameter: `weights_pole` (original wiring), `mu` (textbook) or `shared.mu` (shared)."""
+    if isinstance(conv0, SharedPoleTS1d):
+        return conv0.shared.mu
     return conv0.weights_pole if hasattr(conv0, "weights_pole") else conv0.mu
 
 
@@ -108,12 +130,12 @@ def build(variant, grids, seed, data_tag="orig"):
     torch.manual_seed(seed)
     t = torch.as_tensor(np.asarray(grids["t"], float).ravel(), dtype=torch.float32)
     gen = torch.Generator().manual_seed(1000 + seed)
-    if kind in ("lno", "lnotb"):
+    if kind in ("lno", "lnotb", "lnots"):
         model, _ = RL.build("lno", RL.CASES[case_of(data_tag)], grids)
-        if kind == "lnotb":
+        if kind in ("lnotb", "lnots"):
             c = model.conv0
             w, _, k = c.weights_pole.shape
-            model.conv0 = PoleResidueTS1d(w, w, k, t)
+            model.conv0 = PoleResidueTS1d(w, w, k, t) if kind == "lnotb" else SharedPoleTS1d(w, k, t)
         if init == "stable":
             stable_init(pole_param(model.conv0), t, gen)
     else:
@@ -164,8 +186,8 @@ def run(variant, seed, device, data_tag="orig"):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--variant", nargs="+", default=[v for v in VARIANTS if v not in ("tied4o_stable_plr10",
-                                                                                      "lnotb_stable_plr10")])
+    ap.add_argument("--variant", nargs="+", default=[v for v in VARIANTS if v not in (
+        "tied4o_stable_plr10", "lnotb_stable_plr10", "lnots_stable_plr10")])
     ap.add_argument("--seeds", nargs="+", type=int, default=[0, 1, 2, 3, 4])
     ap.add_argument("--data", default="orig", choices=["orig", "small", "mixed", "medium", "moderate", "pend_orig", "pend_medium", "pend_large", "wide", "pend_wide", "c0_orig", "c0_small", "c0_medium", "lz_orig", "lz_small", "lz_wide", "lz_r10_orig", "lz_r10_small", "lz_r10_wide"])
     a = ap.parse_args()

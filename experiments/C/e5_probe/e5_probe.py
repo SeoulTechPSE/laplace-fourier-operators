@@ -265,7 +265,9 @@ def summarize(res):
              "(linear), stable init + pole lr × 10 (`e5_train.py`)" + ("; `tied4o_stable_plr10` the same with no weight decay on "
              "the output offset (tenth-pass addendum)" if "tied4o_stable_plr10" in res["variants"] else "")
              + ("; `lnotb_stable_plr10` the LNO with its pole-residue layer in the textbook wiring (eleventh pass)."
-                if "lnotb_stable_plr10" in res["variants"] else "."), "",
+                if "lnotb_stable_plr10" in res["variants"] else "")
+             + ("; `lnots_stable_plr10` the same with poles shared by all channel pairs (twelfth pass)."
+                if "lnots_stable_plr10" in res["variants"] else "."), "",
              "Equivalent linear pole of the training data (best linear pair, per-sample relative weights) by "
              "amplitude band: " + "; ".join(f"{k} ({v['n']}): {v['pole'][0]:.3f}{v['pole'][1]:+.3f}i, residual "
                                             f"{v['rel']:.2f}" for k, v in res["equivalent"].items()) + ".", "",
