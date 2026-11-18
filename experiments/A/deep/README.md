@@ -212,3 +212,34 @@ frequencies. Same sweep and protocol as a11. The WPO is a11's.
 **Status of the a9–a13 sequence.** On forced Burgers at a 59 k budget, the WPO (stable, separate pole learning rate)
 leads the band-covering TFNO by 23 % in-window and by 7× in time extrapolation. In-band, the probes of both are
 right. Out of band, only the WPO's is, together with an LTI-consistent linearisation.
+
+## Resolution transfer (2026-11-18), zero-shot
+
+`a15_resolution.py` → `results/a15_resolution.md` (predictions in its docstring, committed before the run). The
+models trained at n_x = 64 and dt = 0.025 are evaluated unchanged on 100 new samples. The truth comes from a
+128-point solve.
+
+| model | n_x = 32 | n_x = 128 | dt / 2 (n_t = 401) |
+|---|---|---|---|
+| WPO | 1.01–1.02× | 1.00× | **0.79–0.80×** |
+| TFNO | 1.01× | 1.00× | 0.92–0.94× |
+| FNO 18× | 1.01–1.09× | 1.00–1.03× | 0.94–0.96× |
+
+(Ratios are to each model's own error at n_x = 64 and dt on the same samples: WPO 0.018–0.019, TFNO 0.022–0.027,
+FNO 0.033–0.035.)
+
+**Predictions against results.**
+
+1. WPO within 1.2× at n_x = 128 and dt / 2: **holds.**
+2. TFNO within 1.2× at n_x = 128 and dt / 2: **holds.**
+3. Both exceed 1.2× at n_x = 32: **fails.** Aliasing is negligible at 32 points, because the solution's content
+   above k = 16 is tiny for ν = 0.1.
+
+**Reading.**
+
+- In space, all three models transfer to within a few percent. Resolution invariance does not separate them on
+  this problem.
+- On a finer time grid, every model improves. Part of the error at dt = 0.025 is the sampling floor seen since a1:
+  steps and PRBS jumps fall between samples, and a finer grid resolves them. The WPO gains the most (−20 %
+  against −4 to −8 %). Its FOH recursion uses the finer dt exactly, while the FNO's temporal modes are fixed in
+  number.
