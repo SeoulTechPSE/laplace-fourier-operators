@@ -1,0 +1,41 @@
+"""Tests for the forced Burgers solver (`lfo.data.burgers`)."""
+import math
+
+import numpy as np
+
+from lfo.data import burgers, lti
+
+
+def _forcing(n_x, n, amp, seed=0):
+    rng = np.random.default_rng(seed)
+    t = np.arange(n) * 0.01
+    fk = np.zeros((2, n_x // 2 + 1, n), complex)
+    for k in (1, 3, 5):
+        fk[:, k] = amp * n_x / 2 * (rng.normal(size=(2, 1)) + 1j * rng.normal(size=(2, 1))) * np.sin(2 * t + k)
+    return t, fk
+
+
+def test_small_forcing_gives_the_linear_diffusion_response():
+    n_x, n, nu = 32, 301, 0.2
+    t, fk = _forcing(n_x, n, 1e-6)
+    uk = burgers.solve(fk, 0.01, nu, n_x)
+    for k in (1, 3, 5):
+        for b in range(2):
+            lin = sum(w * lti.response(t, fk[b, k].real if w == 1 else fk[b, k].imag, np.array([-nu * k ** 2 + 0j]),
+                                       np.array([1 + 0j])) for w in (1, 1j))
+            assert np.abs(uk[b, k] - lin).max() < 1e-6 * np.abs(lin).max()
+
+
+def test_mean_is_driven_by_the_mean_forcing_only_and_converges_in_dt():
+    n_x, nu = 32, 0.1
+    t, fk = _forcing(n_x, 201, 0.5)
+    fk[:, 0] = n_x * 0.3                                          # constant mean forcing 0.3
+    u1 = burgers.solve(fk, 0.01, nu, n_x)
+    assert np.allclose(u1[:, 0].real / n_x, 0.3 * t, atol=1e-10)
+    # half the step (forcing linearly interpolated), same sample times
+    fk2 = np.zeros(fk.shape[:2] + (401,), complex)
+    fk2[..., ::2] = fk
+    fk2[..., 1::2] = 0.5 * (fk[..., :-1] + fk[..., 1:])
+    u2 = burgers.solve(fk2, 0.005, nu, n_x, stride=2)
+    assert np.abs(u1 - u2).max() < 1e-6 * np.abs(u2).max()
+    assert np.abs(u1[:, 2:]).max() > 0 and math.isfinite(np.abs(u1).max())

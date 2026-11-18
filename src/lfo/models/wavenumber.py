@@ -56,7 +56,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 __all__ = ["foh_coefficients", "foh_kernel", "foh_recursion", "foh_response", "WavenumberPoleLayer1d",
-           "WavenumberPoleLayer2d"]
+           "WavenumberPoleLayer2d", "WavenumberPoleConv1d", "WavenumberPoleOperator1d"]
 
 
 def foh_coefficients(mu: torch.Tensor, dt: float):
@@ -148,8 +148,8 @@ class WavenumberPoleLayer1d(nn.Module):
         """Angular wavenumbers of the rfft of an n_x-point periodic grid of length `length`."""
         return 2 * math.pi * torch.fft.rfftfreq(n_x, self.length / n_x, device=self.t.device, dtype=torch.float64)
 
-    def poles(self, k: torch.Tensor):
-        """(mu, beta), each (N, len(k)) complex128. The polynomials are in k / k_ref."""
+    def mu(self, k: torch.Tensor) -> torch.Tensor:
+        """Poles mu_n(k), (N, len(k)) complex128. The polynomials are in k / k_ref."""
         k = k / self.k_ref
         k2 = k ** 2
         re = sum(self.mu_re[:, j, None] * k2 ** j for j in range(self.mu_re.shape[1]))
@@ -158,9 +158,14 @@ class WavenumberPoleLayer1d(nn.Module):
         elif self.re_max is not None:          # smooth cap Re mu <= re_max; identity to < 1e-6 below re_max - 15 tau
             re = _cap(re, self.re_max, self.re_tau, self.re_leak)
         im = sum(self.mu_im[:, j, None] * k ** p for j, p in enumerate(self.im_powers))
+        return torch.complex(re, im)
+
+    def poles(self, k: torch.Tensor):
+        """(mu, beta), each (N, len(k)) complex128. The polynomials are in k / k_ref."""
+        k2 = (k / self.k_ref) ** 2
         b = sum(torch.complex(self.beta[:, j, 0, None], self.beta[:, j, 1, None]) * k2 ** j
                 for j in range(self.beta.shape[1]))
-        return torch.complex(re, im), b
+        return self.mu(k), b
 
     def forward(self, f: torch.Tensor) -> torch.Tensor:
         b_, n_x, n_t = f.shape
@@ -252,3 +257,66 @@ class WavenumberPoleLayer2d(nn.Module):
         vk = torch.zeros(b_, n_x, n_y // 2 + 1, n_t, dtype=torch.complex128, device=f.device)
         vk[:, keep] = foh_response(g[None], c[None], fk)
         return torch.fft.irfft2(vk, s=(n_x, n_y), dim=(1, 2)).to(f.dtype)
+
+
+class WavenumberPoleConv1d(WavenumberPoleLayer1d):
+    """Channel-mixing version of `WavenumberPoleLayer1d` for deep models (proposal A, Section 4.4):
+
+        v_o(k, s) = sum_n sum_i beta_{n,o,i}(k) / (s - mu_n(k)) f_i(k, s).
+
+    The N poles mu_n(k) are shared by all channel pairs (the modal form: one dispersion relation per pole); each pole
+    has a residue matrix beta_n(k), polynomial in k^2. Pole options as in `WavenumberPoleLayer1d`.
+    Input (batch, c_in, n_x, n_t), output (batch, c_out, n_x, n_t).
+    """
+
+    def __init__(self, c_in: int, c_out: int, n_poles: int, t, beta_degree: int = 2, **kw):
+        super().__init__(n_poles, t, beta_degree=1, **kw)
+        del self.beta
+        self.c_in, self.c_out = c_in, c_out
+        b = torch.zeros(n_poles, beta_degree, c_out, c_in, 2, dtype=torch.float64)
+        b[:, 0, :, :, 0] = torch.randn(n_poles, c_out, c_in, dtype=torch.float64) / math.sqrt(c_in * n_poles)
+        self.beta = nn.Parameter(b)
+
+    def poles(self, k: torch.Tensor):
+        """(mu (N, K), beta (N, c_out, c_in, K)) complex128."""
+        k2 = (k / self.k_ref) ** 2
+        b = sum(torch.complex(self.beta[:, j, ..., 0, None], self.beta[:, j, ..., 1, None]) * k2 ** j
+                for j in range(self.beta.shape[1]))
+        return self.mu(k), b
+
+    def forward(self, f: torch.Tensor) -> torch.Tensor:
+        b_, c_in, n_x, n_t = f.shape
+        dt = float(self.t[1] - self.t[0])
+        fk = torch.fft.rfft(f.to(torch.float64), dim=2)
+        K = fk.shape[2] if self.modes is None else min(self.modes, fk.shape[2])
+        fk = fk[:, :, :K]                                                     # (b, c_in, K, n_t)
+        mu, beta = self.poles(self.wavenumbers(n_x)[:K])                      # (N, K), (N, c_out, c_in, K)
+        g, c = foh_kernel(mu, n_t, dt)                                         # (N, K, n_t)
+        r = foh_response(g[:, None, None], c[:, None, None], fk[None])        # (N, b, c_in, K, n_t)
+        vk = torch.einsum("noik,nbikt->bokt", beta, r)
+        return torch.fft.irfft(vk, n=n_x, dim=2).to(f.dtype)
+
+
+class WavenumberPoleOperator1d(nn.Module):
+    """Deep wavenumber pole operator (proposal A, Section 4.4), 1D space x time.
+
+    lift (pointwise, 1 -> width) -> n_layers x [ v <- act(K_l v + W_l v) ] -> projection (pointwise, width -> hidden
+    -> 1). K_l is a `WavenumberPoleConv1d`, W_l a pointwise channel mix; no activation after the last layer. Every
+    part is causal in time, so the operator is causal. Input / output (batch, n_x, n_t) real.
+    """
+
+    def __init__(self, t, width: int = 16, n_layers: int = 4, n_poles: int = 4, hidden: int = 64, **layer_kw):
+        super().__init__()
+        f64 = dict(dtype=torch.float64)
+        self.lift = nn.Linear(1, width, **f64)
+        self.K = nn.ModuleList(WavenumberPoleConv1d(width, width, n_poles, t, **layer_kw) for _ in range(n_layers))
+        self.W = nn.ModuleList(nn.Linear(width, width, **f64) for _ in range(n_layers))
+        self.proj = nn.Sequential(nn.Linear(width, hidden, **f64), nn.GELU(), nn.Linear(hidden, 1, **f64))
+
+    def forward(self, f: torch.Tensor) -> torch.Tensor:
+        v = self.lift(f.to(torch.float64)[..., None]).permute(0, 3, 1, 2)    # (b, width, n_x, n_t)
+        for i, (K, W) in enumerate(zip(self.K, self.W)):
+            v = K(v) + W(v.permute(0, 2, 3, 1)).permute(0, 3, 1, 2)
+            if i < len(self.K) - 1:
+                v = F.gelu(v)
+        return self.proj(v.permute(0, 2, 3, 1))[..., 0].to(f.dtype)

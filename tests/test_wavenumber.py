@@ -225,3 +225,38 @@ def test_leaky_cap_keeps_a_gradient_above_the_cap():
                 layer.mu_re[0, 0] = -2.0
                 mu = layer.poles(k)[0] if cls is WavenumberPoleLayer1d else layer.poles(k, 0 * k)[0]
             assert torch.allclose(mu.real, torch.full_like(mu.real, -2.0), atol=1e-10)
+
+
+def test_channel_mixing_layer_reduces_to_the_scalar_layer():
+    from lfo.models.wavenumber import WavenumberPoleConv1d
+    torch.manual_seed(9)
+    t = np.linspace(0, 1, 40)
+    l1 = WavenumberPoleLayer1d(3, t, stable=True)
+    lc = WavenumberPoleConv1d(1, 1, 3, t, stable=True)
+    with torch.no_grad():
+        lc.mu_re.copy_(l1.mu_re), lc.mu_im.copy_(l1.mu_im)
+        l1.beta.normal_()
+        lc.beta.copy_(l1.beta[:, :, None, None, :])
+        f = torch.randn(2, 16, 40, dtype=torch.float64)
+        assert torch.allclose(lc(f[:, None])[:, 0], l1(f), atol=1e-12)
+        # two input channels, residue matrix [[1, 2]]: output = 1 * K f_0 + 2 * K f_1
+        l2 = WavenumberPoleConv1d(2, 1, 3, t, stable=True)
+        l2.mu_re.copy_(l1.mu_re), l2.mu_im.copy_(l1.mu_im)
+        l2.beta.copy_(torch.cat([l1.beta[:, :, None, None, :], 2 * l1.beta[:, :, None, None, :]], dim=3))
+        g = torch.randn(2, 16, 40, dtype=torch.float64)
+        assert torch.allclose(l2(torch.stack([f, g], 1))[:, 0], l1(f) + 2 * l1(g), atol=1e-12)
+
+
+def test_deep_operator_is_causal():
+    from lfo.models.wavenumber import WavenumberPoleOperator1d
+    torch.manual_seed(10)
+    t = np.linspace(0, 1, 50)
+    m = WavenumberPoleOperator1d(t, width=6, n_layers=3, n_poles=2, stable=True, modes=8)
+    f = torch.randn(2, 16, 50, dtype=torch.float64)
+    g = f.clone()
+    g[..., 30:] += torch.randn(2, 16, 20, dtype=torch.float64)
+    with torch.no_grad():
+        yf, yg = m(f), m(g)
+    assert yf.shape == f.shape
+    assert (yf - yg)[..., :30].abs().max() < 1e-12 * yf.abs().max()
+    assert (yf - yg)[..., 30:].abs().max() > 1e-6

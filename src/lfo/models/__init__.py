@@ -10,8 +10,9 @@ FNO and TFNO baselines come from the `neuraloperator` package; do not re-impleme
 """
 from .hybrid import ALNO1d, LFNO1d, PoleResidueTS1d, SpectralConv1d
 from .lno import LNO1d, LNO2d, LNO2dV2, PoleResidue1d, PoleResidue2d, Steady2d, Transient2d
-from .wavenumber import WavenumberPoleLayer1d, WavenumberPoleLayer2d
+from .wavenumber import (WavenumberPoleConv1d, WavenumberPoleLayer1d, WavenumberPoleLayer2d,
+                         WavenumberPoleOperator1d)
 
 __all__ = ["ALNO1d", "LFNO1d", "LNO1d", "LNO2d", "LNO2dV2", "PoleResidue1d", "PoleResidue2d",
-           "PoleResidueTS1d", "SpectralConv1d", "Steady2d", "Transient2d", "WavenumberPoleLayer1d",
-           "WavenumberPoleLayer2d"]
+           "PoleResidueTS1d", "SpectralConv1d", "Steady2d", "Transient2d", "WavenumberPoleConv1d",
+           "WavenumberPoleLayer1d", "WavenumberPoleLayer2d", "WavenumberPoleOperator1d"]
