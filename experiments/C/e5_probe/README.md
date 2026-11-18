@@ -360,7 +360,7 @@ softens instead of hardening.
 
 **Reading for RQ4.**
 
-- **Over 6 simulated or original sets (120 runs), v2 trusted 18 runs, all within 6 % of the small-signal pole,
+- **Over 7 simulated or original sets (140 runs), v2 trusted 18 runs, all within 6 % of the small-signal pole,
   with no false trust.** v1 alone made 6 false trusts, all on Duffing.
 - **The gate is sufficient here but not necessary.** The output residual of a linear fit measures how
   nonlinear the data are, not how far the equivalent pole moves. A softening pendulum leaves large residuals
@@ -415,7 +415,7 @@ Same 4 variants × 5 seeds, 40 runs.
    5–7 % (5 tied layers, 2 stable-init LNOs); on `pend_wide`, 5 tied layers at 2–3 %.
 3. v2 abstains on 12 correct runs.
 
-**Totals over 9 sets, 160 runs.**
+**Totals over 9 sets, 180 runs.**
 
 | rule | trusted | false trust (> 10 %) | correct runs not trusted |
 |---|---|---|---|
@@ -487,7 +487,7 @@ Test rel. L2 by variant (5 seeds):
    - So on the strongly nonlinear undamped data, the best fit and the physical poles come from different
      models.
 
-**Totals over 12 sets, 220 runs.**
+**Totals over 12 sets, 240 runs.**
 
 | rule | trusted | false trust (> 10 %) | correct runs not trusted |
 |---|---|---|---|
@@ -562,7 +562,7 @@ Test rel. L2 by variant (5 seeds), and of a trivial predictor (the training-mean
 - The fit criterion did not catch it either. On Lorenz, rel. L2 < 0.5 is weak: the output has a large mean, and
   even the mean trajectory scores 0.011–0.110.
 
-**Totals over 15 sets, 280 runs.**
+**Totals over 15 sets, 300 runs.**
 
 | rule | trusted | false trust (> 10 %) | correct runs not trusted |
 |---|---|---|---|
@@ -649,7 +649,8 @@ covers.
   non-causal Jacobians (0.14–0.32). On `lz_r10_small` their J poles are 8–10 % off in 4 of 5 seeds (s3 40 %), and all 5 are non-causal (0.25–0.43).
   This is the same pattern as at ρ = 5.
 
-**Totals over 18 sets, 355 runs.**
+**Totals over 18 sets, 375 runs** (18 × 20 + 15 addendum runs; the run counts of passes 6–9 were
+20 short and are corrected here).
 
 | rule | trusted | false trust (> 10 %) | correct runs not trusted |
 |---|---|---|---|
@@ -661,7 +662,7 @@ covers.
 **Reading for RQ4.**
 
 - **v4 is the RQ4 rule.** On new data it removed both Lorenz false trusts and missed no correct run that v3
-  trusted. Over 18 sets, 4 systems and 355 runs it makes no false trust.
+  trusted. Over 18 sets, 5 systems and 375 runs it makes no false trust.
 - Each part of v4 has a failure it is needed for:
   - the data gate catches the Duffing sets where the trusted pole is the data's, not the system's (`mixed`,
     `moderate`);

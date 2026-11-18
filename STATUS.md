@@ -11,7 +11,7 @@ Each session appends one entry using the template at the bottom.
 | (C) Pole audit of existing models | 3–5 | **in progress**: E1 done, draft report (`E1_report.md`, updated with E2); paper decisions made (2026-11-18); workshop paper draft written (`paper/e1_workshop.qmd`) | — |
 | (D) Non-periodic input representation | 4–8 | not started | differs from padded FNO? (month 8) |
 | (A) Pole layer and linear validation | 5–10 | not started | dispersion relations recovered (month 10) |
-| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits, a bootstrap-calibrated order, certificate and order test; reduction-path unresolved rules fail, a location-calibrated split test flags the merge, a combined post-report rule leaves 1 false pole in 40 groups but does not carry over to new p6 E1 groups; an EIVML refit of the reports removes the EIV bias; EIVML through the whole pipeline helps only up to η_u = 0.05; an EIVML elimination of the calibrated report leaves 0 false poles up to p4 30 η_y and p6 E1 0.05, with EIV-bootstrap intervals covering 33/36 at p4 30 η_y), E3 deep first pass done; H1–H3 theory draft (`experiments/C/theory/H1_H2.md`), E5 passes 1–10 (`experiments/C/e5_probe/`; RQ4 rule v4, 0 false trusts over 355 runs) | — |
+| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits, a bootstrap-calibrated order, certificate and order test; reduction-path unresolved rules fail, a location-calibrated split test flags the merge, a combined post-report rule leaves 1 false pole in 40 groups but does not carry over to new p6 E1 groups; an EIVML refit of the reports removes the EIV bias; EIVML through the whole pipeline helps only up to η_u = 0.05; an EIVML elimination of the calibrated report leaves 0 false poles up to p4 30 η_y and p6 E1 0.05, with EIV-bootstrap intervals covering 33/36 at p4 30 η_y), E3 deep first pass done; H1–H3 theory draft (`experiments/C/theory/H1_H2.md`), E5 passes 1–10 (`experiments/C/e5_probe/`; RQ4 rule v4, 0 false trusts over 375 runs) | — |
 | (A) Application 1: process dynamics | 11–16 | not started | — |
 | (D) Initial conditions and rollout | 13–19 | not started | — |
 | (A) Application 2: Cahn–Hilliard | 17–22 | not started | recover k_c, k_max (month 20) |
@@ -134,25 +134,26 @@ Suggested next steps (in order):
    abstains, where v1 alone trusts 4 tied layers 15–17 % off. Trusted poles track the data's
    equivalent linear pole (2–7 %). Sixth pass (driven pendulum, pre-registered): `pend_medium`
    gate passes, 6 trusted within 1 %; `pend_large` / `pend_orig` gate fails and v2 abstains,
-   although the 8 runs v1 would trust are correct (2–5 %). Across 120 runs v2 has no false
+   although the 8 runs v1 would trust are correct (2–5 %). Across 140 runs v2 has no false
    trust; its gate is sufficient but conservative for a softening spring. Seventh pass: rule v3
    (pole-shift gate: low-amplitude fifth linear, all-sample equivalent pole within 10 % of it),
    pre-registered on new sets where v2 and v3 disagree: v3 trusts 12 runs, all correct (2–7 %).
-   Over 9 sets / 160 runs: v1 6 false; v2 0 false, 20 missed; v3 0 false, 0 missed. RQ4 rule =
+   Over 9 sets / 180 runs: v1 6 false; v2 0 false, 20 missed; v3 0 false, 0 missed. RQ4 rule =
    v3. Eighth pass (undamped Duffing c = 0, poles ± i, pre-registered): `c0_small` 6 trusted at
    1 %; `c0_orig` nothing trusted (tied layers excluded by fit); `c0_medium` v3 abstains on 5
    correct runs (4 %), since an undamped low band fails the residual test at a 1.4 % pole error.
-   Over 12 sets / 220 runs: v3 0 false, 5 missed. Ninth pass (forced Lorenz ρ = 5, operating
+   Over 12 sets / 240 runs: v3 0 false, 5 missed. Ninth pass (forced Lorenz ρ = 5, operating
    point C+, pre-registered): v3's first false trust, an original-init LNO on `lz_wide` whose
-   Jacobian and stored pole agree on a slow non-physical pole (96 % off). Over 15 sets / 280 runs:
+   Jacobian and stored pole agree on a slow non-physical pole (96 % off). Over 15 sets / 300 runs:
    v3 1 false, 5 missed. Post hoc: LTI-probe vs Jacobian pole agreement separates it (all 49
    correct trusts ≤ 4 %); candidate rule v4, not adopted. E1 paper decisions made (2026-11-18);
    workshop paper draft `experiments/C/e1_audit/paper/e1_workshop.qmd`, rendered (8 pages,
    Fig. 1–3, checked BibTeX references). Next: user review of the draft (venue, length);
    E5 write-up. Tenth pass (pre-registered): rule v4 = v3 gate + LTI/Jacobian probe agreement +
-   centred fit; on Lorenz ρ = 10 it makes no false trust where v3 makes 2. Over 18 sets / 355
+   centred fit; on Lorenz ρ = 10 it makes no false trust where v3 makes 2. Over 18 sets / 375
    runs: v4 52 trusted, 0 false, 5 missed. The tied layer needs its output offset excluded from
-   weight decay. RQ4 rule = v4.
+   weight decay. RQ4 rule = v4. E5 companion note `experiments/C/e5_probe/paper/e5_note.qmd` (6 pages,
+   2 figures). Next: user review of both drafts.
 
 Things to know:
 
@@ -163,6 +164,19 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-18 — (C) E5 / RQ4: companion note
+
+- Done: `experiments/C/e5_probe/paper/e5_note.qmd` (rendered, 6 pages; shares the E1 paper's BibTeX and IEEE
+  style), figures `experiments/C/e5_probe/figures.py` (fig1 data gate per set, fig2 probe agreement vs pole error
+  of all v1-trusted runs). It is a separate note so the E1 workshop draft under review is unchanged; it can be
+  merged as a section later.
+- Results: prospective record per rule version (sets tested after the rule was fixed): v1 18 sets / 375 runs, 66
+  trusted, 9 false; v2 16 / 335, 22, 0 false, 29 missed; v3 11 / 235, 29, 3 false, 5 missed; v4 3 / 75, 8, 0 false.
+  v4 trusts 52 runs over all sets: 45 tied layers, 7 stable-init LNOs (of 90).
+- Correction: the cumulative run counts since the sixth pass were 20 short (one set per pass). Corrected in the
+  README, this file and the web page: 140 (sixth pass), 180, 240, 300, 375. Trust counts are unchanged.
+- Next: user review of the E1 draft and this note (merge or keep separate; venue).
 
 ### 2026-11-18 — (C) E5 / RQ4: rule v4 on forced Lorenz (ρ = 10)
 
@@ -181,7 +195,7 @@ Things to know:
   - Addendum (no decay): `lz_r10_small` 4 of 5 trusted at 2–3 %; `lz_r10_wide` 3 trusted at 2–3 %, plus a v3-only
     false trust (J pole −1.49 + 39.4i, a = 0.91) that v4 removes.
   - No stored pole near −12.48. Stable-init LNOs again have correct J poles but mostly non-causal Jacobians.
-  - Totals over 18 sets / 355 runs: v1 66 / 9 false; v2 28 / 0 / 29 missed; v3 55 / 3 / 5; v4 52 / 0 / 5.
+  - Totals over 18 sets / 375 runs: v1 66 / 9 false; v2 28 / 0 / 29 missed; v3 55 / 3 / 5; v4 52 / 0 / 5.
 - Decisions: RQ4 rule = v4. The ninth-pass reading of the offset (travel bound) is corrected to weight decay.
 - Next: E5 write-up next to the E1 workshop paper; user review of the workshop draft.
 
@@ -201,7 +215,7 @@ Things to know:
     ~1.5 of 3.27 under the `common` lr schedule (the E1 travel bound).
   - Stable-init LNOs on `lz_wide`: J poles 5–8 % off, test 0.010–0.014, but non-causal Jacobians (0.12–0.20),
     so not trusted.
-  - Totals over 15 sets / 280 runs: v1 56 trusted, 7 false; v2 24, 0 false, 25 missed; v3 45, 1 false, 5 missed.
+  - Totals over 15 sets / 300 runs: v1 56 trusted, 7 false; v2 24, 0 false, 25 missed; v3 45, 1 false, 5 missed.
 - Decisions: v3 not changed after the fact. Two v1 gaps recorded: d can be satisfied by a non-physical slow pole,
   and rel. L2 < 0.5 is weak when the output has a large mean. Post hoc, LTI-probe vs J pole agreement is ≤ 4 % in
   all 49 correct trusts and ~1900× in the false one; it is a candidate for rule v4, not adopted.
@@ -222,7 +236,7 @@ Things to know:
     pole error); v3 misses 5 correct tied layers (4 %).
   - Stable init + pole lr × 10 puts LNO poles within 10 % of i in all 10 runs on the small / medium sets; on
     `c0_orig` those LNOs keep poles near i but do not fit, and the best fits (original init) have none.
-  - Totals over 12 sets / 220 runs: v1 55 trusted, 6 false; v2 24, 0 false, 25 missed; v3 44, 0 false, 5 missed.
+  - Totals over 12 sets / 240 runs: v1 55 trusted, 6 false; v2 24, 0 false, 25 missed; v3 44, 0 false, 5 missed.
 - Decisions: rule v3 kept unchanged (as pre-registered). Its residual-based linearity test is conservative for
   undamped poles; a pole-stability test of the low band is a post-hoc idea that would need new data.
 - Next: Lorenz (probe about its operating point); user review of the workshop draft.
@@ -277,7 +291,7 @@ Things to know:
     < 0.1 (= the claimed 10 % accuracy, set after that run): 0 false, 0 missed.
   - New sets: v2 fails both (0.132, 0.244), v3 passes both (shift 0.098, 0.059); v3 trusts 7 runs on `wide`
     (5–7 %) and 5 on `pend_wide` (2–3 %), all correct.
-  - Totals, 9 sets / 160 runs: v1 44 trusted, 6 false; v2 18 trusted, 0 false, 20 missed; v3 38 trusted,
+  - Totals, 9 sets / 180 runs: v1 44 trusted, 6 false; v2 18 trusted, 0 false, 20 missed; v3 38 trusted,
     0 false, 0 missed.
 - Decisions: the RQ4 trust rule is v3 (valid J ∧ probe–layer agreement ∧ fit ∧ data pole shift < 0.1).
   Limits: two oscillators with one small-signal pole; `wide` passed at 0.098; the gate needs low-amplitude
@@ -297,7 +311,7 @@ Things to know:
     all correct (2–5 %).
   - Grid input → invalid LNO Jacobian: only on `pend_orig`; several LNO probes are valid on simulated sets and
     the agreement check rejects the wrong ones (d 0.15–0.33).
-- Decisions: rule v2 kept (120 runs, 18 trusted, no false trust). Its output-residual gate is conservative for
+- Decisions: rule v2 kept (140 runs, 18 trusted, no false trust). Its output-residual gate is conservative for
   softening systems; a gate on the pole shift (band-wise equivalent poles) is a post-hoc candidate.
 - Next: pole-shift gate on new data of both systems; Duffing c = 0; Lorenz needs a probe about its own
   operating point; E1 paper decisions.
