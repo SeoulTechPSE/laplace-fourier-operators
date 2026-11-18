@@ -152,3 +152,48 @@ Data seeds 0–4; `diff` and `adr`.
   needed.
 - Then deeper models (lifting / nonlinearity) with the linear probe of (C) E5.
 
+## Fourth validation (2026-11-18): the Euler–Bernoulli beam, two poles per wavenumber
+
+`a4_beam.py` → `results/a4_beam.md` (predictions 531128c).
+
+**Setup.**
+
+- u_tt = −c² u_xxxx + f with c = 0.04. The output is the velocity: poles ±i c k² on the imaginary axis, residues
+  1/2. The displacement would need residues 1/(2 i c k²), which polynomial residues cannot express.
+- Layer change: Im μ may use any powers of k (`im_powers`, 2714262), because only k ≥ 0 is evaluated. The odd-only
+  default could not express c k².
+- The a3 recipe, extended to two poles per mode: a greedy two-pole grid, then Nelder–Mead on 4 parameters, labels
+  by the sign of Im.
+
+| seed | stage 1 error: k = 1 / 2 / 3 / k ≥ 4 | c: stage 2 → tuned | test: init → tuned (oracle) | dispersion error |
+|---|---|---|---|---|
+| 0 | 54 / 0.68 / 1.08 / ≤ 0.01 | −0.021 → −0.0099 | 28 → 0.35 (1.2e-2) | 3.2 |
+| 1 | 60 / 0.26 / 0.03 / ≤ 0.005 | 0.0415 → **0.04000** | 0.60 → **1.18e-2** (1.18e-2) | 1.6e-4 |
+| 2 | 70 / 0.17 / 0.005 / ≤ 0.005 | −0.166 → **0.04000** | 0.72 → **1.21e-2** (1.21e-2) | 3.9e-5 |
+| 3 | 1.7 / 0.30 / 0.05 / ≤ 0.01 | 0.0403 → −0.038 | 5.1 → 0.37 (1.2e-2) | 2.1 |
+| 4 | 61 / 0.81 / 0.03 / ≤ 0.01 | 0.0460 → **0.04002** | 0.89 → **1.14e-2** (1.14e-2) | 3.6e-4 |
+
+**Predictions against results.**
+
+1. Stage 1, both poles within 2 % for k ≥ 3: **fails.** k = 3 is off by 3–108 % in 4 of 5 seeds. k ≥ 4 is within
+   1 % everywhere.
+2. Fine-tuned c within 1 %, |Re μ| ≤ 0.01 |Im μ|, and test at the oracle in ≥ 4 of 5 seeds: **fails, 3 of 5.** In
+   those three, c = 0.04000–0.04002, Re/Im ≤ 2.3e-4, and the test error equals the oracle floor. The other two end
+   in wrong basins (Re/Im 4–44).
+
+**Diagnosis.**
+
+- **The low modes are not observable within the window.** Their phase advances over T = 5 by c k² T = 0.2, 0.8
+  and 1.8 rad for k = 1, 2, 3: less than a period. Wrong poles fit them about as well: the stage-1 residuals there
+  are as small as at well-resolved k (≈ 0.005).
+- Because stage 2 weights modes by 1 / residual², these wrong poles enter with full weight and corrupt the
+  polynomial. The bad starts then lead the fine-tune into wrong basins.
+- The resolution cut of a3 (|μ̂| Δt ≤ 0.25) handles fast modes; this is the opposite end, slow modes.
+
+**Next.**
+
+- An observability cut from stage 1, without the truth: keep a mode only if its estimated pole is resolved within
+  the window, max(|Re μ̂|, |Im μ̂|) T ≥ 2 (for the beam this drops k = 1–3). Alternatively, weight stage 2 by
+  the per-mode curvature (Fisher information) instead of the residual.
+- Then rerun the beam and the a3 systems with this cut, pre-registered.
+

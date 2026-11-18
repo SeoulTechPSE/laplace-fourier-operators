@@ -174,6 +174,22 @@ Things to know:
 
 ## Log
 
+### 2026-11-18 — (A) pole layer: Euler–Bernoulli beam (two poles per k)
+
+- Done:
+  - `im_powers` option (any powers of k in Im μ; the odd-only default cannot express c k²), with a test;
+    pytest 42/42 (2714262).
+  - `a4_beam.py` (predictions 531128c): velocity output (polynomial residues cannot express the displacement's
+    1/k²), the a3 recipe with two poles per mode.
+- Results:
+  - 3 of 5 seeds recover c = 0.04000–0.04002 at the oracle test floor (Re/Im ≤ 2e-4); 2 seeds end in wrong basins.
+  - Stage 1 is exact for k ≥ 4 (≤ 1 %) but wrong for k = 1–3: less than a period in the window, and small
+    residuals all the same.
+  - Both predictions fail.
+- Decisions: the stage-2 weights (1 / residual²) admit unobservable slow modes. An observability cut is needed.
+- Next: observability cut (max(|Re μ̂|, |Im μ̂|) T ≥ 2) or Fisher weights, pre-registered, rerun on the beam and
+  the a3 systems; then 2D diffusion; then the joint fit without stage 1.
+
 ### 2026-11-18 — (A) pole layer: two-stage identification recovers the dispersion relation
 
 - Done:
