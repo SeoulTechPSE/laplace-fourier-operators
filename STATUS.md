@@ -174,6 +174,21 @@ Things to know:
 
 ## Log
 
+### 2026-11-18 — (A) deep operator: band-covering FNO baselines; WPO leads by 23 % in-window, 7x in extrapolation
+
+- Done: `experiments/A/deep/a13_baselines.py` (predictions 9055eb7): TFNO (Tucker, n_modes 32 × 64, 59 k
+  parameters) and a full-rank FNO (1.08 M), with the a11 sweep and protocol.
+- Results (`experiments/A/deep/results/a13_baselines.md`):
+  - Test error: WPO 0.024, TFNO 0.031, FNO-18× 0.042 (overfits).
+  - Error over (5, 10]: WPO 0.04, both FNO variants 0.29.
+  - Probe: every model is right to 1–2 % in the forced band (k ≤ 8). Above it, only the WPO continues −ν k²
+    (k = 9: 1–4 %); the FNO variants give arbitrary poles. Probe residual: WPO 0.003, FNO variants 0.008–0.49.
+  - Predictions 1, 3, 4 hold; 2 fails (the large FNO overfits).
+- Decisions: the in-band probe does not separate the models. The WPO's distinctive properties are out-of-band
+  structure, an LTI-consistent linearisation and time extrapolation.
+- Next: data efficiency (training-set size), resolution transfer, and a second nonlinear system (2D, or
+  Cahn–Hilliard's unstable band).
+
 ### 2026-11-18 — (A) deep operator: tuned WPO reaches 0.024 with an exact probe; the a9–a11 FNO was mode-truncated
 
 - Done: `experiments/A/deep/a11_fair.py` (predictions 232df05): learning-rate sweeps on the validation split, then

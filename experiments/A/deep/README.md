@@ -170,3 +170,45 @@ The WPO-only findings stand: the pole learning rate, the probe and extrapolation
 parameters). So the comparison uses the Tucker-factorised TFNO from neuraloperator, with n_modes covering the band,
 at the matched budget, plus a full-rank FNO at a larger budget as a reference. Both get the same learning-rate
 sweep.
+
+## Fourth pass (2026-11-18): band-covering FNO baselines
+
+`a13_baselines.py` → `results/a13_baselines.md` (predictions 9055eb7). n_modes (32, 64): |k| ≤ 16 and 33 temporal
+frequencies. Same sweep and protocol as a11. The WPO is a11's.
+
+- Selected learning rates: TFNO 3e-3, FNO 1e-3.
+
+| model | params | train | test (T = 5) | (5, 10] | ratio | probe residual (median) | probe dispersion error: kept modes / k ≤ 8 |
+|---|---|---|---|---|---|---|---|
+| WPO (stable) | 59.5 k | 0.011 | **0.023–0.024** | **0.042–0.046** | **1.8–1.9** | **0.002–0.003** | **0.010–0.034** / 0.010–0.019 |
+| TFNO (Tucker, matched) | 59.1 k | 0.009–0.010 | 0.027–0.033 | 0.29 | 8.6–10.6 | 0.008–0.25 | 0.90–0.95 / 0.016–0.020 |
+| FNO (full rank, 18×) | 1.08 M | 0.006–0.007 | 0.041–0.043 | 0.29 | 6.7–7.1 | 0.36–0.49 | 0.90–0.93 / 0.007–0.015 |
+
+**Predictions against results.**
+
+1. The matched TFNO's mean test error is above the WPO's: **holds** (0.031 against 0.024).
+2. The 18× FNO's mean test error is below the WPO's: **fails.** It is 0.042. It fits the training set best (0.006)
+   but overfits with 200 samples.
+3. Extrapolation ratio > 2.5 for both FNO variants in every seed: **holds** (6.7–10.6). Their (5, 10] error is 0.29
+   for every seed; the WPO's is 0.04.
+4. Probe dispersion error above the WPO's in every seed: **holds** (0.90–0.95), but see below.
+
+**Reading (post hoc, from the stored per-mode probes).**
+
+- **Inside the forced band (k ≤ 8), every model's linearisation is right to 1–2 %.** The FNO-type models learn the
+  physical linearisation there just as the WPO does. The registered dispersion error separates them only because
+  of the modes above the band.
+- **Above the band (k = 9–16), the models differ.** The WPO continues the dispersion relation: k = 9 gives −8.17
+  to −8.45 against −8.1. The probe keeps only k ≤ 9 for the WPO, because higher modes decay faster than the
+  resolution cut allows, as in the truth. The FNO-type models return arbitrary poles there (Re −0.03 to −7,
+  |Im| up to 8), and those spurious poles pass both cuts.
+- **The WPO's linear response is LTI-consistent.** Its median probe residual is 0.002–0.003, against 0.008–0.49 for
+  the FNO variants: the FNO's odd small-amplitude response is not well described by one causal pole per mode.
+- **Accuracy at the matched budget:** WPO 0.024 against TFNO 0.031, so the WPO is 23 % lower. That is a modest
+  margin. The 18× FNO is worse than both.
+- **Extrapolation in time is the clear difference:** 0.04 against 0.29 over (5, 10]. The FNO's t modes rescale with
+  the window. The WPO's recursion does not depend on the window.
+
+**Status of the a9–a13 sequence.** On forced Burgers at a 59 k budget, the WPO (stable, separate pole learning rate)
+leads the band-covering TFNO by 23 % in-window and by 7× in time extrapolation. In-band, the probes of both are
+right. Out of band, only the WPO's is, together with an LTI-consistent linearisation.
