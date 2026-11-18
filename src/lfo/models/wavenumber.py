@@ -24,7 +24,8 @@ grid than it was trained on.
 Options: `modes` keeps only the lowest `modes` rfft wavenumbers (like FNO truncation; the polynomial is not
 evaluated where the data carry no information, so a k^4 term cannot overflow there). `re_max` caps Re mu smoothly at
 re_max (soft minimum with temperature `re_tau`), which bounds the growth e^{Re mu T} while leaving the polynomial
-unchanged well below the cap.
+unchanged well below the cap. `k_ref` evaluates the polynomials in k / k_ref, so that all coefficients have comparable
+scale for a first-order optimiser (with k up to 16, a k^4 coefficient otherwise moves Re mu by 6.5e4 per unit step).
 
 Input / output: (batch, n_x, n_t) real fields on a uniform periodic x grid of length `length` and a uniform t grid.
 """
@@ -101,9 +102,9 @@ class WavenumberPoleLayer1d(nn.Module):
 
     def __init__(self, n_poles: int, t, length: float = 2 * math.pi, mu_degree=(3, 2), beta_degree: int = 2,
                  stable: bool = False, init_scale: float = 0.1, modes: int | None = None, re_max: float | None = None,
-                 re_tau: float = 0.05):
+                 re_tau: float = 0.05, k_ref: float = 1.0):
         super().__init__()
-        self.modes, self.re_max, self.re_tau = modes, re_max, re_tau
+        self.modes, self.re_max, self.re_tau, self.k_ref = modes, re_max, re_tau, float(k_ref)
         t = torch.as_tensor(t, dtype=torch.float64).reshape(-1)
         self.register_buffer("t", t)
         self.length, self.stable = float(length), stable
@@ -119,7 +120,8 @@ class WavenumberPoleLayer1d(nn.Module):
         return 2 * math.pi * torch.fft.rfftfreq(n_x, self.length / n_x, device=self.t.device, dtype=torch.float64)
 
     def poles(self, k: torch.Tensor):
-        """(mu, beta), each (N, len(k)) complex128."""
+        """(mu, beta), each (N, len(k)) complex128. The polynomials are in k / k_ref."""
+        k = k / self.k_ref
         k2 = k ** 2
         re = sum(self.mu_re[:, j, None] * k2 ** j for j in range(self.mu_re.shape[1]))
         if self.stable:
