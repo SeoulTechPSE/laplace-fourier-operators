@@ -117,17 +117,29 @@ class LNO1d(nn.Module):
       Lorenz:        use_grid=True,  activation="tanh"
       Pendulum:      use_grid=True,  activation="sin"
     All 1D examples use transient_sign=-1.
+
+    ``textbook=True`` replaces the pole-residue layer by ``lfo.models.hybrid.PoleResidueTS1d`` (same shapes and
+    initialisation distributions; poles in ``conv0.mu``, residues in ``conv0.beta``). The original layer multiplies
+    each transient coefficient by another channel's pole (quirk 1 in the module docstring), so the periodic steady
+    term's wrap-around is not cancelled and the layer is non-causal; the textbook wiring is causal up to
+    discretisation ((C) E5, eleventh pass). The default keeps the original for reproduction.
     """
 
     def __init__(self, width: int, modes: int, t, use_grid: bool = False,
-                 activation: str = "sin", transient_sign: float = -1.0):
+                 activation: str = "sin", transient_sign: float = -1.0, textbook: bool = False):
         super().__init__()
         self.width = width
         self.modes1 = modes
         self.use_grid = use_grid
         self.act = {"sin": torch.sin, "tanh": torch.tanh}[activation]
         self.fc0 = nn.Linear(2 if use_grid else 1, width)
-        self.conv0 = PoleResidue1d(width, width, modes, t, transient_sign)
+        if textbook:
+            if transient_sign != -1.0:
+                raise ValueError("the textbook wiring uses transient_sign = -1 (all 1D examples)")
+            from .hybrid import PoleResidueTS1d       # local import: hybrid imports this module
+            self.conv0 = PoleResidueTS1d(width, width, modes, t)
+        else:
+            self.conv0 = PoleResidue1d(width, width, modes, t, transient_sign)
         self.w0 = nn.Conv1d(width, width, 1)
         self.fc1 = nn.Linear(width, 128)
         self.fc2 = nn.Linear(128, 1)

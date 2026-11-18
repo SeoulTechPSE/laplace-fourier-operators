@@ -144,3 +144,34 @@ def test_complex_adam_matches_original():
         opt_b.step()
     for a, b in zip(pa, pb):
         torch.testing.assert_close(a, b, rtol=0, atol=0)
+
+
+def _noncausal_share(layer, width, n):
+    """Share of the linear layer's (out, t_out; in, t_in) impulse responses with t_out < t_in."""
+    up = tot = 0.0
+    with torch.no_grad():
+        for i in range(width):
+            e = torch.zeros(n, width, n)
+            e[torch.arange(n), i, torch.arange(n)] = 1.0
+            a = layer(e).pow(2)                                              # (t_in, o, t_out)
+            mask = (torch.arange(n)[None, :] < torch.arange(n)[:, None])[:, None, :]
+            up += float((a * mask).sum())
+            tot += float(a.sum())
+    return (up / tot) ** 0.5
+
+
+def test_lno1d_textbook_wiring_is_causal_and_original_is_not():
+    torch.manual_seed(0)
+    n, width = 128, 4
+    t = torch.arange(n) * 0.05
+    orig = LNO1d(width, 8, t)
+    tb = LNO1d(width, 8, t, textbook=True)
+    with torch.no_grad():                       # same stable poles and residues in both wirings
+        mu = torch.complex(-torch.rand(width, width, 8) - 0.2, 3 * torch.rand(width, width, 8))
+        orig.conv0.weights_pole.copy_(mu)
+        tb.conv0.mu.copy_(mu)
+        tb.conv0.beta.copy_(orig.conv0.weights_residue)
+    assert _noncausal_share(tb.conv0, width, n) < 0.05
+    assert _noncausal_share(orig.conv0, width, n) > 0.1
+    x = torch.randn(2, n, 1)
+    assert tb(x).shape == (2, n, 1)
