@@ -133,3 +133,40 @@ single pole layer, fitted to all samples and to each quartile of forcing amplitu
   therefore less constrained, and the data's best linear description damps more there (the offsets above).
 - For the trust rule: report per-mode probe poles with the band that the data excite strongly, rather than a
   single fitted constant.
+
+## Third pass (2026-11-18): tuned learning rates, 3× training — and a flaw in the FNO configuration
+
+`a11_fair.py` → `results/a11_fair.md` (predictions 232df05). Both models are tuned on the validation split (FNO:
+lr ∈ {1e-3, 3e-3, 1e-2}; WPO stable: lr ∈ {1e-3, 3e-3} × pole ratio ∈ {10, 30}). The selected settings are then
+trained for 12000 steps with 3 seeds.
+
+- Selected: FNO lr 1e-3; WPO lr 3e-3 with pole ratio 30.
+
+| model | train | test (T = 5) | (5, 10] / test | probe ν̂ (0.1) | probe dispersion error |
+|---|---|---|---|---|---|
+| FNO (n_modes 12 × 12) | 0.062–0.064 | 0.106–0.109 | 2.78–2.87 | 0.105–0.109 | 0.34–0.38 |
+| WPO (stable) | 0.011 | **0.023–0.024** | **1.75–1.92** | **0.101–0.103** | **0.010–0.034** |
+
+Per-mode WPO probe (all seeds): within 1 % of −ν k² for k = 1–7, and within 2.4 % at k = 8 (a10: 12 % too damped
+at k = 8).
+
+**Predictions against results.**
+
+1. WPO mean test error below the FNO's: **holds** (0.024 against 0.107). See the flaw below.
+2. Extrapolation ratio ≤ 2.5 for the WPO and > 2.5 for the FNO in every seed: **holds.**
+3. The probe bias persists (ν̂ in [0.105, 0.13]): **fails.** It is gone (0.101–0.103). The a10 over-damping at
+   k = 7–8 came from undertraining.
+4. Train error ≥ 0.8× test error for both: **fails.** Both models now show a generalisation gap (WPO 0.47×, FNO
+   0.59×) with 200 training samples.
+
+**Flaw in the FNO configuration (found after the run).** In neuralop 2.0, `n_modes = (12, 12)` keeps 12 spatial
+modes in total (|k| ≤ 6) and 12 // 2 + 1 = 7 temporal frequencies (weight shape (w, w, 12, 7)). The forcing band is
+k ≤ 8, and steps and PRBS need many more temporal frequencies. The FNO's error floor of about 0.1 and its broken
+probe at k ≥ 7 (Re μ̂ from −23 to −1500) follow from this truncation. The setting was chosen in a9 to match the
+parameter budget, without checking the band. The accuracy comparison in a9–a11 is therefore not fair to the FNO.
+The WPO-only findings stand: the pole learning rate, the probe and extrapolation without blow-up.
+
+**Next.** A band-covering FNO. Full modes do not fit a 59 k budget (width 4 with 32 × 32 modes already has 135 k
+parameters). So the comparison uses the Tucker-factorised TFNO from neuraloperator, with n_modes covering the band,
+at the matched budget, plus a full-rank FNO at a larger budget as a reference. Both get the same learning-rate
+sweep.

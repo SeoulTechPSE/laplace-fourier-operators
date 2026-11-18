@@ -174,6 +174,22 @@ Things to know:
 
 ## Log
 
+### 2026-11-18 — (A) deep operator: tuned WPO reaches 0.024 with an exact probe; the a9–a11 FNO was mode-truncated
+
+- Done: `experiments/A/deep/a11_fair.py` (predictions 232df05): learning-rate sweeps on the validation split, then
+  12000 steps, 3 seeds.
+- Results (`experiments/A/deep/results/a11_fair.md`):
+  - WPO (stable, lr 3e-3, pole ratio 30): test 0.023–0.024; extrapolation ratio 1.75–1.92; probe ν̂ = 0.101–0.103,
+    per-mode error ≤ 1 % for k ≤ 7.
+  - FNO: test 0.106–0.109.
+  - Predictions 1 and 2 hold. 3 fails: the probe bias was undertraining. 4 fails: both models now have a
+    generalisation gap.
+  - Flaw: the FNO's n_modes (12, 12) keeps |k| ≤ 6 and 7 temporal frequencies (neuralop 2.0), below the forcing
+    band. The a9–a11 FNO comparison is not fair. It was found after the run and is documented in the README.
+- Decisions: no accuracy claim against FNO until a band-covering baseline is run.
+- Next: TFNO (Tucker) with band-covering n_modes at the matched budget, plus a full-rank FNO at a larger budget,
+  with the same learning-rate sweep.
+
 ### 2026-11-18 — (A) deep operator: the probe bias is a high-k effect, not a wrong viscosity
 
 - Done: `a12_probe_amp.py` (predictions dab403a), a probe-amplitude scan; `a12b_linear_fit.py` (predictions
