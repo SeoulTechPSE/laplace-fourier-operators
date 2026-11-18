@@ -281,3 +281,57 @@ polynomials, then L-BFGS with k_ref = 8.
 
 - The joint fit without stage 1 (multi-start + L-BFGS + k_ref), in 1D and 2D, to see whether stage 1 is needed.
 - Deeper models (lifting / nonlinearity) with the linear probe of (C) E5.
+
+## Seventh validation (2026-11-18): is stage 1 needed? A joint fit from random starts
+
+`a7_joint.py` → `results/a7_joint.md` (predictions 12e576a).
+
+**Setup.** Same data, layers, k_ref, Re cap and L-BFGS as a3–a6, but no stages 1 and 2. All μ coefficients start at
+random (N(0, 3²) in k / k_ref units). 16 starts per data seed in 1D and 8 in 2D. The start with the lowest
+validation error is selected.
+
+| system | starts at the oracle (per seed) | selected start: test / oracle | selected: constants | time per seed (all starts) |
+|---|---|---|---|---|
+| diff | 11 / 16 (every seed) | 1.000–1.001 (5 / 5) | D = 0.09999–0.10001 | 16–18 s |
+| adr | 11 / 16 | 1.000–1.002 (5 / 5) | D, v, k_r within 0.05 % | 15–19 s |
+| beam | 7–9 / 16 | 1.002–1.012 (5 / 5) | c = 0.03986–0.04002 | 39–43 s |
+| diff2d | 5 / 8 | 1.000–1.002 (5 / 5) | D within 0.03 % | 26–28 s |
+| adr2d | 5 / 8 | 1.000–1.001 (5 / 5) | D, v within 0.05 %, k_r within 0.0003 | 25–27 s |
+
+**Predictions against results.**
+
+1. diff, diff2d: at least half the starts succeed and the selected start succeeds in 5 of 5: **holds** (69 %, 63 %).
+2. adr, adr2d: the selected start succeeds in ≥ 4 of 5: **holds** (5 of 5). The per-start success rate is lower
+   than for diffusion: **fails**, it is the same. The phase v k did not add local minima here.
+3. beam: at most a quarter of the starts succeed and the selected start in at most 2 of 5: **fails.** 44–56 % of
+   the starts succeed and the selected start does so in 5 of 5. Stage 1 is not needed for the beam either.
+
+**Why starts fail.**
+
+- In diff, adr, diff2d and adr2d, the failing starts are the same indices in every data seed (1D: 2, 6, 7, 8, 11;
+  2D: 2, 6, 7). The failure depends on the start, not on the data.
+- A failed start ends with Re μ = 0.5 at every k, the value of the soft cap. Its residues shrink to about 0.05,
+  and the training error stalls at 0.87. Above the cap, the soft minimum has almost zero gradient with respect to
+  the polynomial, so the optimiser cannot bring Re μ back down. The cap was added in a1 to stop overflow, and it
+  creates this trap.
+- The beam's failing starts end at test errors 10–37× the oracle, like a4's wrong basins (validation 0.11–0.5).
+  Their mechanism was not analysed.
+- Validation error separates failed from successful starts by two orders of magnitude (0.9 against 0.01), so
+  selection is never in doubt.
+
+**Reading.**
+
+- With k_ref scaling and L-BFGS, a joint fit from random starts plus selection by validation recovers every linear
+  system, in every seed. Stage 1 is not needed. It did not fail in a1 because joint fitting is hard, but because of
+  Adam and unscaled coefficients.
+- Cost is comparable: 15–43 s per data seed for all starts, against 6–75 s for the two-stage recipe.
+- Stage 1 remains useful as a diagnostic, because it reads the dispersion relation off the data mode by mode
+  without a model class. It also gives a single deterministic start.
+- What matters for deep models: the pole parameters can be trained end to end, provided they are scaled and the
+  Re cap does not trap them.
+
+**Next.**
+
+- Remove the cap trap: start with Re μ ≤ 0, or use a cap with a nonzero gradient above it. Then rerun the trapped
+  starts.
+- Deeper models (lifting / nonlinearity) with the linear probe of (C) E5.

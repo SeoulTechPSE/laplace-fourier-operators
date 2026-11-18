@@ -174,6 +174,23 @@ Things to know:
 
 ## Log
 
+### 2026-11-18 — (A) pole layer: a joint fit from random starts also recovers every system
+
+- Done: `a7_joint.py` (predictions 12e576a). No stage 1 or 2: random μ coefficients (N(0, 3²) in k / k_ref
+  units), k_ref + L-BFGS 300 iterations, 16 starts (1D) or 8 (2D) per data seed, selection by validation error.
+- Results (`experiments/A/layer/results/a7_joint.md`):
+  - The selected start is at the oracle floor (≤ 1.012x) in all 25 data seeds over diff, adr, beam, diff2d and
+    adr2d, with the physical constants within 0.35 %.
+  - Per-start success: diff, adr 11/16; beam 7–9/16; 2D 5/8. Time: 15–43 s per data seed.
+  - Prediction 1 holds. Prediction 2 holds in part: adr succeeds as often as diff, not less. Prediction 3 fails:
+    the beam does not need stage 1.
+  - Failed starts are the same indices in every data seed. They end with Re μ at the soft cap (0.5) for all k,
+    where the cap's gradient vanishes: a trap created by the cap (`re_max`).
+- Decisions: stage 1 is a diagnostic and a deterministic start, not a necessity. a1 failed because of Adam and
+  unscaled coefficients.
+- Next: remove the cap trap (start with Re μ ≤ 0, or a cap with a nonzero gradient above it); then deep models with
+  the (C) E5 probe.
+
 ### 2026-11-18 — (A) pole layer: 2D layer; 2D diffusion and anisotropic ADR recovered
 
 - Done:
