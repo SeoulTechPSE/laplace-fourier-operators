@@ -31,3 +31,17 @@ def test_growth_saturates_and_mean_is_conserved():
     assert np.abs(u[:, -1]).max() < 1.5                      # saturates near +-1 instead of growing as e^{0.58 t}
     assert np.abs(uk[0, 0]).max() < 1e-9                     # zero mean forcing keeps the mean at zero
     assert np.isfinite(u).all()
+
+
+def test_2d_small_forcing_gives_the_linear_response():
+    n, nt, M, kappa = 16, 201, 0.1, 0.04
+    t = np.arange(nt) * 0.01
+    fk = np.zeros((1, n, n // 2 + 1, nt), complex)
+    a = 1e-6 * n * n / 2 * np.cos(2 * t)
+    fk[0, 2, 3] = a                                           # k = (2, 3): |k|^2 = 13, decays
+    fk[0, n - 1, 2] = a                                       # k = (-1, 2): |k|^2 = 5, grows
+    uk = ch.solve2d(fk, 0.01, M, kappa, n)
+    for (i, j), k2 in (((2, 3), 13), ((n - 1, 2), 5)):
+        lam = M * k2 * (1 - kappa * k2)
+        lin = lti.response(t, a, np.array([lam + 0j]), np.array([1 + 0j]))
+        assert np.abs(uk[0, i, j] - lin).max() < 1e-6 * np.abs(lin).max()

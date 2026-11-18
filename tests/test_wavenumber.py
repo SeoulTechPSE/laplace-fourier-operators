@@ -260,3 +260,23 @@ def test_deep_operator_is_causal():
     assert yf.shape == f.shape
     assert (yf - yg)[..., :30].abs().max() < 1e-12 * yf.abs().max()
     assert (yf - yg)[..., 30:].abs().max() > 1e-6
+
+
+def test_2d_channel_mixing_layer_reduces_to_the_scalar_2d_layer_and_operator_is_causal():
+    from lfo.models.wavenumber import WavenumberPoleConv2d, WavenumberPoleOperator2d
+    torch.manual_seed(11)
+    t = np.linspace(0, 1, 30)
+    l1 = WavenumberPoleLayer2d(2, t, im_powers=(2,), stable=True, modes=4)
+    lc = WavenumberPoleConv2d(1, 1, 2, t, im_powers=(2,), stable=True, modes=4)
+    with torch.no_grad():
+        lc.mu_re.copy_(l1.mu_re), lc.mu_im.copy_(l1.mu_im), lc.adv.copy_(l1.adv)
+        l1.beta.normal_()
+        lc.beta.copy_(l1.beta[:, :, None, None, :])
+        f = torch.randn(2, 8, 6, 30, dtype=torch.float64)
+        assert torch.allclose(lc(f[:, None])[:, 0], l1(f), atol=1e-12)
+    m = WavenumberPoleOperator2d(t, width=4, n_layers=2, n_poles=2, stable=True, modes=4)
+    g = f.clone()
+    g[..., 20:] += torch.randn(2, 8, 6, 10, dtype=torch.float64)
+    with torch.no_grad():
+        yf, yg = m(f), m(g)
+    assert yf.shape == f.shape and (yf - yg)[..., :20].abs().max() < 1e-12 * yf.abs().max()

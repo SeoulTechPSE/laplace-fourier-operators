@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import numpy as np
 
-__all__ = ["solve", "growth_rate"]
+__all__ = ["solve", "solve2d", "growth_rate"]
 
 
 def growth_rate(k, M: float, kappa: float):
@@ -44,6 +44,40 @@ def solve(fk: np.ndarray, dt: float, M: float, kappa: float, n_x: int, stride: i
     u = np.zeros((B, K), complex)
     out = [u.copy()]
     for j in range(n - 1):
+        f0, f1 = fk[..., j], fk[..., j + 1]
+        fm = 0.5 * (f0 + f1)
+        a = N(u, f0)
+        u1 = E * (u + 0.5 * dt * a)
+        b = N(u1, fm)
+        u2 = E * u + 0.5 * dt * b
+        c = N(u2, fm)
+        u3 = E2 * u + dt * E * c
+        d = N(u3, f1)
+        u = E2 * u + dt / 6 * (E2 * a + 2 * E * (b + c) + d)
+        if (j + 1) % stride == 0:
+            out.append(u.copy())
+    return np.stack(out, axis=-1)
+
+
+def solve2d(fk: np.ndarray, dt: float, M: float, kappa: float, n: int, stride: int = 1) -> np.ndarray:
+    """2D version of `solve`. fk (B, n, n // 2 + 1, n_t): rfft2 of the forcing. Returns uk (B, n, n // 2 + 1, .)."""
+    B, nx, nyh, nt = fk.shape
+    if (nx, nyh) != (n, n // 2 + 1):
+        raise ValueError("fk must hold the rfft2 of an n x n grid")
+    kx = np.fft.fftfreq(n, 1 / n)[:, None]
+    ky = np.fft.rfftfreq(n, 1 / n)[None, :]
+    k2 = kx ** 2 + ky ** 2
+    L = M * k2 * (1 - kappa * k2)
+    E, E2 = np.exp(L * dt / 2), np.exp(L * dt)
+    nk = -M * k2 * ((np.abs(kx) <= n / 4) & (ky <= n / 4))
+
+    def N(u, f):
+        w = np.fft.irfft2(u, s=(n, n), axes=(1, 2))
+        return nk * np.fft.rfft2(w ** 3, axes=(1, 2)) + f
+
+    u = np.zeros((B, n, n // 2 + 1), complex)
+    out = [u.copy()]
+    for j in range(nt - 1):
         f0, f1 = fk[..., j], fk[..., j + 1]
         fm = 0.5 * (f0 + f1)
         a = N(u, f0)

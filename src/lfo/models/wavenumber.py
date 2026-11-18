@@ -56,7 +56,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 __all__ = ["foh_coefficients", "foh_kernel", "foh_recursion", "foh_response", "WavenumberPoleLayer1d",
-           "WavenumberPoleLayer2d", "WavenumberPoleConv1d", "WavenumberPoleOperator1d"]
+           "WavenumberPoleLayer2d", "WavenumberPoleConv1d", "WavenumberPoleOperator1d", "WavenumberPoleConv2d",
+           "WavenumberPoleOperator2d"]
 
 
 def foh_coefficients(mu: torch.Tensor, dt: float):
@@ -109,6 +110,11 @@ def causal_conv(g: torch.Tensor, u: torch.Tensor) -> torch.Tensor:
 def foh_response(g: torch.Tensor, c: torch.Tensor, u: torch.Tensor) -> torch.Tensor:
     """Exact FOH response from rest: causal convolution with g, minus the first-sample correction u_0 c."""
     return causal_conv(g, u) - u[..., :1] * c
+
+
+def _half_plane_sign(kx: torch.Tensor, ky: torch.Tensor) -> torch.Tensor:
+    """s(k) = +1 for k_y > 0 or (k_y = 0, k_x >= 0), else -1 (2D layers, module docstring)."""
+    return torch.where((ky > 0) | ((ky == 0) & (kx >= 0)), 1.0, -1.0).to(kx.dtype)
 
 
 def _cap(re: torch.Tensor, cap: float, tau: float, leak: float) -> torch.Tensor:
@@ -222,9 +228,8 @@ class WavenumberPoleLayer2d(nn.Module):
             return torch.ones(ix.numel(), iy.numel(), dtype=torch.bool, device=self.t.device)
         return (ix[:, None] < self.modes) & (iy[None, :] < self.modes)
 
-    def poles(self, kx: torch.Tensor, ky: torch.Tensor):
-        """(mu, beta), each (N,) + kx.shape complex128. The polynomials are in k / k_ref. Even imaginary terms carry
-        the half-plane sign s(k) (module docstring)."""
+    def mu(self, kx: torch.Tensor, ky: torch.Tensor) -> torch.Tensor:
+        """Poles mu_n(k), (N,) + kx.shape complex128. Even imaginary terms carry the half-plane sign s(k)."""
         kx, ky = kx / self.k_ref, ky / self.k_ref
         k2 = kx ** 2 + ky ** 2
         e = lambda w: w.reshape(w.shape + (1,) * kx.dim())
@@ -233,16 +238,23 @@ class WavenumberPoleLayer2d(nn.Module):
             re = -F.softplus(re)
         elif self.re_max is not None:
             re = _cap(re, self.re_max, self.re_tau, self.re_leak)
-        sgn = torch.where((ky > 0) | ((ky == 0) & (kx >= 0)), 1.0, -1.0).to(kx.dtype)   # half-plane sign s(k)
         im = torch.zeros_like(re)
         if self.adv is not None:
             im = im + e(self.adv[:, 0]) * kx + e(self.adv[:, 1]) * ky
         kabs = k2.sqrt()
         for j, p in enumerate(self.im_powers):
-            im = im + sgn * e(self.mu_im[:, j]) * kabs ** p
+            im = im + _half_plane_sign(kx, ky) * e(self.mu_im[:, j]) * kabs ** p
+        return torch.complex(re, im)
+
+    def poles(self, kx: torch.Tensor, ky: torch.Tensor):
+        """(mu, beta), each (N,) + kx.shape complex128. The polynomials are in k / k_ref. Even imaginary terms carry
+        the half-plane sign s(k) (module docstring)."""
+        k2 = (kx / self.k_ref) ** 2 + (ky / self.k_ref) ** 2
+        e = lambda w: w.reshape(w.shape + (1,) * kx.dim())
+        sgn = _half_plane_sign(kx, ky)
         b = sum(torch.complex(e(self.beta[:, j, 0]), sgn * e(self.beta[:, j, 1])) * k2 ** j
                 for j in range(self.beta.shape[1]))
-        return torch.complex(re, im), b
+        return self.mu(kx, ky), b
 
     def forward(self, f: torch.Tensor) -> torch.Tensor:
         b_, n_x, n_y, n_t = f.shape
@@ -325,3 +337,62 @@ class WavenumberPoleOperator1d(nn.Module):
             if i < len(self.K) - 1:
                 v = F.gelu(v)
         return self.proj(v.permute(0, 2, 3, 1))[..., 0].to(f.dtype)
+
+
+class WavenumberPoleConv2d(WavenumberPoleLayer2d):
+    """Channel-mixing version of `WavenumberPoleLayer2d` (as `WavenumberPoleConv1d` in 1D): N poles mu_n(k) shared by
+    all channel pairs, a residue matrix beta_n(k) per pole (polynomial in |k|^2, imaginary part with the half-plane
+    sign). Input (batch, c_in, n_x, n_y, n_t), output (batch, c_out, n_x, n_y, n_t)."""
+
+    def __init__(self, c_in: int, c_out: int, n_poles: int, t, beta_degree: int = 2, **kw):
+        super().__init__(n_poles, t, beta_degree=1, **kw)
+        del self.beta
+        self.c_in, self.c_out = c_in, c_out
+        b = torch.zeros(n_poles, beta_degree, c_out, c_in, 2, dtype=torch.float64)
+        b[:, 0, :, :, 0] = torch.randn(n_poles, c_out, c_in, dtype=torch.float64) / math.sqrt(c_in * n_poles)
+        self.beta = nn.Parameter(b)
+
+    def poles(self, kx: torch.Tensor, ky: torch.Tensor):
+        """(mu (N, M), beta (N, c_out, c_in, M)) complex128 for 1D tensors kx, ky of length M."""
+        k2 = (kx / self.k_ref) ** 2 + (ky / self.k_ref) ** 2
+        sgn = _half_plane_sign(kx, ky)
+        b = sum(torch.complex(self.beta[:, j, ..., 0, None], sgn * self.beta[:, j, ..., 1, None]) * k2 ** j
+                for j in range(self.beta.shape[1]))
+        return self.mu(kx, ky), b
+
+    def forward(self, f: torch.Tensor) -> torch.Tensor:
+        b_, c_in, n_x, n_y, n_t = f.shape
+        dt = float(self.t[1] - self.t[0])
+        keep = self.mask(n_x, n_y)
+        kx, ky = self.wavenumbers(n_x, n_y)
+        kx, ky = kx[keep], ky[keep]
+        fk = torch.fft.rfft2(f.to(torch.float64), dim=(2, 3))[:, :, keep]   # (b, c_in, M, n_t)
+        mu, beta = self.poles(kx, ky)
+        g, c = foh_kernel(mu, n_t, dt)                                         # (N, M, n_t)
+        H = torch.einsum("noik,nkw->oikw", beta, torch.fft.fft(g, 2 * n_t))
+        C = torch.einsum("noik,nkt->oikt", beta, c)
+        vk_m = torch.fft.ifft(torch.einsum("oikw,bikw->bokw", H, torch.fft.fft(fk, 2 * n_t)))[..., :n_t]
+        vk_m = vk_m - torch.einsum("oikt,bik->bokt", C, fk[..., 0])
+        vk = torch.zeros(b_, self.c_out, n_x, n_y // 2 + 1, n_t, dtype=torch.complex128, device=f.device)
+        vk[:, :, keep] = vk_m
+        return torch.fft.irfft2(vk, s=(n_x, n_y), dim=(2, 3)).to(f.dtype)
+
+
+class WavenumberPoleOperator2d(nn.Module):
+    """2D version of `WavenumberPoleOperator1d`: input / output (batch, n_x, n_y, n_t) real."""
+
+    def __init__(self, t, width: int = 16, n_layers: int = 4, n_poles: int = 4, hidden: int = 64, **layer_kw):
+        super().__init__()
+        f64 = dict(dtype=torch.float64)
+        self.lift = nn.Linear(1, width, **f64)
+        self.K = nn.ModuleList(WavenumberPoleConv2d(width, width, n_poles, t, **layer_kw) for _ in range(n_layers))
+        self.W = nn.ModuleList(nn.Linear(width, width, **f64) for _ in range(n_layers))
+        self.proj = nn.Sequential(nn.Linear(width, hidden, **f64), nn.GELU(), nn.Linear(hidden, 1, **f64))
+
+    def forward(self, f: torch.Tensor) -> torch.Tensor:
+        v = self.lift(f.to(torch.float64)[..., None]).permute(0, 4, 1, 2, 3)   # (b, width, n_x, n_y, n_t)
+        for i, (K, W) in enumerate(zip(self.K, self.W)):
+            v = K(v) + W(v.permute(0, 2, 3, 4, 1)).permute(0, 4, 1, 2, 3)
+            if i < len(self.K) - 1:
+                v = F.gelu(v)
+        return self.proj(v.permute(0, 2, 3, 4, 1))[..., 0].to(f.dtype)
