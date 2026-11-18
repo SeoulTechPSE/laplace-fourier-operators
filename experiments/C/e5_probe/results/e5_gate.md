@@ -1,6 +1,6 @@
 # E5: data-side gates of the trust rule
 
-v2 gate: all-sample linear residual < 0.1. v3 gate: lowest 20% of samples by peak |f| linear (residual < 0.1) and equivalent-pole shift all vs low < 0.1. A trusted run is correct if its Jacobian pole is within 10 % of the small-signal pole: −0.25 ± 0.9682i (damped Duffing, pendulum), ± i (`c0_*`, undamped Duffing) or −0.9287 ± 4.1476i (`lz_*`, Lorenz ρ = 5 at C+; centred data).
+v2 gate: all-sample linear residual < 0.1. v3 gate: lowest 20% of samples by peak |f| linear (residual < 0.1) and equivalent-pole shift all vs low < 0.1. A trusted run is correct if its Jacobian pole is within 10 % of the small-signal pole: −0.25 ± 0.9682i (damped Duffing, pendulum), ± i (`c0_*`, undamped Duffing), −0.9287 ± 4.1476i (`lz_*`, Lorenz ρ = 5 at C+) or −0.5955 ± 6.1742i (`lz_r10_*`, ρ = 10 at C+); Lorenz from centred data.
 
 | set | all: pole, resid | low band (peak |f| ≤): pole, resid | shift | v2 | v3 | v1 trusted: correct / all (errors) | v2 false / missed | v3 false / missed |
 |---|---|---|---|---|---|---|---|---|
@@ -19,5 +19,8 @@ v2 gate: all-sample linear residual < 0.1. v3 gate: lowest 20% of samples by pea
 | `lz_orig` | -0.661+3.883i, 0.527 | (2.00) -1.484+4.722i, 0.179 | 0.238 | fail | fail | 0 / 0 (–) | 0 / 0 | 0 / 0 |
 | `lz_small` | -0.999+4.055i, 0.027 | (0.14) -1.008+4.066i, 0.016 | 0.003 | pass | pass | 0 / 0 (–) | 0 / 0 | 0 / 0 |
 | `lz_wide` | -1.115+4.023i, 0.183 | (1.39) -1.027+4.083i, 0.041 | 0.025 | fail | pass | 0 / 1 (0.96–0.96) | 0 / 0 | 1 / 0 |
+| `lz_r10_orig` | -0.190+4.753i, 0.991 | (2.00) -0.128+5.813i, 0.562 | 0.183 | fail | fail | 0 / 0 (–) | 0 / 0 | 0 / 0 |
+| `lz_r10_small` | -0.709+6.097i, 0.045 | (0.13) -0.708+6.101i, 0.039 | 0.001 | pass | pass | 4 / 4 (0.02–0.03) | 0 / 0 | 0 / 0 |
+| `lz_r10_wide` | -0.784+6.051i, 0.164 | (1.27) -0.719+6.107i, 0.053 | 0.014 | fail | pass | 4 / 6 (0.02–5.35) | 0 / 4 | 2 / 0 |
 
-Totals: v1 alone 7 false trusts; v2 0 false, 25 correct runs not trusted; v3 1 false, 5 correct runs not trusted.
+Totals: v1 alone 9 false trusts; v2 0 false, 29 correct runs not trusted; v3 3 false, 5 correct runs not trusted.

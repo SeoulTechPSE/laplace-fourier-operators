@@ -11,7 +11,7 @@ Each session appends one entry using the template at the bottom.
 | (C) Pole audit of existing models | 3–5 | **in progress**: E1 done, draft report (`E1_report.md`, updated with E2); paper decisions made (2026-11-18); workshop paper draft written (`paper/e1_workshop.qmd`) | — |
 | (D) Non-periodic input representation | 4–8 | not started | differs from padded FNO? (month 8) |
 | (A) Pole layer and linear validation | 5–10 | not started | dispersion relations recovered (month 10) |
-| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits, a bootstrap-calibrated order, certificate and order test; reduction-path unresolved rules fail, a location-calibrated split test flags the merge, a combined post-report rule leaves 1 false pole in 40 groups but does not carry over to new p6 E1 groups; an EIVML refit of the reports removes the EIV bias; EIVML through the whole pipeline helps only up to η_u = 0.05; an EIVML elimination of the calibrated report leaves 0 false poles up to p4 30 η_y and p6 E1 0.05, with EIV-bootstrap intervals covering 33/36 at p4 30 η_y), E3 deep first pass done; H1–H3 theory draft (`experiments/C/theory/H1_H2.md`), E5 passes 1–9 (`experiments/C/e5_probe/`; RQ4 rule v3, one false trust on Lorenz) | — |
+| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits, a bootstrap-calibrated order, certificate and order test; reduction-path unresolved rules fail, a location-calibrated split test flags the merge, a combined post-report rule leaves 1 false pole in 40 groups but does not carry over to new p6 E1 groups; an EIVML refit of the reports removes the EIV bias; EIVML through the whole pipeline helps only up to η_u = 0.05; an EIVML elimination of the calibrated report leaves 0 false poles up to p4 30 η_y and p6 E1 0.05, with EIV-bootstrap intervals covering 33/36 at p4 30 η_y), E3 deep first pass done; H1–H3 theory draft (`experiments/C/theory/H1_H2.md`), E5 passes 1–10 (`experiments/C/e5_probe/`; RQ4 rule v4, 0 false trusts over 355 runs) | — |
 | (A) Application 1: process dynamics | 11–16 | not started | — |
 | (D) Initial conditions and rollout | 13–19 | not started | — |
 | (A) Application 2: Cahn–Hilliard | 17–22 | not started | recover k_c, k_max (month 20) |
@@ -149,7 +149,10 @@ Suggested next steps (in order):
    correct trusts ≤ 4 %); candidate rule v4, not adopted. E1 paper decisions made (2026-11-18);
    workshop paper draft `experiments/C/e1_audit/paper/e1_workshop.qmd`, rendered (8 pages,
    Fig. 1–3, checked BibTeX references). Next: user review of the draft (venue, length);
-   pre-register rule v4 and test it on new Lorenz data.
+   E5 write-up. Tenth pass (pre-registered): rule v4 = v3 gate + LTI/Jacobian probe agreement +
+   centred fit; on Lorenz ρ = 10 it makes no false trust where v3 makes 2. Over 18 sets / 355
+   runs: v4 52 trusted, 0 false, 5 missed. The tied layer needs its output offset excluded from
+   weight decay. RQ4 rule = v4.
 
 Things to know:
 
@@ -160,6 +163,27 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-18 — (C) E5 / RQ4: rule v4 on forced Lorenz (ρ = 10)
+
+- Done: rule v4 (`e5_v4.py`: valid Jacobian ∧ d < 0.1 ∧ probe agreement |μ_LTI − μ_J| / |μ_J| < 0.1 ∧ centred
+  test error < 0.5 ∧ v3 gate). Case `lorenz_rho10` (`reproduce_lno.py`, 84 modes); ρ = 10 sets `lz_r10_small` /
+  `lz_r10_wide` (data seed 6) and `lz_r10_orig` (LNO data, checked). The tied offset starts at the training-mean
+  trajectory. Variant `tied4o_stable_plr10` excludes the offset from weight decay (`e1_audit.param_groups`
+  `no_decay`, default unchanged). Pre-registrations: 146fb4a (main), a0d8d7b (addendum). 75 runs. `src/lfo/`
+  unchanged.
+- Results:
+  - Retrospective on 15 sets: v4 44 trusted, 0 false, 5 missed.
+  - ρ = 10 main: v4 no false trust (prediction held); v3 again trusts `base` s3 on `lz_r10_wide` (97 % off,
+    a ≈ 4800).
+  - Tied layers with weight decay on the offset: test 0.64–0.65 (prediction failed). Cause: coupled weight decay
+    drags a zero-gradient offset towards 0; the ninth-pass offset had the same cause.
+  - Addendum (no decay): `lz_r10_small` 4 of 5 trusted at 2–3 %; `lz_r10_wide` 3 trusted at 2–3 %, plus a v3-only
+    false trust (J pole −1.49 + 39.4i, a = 0.91) that v4 removes.
+  - No stored pole near −12.48. Stable-init LNOs again have correct J poles but mostly non-causal Jacobians.
+  - Totals over 18 sets / 355 runs: v1 66 / 9 false; v2 28 / 0 / 29 missed; v3 55 / 3 / 5; v4 52 / 0 / 5.
+- Decisions: RQ4 rule = v4. The ninth-pass reading of the offset (travel bound) is corrected to weight decay.
+- Next: E5 write-up next to the E1 workshop paper; user review of the workshop draft.
 
 ### 2026-11-18 — (C) E5 / RQ4: forced Lorenz (ρ = 5), nonzero operating point
 

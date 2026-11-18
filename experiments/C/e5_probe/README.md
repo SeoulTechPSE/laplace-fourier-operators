@@ -587,7 +587,93 @@ Test rel. L2 by variant (5 seeds), and of a trivial predictor (the training-mean
   fits (0.010–0.014). They are not trusted because their Jacobians are non-causal (0.12–0.20). The cause is not
   established.
 
+## Tenth pass (2026-11-18): rule v4, tested on forced Lorenz (ρ = 10)
+
+Pre-registered in `results/e5_v4_prereg.md` (main test, 146fb4a; addendum, a0d8d7b), before the runs each part
+covers.
+
+**Rule v4** (`e5_v4.py`, `results/e5_v4.md`).
+
+- It keeps v1's valid Jacobian, d < 0.1 and the v3 data gate.
+- **Probe agreement:** a = |μ_LTI − μ_J| / |μ_J| < 0.1, with μ_LTI the odd-part LTI probe pole at ε = 0.01 and μ_J the
+  Jacobian pole.
+- **Centred fit:** test error relative to (output − training-mean trajectory), e_c < 0.5. It replaces rel. L2 < 0.5.
+- Retrospectively, on the 15 earlier sets (seen data, not a test), v4 trusts 44 runs with 0 false and 5 missed.
+  It removes the ninth-pass false trust.
+
+**System and data.**
+
+- The ρ = 10 LNO data `1D_Lorenz_rho10` were checked: same equations, x(0) = 1, simulation error 5e-4 – 3e-3.
+- C+ = (4.899, 4.899, 9). Poles **−0.5955 ± 6.1742i** (reference) and −12.48; ζ ≈ 0.10, against 0.22 at ρ = 5.
+- `lz_r10_small` / `lz_r10_wide` use the ninth-pass bands, data seed 6. The LNO uses the ρ = 10 architecture (84
+  modes).
+- The tied layer's offset starts at the training-mean trajectory.
+- 60 main runs + 15 addendum runs.
+
+| set | all: pole, resid | low fifth: pole, resid | shift | v2 | v3 | v3: trusted / false | v4: trusted / false |
+|---|---|---|---|---|---|---|---|
+| `lz_r10_orig` | −0.190 + 4.753i, 0.991 | −0.128 + 5.813i, 0.562 | 0.183 | fail | fail | 0 / 0 | 0 / 0 |
+| `lz_r10_small` | −0.709 + 6.097i, 0.045 | −0.708 + 6.101i, 0.039 | 0.001 | pass | pass | 4 / 0 | 4 / 0 |
+| `lz_r10_wide` | −0.784 + 6.051i, 0.164 | −0.719 + 6.107i, 0.053 | 0.014 | fail | pass | 6 / **2** | 4 / **0** |
+
+**Main test against predictions.**
+
+1. v4 makes no false trust on `lz_r10_small` / `lz_r10_wide`. **Holds.**
+   - v4 trusts one stable-init LNO on `lz_r10_wide` (s0, 4 %).
+   - v3 again trusts `base` s3 there, at 97 % off. The failure mode is the same as at ρ = 5: a slow Jacobian pole
+     matched by an unmoved stored pole. The agreement condition removes it (a ≈ 4800).
+2. `lz_r10_orig`: nothing trusted. **Holds.**
+3. With the offset started at the mean, the tied layers fit `lz_r10_small`. **Fails**: test 0.64–0.65, e_c ≈ 209
+   (centred error).
+   - Diagnosis (one run): the `common` weight decay (1e-4, coupled L2 in Adam) pulls the offset towards zero at
+     nearly the full learning rate, because its own gradient is near zero. The offset falls from 4.90 to 1.7.
+   - Without weight decay the loss is 0.0014 and the offset stays at 4.899.
+   - The ninth-pass offset (stopped at 1.5) had the same cause. It was not the travel bound alone, as the
+     ninth-pass reading said.
+
+**Addendum** (`tied4o_stable_plr10`: the same tied layer, offset excluded from weight decay; 15 runs).
+
+1. On `lz_r10_small`, e_c < 0.5 in ≥ 3 of 5 seeds, and ≥ 3 of 5 runs are v4-trusted and correct. **Holds.**
+   - e_c is 0.02–0.22 in all 5 seeds.
+   - 4 runs are trusted, at 2–3 %.
+2. v4 makes no false trust over all ρ = 10 runs. **Holds.**
+   - On `lz_r10_wide`, v4 trusts 3 of these tied layers, at 2–3 %.
+   - v3 also trusts s4. Its Jacobian pole is −1.49 + 39.4i, 535 % off. This is a second failure mode: a fast,
+     spurious J pole that agrees with a stored pole, while the LTI probe gives −2.15 + 3.58i (a = 0.91). The
+     agreement condition removes it too.
+
+**Reported, not predicted.**
+
+- No run stores a pole within 10 % of the fast pole −12.48.
+- The stable-init LNOs on `lz_r10_wide` have J poles 3–4 % from the reference in all 5 seeds, but 4 of 5 have
+  non-causal Jacobians (0.14–0.32). On `lz_r10_small` their J poles are 8–10 % off in 4 of 5 seeds (s3 40 %), and all 5 are non-causal (0.25–0.43).
+  This is the same pattern as at ρ = 5.
+
+**Totals over 18 sets, 355 runs.**
+
+| rule | trusted | false trust (> 10 %) | correct runs not trusted |
+|---|---|---|---|
+| v1 (no gate) | 66 | 9 | 0 |
+| v2 (output-residual gate) | 28 | 0 | 29 |
+| v3 (pole-shift gate) | 55 | 3 | 5 (`c0_medium`) |
+| v4 (v3 gate + probe agreement + centred fit) | 52 | **0** | 5 (`c0_medium`) |
+
+**Reading for RQ4.**
+
+- **v4 is the RQ4 rule.** On new data it removed both Lorenz false trusts and missed no correct run that v3
+  trusted. Over 18 sets, 4 systems and 355 runs it makes no false trust.
+- Each part of v4 has a failure it is needed for:
+  - the data gate catches the Duffing sets where the trusted pole is the data's, not the system's (`mixed`,
+    `moderate`);
+  - probe agreement catches models whose Jacobian and stored poles agree on a pole that the model's own
+    small-signal response does not have (slow at ρ = 5 and 10, fast in the addendum);
+  - the centred fit is needed for consistency (it never decided a case here).
+- Its known cost is unchanged: undamped poles (`c0_medium`).
+- **The tied layer needs an offset without weight decay** to fit outputs about a nonzero operating point. With
+  it, 7 of 10 runs on the gated ρ = 10 sets are trusted and correct (2–3 %).
+
 **Next.**
 
-- Pre-register rule v4 (probe agreement, centred fit criterion, offset init) and test it on new Lorenz sets (new
-  data seed; possibly ρ = 10) plus a re-check on the existing 15 sets.
+- Write E5 up as a section (or companion note) to the E1 workshop paper: rule v1 → v4, with the false trusts each
+  part removes.
+- Open: why the stable-init LNOs' Jacobians are non-causal while their J poles are correct.
