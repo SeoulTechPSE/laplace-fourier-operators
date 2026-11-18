@@ -76,8 +76,51 @@ Fine truth, median relative L2 error, p2 / p4 / p6:
   - the FOH refit identifies p6's fast real poles (E4);
   - the textbook wiring makes the layer causal (E5, Proposition 7).
 
+## Second pass (2026-11-18): trained layers, Fourier vs FOH time axis
+
+`d1_train.py` → `results/d1_train.md`. Predictions are in the script, committed before the runs (059623d).
+
+**Design.** A single tied pole–residue layer per path:
+
+- `fourier`: the E1 tied layer;
+- `foh`: the same layer with the exact sampled FOH response (`e2_train.FOHPoleResidue`).
+
+The truth is computed on a 32× finer grid; E1 families and splits; `stable` init; `common` protocol + pole
+lr × 10; slots = true poles; 10 seeds × p2 / p4 / p6, 60 runs.
+
+Median over seeds of the per-family median test error:
+
+| system | path | all | step | ramp | PRBS | smooth |
+|---|---|---|---|---|---|---|
+| p2 | fourier | 4.6e-3 | 3.2e-3 | 1.2e-3 | 1.1e-2 | 1.4e-3 |
+| p2 | foh | 4.7e-3 | 3.3e-3 | **1.4e-4** | 1.2e-2 | 1.3e-3 |
+| p4 | fourier | 4.2e-2 | 3.2e-2 | 1.1e-2 | 8.3e-2 | 4.5e-2 |
+| p4 | foh | 4.2e-2 | 3.2e-2 | 1.0e-2 | 8.4e-2 | 4.5e-2 |
+| p6 | fourier | 1.6e-2 | 1.1e-2 | 3.3e-3 | 3.4e-2 | 1.5e-2 |
+| p6 | foh | 1.7e-2 | 1.2e-2 | 3.4e-3 | 3.7e-2 | 1.6e-2 |
+
+**Predictions against results.**
+
+1. FOH at most half of Fourier on ramp and smooth samples, in all three systems: **fails**. The gain appears only
+   on p2 ramps (8×). The other half of the prediction (step and PRBS within 30 %) holds.
+2. Complex-pole recovery within 1 seed in 10: **holds**. The two paths recover the same poles in the same number of
+   seeds (p2 9/10; p4 3/10; p6 5/10 and 8/10).
+3. FOH recovers each real pole at least as often: **holds, trivially**. Both paths recover p4's real poles in 0
+   seeds, and p6's −1 in 1 seed and −2 in 0.
+
+**Reading.**
+
+- Under the published protocol the training error (3e-3 to 4e-2) is 10–1000× the representation error of either
+  path (1e-6 to 2e-3, first pass). The time axis cannot matter until training reaches the representation floor.
+  It does reach that floor on p2, the one system where E1's protocol fits well, and there FOH gains 8× on ramps.
+- This matches (C): with a recipe that reaches the floor (E2: Adam → polish → restarts), the FOH layer lowered the
+  test error 7–225× and recovered every p6 pole without noise (E4.7, multisine and E1 data).
+- The D1 choice of time axis should therefore be judged with a training recipe that reaches the representation
+  floor, not with the published protocol.
+
 **Next.**
 
-- Trained comparison: a single pole–residue layer per path on E1-style data, with pole recovery and test error.
+- Repeat the trained comparison with the E2 recipe (and Chebyshev / piecewise Chebyshev paths), on the fine-grid
+  truth.
 - Piecewise Chebyshev with a stable recursion, and its cost.
 - The S4D view: the FOH recursion is a diagonal SSM discretisation.
