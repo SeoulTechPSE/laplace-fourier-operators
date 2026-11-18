@@ -118,9 +118,49 @@ Median over seeds of the per-family median test error:
 - The D1 choice of time axis should therefore be judged with a training recipe that reaches the representation
   floor, not with the published protocol.
 
+## Third pass (2026-11-18): Fourier vs FOH with the E2 recipe, fine-grid truth
+
+Pre-registered in `results/d1_recipe_prereg.md` (d2e6d9d).
+
+**Design.** `e2_train.py` conditions `p6_e1fine_T20` (band / Fourier layer) and `p6_e1fine_T20_foh` (FOH layer):
+E1 families with inputs and truth on a 32× finer grid (`e2_richness.make`, family `e1fine`). The E2 recipe is
+`damp8_ms` → `e2_polish.py` → `e2_rescue.py`. Seeds 10–17. Results are in `experiments/C/theory/results/e2_rescue.md`.
+
+| condition | runs | train / oracle | test rel. L2 | recovered: −0.5±1.5i, −0.3±4i, −1, −2 |
+|---|---|---|---|---|
+| E4, sample truth, band (`p6_e1_T20`) | 20 | 1.01 | 6.7e-4 | 100 %, 100 %, 95 %, 70 % |
+| E4, sample truth, FOH (`p6_e1_T20_foh`) | 20 | 21 | 4.7e-6 | 100 %, 100 %, 95 %, 80 % |
+| **fine truth, band** | 8 | 0.93 | **3.7e-3** | 100 %, 100 %, 100 %, **75 %** |
+| **fine truth, FOH** | 8 | 0.93 | **3.4e-3** | 100 %, 100 %, 100 %, **50 %** |
+
+Oracle floors (true poles): band 3.7e-3, FOH 3.4e-3.
+
+**Predictions against results.**
+
+1. FOH test error within 20 % of band: **holds**. 3.4e-3 vs 3.7e-3: both runs reach their oracle floor, which is
+   the sampling of steps and PRBS.
+2. Recovery of −2 at most 1 run in 8 apart, and below the sample-truth rates for both: **fails**. The band layer
+   recovers it in 6 of 8 runs, the FOH layer in 4 of 8. The band layer's 75 % is not below its 70 %.
+3. Complex pairs recovered in every run by both: **holds**.
+
+**Reading.**
+
+- **The FOH layer's large advantage in (C) E4 on E1 data was a model-class match with the data's first-order
+  hold.** With a truth that neither layer matches, the two layers have the same test error, and the FOH layer is
+  not better at recovering the fast real pole (4 of 8 vs 6 of 8; too few runs to call the band layer better).
+- **E1's finding 3 survives the fine-grid truth.** With the E2 recipe, −1 is recovered in every run and −2 in
+  50–75 %, by either layer. So the fast real poles are identifiable from the sampled data, not only from data in
+  the model class. (The paper's Section 3.3 states this for the sample truth; this pass supports it more
+  generally.)
+- **For the D1 hand-off,** pole recovery on sampled data does not decide the time axis. What does decide it:
+  - the representation error on smooth inputs and ramps (first pass: FOH and Chebyshev 100× below Fourier);
+  - causality;
+  - O(n) cost.
+
+  The FOH recursion still wins on the last two, and on ramps. Chebyshev wins on smooth inputs.
+
 **Next.**
 
-- Repeat the trained comparison with the E2 recipe (and Chebyshev / piecewise Chebyshev paths), on the fine-grid
-  truth.
 - Piecewise Chebyshev with a stable recursion, and its cost.
 - The S4D view: the FOH recursion is a diagonal SSM discretisation.
+- A qualifying note in (C) E4.7 / E4.8: the FOH layer's gains there assume data with a first-order hold.

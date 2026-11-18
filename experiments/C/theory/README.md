@@ -2097,3 +2097,16 @@ dead; NaN and dead runs count as not recovered.)
 - E3 deep: linear-probe poles of trained deep models (RQ4); the dead-start LFNO runs
   (bounded, loss 1.0 from epoch 1).
 - More groups for the best-of-5 rates; c sensitivity between 0.35 and 0.7.
+
+## Note (2026-11-18): the FOH layer's gains assume data with a first-order hold
+
+D1's third pass (`experiments/D/d1_inputs/README.md`) repeated `p6_e1_T20` / `p6_e1_T20_foh` with the truth on a
+32× finer grid (`p6_e1fine_T20(_foh)`, 8 runs each, same recipe).
+
+- Both layers then reach the same floor: test error 3.7e-3 (band) vs 3.4e-3 (FOH).
+- The FOH layer does not recover −2 more often: 4 of 8 runs, against 6 of 8 for the band layer.
+
+So the FOH layer's lower floor and its better recovery in E4.7 / E4.8 come from the data being generated with a
+first-order hold, which is the FOH layer's input model. The identifiability of −1 and −2 from the E1 data
+(finding 3) holds on the fine-grid truth too: −1 is recovered in 100 % of runs and −2 in 50–75 %.
+

@@ -172,6 +172,27 @@ Things to know:
 
 ## Log
 
+### 2026-11-18 — (D1) third pass: Fourier vs FOH with the E2 recipe on fine-grid truth; paper update
+
+- Done:
+  - Family `e1fine` in `e2_richness.make` (truth on a 32× finer grid); conditions `p6_e1fine_T20(_foh)` in
+    `e2_train.py` (and in the polish / rescue lists).
+  - E2 recipe, seeds 10–17 (pre-registered d2e6d9d).
+  - Paper Section 6: decay-rate substitution (Proposition 8) and the shared-pole pass (bced22f).
+- Results:
+  - Test error: band 3.7e-3, FOH 3.4e-3, both at their oracle floors (sampling of steps and PRBS).
+  - Recovery: −1 100 % and −2 75 % (band) vs 50 % (FOH); the complex pairs 100 % in both.
+  - Predictions 1 and 3 hold; 2 fails (band recovered −2 more often).
+- Decisions:
+  - The FOH layer's E4 advantage on E1 data is attributed to the data's first-order hold (model-class match).
+  - E1 finding 3 (the data identify the fast real poles) holds on the fine-grid truth as well.
+  - D1's time axis is to be chosen on oracle accuracy for smooth inputs and ramps, causality and cost (still
+    proposed: FOH recursion default, piecewise Chebyshev option; user decision pending).
+- Next:
+  - qualify E4.7 / E4.8 in the theory README;
+  - piecewise Chebyshev;
+  - (A) pole layer after the D1 decision.
+
 ### 2026-11-18 — (C) E5 twelfth pass (shared poles); (D1) second pass (trained layers)
 
 - Done:
