@@ -206,3 +206,22 @@ def test_2d_isotropic_imaginary_terms_keep_the_output_real_consistent():
         ref = torch.fft.ifft2(foh_response(g[None], c[None], torch.fft.fft2(f2, dim=(1, 2))), dim=(1, 2))
     assert ref.imag.abs().max() < 1e-10 * ref.real.abs().max()
     assert torch.allclose(out, ref.real, atol=1e-10)
+
+
+def test_leaky_cap_keeps_a_gradient_above_the_cap():
+    t = np.linspace(0, 1, 20)
+    k = torch.tensor([0.0, 1.0, 2.0], dtype=torch.float64)
+    for cls, kw in ((WavenumberPoleLayer1d, {}), (WavenumberPoleLayer2d, {})):
+        for leak, lo in ((0.0, 0.0), (0.05, 0.049)):
+            layer = cls(1, t, re_max=0.5, re_leak=leak, **kw)
+            with torch.no_grad():
+                layer.mu_re.zero_()
+                layer.mu_re[0, 0] = 3.0                              # Re mu = 3 everywhere, far above the cap
+            mu = layer.poles(k)[0] if cls is WavenumberPoleLayer1d else layer.poles(k, 0 * k)[0]
+            mu.real.sum().backward()
+            g = float(layer.mu_re.grad[0, 0]) / 3
+            assert (g < 1e-12) if leak == 0 else (lo < g < 0.051)
+            with torch.no_grad():                                     # well below the cap: unchanged
+                layer.mu_re[0, 0] = -2.0
+                mu = layer.poles(k)[0] if cls is WavenumberPoleLayer1d else layer.poles(k, 0 * k)[0]
+            assert torch.allclose(mu.real, torch.full_like(mu.real, -2.0), atol=1e-10)

@@ -28,8 +28,10 @@ grid than it was trained on.
 Options: `modes` keeps only the lowest `modes` rfft wavenumbers (like FNO truncation; the polynomial is not
 evaluated where the data carry no information, so a k^4 term cannot overflow there). `re_max` caps Re mu smoothly at
 re_max (soft minimum with temperature `re_tau`), which bounds the growth e^{Re mu T} while leaving the polynomial
-unchanged well below the cap. `k_ref` evaluates the polynomials in k / k_ref, so that all coefficients have comparable
-scale for a first-order optimiser (with k up to 16, a k^4 coefficient otherwise moves Re mu by 6.5e4 per unit step).
+unchanged well below the cap. Above the cap the soft minimum has almost no gradient, so a start whose Re mu lies
+there stays trapped (`experiments/A/layer`, a7); `re_leak` > 0 keeps a slope re_leak above the cap. `k_ref`
+evaluates the polynomials in k / k_ref, so that all coefficients have comparable scale for a first-order optimiser
+(with k up to 16, a k^4 coefficient otherwise moves Re mu by 6.5e4 per unit step).
 
 Input / output: (batch, n_x, n_t) real fields on a uniform periodic x grid of length `length` and a uniform t grid.
 
@@ -109,6 +111,12 @@ def foh_response(g: torch.Tensor, c: torch.Tensor, u: torch.Tensor) -> torch.Ten
     return causal_conv(g, u) - u[..., :1] * c
 
 
+def _cap(re: torch.Tensor, cap: float, tau: float, leak: float) -> torch.Tensor:
+    """Soft minimum of re and cap (temperature tau), plus slope `leak` above the cap."""
+    soft = cap - tau * F.softplus((cap - re) / tau)
+    return soft + leak * (re - soft) if leak else soft
+
+
 class WavenumberPoleLayer1d(nn.Module):
     """K(k, s) = sum_n beta_n(k) / (s - mu_n(k)), polynomial in k, FOH time axis. See the module docstring.
 
@@ -119,9 +127,10 @@ class WavenumberPoleLayer1d(nn.Module):
 
     def __init__(self, n_poles: int, t, length: float = 2 * math.pi, mu_degree=(3, 2), beta_degree: int = 2,
                  stable: bool = False, init_scale: float = 0.1, modes: int | None = None, re_max: float | None = None,
-                 re_tau: float = 0.05, k_ref: float = 1.0, im_powers: tuple | None = None):
+                 re_tau: float = 0.05, k_ref: float = 1.0, im_powers: tuple | None = None, re_leak: float = 0.0):
         super().__init__()
         self.modes, self.re_max, self.re_tau, self.k_ref = modes, re_max, re_tau, float(k_ref)
+        self.re_leak = float(re_leak)
         t = torch.as_tensor(t, dtype=torch.float64).reshape(-1)
         self.register_buffer("t", t)
         self.length, self.stable = float(length), stable
@@ -147,7 +156,7 @@ class WavenumberPoleLayer1d(nn.Module):
         if self.stable:
             re = -F.softplus(re)
         elif self.re_max is not None:          # smooth cap Re mu <= re_max; identity to < 1e-6 below re_max - 15 tau
-            re = self.re_max - self.re_tau * F.softplus((self.re_max - re) / self.re_tau)
+            re = _cap(re, self.re_max, self.re_tau, self.re_leak)
         im = sum(self.mu_im[:, j, None] * k ** p for j, p in enumerate(self.im_powers))
         b = sum(torch.complex(self.beta[:, j, 0, None], self.beta[:, j, 1, None]) * k2 ** j
                 for j in range(self.beta.shape[1]))
@@ -178,9 +187,11 @@ class WavenumberPoleLayer2d(nn.Module):
 
     def __init__(self, n_poles: int, t, length=(2 * math.pi, 2 * math.pi), re_degree: int = 3, advection: bool = True,
                  im_powers: tuple = (), beta_degree: int = 2, stable: bool = False, init_scale: float = 0.1,
-                 modes: int | None = None, re_max: float | None = None, re_tau: float = 0.05, k_ref: float = 1.0):
+                 modes: int | None = None, re_max: float | None = None, re_tau: float = 0.05, k_ref: float = 1.0,
+                 re_leak: float = 0.0):
         super().__init__()
         self.modes, self.re_max, self.re_tau, self.k_ref, self.stable = modes, re_max, re_tau, float(k_ref), stable
+        self.re_leak = float(re_leak)
         self.length = tuple(float(a) for a in length)
         self.register_buffer("t", torch.as_tensor(t, dtype=torch.float64).reshape(-1))
         self.im_powers = tuple(im_powers)
@@ -216,7 +227,7 @@ class WavenumberPoleLayer2d(nn.Module):
         if self.stable:
             re = -F.softplus(re)
         elif self.re_max is not None:
-            re = self.re_max - self.re_tau * F.softplus((self.re_max - re) / self.re_tau)
+            re = _cap(re, self.re_max, self.re_tau, self.re_leak)
         sgn = torch.where((ky > 0) | ((ky == 0) & (kx >= 0)), 1.0, -1.0).to(kx.dtype)   # half-plane sign s(k)
         im = torch.zeros_like(re)
         if self.adv is not None:
