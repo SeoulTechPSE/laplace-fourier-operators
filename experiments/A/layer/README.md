@@ -197,3 +197,44 @@ Data seeds 0–4; `diff` and `adr`.
   the per-mode curvature (Fisher information) instead of the residual.
 - Then rerun the beam and the a3 systems with this cut, pre-registered.
 
+
+## Fifth validation (2026-11-18): an observability cut in stage 2
+
+`a5_observability.py` → `results/a5_observability.md` (predictions 377ad3b).
+
+**Change.** Before the resolution cut, stage 2 keeps a mode only if every stage-1 pole of it satisfies
+max(|Re μ̂|, |Im μ̂|) T ≥ 2, computed from the estimates alone. Below that, e^{μt} ≈ 1 + μt over the window, so the
+pole and the residue trade off. Stage 1 is reused from a3 / a4 (deterministic), so the comparison isolates the cut.
+`a4_beam.py` was refactored to expose `fit_beam` (stages 2–3); it reproduces a4 to the last digit.
+
+**What the cut removed.** Beam: k = 1–3 in every seed. diff: k = 1, and k = 2 in seeds 0 and 3 (it sits on the
+threshold, 1.99–2.01). adr: nothing.
+
+| system | tuned test / oracle (5 seeds) | constants | change against a3 / a4 |
+|---|---|---|---|
+| beam | 1.00–1.02 | c = 0.03986–0.04002, Re/Im ≤ 2.3e-4, dispersion error ≤ 3.6e-4 | seeds 0 and 3 fixed (were 0.35–0.37 test, c wrong); init test 1.2–1.4e-2 (was 0.6–28) |
+| diff | 0.98–1.10 | D = 0.09999–0.10002, k_r ≥ −1.5e-4 | none (same to 3 digits) |
+| adr | 0.99–1.06 | D, v, k_r within 0.05 % | none (identical: no mode removed) |
+
+**Predictions against results.**
+
+1. Beam, c within 1 %, test ≤ 1.2× oracle and Re/Im ≤ 0.01 in ≥ 4 of 5 seeds: **holds, 5 of 5.** Worst c is seed 3,
+   −0.35 %.
+2. diff and adr, no loss against a3 (test ≤ 1.2× oracle, dispersion error ≤ 2 %, constants within 1 %, in all 10):
+   **holds.**
+
+**Reading.**
+
+- The beam failures were caused by the stage-2 initial point alone. With the slow modes left out, the initial point
+  is already at the oracle floor and L-BFGS only polishes it.
+- The two cuts bracket the usable band from stage 1: |μ̂| Δt ≤ 0.25 (fast end, sampling) and |μ̂| T ≥ 2 (slow end,
+  window). Both use only the estimates. The polynomial then extrapolates the dispersion relation outside the band;
+  for the beam it does so to 1e-4 at k = 1–3, where the data alone could not fix the poles.
+- The recipe now recovers all three 1D systems in every seed: per-mode identification, two cuts, weighted
+  polynomials in k / k_ref, L-BFGS.
+
+**Next.**
+
+- 2D diffusion (the layer is 1D; a 2D version needs |k|² over a 2D wavenumber grid).
+- The joint fit without stage 1 (multi-start + L-BFGS + k_ref), to see whether stage 1 is needed.
+- Then deeper models (lifting / nonlinearity) with the linear probe of (C) E5.
