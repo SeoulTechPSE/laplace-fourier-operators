@@ -1,0 +1,236 @@
+---
+title: "Wavenumber Pole Operators: Identifiable Dispersion Relations in Linear and Nonlinear Neural Operators"
+author: "Kee-Youn Yoo"
+date: 2026-11-19
+format:
+  pdf:
+    papersize: a4
+    geometry: margin=22mm
+    mainfont: DejaVu Serif
+    fontsize: 10pt
+    number-sections: true
+    tbl-colwidths: false
+  html:
+    embed-resources: true
+    number-sections: true
+bibliography: ../../C/paper/references.bib
+csl: ../../C/paper/ieee.csl
+---
+
+<!-- Project A working paper, 2026-11-19. Not for submission yet. Every number comes from
+experiments/A/layer/README.md (validations a1–a8) and experiments/A/deep/README.md (a9–a17), whose predictions
+were committed before each run (hashes there). Figures: experiments/A/paper/figures.py. -->
+
+## Abstract {.unnumbered}
+
+We build a neural-operator layer whose temporal kernel, for every spatial Fourier mode k, is a sum of poles and
+residues that are polynomials in k. A trained layer can therefore be read as a dispersion relation λ(k). The time
+axis is a first-order-hold exponential-integrator recursion: exact for piecewise-linear inputs, causal, and
+independent of the window length.
+
+**Linear systems.** In 1D diffusion, advection–diffusion–reaction, an undamped Euler–Bernoulli beam, and 2D
+diffusion and anisotropic ADR, the layer recovers the dispersion relation at the data's oracle floor in every
+seed. It does so either through a two-stage identification or through a joint fit from random starts. Three
+details decide success:
+
+- scaling the polynomials in $k/k_{\mathrm{ref}}$, with a second-order optimiser;
+- excluding modes that the window or the sampling cannot resolve;
+- a leaky cap on Re μ, because a hard cap traps starts.
+
+**Nonlinear systems.** A deep version (lifting, channel-mixing pole layers, pointwise nonlinearities) is tested on
+forced viscous Burgers and forced Cahn–Hilliard.
+
+- It trains only with a separate, larger learning rate for its poles.
+- At a matched budget it beats a band-covering Tucker FNO by 2× with 50 training samples, by 9 % with 400, and
+  by 7× in time extrapolation.
+- A small-amplitude linear probe recovers ν to 1–3 %, and the unstable band of Cahn–Hilliard ($k_c$ to 1 %).
+- The FNO baselines are right inside the forced band but produce arbitrary poles outside it.
+- **Limit:** a deep stack whose layer poles are all stable reproduces the growing modes in the probe over the
+  training window. An unstable pole is therefore claimed only when probe and layer structure agree.
+
+## Introduction
+
+Laplace-type neural operators [@cao2024lno; @ha2026lfno] represent the transient response with learned poles,
+which invites a physical reading of those poles. The companion audit (project C) found that this reading fails by
+default: poles do not move under published protocols, and fits are equally good with wrong poles. Project A asks
+the constructive question. If the pole structure is made explicit in the wavenumber, can a model identify the
+system's dispersion relation, and does that structure pay off in accuracy, data efficiency or extrapolation
+against Fourier neural operators [@li2021fno]?
+
+Every experiment below was pre-registered: predictions were committed before the runs, and every failed
+prediction is reported.
+
+## The wavenumber pole layer {#sec-layer}
+
+For a linear PDE u_t = L u + f with periodic space, every Fourier mode obeys $d\hat u_k/dt=\lambda(k)\,\hat u_k+\hat f_k$. The layer
+models the temporal kernel of mode k as
+
+$$K(k,s)=\sum_{n=1}^{N}\frac{\beta_n(k)}{s-\mu_n(k)},\qquad
+\mu_n(k)=\sum_j a_{nj}\,(k/k_{\mathrm{ref}})^{2j}+i\sum_j c_{nj}\,(k/k_{\mathrm{ref}})^{p_j},$$
+
+with $\beta_n(k)$ a polynomial in k². The parameters are continuous in k, so the layer runs on any spatial grid.
+
+- **Time axis.** The exact first-order-hold recursion $x_{j+1}=E\,x_j+b_0u_j+b_1u_{j+1}$, evaluated as a causal
+  FFT convolution plus a first-sample correction. It is exact for inputs that are linear between samples, causal,
+  and needs only Δt, so the same layer runs on a longer window or a finer Δt. This was the D1 decision; the Fourier
+  time axis of LNO costs 4e-4 to 2e-3 on non-periodic inputs.
+- **Options.**
+  - `modes`: truncation to the forced band.
+  - `re_max`: a smooth cap on Re μ. With `re_leak`, it keeps a slope above the cap (@sec-trap).
+  - `stable`: Re μ = −softplus.
+  - Any powers of k in Im μ: the beam's frequency c k² is even.
+- **2D.** Re μ is a polynomial in |k|², and Im μ = c · k plus optional $|k|^p$. A real field needs
+  μ(−k) = conj μ(k). The rfft2 layout holds negative $k_x$ only on the row $k_y = 0$, so the even imaginary terms get a
+  half-plane sign there; tests caught the error before this was added.
+- **Deep operator.** lift → [$K_l + W_l$, GELU] × L → projection. $K_l$ mixes channels, with N poles shared by all
+  channel pairs and a residue matrix per pole. Summing the poles into one frequency-domain kernel per channel pair
+  makes training 2.5× faster, with identical outputs.
+
+## Linear systems {#sec-linear}
+
+**Data.** Periodic x, 64 points, T = 5, n_t = 201. Each sample is forced at a few random modes with step, ramp,
+PRBS or smooth time profiles. The truth is computed on a 32× finer time grid, so data and layer share no hold. The
+oracle floor (the true λ in the layer) is 0.8–1.2 % and is set by jumps that fall between samples.
+
+![Stage-1 per-mode poles against the truth (data seed 0). Filled: modes kept by the two cuts; hollow: modes cut
+(too fast for Δt, or too slow for the window). Right: the beam's two poles per k; the cut modes k = 1–3 are where
+the first beam recipe failed.](fig_linear.png){#fig-linear width=100%}
+
+### A joint fit with Adam fails; the problem is optimisation, not representation
+
+The first validation fitted the polynomial jointly with Adam (a1).
+
+- On diffusion, 3 of 5 seeds recover D to 0.02 % at the oracle floor. The other seeds, and every ADR seed, end in
+  wrong basins with spurious k³, k⁴ terms.
+- With k up to 16, one Adam step on a k⁴ coefficient moves Re μ by up to 6.5e4 × lr.
+
+### A two-stage recipe recovers every system (a2–a6)
+
+1. **Stage 1:** one pole per excited k (grid search, then Nelder–Mead; the residue by least squares).
+2. **Stage 2:** weighted least squares for the polynomial.
+3. **Fine-tune:** L-BFGS on the layer, with coefficients in $k/k_{\mathrm{ref}}$ units.
+
+Two cuts, computed from the stage-1 estimates alone, decide which modes enter stage 2 (@fig-linear):
+
+- a **resolution cut**, $|\hat\mu|\,\Delta t \le 0.25$ (fast modes are biased by the sampling);
+- an **observability cut**, $\max(|\mathrm{Re}\,\hat\mu|, |\mathrm{Im}\,\hat\mu|)\,T \ge 2$. Slower modes fit as well with wrong poles; on the beam
+  they wrecked 2 of 5 seeds before the cut was added.
+
+With both cuts, every run in every system reaches the oracle floor:
+
+| system (5 seeds each) | test / oracle | recovered constants |
+|---|---|---|
+| 1D diffusion, ADR | 0.98–1.10 | D, v, k_r within 0.05 % |
+| beam (N = 2, poles ±i c k²) | 1.00–1.02 | c within 0.35 %, Re/Im ≤ 2.3e-4 |
+| 2D diffusion, anisotropic ADR | 1.000–1.002 | D, v = (0.4, −0.3) within 0.03 % |
+
+: Linear validations with the two-stage recipe and both cuts. {#tbl-linear}
+
+### Stage 1 is not needed; a hard cap traps starts {#sec-trap}
+
+A joint fit from 8–16 random starts, with the same $k_{\mathrm{ref}}$ and L-BFGS and selection by validation error, also
+reaches the oracle in all 25 data seeds (a7).
+
+- The failing starts were the same indices in every data seed. They ended with Re μ at the cap for all k, where
+  the soft minimum has no gradient.
+- A leak of 0.05 above the cap fixes it (a8): every start succeeds for diffusion and ADR, and 9–15 of 16 for the
+  beam.
+- Stage 1 remains useful as a model-free diagnostic and as a deterministic start.
+
+## Deep operators on nonlinear systems {#sec-deep}
+
+**Forced viscous Burgers** (ν = 0.1, 64 points, T = 5). The forcing scale is log-uniform over [0.03, 1], so up to
+91 % of a sample is not the linear response. Linearised at u = 0, λ(k) = −ν k².
+
+**Probe.** Single-mode inputs at small amplitude; the odd part of the response; the stage-1 identification per
+mode; both cuts.
+
+### The poles need their own learning rate
+
+At a shared Adam learning rate (1e-3), the poles stayed at their initialisation (a9). Re μ was flat in k, some
+poles had Re μ > 0, and errors over (5, 10] blew up to 3–8. The k² coefficient of −ν k² is −25.6 in k / k_ref
+units, beyond reach in 4000 steps. A pole learning rate 30× larger cut the error 2.4–3.4× (a10), as (C) found for
+LNO.
+
+### Accuracy, extrapolation and data efficiency
+
+The first FNO baseline (n_modes 12 × 12) kept only |k| ≤ 6 and 7 temporal frequencies: below the forced band. We
+found this after the run and replaced it with band-covering baselines (a13). Both models then got the same
+learning-rate sweep.
+
+| model | params | test (N = 200) | error over (5, 10] | probe residual |
+|---|---|---|---|---|
+| WPO (stable) | 59.5 k | **0.024** | **0.04** | **0.003** |
+| TFNO (Tucker, n_modes 32 × 64) | 59.1 k | 0.031 | 0.29 | 0.008–0.25 |
+| FNO (full rank, 18×) | 1.08 M | 0.042 (overfits) | 0.29 | 0.36–0.49 |
+
+: Forced Burgers, 3 seeds; time extrapolation from training on T = 5 to T = 10. {#tbl-burgers}
+
+![Forced Burgers: test error against training-set size (mean and min–max over 3 seeds; nested training sets, same
+test set).](fig_data_eff.png){#fig-data width=50%}
+
+- **Data efficiency** (@fig-data, a14): the TFNO / WPO error ratio is 1.96 at N = 50, then 1.42, 1.28 and 1.09 at
+  N = 400. The WPO's advantage is an inductive bias, and it shrinks as data grow.
+- **Resolution** (a15): every model transfers to 32 and 128 points within 9 %. At Δt/2 the WPO's error drops by
+  20 %, the FNOs' by 4–8 %.
+
+### What the probe reads
+
+![Per-mode probe poles. Left, Burgers: inside the forced band (shaded) every model is right; above it only the WPO
+continues −ν k². The FNO variants return arbitrary poles. Beyond the resolution cut (dashed) the estimates are
+biased for every model, the solver included. Right, Cahn–Hilliard: all three models, including the stable
+control, reproduce the growing modes.](fig_probe.png){#fig-probe width=100%}
+
+- **Burgers.** Every model's linearisation is right to 1–2 % inside the forced band (@fig-probe). Outside it, only
+  the WPO continues the dispersion relation (k = 9 within 1–4 %), and only its small-amplitude response is
+  LTI-consistent (residual 0.003).
+- **A bias that was not physics.** An earlier probe bias (ν̂ 11–14 % high, a10) was the polynomial summary
+  absorbing over-damping at the weakly forced top of the band. It vanished with longer training (a11). A
+  polynomial summary needs its residual reported.
+- **Cahn–Hilliard** (M = 0.1, κ = 0.04; λ(k) = M k²(1 − κ k²), $k_c$ = 5). With Re μ > 0 allowed, the WPO's probe
+  gives $k_c$ = 4.99–5.03 and every sign right (a16), against 5.107 from the solver's own probe. The TFNO's in-band
+  poles are right in one seed, but out-of-band poles spoil its fit in all three.
+
+### An identifiability limit: growth emulated by stable layers
+
+A stable control, with every layer pole at Re μ ≤ 0, fits Cahn–Hilliard as well as the WPO. Its probe reproduces
+the growing modes to three digits. Its layer poles sit just below zero: a cascade of near-integrators produces
+$t^n$ growth, indistinguishable from $e^{0.58t}$ on [0, 5]. A longer probe window does not separate the two either,
+because the linearisation leaves the linear regime (growth ×300 over T = 10).
+
+Within a finite window, then, the probe of the whole operator does not identify an unstable pole. We claim one
+only when probe and layer structure agree: Re μ > 0 allowed, used, and located in the band. This is the same rule
+as (C)'s trust rule for poles.
+
+## 2D deep operator {#sec-2d}
+
+*Pending: forced 2D Cahn–Hilliard on 32², WPO-2D against a matched 3D-Tucker FNO (a17, running).*
+
+## Discussion
+
+- **What is identifiable.**
+  - In linear problems, the full dispersion relation, from data alone, given scaled parameters and modes that the
+    window and the sampling resolve.
+  - In deep nonlinear models, the linearisation at rest, through a probe, inside the forced band. That is true of
+    FNO-type models as well.
+  - What the pole structure adds: a dispersion relation that continues outside the forced band, and an
+    LTI-consistent linear response.
+- **Where the accuracy gain comes from.** Data efficiency (2× at 50 samples) and time extrapolation (7×). The
+  in-window error at 400 samples is close to parity (9 %).
+- **Training details decide the outcome**, as in (C):
+  - scaling the polynomials;
+  - a pole learning rate in deep models;
+  - a leaky rather than hard cap on Re μ;
+  - checking that a baseline's modes cover the band. We got this wrong once.
+
+## Limitations {.unnumbered}
+
+- 1D deep experiments only, so far; the 2D deep operator is pending (@sec-2d).
+- Two nonlinear systems, both with a known linearisation at rest.
+- One parameter budget (59 k); FNO-type baselines from neuraloperator with a learning-rate sweep but no
+  architecture search.
+- The probe is a small-amplitude linearisation at u = 0; it says nothing about the linearisation around other
+  states.
+- The oracle floor of the data (steps and PRBS between samples) limits every test error to about 1 %.
+
+## References {.unnumbered}
