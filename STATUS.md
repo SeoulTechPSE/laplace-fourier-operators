@@ -174,6 +174,19 @@ Things to know:
 
 ## Log
 
+### 2026-11-19 — (A) deep operator: data efficiency and resolution transfer on Burgers
+
+- Done: `a15_resolution.py` (zero-shot space 32 / 128 and dt / 2); `a14_data_eff.py` (predictions b17f853),
+  N = 50–400. Shared code: `WavenumberPoleConv1d` sums the poles into one frequency-domain kernel per channel pair
+  (feeeb24): 2.5× faster, with outputs identical to the a11 checkpoints.
+- Results (`experiments/A/deep/README.md`):
+  - Resolution: all models transfer in space (≤ 1.09×). At dt / 2, the WPO improves by 20 % and the FNO variants by
+    4–8 %. a15: predictions 1 and 2 hold; 3 fails (no aliasing at 32 points).
+  - Data efficiency: TFNO / WPO test error is 1.96 (N = 50), 1.42, 1.28, 1.09 (N = 400). All three predictions hold.
+- Decisions: the WPO's accuracy claim on Burgers is a data-efficiency claim (an inductive bias), not an asymptotic
+  one.
+- Next: a 2D deep operator (2D Burgers or 2D Cahn–Hilliard), and a combined (A) write-up of a1–a16.
+
 ### 2026-11-19 — (A) deep operator: Cahn–Hilliard unstable band recovered; a stable stack can emulate it
 
 - Done: `lfo.data.cahn_hilliard` (forced 1D, IF-RK4, 1/2-rule dealiasing; tests: linear limit including growing

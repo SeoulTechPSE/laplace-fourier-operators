@@ -292,3 +292,26 @@ growth from emulated growth. It does not.
   an unstable pole" needs either the layer structure (Re μ > 0 allowed and used) or data over longer windows. The
   probe alone does not support it. This fits (C)'s finding that probe and layer readings must agree before a pole
   is trusted.
+
+## Data efficiency (2026-11-19)
+
+`a14_data_eff.py` → `results/a14_data_eff.md` (predictions b17f853). Nested training sets on forced Burgers. The
+WPO uses the a11 configuration and the TFNO the a13 one; 12000 steps, 3 seeds, a9 test set.
+
+| N | WPO test | TFNO test | TFNO / WPO |
+|---|---|---|---|
+| 50 | 0.036 | 0.070 | **1.96** |
+| 100 | 0.029 | 0.042 | 1.42 |
+| 200 | 0.024 | 0.031 | 1.28 |
+| 400 | 0.021 | 0.023 | 1.09 |
+
+**Predictions against results.**
+
+1. WPO below TFNO at every N, with the largest ratio at N = 50: **holds.**
+2. WPO at N = 100 is at or below TFNO at N = 200: **holds**, narrowly (0.029 against 0.031; the seed ranges
+   overlap).
+3. Both improve monotonically with N: **holds.**
+
+**Reading.** The WPO's advantage is a data-efficiency advantage. It halves the TFNO's error at 50 samples, and the
+margin shrinks to 9 % at 400. That is what an inductive bias gives: the wavenumber-pole structure substitutes for
+data. Both models still have a train–test gap at N = 400 (WPO 0.012 against 0.021).
