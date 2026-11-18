@@ -22,6 +22,10 @@ Predictions (written before running):
    recover; the other failure types remain.
 3. With each remedy, the start selected by validation error is at <= 1.2x the oracle in all 25 data seeds.
 
+The first launch stopped at beam seed 3 (`leak`): torch's strong-Wolfe line search raised an IndexError on a
+non-finite loss. `a7_joint.fit` now treats it like a non-finite loss (the start keeps its parameters at that point
+and is evaluated); the run resumes from the finished entries.
+
     python experiments/A/layer/a8_captrap.py      # results/a8_captrap.md / .json
 """
 from __future__ import annotations
@@ -44,12 +48,17 @@ OUT = HERE / "results" / "a8_captrap.json"
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     a7 = {(r["system"], r["data_seed"]): r for r in json.loads((HERE / "results" / "a7_joint.json").read_text())}
-    out = []
+    out = json.loads(OUT.read_text()) if OUT.exists() else []      # resume: keep finished (system, seed, variant)
+    done = {(r["system"], r["data_seed"], r["variant"]) for r in out}
     for system in J.STARTS:
         for ds in range(5):
+            if all((system, ds, v) in done for v in VARIANTS):
+                continue
             data, t = J.data_for(system, ds)
             floor = a7[(system, ds)]["oracle"]
             for name, kw in VARIANTS.items():
+                if (system, ds, name) in done:
+                    continue
                 t0 = time.time()
                 starts = [J.fit(system, data, t, s, device, **kw) for s in range(J.STARTS[system])]
                 for s in starts:

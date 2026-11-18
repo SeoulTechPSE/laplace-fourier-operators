@@ -139,7 +139,7 @@ def fit(system, data, t, start, device, leak=0.0, stable_start=False):
 
     try:
         opt.step(closure)
-    except RuntimeError:
+    except (RuntimeError, IndexError):   # IndexError: torch's strong-Wolfe search can fail on a non-finite loss (a8)
         pass
     with torch.no_grad():
         vali, test = float(A.rel(m(xva), yva)), float(A.rel(m(xte), yte))
