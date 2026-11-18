@@ -10,7 +10,7 @@ Each session appends one entry using the template at the bottom.
 | Shared foundation | 1–4 | nearly done: LNO v1/v2 reproduced (gate met), ALNO/LFNO 1D re-implemented; LTI/PDE/process generators partly | reproduce original LNO results (month 4) — **met** |
 | (C) Pole audit of existing models | 3–5 | **in progress**: E1 done, draft report (`E1_report.md`, updated with E2); paper decisions made (2026-11-18); E1 + E5 merged into one working paper (`experiments/C/paper/c_paper.qmd`, 2026-11-18); submission postponed | — |
 | (D) Non-periodic input representation | 4–8 | **started** (2026-11-18): oracle comparison of input representations (`experiments/D/d1_inputs/`) | differs from padded FNO? (month 8) |
-| (A) Pole layer and linear validation | 5–10 | **started** (2026-11-18): wavenumber pole layer (FOH time axis, `lfo.models.wavenumber`); 1D diffusion, ADR, beam and 2D diffusion, ADR dispersion recovered in every seed (two-stage + two cuts + L-BFGS) | dispersion relations recovered (month 10) |
+| (A) Pole layer and linear validation | 5–10 | **started** (2026-11-18): wavenumber pole layer (FOH time axis, `lfo.models.wavenumber`); 1D diffusion, ADR, beam and 2D diffusion, ADR dispersion recovered in every seed (two-stage, or joint fit with a leaky cap); deep operator on Burgers started | dispersion relations recovered (month 10) |
 | (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits, a bootstrap-calibrated order, certificate and order test; reduction-path unresolved rules fail, a location-calibrated split test flags the merge, a combined post-report rule leaves 1 false pole in 40 groups but does not carry over to new p6 E1 groups; an EIVML refit of the reports removes the EIV bias; EIVML through the whole pipeline helps only up to η_u = 0.05; an EIVML elimination of the calibrated report leaves 0 false poles up to p4 30 η_y and p6 E1 0.05, with EIV-bootstrap intervals covering 33/36 at p4 30 η_y), E3 deep first pass done; H1–H3 theory draft (`experiments/C/theory/H1_H2.md`), E5 passes 1–10 (`experiments/C/e5_probe/`; RQ4 rule v4, 0 false trusts over 375 runs) | — |
 | (A) Application 1: process dynamics | 11–16 | not started | — |
 | (D) Initial conditions and rollout | 13–19 | not started | — |
@@ -173,6 +173,23 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-18 — (A) deep operator: first Burgers run; the WPO's poles do not train at a shared learning rate
+
+- Done:
+  - Shared code (259226f): `lfo.data.burgers` (forced viscous Burgers, IF-RK4, 2/3 dealiasing),
+    `WavenumberPoleConv1d` (channel mixing, poles shared per layer), `WavenumberPoleOperator1d`. Tests: linear limit,
+    mean forcing, dt convergence, reduction to the scalar layer, causality. pytest 51/51.
+  - `experiments/A/deep/a9_burgers.py` (predictions eac2be5): WPO against FNO (59 k parameters each, 3 seeds), time
+    extrapolation to T = 10, and a linear probe (per-mode odd response at small amplitude, the a2 identification).
+- Results (`experiments/A/deep/results/a9_burgers.md`):
+  - Test error: WPO 0.117, FNO 0.105 (both underfit).
+  - WPO extrapolation over (5, 10] blows up (3–8). Probe ν̂: WPO 0.03–0.08, FNO 0.104–0.109 (k = 3–6 only).
+  - Prediction 1 holds only nominally; predictions 2 and 3 fail.
+  - Cause: the WPO's poles stayed near their initialisation (Re μ flat in k, some > 0). With a shared Adam lr of
+    1e-3, a pole coefficient cannot reach −25.6 (the k² coefficient of −ν k² in k / k_ref units) in 4000 steps.
+- Decisions: deep models need a separate pole learning rate, as found in (C) E2 / E5.
+- Next: a10, pole lr ×30, with and without `stable`, same budget; then longer training for both models.
 
 ### 2026-11-18 — (A) pole layer: removing the Re-cap trap (leak)
 
