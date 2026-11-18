@@ -94,12 +94,20 @@ def inputs(family: str, t, rng, K: int = 0) -> np.ndarray:
     return np.stack([one[family]() for _ in range(N_SAMPLES)])
 
 
+FINE = 32     # families ending in "fine" (D1 third pass): inputs and truth on a FINE x finer grid, then sampled
+
+
 def make(system: str, family: str, T: float, K: int = 0, seed: int = 0):
     mu, beta = (np.array(a, dtype=complex) for a in E.SYSTEMS[system])
     n = int(round(T / DT))
     t = np.arange(n) * DT
-    u = inputs(family, t, np.random.default_rng(seed), K)
-    y = lti.response(t, u, mu, beta)
+    if family.endswith("fine"):
+        tf = np.arange(n * FINE) * DT / FINE
+        uf = inputs(family[:-4], tf, np.random.default_rng(seed), K)
+        u, y = uf[:, ::FINE], lti.response(tf, uf, mu, beta)[:, ::FINE]
+    else:
+        u = inputs(family, t, np.random.default_rng(seed), K)
+        y = lti.response(t, u, mu, beta)
     m, b = ID.minimal_poles(mu, beta)
     return torch.tensor(t), torch.tensor(u), torch.tensor(y), m, b
 

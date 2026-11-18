@@ -201,6 +201,9 @@ CONDITIONS = {
     "p4_e1_T40": ("p4", "e1", 40.0, 0),
     "p4_ms16_T40": ("p4", "multisine", 40.0, 16),
     "p6_e1_T20": ("p6", "e1", 20.0, 0),
+    # D1 third pass: E1 families with the truth on a 32x finer grid (no path exact by construction)
+    "p6_e1fine_T20": ("p6", "e1fine", 20.0, 0),
+    "p6_e1fine_T20_foh": ("p6", "e1fine", 20.0, 0, 1024, dict(hold="foh")),
     "p6_ms16_T80": ("p6", "multisine", 80.0, 16),  # richest p6 data: pairs identifiable, real poles not
     "p6_ms16_T80_N4096": ("p6", "multisine", 80.0, 16, 4096),  # dt = 20/4096: -1 identifiable (ratio 11.6)
     # E3: untied steady branch (layer setting), steady band 2 pi M / T = 20 rad/s (input band 0.1-10 rad/s)
