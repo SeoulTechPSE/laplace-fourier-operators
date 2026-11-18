@@ -154,7 +154,8 @@ def load_variant(variant, seed, case, grids, device, data_tag="orig"):
     return model, test, TR.poles_of(model)
 
 
-def main(data_tag="orig"):
+def main(data_tag="orig", only=None):
+    """only: probe just these variants and merge them into the existing results (eleventh pass)."""
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     case = RL.CASES[TR.case_of(data_tag)]
     split, grids = TR.data_and_grid(data_tag)
@@ -166,8 +167,9 @@ def main(data_tag="orig"):
         mu_lin = MU_TRUE_C0 if data_tag.startswith("c0_") else MU_TRUE_LZ10 if data_tag.startswith("lz_r10") else MU_TRUE_LZ if data_tag.startswith("lz_") else MU_TRUE
     print(f"linearised pole {mu_lin:.4f} (from |f| <= {amp_max:.2f})", flush=True)
     P = probe_inputs(t, np.random.default_rng(0))
-    out = {}
-    for v in VARIANTS + (("tied4o_stable_plr10",) if data_tag.startswith("lz_r10") else ()):
+    out_p = RESULTS / f"e5_probe{suffix(data_tag)}.json"
+    out = json.loads(out_p.read_text())["variants"] if only else {}
+    for v in only or VARIANTS + (("tied4o_stable_plr10",) if data_tag.startswith("lz_r10") else ()):
         rows = []
         for s in SEEDS:
             model, test, mu = load_variant(v, s, case, grids, device, data_tag)
@@ -261,7 +263,9 @@ def summarize(res):
              "Variants: `base` original LNO (original init, pole lr × 1; first pass); `lno_plr10` pole lr × 10; "
              "`lno_stable_plr10` E1 stable init + pole lr × 10; `tied4_stable_plr10` E1 tied single layer, 4 slots "
              "(linear), stable init + pole lr × 10 (`e5_train.py`)" + ("; `tied4o_stable_plr10` the same with no weight decay on "
-             "the output offset (tenth-pass addendum)." if "tied4o_stable_plr10" in res["variants"] else "."), "",
+             "the output offset (tenth-pass addendum)" if "tied4o_stable_plr10" in res["variants"] else "")
+             + ("; `lnotb_stable_plr10` the LNO with its pole-residue layer in the textbook wiring (eleventh pass)."
+                if "lnotb_stable_plr10" in res["variants"] else "."), "",
              "Equivalent linear pole of the training data (best linear pair, per-sample relative weights) by "
              "amplitude band: " + "; ".join(f"{k} ({v['n']}): {v['pole'][0]:.3f}{v['pole'][1]:+.3f}i, residual "
                                             f"{v['rel']:.2f}" for k, v in res["equivalent"].items()) + ".", "",
@@ -298,4 +302,5 @@ def summarize(res):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1] if len(sys.argv) > 1 else "orig")
+    a = sys.argv[1:]
+    main(a[0] if a else "orig", a[a.index("--only") + 1:] if "--only" in a else None)

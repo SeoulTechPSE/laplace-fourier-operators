@@ -51,13 +51,22 @@ def textbook_of(conv0):
     return tb.to(conv0.weights_pole.device)
 
 
-def noncausal_share(layer, width, n, device):
-    """Share of the layer's (out channel, t_out; in channel, t_in) Jacobian with t_out < t_in."""
-    f = lambda x: layer(x[None])[0]
-    J = torch.func.jacrev(f)(torch.zeros(width, n, device=device))          # (o, z, i, x)
-    up = torch.triu(torch.ones(n, n, dtype=torch.bool, device=device), 1)    # t_out < t_in
-    a = J.abs().pow(2)
-    return float((a * up[None, :, None, :]).sum().sqrt() / a.sum().sqrt())
+@torch.no_grad()
+def noncausal_share(layer, width, n, device, chunk=512):
+    """Share of the layer's (out channel, t_out; in channel, t_in) Jacobian with t_out < t_in. The layer is linear
+    with no bias, so its Jacobian columns are its responses to unit impulses (computed in chunks)."""
+    up = tot = 0.0
+    z = torch.arange(n, device=device)
+    for i in range(width):
+        for x0 in range(0, n, chunk):
+            xs = torch.arange(x0, min(x0 + chunk, n), device=device)
+            e = torch.zeros(xs.numel(), width, n, device=device)
+            e[torch.arange(xs.numel()), i, xs] = 1.0
+            a = layer(e).pow(2)                                                  # (k, o, z)
+            mask = (z[None, :] < xs[:, None])[:, None, :]                        # t_out < t_in
+            up += float((a * mask).sum())
+            tot += float(a.sum())
+    return (up / tot) ** 0.5
 
 
 def check_equivalence(model, conv0, device):

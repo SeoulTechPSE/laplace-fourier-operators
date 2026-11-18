@@ -33,6 +33,7 @@ sys.path.insert(0, str(ROOT / "experiments" / "foundation"))
 sys.path.insert(0, str(ROOT / "src"))
 import e1_audit as E  # noqa: E402
 import reproduce_lno as RL  # noqa: E402
+from lfo.models.hybrid import PoleResidueTS1d  # noqa: E402
 
 CASE = "duffing_c05"
 ORIG = {"orig": "duffing_c05", "pend_orig": "pendulum_c05", "c0_orig": "duffing_c0", "lz_orig": "lorenz_rho5", "lz_r10_orig": "lorenz_rho10"}     # data tags that are original LNO data
@@ -49,7 +50,10 @@ VARIANTS = {"base": ("lno", "original", 1.0),
             "lno_stable_plr10": ("lno", "stable", 10.0),
             "tied4_stable_plr10": ("tied4", "stable", 10.0),
             # tenth pass, addendum: tied layer whose output offset has no weight decay (Lorenz sets only)
-            "tied4o_stable_plr10": ("tied4", "stable", 10.0)}
+            "tied4o_stable_plr10": ("tied4", "stable", 10.0),
+            # eleventh pass: original LNO with its pole-residue layer in the textbook wiring (each transient
+            # coefficient on its own pole, `lfo.models.hybrid.PoleResidueTS1d`); same shapes and init distributions
+            "lnotb_stable_plr10": ("lnotb", "stable", 10.0)}
 CKPT = ROOT / "runs" / "C" / "e5"
 RESULTS = HERE / "results" / "e5_train"
 
@@ -85,6 +89,11 @@ class Offset(torch.nn.Module):
         return self.layer(x) + self.offset[None, :, None]
 
 
+def pole_param(conv0):
+    """The LNO layer's poles: `weights_pole` (original wiring) or `mu` (textbook wiring)."""
+    return conv0.weights_pole if hasattr(conv0, "weights_pole") else conv0.mu
+
+
 @torch.no_grad()
 def stable_init(mu_param, t, gen):
     """E1 "stable" init in place: Re mu = -exp(U[log 1/T, log 10/T]), Im mu ~ U[0, pi / (4 dt)]."""
@@ -99,10 +108,14 @@ def build(variant, grids, seed, data_tag="orig"):
     torch.manual_seed(seed)
     t = torch.as_tensor(np.asarray(grids["t"], float).ravel(), dtype=torch.float32)
     gen = torch.Generator().manual_seed(1000 + seed)
-    if kind == "lno":
+    if kind in ("lno", "lnotb"):
         model, _ = RL.build("lno", RL.CASES[case_of(data_tag)], grids)
+        if kind == "lnotb":
+            c = model.conv0
+            w, _, k = c.weights_pole.shape
+            model.conv0 = PoleResidueTS1d(w, w, k, t)
         if init == "stable":
-            stable_init(model.conv0.weights_pole, t, gen)
+            stable_init(pole_param(model.conv0), t, gen)
     else:
         model = E.Layer1("tied", 4, t, "stable")
         if data_tag.startswith("lz_"):
@@ -113,7 +126,7 @@ def build(variant, grids, seed, data_tag="orig"):
 def poles_of(model):
     """Stored poles (folded to Im >= 0) and, for the LNO, the residues of the same entries."""
     if hasattr(model, "conv0"):
-        mu = model.conv0.weights_pole.detach().cpu().numpy()
+        mu = pole_param(model.conv0).detach().cpu().numpy()
     else:
         mu = model.pr.mu.detach().cpu().numpy()
     mu = mu.ravel()
@@ -151,7 +164,8 @@ def run(variant, seed, device, data_tag="orig"):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--variant", nargs="+", default=[v for v in VARIANTS if v != "tied4o_stable_plr10"])
+    ap.add_argument("--variant", nargs="+", default=[v for v in VARIANTS if v not in ("tied4o_stable_plr10",
+                                                                                      "lnotb_stable_plr10")])
     ap.add_argument("--seeds", nargs="+", type=int, default=[0, 1, 2, 3, 4])
     ap.add_argument("--data", default="orig", choices=["orig", "small", "mixed", "medium", "moderate", "pend_orig", "pend_medium", "pend_large", "wide", "pend_wide", "c0_orig", "c0_small", "c0_medium", "lz_orig", "lz_small", "lz_wide", "lz_r10_orig", "lz_r10_small", "lz_r10_wide"])
     a = ap.parse_args()
