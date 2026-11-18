@@ -7,7 +7,7 @@ Errors in brackets: relative distance to it.
 - **LTI probe**: odd part (G(εu) − G(−εu)) / 2ε on 16 smooth random inputs, one complex pair fitted (first-order hold); pole at ε = 0.01, and the relative fit residual over all ε = 0.01, 0.1, 0.3, 1, 3 (how well a causal LTI model describes G).
 - **Jacobian** J = ∂G/∂x at x = 0: share of ‖J‖ above the diagonal (non-causal), residual of a shift-invariant fit of its causal part, and the order-2 matrix-pencil pole of its average impulse response (mean subdiagonals h_1 … h_799).
 
-Variants: `base` original LNO (original init, pole lr × 1; first pass); `lno_plr10` pole lr × 10; `lno_stable_plr10` E1 stable init + pole lr × 10; `tied4_stable_plr10` E1 tied single layer, 4 slots (linear), stable init + pole lr × 10 (`e5_train.py`); `tied4o_stable_plr10` the same with no weight decay on the output offset (tenth-pass addendum); `lnotb_stable_plr10` the LNO with its pole-residue layer in the textbook wiring (eleventh pass).
+Variants: `base` original LNO (original init, pole lr × 1; first pass); `lno_plr10` pole lr × 10; `lno_stable_plr10` E1 stable init + pole lr × 10; `tied4_stable_plr10` E1 tied single layer, 4 slots (linear), stable init + pole lr × 10 (`e5_train.py`); `tied4o_stable_plr10` the same with no weight decay on the output offset (tenth-pass addendum); `lnotb_stable_plr10` the LNO with its pole-residue layer in the textbook wiring (eleventh pass).; `lnots_stable_plr10` the same with poles shared by all channel pairs (twelfth pass).
 
 Equivalent linear pole of the training data (best linear pair, per-sample relative weights) by amplitude band: all (200): -0.784+6.051i, residual 0.16; A <= 1 (26): -0.714+6.096i, residual 0.05; 1 < A <= 3 (81): -0.739+6.081i, residual 0.07; A > 3 (93): -0.823+6.061i, residual 0.14.
 
@@ -45,7 +45,12 @@ RQ4 indicator: d = distance from the J impulse-response pole to the nearest stor
 | lnotb_stable_plr10 | 2 | 0.045 | 19/1344, -0.063+6.295i (0.09) | -2.039+4.571i (0.35), 0.79–0.80 | 0.01, 0.83 | -1.470+4.405i (0.32) | no, 0.30 | no |
 | lnotb_stable_plr10 | 3 | 0.005 | 15/1344, -0.216+6.232i (0.06) | -0.690+6.069i (0.02), 0.09–0.09 | 0.02, 0.09 | -0.626+5.998i (0.03) | yes, 0.08 | **yes** |
 | lnotb_stable_plr10 | 4 | 0.004 | 15/1344, -0.089+6.262i (0.08) | -0.650+6.129i (0.01), 0.07–0.08 | 0.01, 0.06 | -0.591+6.066i (0.02) | yes, 0.09 | **yes** |
+| lnots_stable_plr10 | 0 | 0.005 | 3/84, -0.289+5.952i (0.06) | -0.723+6.067i (0.03), 0.07–0.07 | 0.01, 0.06 | -0.668+6.013i (0.03) | yes, 0.06 | **yes** |
+| lnots_stable_plr10 | 1 | 0.005 | 2/84, -0.343+6.182i (0.04) | -0.707+6.090i (0.02), 0.07–0.07 | 0.01, 0.17 | -0.663+6.071i (0.02) | no, 0.06 | no |
+| lnots_stable_plr10 | 2 | 0.005 | 4/84, -0.168+6.322i (0.07) | -0.710+6.087i (0.02), 0.06–0.07 | 0.01, 0.10 | -0.646+6.006i (0.03) | no, 0.09 | no |
+| lnots_stable_plr10 | 3 | 0.004 | 3/84, -0.432+6.341i (0.04) | -0.687+6.086i (0.02), 0.06–0.06 | 0.01, 0.17 | -0.632+6.024i (0.02) | no, 0.06 | no |
+| lnots_stable_plr10 | 4 | 0.004 | 3/84, -0.267+6.393i (0.06) | -0.716+6.071i (0.03), 0.07–0.07 | 0.01, 0.05 | -0.669+6.027i (0.03) | yes, 0.07 | **yes** |
 
-Trusted runs (rule v1): 8 of 30. Their J impulse-response pole vs the reference (and vs the data's equivalent pole): base s3 0.97 (0.97), lno_stable_plr10 s0 0.04 (0.03), tied4o_stable_plr10 s0 0.03 (0.01), tied4o_stable_plr10 s1 0.02 (0.03), tied4o_stable_plr10 s2 0.03 (0.02), tied4o_stable_plr10 s4 5.35 (5.46), lnotb_stable_plr10 s3 0.03 (0.03), lnotb_stable_plr10 s4 0.02 (0.03)
+Trusted runs (rule v1): 10 of 35. Their J impulse-response pole vs the reference (and vs the data's equivalent pole): base s3 0.97 (0.97), lno_stable_plr10 s0 0.04 (0.03), tied4o_stable_plr10 s0 0.03 (0.01), tied4o_stable_plr10 s1 0.02 (0.03), tied4o_stable_plr10 s2 0.03 (0.02), tied4o_stable_plr10 s4 5.35 (5.46), lnotb_stable_plr10 s3 0.03 (0.03), lnotb_stable_plr10 s4 0.02 (0.03), lnots_stable_plr10 s0 0.03 (0.02), lnots_stable_plr10 s4 0.03 (0.02)
 
 Rule v2 linearity gate: the data's best linear pair leaves 0.164 of the output (gate 0.1): **failed**, v2 reads no linear pole as physical on this set.

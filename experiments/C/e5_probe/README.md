@@ -766,9 +766,41 @@ the prediction was committed with the script, 4d85fe5).
   - Stored decay rates are less reliable than stored frequencies, because a spread of frequencies can stand in
     for damping. This matches E1's weakly identified decay rates (flat profiles).
 
+## Twelfth pass (2026-11-18): shared poles against under-damped stored modes
+
+Pre-registered in `results/e5_shared_prereg.md` (65c63b7; its baseline numbers were corrected before training in
+8882ae6). Rule v4 unchanged.
+
+**Variant** `lnots_stable_plr10`: the textbook-wired LNO with one set of poles shared by all channel pairs (16 poles;
+ρ = 10: 84) instead of width² × modes. 90 runs.
+
+| prediction (baseline `lnotb_stable_plr10`) | result |
+|---|---|
+| 1. v4: no false trust, ≥ 45 trusted (37) | no false trust, but **32 trusted: fails** |
+| 2. correct J pole with d ≥ 0.1: ≤ 10 % (26 %) | **14 / 45 = 31 %: fails** |
+| 3. `lz_small` + `lz_wide`: ≥ 3 of 10 trusted (0) | **2 of 10: fails** (up from 0) |
+| 4. median test error within 2× on ≥ 15 of 18 sets | **16 / 18: holds** (`pend_orig` 0.40 vs 0.071, `c0_medium` 0.24 vs 0.12) |
+| 5. reported: damping ratio of the stored modes | **0.84 (IQR 0.69–0.99)**, against 0.70 (0.42–0.82) |
+
+**Reading.**
+
+- **Sharing the poles fixes the targeted mechanism, but not the outcome.**
+  - The stored modes are now damped close to the truth: median damping ratio 0.84 against 0.70. In the runs with
+    d ≥ 0.1 it is 0.66 against 0.36.
+  - Their frequency spread halves: 3.9 % against 7.7 %.
+- **But the dominant mode is still split.** It is now split between two shared poles on either side of the true
+  frequency (for example −0.19 + 0.93i and −0.23 + 1.10i on `small`), so the nearest stored pole stays 10–15 % from
+  the Jacobian pole.
+- **Fewer poles cost fit on some sets.** On `pend_orig`, four of five seeds fit an amplitude regime whose J pole is
+  9–15× off; the data gate passes there, and v4 rejects those runs by d and agreement.
+- **v4 stays sound.** Over 18 sets and 555 runs: v3 127 trusted, 6 false, 20 missed; **v4 121 trusted, 0 false**,
+  20 missed.
+- Proposition 8 (`experiments/C/theory/H1_H2.md`) predicts this partly. Sharing removes most of the cheap downward
+  substitution of decay rates. A frequency split remains possible with 16 shared poles: two modes straddling ω
+  approximate one mode with a small error, just as a pair of positive Cauchy quadrature nodes does.
+
 **Next.**
 
-- Use `lfo.models.lno.LNO1d(textbook=True)` (added in c87152a, with a causality test; the original stays the
-  default) for new LNO work.
-- The decay-rate weakness suggests one candidate remedy: a penalty on, or a parameterisation of, the spread of
-  stored frequencies within a mode. This is untested and would need its own pre-registered pass.
+- A remedy for the remaining split would need a penalty on stored poles within a mode, or fewer poles (one per
+  mode), at some cost in fit. Not run.
+- `lfo.models.lno.LNO1d(textbook=True)` (c87152a) for new LNO work.

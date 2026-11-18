@@ -7,7 +7,7 @@ Errors in brackets: relative distance to it.
 - **LTI probe**: odd part (G(εu) − G(−εu)) / 2ε on 16 smooth random inputs, one complex pair fitted (first-order hold); pole at ε = 0.01, and the relative fit residual over all ε = 0.01, 0.1, 0.3, 1, 3 (how well a causal LTI model describes G).
 - **Jacobian** J = ∂G/∂x at x = 0: share of ‖J‖ above the diagonal (non-causal), residual of a shift-invariant fit of its causal part, and the order-2 matrix-pencil pole of its average impulse response (mean subdiagonals h_1 … h_799).
 
-Variants: `base` original LNO (original init, pole lr × 1; first pass); `lno_plr10` pole lr × 10; `lno_stable_plr10` E1 stable init + pole lr × 10; `tied4_stable_plr10` E1 tied single layer, 4 slots (linear), stable init + pole lr × 10 (`e5_train.py`); `lnotb_stable_plr10` the LNO with its pole-residue layer in the textbook wiring (eleventh pass).
+Variants: `base` original LNO (original init, pole lr × 1; first pass); `lno_plr10` pole lr × 10; `lno_stable_plr10` E1 stable init + pole lr × 10; `tied4_stable_plr10` E1 tied single layer, 4 slots (linear), stable init + pole lr × 10 (`e5_train.py`); `lnotb_stable_plr10` the LNO with its pole-residue layer in the textbook wiring (eleventh pass).; `lnots_stable_plr10` the same with poles shared by all channel pairs (twelfth pass).
 
 Equivalent linear pole of the training data (best linear pair, per-sample relative weights) by amplitude band: all (200): -0.294+1.063i, residual 0.13.
 
@@ -40,7 +40,12 @@ RQ4 indicator: d = distance from the J impulse-response pole to the nearest stor
 | lnotb_stable_plr10 | 2 | 0.047 | 4/256, -0.261+1.020i (0.05) | -0.249+1.003i (0.03), 0.09–0.37 | 0.01, 0.03 | -0.266+1.018i (0.05) | yes, 0.01 | **yes** |
 | lnotb_stable_plr10 | 3 | 0.039 | 0/256, -0.239+1.068i (0.10) | -0.249+0.990i (0.02), 0.06–0.37 | 0.01, 0.01 | -0.262+1.005i (0.04) | yes, 0.06 | **yes** |
 | lnotb_stable_plr10 | 4 | 0.052 | 1/256, -0.193+0.992i (0.06) | -0.222+0.994i (0.04), 0.15–0.46 | 0.02, 0.05 | -0.276+1.031i (0.07) | yes, 0.07 | **yes** |
+| lnots_stable_plr10 | 0 | 0.045 | 0/16, -0.128+0.983i (0.12) | -0.247+0.999i (0.03), 0.07–0.36 | 0.00, 0.02 | -0.258+1.008i (0.04) | yes, 0.13 | no |
+| lnots_stable_plr10 | 1 | 0.062 | 1/16, -0.243+0.917i (0.05) | -0.246+1.012i (0.04), 0.08–0.29 | 0.00, 0.02 | -0.261+1.020i (0.05) | yes, 0.10 | **yes** |
+| lnots_stable_plr10 | 2 | 0.072 | 1/16, -0.236+0.954i (0.02) | -0.248+1.024i (0.06), 0.08–0.46 | 0.01, 0.01 | -0.271+1.045i (0.08) | yes, 0.09 | **yes** |
+| lnots_stable_plr10 | 3 | 0.059 | 1/16, -0.205+0.905i (0.08) | -0.247+1.018i (0.05), 0.07–0.48 | 0.01, 0.01 | -0.263+1.031i (0.06) | yes, 0.13 | no |
+| lnots_stable_plr10 | 4 | 0.070 | 1/16, -0.180+0.976i (0.07) | -0.241+1.024i (0.06), 0.11–0.41 | 0.02, 0.01 | -0.276+1.054i (0.09) | yes, 0.11 | no |
 
-Trusted runs (rule v1): 12 of 25. Their J impulse-response pole vs the reference (and vs the data's equivalent pole): lno_stable_plr10 s0 0.05 (0.05), lno_stable_plr10 s2 0.06 (0.04), tied4_stable_plr10 s0 0.07 (0.04), tied4_stable_plr10 s1 0.07 (0.04), tied4_stable_plr10 s2 0.06 (0.04), tied4_stable_plr10 s3 0.06 (0.04), tied4_stable_plr10 s4 0.07 (0.04), lnotb_stable_plr10 s0 0.03 (0.07), lnotb_stable_plr10 s1 0.03 (0.07), lnotb_stable_plr10 s2 0.05 (0.05), lnotb_stable_plr10 s3 0.04 (0.06), lnotb_stable_plr10 s4 0.07 (0.03)
+Trusted runs (rule v1): 14 of 30. Their J impulse-response pole vs the reference (and vs the data's equivalent pole): lno_stable_plr10 s0 0.05 (0.05), lno_stable_plr10 s2 0.06 (0.04), tied4_stable_plr10 s0 0.07 (0.04), tied4_stable_plr10 s1 0.07 (0.04), tied4_stable_plr10 s2 0.06 (0.04), tied4_stable_plr10 s3 0.06 (0.04), tied4_stable_plr10 s4 0.07 (0.04), lnotb_stable_plr10 s0 0.03 (0.07), lnotb_stable_plr10 s1 0.03 (0.07), lnotb_stable_plr10 s2 0.05 (0.05), lnotb_stable_plr10 s3 0.04 (0.06), lnotb_stable_plr10 s4 0.07 (0.03), lnots_stable_plr10 s1 0.05 (0.05), lnots_stable_plr10 s2 0.08 (0.03)
 
 Rule v2 linearity gate: the data's best linear pair leaves 0.132 of the output (gate 0.1): **failed**, v2 reads no linear pole as physical on this set.

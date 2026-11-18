@@ -7,7 +7,7 @@ Errors in brackets: relative distance to it.
 - **LTI probe**: odd part (G(εu) − G(−εu)) / 2ε on 16 smooth random inputs, one complex pair fitted (first-order hold); pole at ε = 0.01, and the relative fit residual over all ε = 0.01, 0.1, 0.3, 1, 3 (how well a causal LTI model describes G).
 - **Jacobian** J = ∂G/∂x at x = 0: share of ‖J‖ above the diagonal (non-causal), residual of a shift-invariant fit of its causal part, and the order-2 matrix-pencil pole of its average impulse response (mean subdiagonals h_1 … h_799).
 
-Variants: `base` original LNO (original init, pole lr × 1; first pass); `lno_plr10` pole lr × 10; `lno_stable_plr10` E1 stable init + pole lr × 10; `tied4_stable_plr10` E1 tied single layer, 4 slots (linear), stable init + pole lr × 10 (`e5_train.py`); `lnotb_stable_plr10` the LNO with its pole-residue layer in the textbook wiring (eleventh pass).
+Variants: `base` original LNO (original init, pole lr × 1; first pass); `lno_plr10` pole lr × 10; `lno_stable_plr10` E1 stable init + pole lr × 10; `tied4_stable_plr10` E1 tied single layer, 4 slots (linear), stable init + pole lr × 10 (`e5_train.py`); `lnotb_stable_plr10` the LNO with its pole-residue layer in the textbook wiring (eleventh pass).; `lnots_stable_plr10` the same with poles shared by all channel pairs (twelfth pass).
 
 Equivalent linear pole of the training data (best linear pair, per-sample relative weights) by amplitude band: all (200): -0.002+1.010i, residual 0.08.
 
@@ -40,7 +40,12 @@ RQ4 indicator: d = distance from the J impulse-response pole to the nearest stor
 | lnotb_stable_plr10 | 2 | 0.048 | 6/256, -0.005+1.012i (0.01) | -0.001+1.007i (0.01), 0.04–0.83 | 0.01, 0.02 | -0.001+1.010i (0.01) | yes, 0.00 | **yes** |
 | lnotb_stable_plr10 | 3 | 0.022 | 10/256, -0.016+0.991i (0.02) | -0.000+1.004i (0.00), 0.07–0.88 | 0.01, 0.02 | -0.001+1.007i (0.01) | yes, 0.02 | **yes** |
 | lnotb_stable_plr10 | 4 | 0.056 | 6/256, 0.004+0.963i (0.04) | -0.002+1.006i (0.01), 0.10–0.43 | 0.01, 0.02 | -0.003+1.014i (0.01) | yes, 0.04 | **yes** |
+| lnots_stable_plr10 | 0 | 0.048 | 2/16, 0.001+0.995i (0.00) | -0.001+1.007i (0.01), 0.04–0.73 | 0.00, 0.02 | -0.000+1.009i (0.01) | yes, 0.01 | **yes** |
+| lnots_stable_plr10 | 1 | 0.049 | 1/16, -0.000+1.006i (0.01) | -0.001+1.007i (0.01), 0.08–0.46 | 0.01, 0.02 | -0.002+1.010i (0.01) | yes, 0.00 | **yes** |
+| lnots_stable_plr10 | 2 | 0.051 | 1/16, -0.000+1.006i (0.01) | -0.002+1.009i (0.01), 0.11–0.76 | 0.01, 0.01 | -0.006+1.019i (0.02) | yes, 0.01 | **yes** |
+| lnots_stable_plr10 | 3 | 0.049 | 1/16, -0.000+1.006i (0.01) | -0.001+1.006i (0.01), 0.06–0.68 | 0.01, 0.02 | -0.003+1.014i (0.01) | yes, 0.01 | **yes** |
+| lnots_stable_plr10 | 4 | 0.052 | 1/16, 0.000+1.006i (0.01) | 0.001+0.997i (0.00), 0.17–0.43 | 0.02, 0.02 | -0.003+1.010i (0.01) | yes, 0.01 | **yes** |
 
-Trusted runs (rule v1): 11 of 25. Their J impulse-response pole vs the reference (and vs the data's equivalent pole): lno_stable_plr10 s0 0.01 (0.00), tied4_stable_plr10 s0 0.01 (0.00), tied4_stable_plr10 s1 0.01 (0.00), tied4_stable_plr10 s2 0.01 (0.00), tied4_stable_plr10 s3 0.01 (0.00), tied4_stable_plr10 s4 0.01 (0.00), lnotb_stable_plr10 s0 0.01 (0.00), lnotb_stable_plr10 s1 0.02 (0.01), lnotb_stable_plr10 s2 0.01 (0.00), lnotb_stable_plr10 s3 0.01 (0.00), lnotb_stable_plr10 s4 0.01 (0.00)
+Trusted runs (rule v1): 16 of 30. Their J impulse-response pole vs the reference (and vs the data's equivalent pole): lno_stable_plr10 s0 0.01 (0.00), tied4_stable_plr10 s0 0.01 (0.00), tied4_stable_plr10 s1 0.01 (0.00), tied4_stable_plr10 s2 0.01 (0.00), tied4_stable_plr10 s3 0.01 (0.00), tied4_stable_plr10 s4 0.01 (0.00), lnotb_stable_plr10 s0 0.01 (0.00), lnotb_stable_plr10 s1 0.02 (0.01), lnotb_stable_plr10 s2 0.01 (0.00), lnotb_stable_plr10 s3 0.01 (0.00), lnotb_stable_plr10 s4 0.01 (0.00), lnots_stable_plr10 s0 0.01 (0.00), lnots_stable_plr10 s1 0.01 (0.00), lnots_stable_plr10 s2 0.02 (0.01), lnots_stable_plr10 s3 0.01 (0.01), lnots_stable_plr10 s4 0.01 (0.00)
 
 Rule v2 linearity gate: the data's best linear pair leaves 0.078 of the output (gate 0.1): **passed**, v2 trusts the same runs as v1.

@@ -172,6 +172,30 @@ Things to know:
 
 ## Log
 
+### 2026-11-18 — (C) E5 twelfth pass (shared poles); (D1) second pass (trained layers)
+
+- Done:
+  - E5 twelfth pass (pre-registered 65c63b7, baseline corrected 8882ae6): `lnots_stable_plr10`, textbook LNO
+    with poles shared across channel pairs, 90 runs; `SharedPoleTS1d` in `e5_train.py`.
+  - D1 second pass (`d1_train.py`, predictions 059623d): trained tied layer, Fourier vs FOH time axis, fine-grid
+    truth, `common` + pole lr × 10, 60 runs.
+- Results:
+  - E5: shared poles damp the stored modes closer to the truth (median damping ratio 0.84 vs 0.70; d ≥ 0.1 runs
+    0.66 vs 0.36) and halve their frequency spread. But v4 trusts 32 (baseline 37; prediction ≥ 45 fails), d ≥ 0.1
+    in 31 % of correct-J runs (prediction ≤ 10 % fails), and `lz` ρ = 5 gets 2 of 10 (prediction ≥ 3 fails); the
+    fit holds on 16 of 18 sets. The dominant mode is now split between two shared poles that straddle the
+    frequency.
+  - E5 totals over 18 sets / 555 runs: v4 121 trusted, 0 false.
+  - D1: under the published protocol the training error (3e-3 to 4e-2) swamps the representation error. FOH and
+    Fourier give the same test errors and the same pole recovery, except p2 ramps (FOH 8× lower). Prediction 1
+    fails; predictions 2 and 3 hold.
+- Decisions: shared poles not adopted. The D1 time-axis comparison must use a training recipe that reaches the
+  representation floor (E2 recipe). The proposed D1 hand-off (FOH default) is still a decision for the user.
+- Next:
+  - D1 with the E2 recipe;
+  - (A) pole layer after the D1 decision;
+  - paper update with E5 passes 11–12 and the theory Propositions 7–8.
+
 ### 2026-11-18 — (D1) oracle comparison of input representations; (C) theory Propositions 7 and 8
 
 - Done:
