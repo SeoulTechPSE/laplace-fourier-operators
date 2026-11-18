@@ -80,3 +80,75 @@ Fixed by `modes = 17` (the forced band) and a smooth cap Re μ ≤ 0.5. The pred
   3. use the result to initialise or replace the joint fit.
 - Alternatives: a curriculum in k (low k first) or multi-start; and degree selection (a k⁴ term without physics is
   the main source of wrong basins).
+
+## Second validation (2026-11-18): two-stage identification
+
+`a2_twostage.py` → `results/a2_twostage.md` (predictions 13a8593).
+
+**Stages.**
+
+1. One pole per excited k (prior-free grid, then Nelder–Mead; the residue by least squares).
+2. Polynomial least squares, with the degree chosen by BIC.
+3. An Adam fine-tune of the layer from the stage-2 polynomial.
+
+Data seeds 0–4; `diff` and `adr`.
+
+**Predictions against results: all three fail.**
+
+1. **Per-mode poles within 1 %.** Mid-k poles are within 0.5 %. Two groups miss:
+   - high k (≥ 12, where |λ| Δt ≳ 0.4) is off by 1–4 %, because jumps between samples bias fast modes;
+   - the slowest diffusion mode (k = 1) is off by 1–2 %.
+2. **BIC picks the true degree.** It does so in only 2–3 of 5 seeds; it adds k⁴ / k³ terms to fit the biased
+   high-k poles. Where the degree is right, D and v are within 1 %.
+3. **The Adam fine-tune reaches the oracle.** It made several fits worse. With k up to 16, one Adam step on a k⁴
+   coefficient moves Re μ by up to 65 lr: a scaling problem, which also explains part of the first validation's
+   failure.
+
+## Third validation (2026-11-18): resolution cut, scaled polynomials, L-BFGS fine-tune
+
+`a3_twostage.py` → `results/a3_twostage.md` (predictions 885d64d).
+
+**Changes,** diagnosed from the second validation:
+
+- Stage 2 uses only modes with |μ̂_k| Δt ≤ 0.25 (from stage 1, no truth), weighted by 1 / residual².
+- The layer evaluates its polynomials in k / k_ref (new option `k_ref = 16`).
+- The fine-tune uses L-BFGS (200 iterations) instead of Adam.
+
+| system | stage 1, kept modes: max error | stage 2: D / v / k_r | tuned test (oracle) | dispersion error | tuned D, v, k_r |
+|---|---|---|---|---|---|
+| diff (5 seeds) | 1.3–2.4 % (k = 1..9 or 1..10) | 0.1001–0.1015 / ≈ 0 / −0.007…−0.001 | 8.1e-3–9.1e-3 (8.3e-3) | 1.9e-6 – 5.0e-3 | 0.09999–0.10002, 0.00000, −0.00015…−0.00001 |
+| adr (5 seeds) | 0.9–1.7 % (k = 1..12) | 0.0494–0.0503 / 0.4983–0.5012 / 0.195–0.205 | 8.7e-3–9.3e-3 (8.7e-3) | 1.3e-4 – 2.7e-3 | 0.04999–0.05000, 0.49996–0.50000, 0.19979–0.20002 |
+
+**Predictions against results.**
+
+1. Kept-mode poles within 2 %: **fails narrowly.** It holds in 9 of 10 runs; `diff` seed 3 is at 2.4 %, its k = 1
+   mode.
+2. BIC picks the true degree in ≥ 4 of 5 seeds: **fails.**
+   - It picks the true degree in 1 of 5 seeds on `diff` and 3 of 5 on `adr`.
+   - D and v from stage 2 are within 1 % except `diff` seed 4 (1.5 %). k_r is within 0.01 everywhere.
+3. Fine-tuned test error ≤ 1.2× oracle in ≥ 4 of 5 seeds, and dispersion error ≤ 2 %: **holds in all 10 runs.**
+   The tuned test error is 0.98–1.10× the oracle, and the dispersion error is 2e-6 to 5e-3.
+
+**Reading.**
+
+- **With this recipe the layer recovers the dispersion relation in every run.** After the L-BFGS fine-tune, D, v
+  and k_r are within 0.08 % of the truth on both systems and all seeds, and the test error sits at the oracle
+  floor. This is RQ1's first positive result on two 1D linear PDEs.
+- **The spurious higher-order terms vanish in the fine-tune.** Stage 2's degree choice is unreliable, but the
+  joint fit started near the truth drives the extra k⁴ / k³ coefficients to negligible values. So degree selection
+  matters less than a good start and a well-scaled, second-order optimiser.
+- **What made the difference.** Scaling (`k_ref`), a second-order optimiser, and an initialisation from per-mode
+  identification restricted to well-resolved modes. Together they are the (A) analogue of the (C) E2 recipe.
+- **Limits.**
+  - Two 1D systems, with first-order dynamics per mode (one pole per k).
+  - Stage 1 uses the explicit mode structure of a linear PDE.
+  - The oracle floor (sampling of steps and PRBS) caps the test error.
+
+**Next.**
+
+- Second-order-in-time systems: the beam (±i c k², two poles per k), with N = 2.
+- 2D diffusion.
+- The joint fit with this recipe but without stage 1 (multi-start + L-BFGS + k_ref), to see whether stage 1 is
+  needed.
+- Then deeper models (lifting / nonlinearity) with the linear probe of (C) E5.
+
