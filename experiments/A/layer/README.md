@@ -238,3 +238,46 @@ threshold, 1.99–2.01). adr: nothing.
 - 2D diffusion (the layer is 1D; a 2D version needs |k|² over a 2D wavenumber grid).
 - The joint fit without stage 1 (multi-start + L-BFGS + k_ref), to see whether stage 1 is needed.
 - Then deeper models (lifting / nonlinearity) with the linear probe of (C) E5.
+
+## Sixth validation (2026-11-18): 2D diffusion and anisotropic 2D ADR
+
+`a6_diffusion2d.py` → `results/a6_diffusion2d.md` (predictions 3f62df5). Layer: `WavenumberPoleLayer2d` (a4efb2b).
+
+**Layer.** Re μ is a polynomial in |k|² (isotropic); Im μ = c · k (advection) plus optional isotropic powers |k|^p;
+β is a polynomial in |k|². A real field needs μ(−k) = conj μ(k). The even imaginary terms (Im β, |k|^p in Im μ)
+break this on the row k_y = 0, the only place where the rfft2 layout holds negative k_x. They are therefore
+multiplied by a half-plane sign, which is the 1D convention (evaluate on k ≥ 0, extend by conjugation). The tests
+caught this: the 2D layer did not reduce to the 1D layer for y-independent fields until the sign was added.
+
+**Setup.** 32 × 32 grid, T = 5. Each sample is forced at 6 wavevectors from the half plane of |k_x|, k_y ≤ 8 (144
+wavevectors), so each wavevector is seen by only 1–17 training samples (1D: about 50). diff2d: D = 0.1. adr2d:
+D = 0.05, v = (0.4, −0.3), k_r = 0.2. The recipe is the 1D one (a3 + a5): per-wavevector poles, both cuts, weighted
+polynomials, then L-BFGS with k_ref = 8.
+
+| system | modes kept | stage 1 (kept): median / max error | tuned test / oracle | dispersion error | tuned D; v; k_r |
+|---|---|---|---|---|---|
+| diff2d | 129–133 / 144 | 0.7–1.0 % / 4.7–9.1 % | 1.000–1.002 | 5e-5 – 1.3e-3 | D = 0.09998–0.10003; v = 0; \|k_r\| ≤ 3.4e-4 |
+| adr2d | 141–142 / 144 | 0.6–0.7 % / 3.1–5.3 % | 1.000–1.002 | 8e-5 – 3.2e-4 | D = 0.04999–0.05003; v within 0.03 %; k_r = 0.19974–0.20026 |
+
+**Predictions against results.**
+
+1. Every kept stage-1 pole within 2 %: **fails.** 4–28 kept modes per run are 2–9 % off. They are high-|k| modes
+   (|μ| Δt ≈ 0.1–0.2) and modes seen by few samples (as few as 1–3). The 2 % bound came from 1D, where each mode
+   had about 50 samples.
+2. BIC drops |k|⁴ (5 of 5 in both systems), stage-2 D and v within 2 %, k_r within 0.01: **holds.** Stage 2
+   averages over 130–140 modes, so the per-mode errors cancel.
+3. Every seed at ≤ 1.2× the oracle, dispersion error ≤ 1 %, D and v within 1 %, k_r within 0.002: **holds**, in all
+   10 runs (worst ratio 1.002, worst dispersion error 0.13 %).
+
+**Reading.**
+
+- The recipe carries over to 2D unchanged, including an anisotropic advection vector.
+- Per-mode accuracy matters less in 2D, because there are many more modes per polynomial coefficient. The data per
+  mode can be thin as long as the polynomial is shared.
+- Limit: the layer's Re μ is isotropic by construction. Anisotropic diffusion would need a quadratic form
+  k^T A k in place of D |k|².
+
+**Next.**
+
+- The joint fit without stage 1 (multi-start + L-BFGS + k_ref), in 1D and 2D, to see whether stage 1 is needed.
+- Deeper models (lifting / nonlinearity) with the linear probe of (C) E5.

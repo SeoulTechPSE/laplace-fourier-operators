@@ -10,7 +10,7 @@ Each session appends one entry using the template at the bottom.
 | Shared foundation | 1–4 | nearly done: LNO v1/v2 reproduced (gate met), ALNO/LFNO 1D re-implemented; LTI/PDE/process generators partly | reproduce original LNO results (month 4) — **met** |
 | (C) Pole audit of existing models | 3–5 | **in progress**: E1 done, draft report (`E1_report.md`, updated with E2); paper decisions made (2026-11-18); E1 + E5 merged into one working paper (`experiments/C/paper/c_paper.qmd`, 2026-11-18); submission postponed | — |
 | (D) Non-periodic input representation | 4–8 | **started** (2026-11-18): oracle comparison of input representations (`experiments/D/d1_inputs/`) | differs from padded FNO? (month 8) |
-| (A) Pole layer and linear validation | 5–10 | **started** (2026-11-18): wavenumber pole layer (FOH time axis, `lfo.models.wavenumber`); 1D diffusion, ADR and beam (two poles per k) dispersion recovered in every seed (two-stage + two cuts + L-BFGS) | dispersion relations recovered (month 10) |
+| (A) Pole layer and linear validation | 5–10 | **started** (2026-11-18): wavenumber pole layer (FOH time axis, `lfo.models.wavenumber`); 1D diffusion, ADR, beam and 2D diffusion, ADR dispersion recovered in every seed (two-stage + two cuts + L-BFGS) | dispersion relations recovered (month 10) |
 | (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits, a bootstrap-calibrated order, certificate and order test; reduction-path unresolved rules fail, a location-calibrated split test flags the merge, a combined post-report rule leaves 1 false pole in 40 groups but does not carry over to new p6 E1 groups; an EIVML refit of the reports removes the EIV bias; EIVML through the whole pipeline helps only up to η_u = 0.05; an EIVML elimination of the calibrated report leaves 0 false poles up to p4 30 η_y and p6 E1 0.05, with EIV-bootstrap intervals covering 33/36 at p4 30 η_y), E3 deep first pass done; H1–H3 theory draft (`experiments/C/theory/H1_H2.md`), E5 passes 1–10 (`experiments/C/e5_probe/`; RQ4 rule v4, 0 false trusts over 375 runs) | — |
 | (A) Application 1: process dynamics | 11–16 | not started | — |
 | (D) Initial conditions and rollout | 13–19 | not started | — |
@@ -173,6 +173,22 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-18 — (A) pole layer: 2D layer; 2D diffusion and anisotropic ADR recovered
+
+- Done:
+  - `WavenumberPoleLayer2d` (a4efb2b): isotropic Re μ in |k|², advection c · k, optional |k|^p in Im μ, β in |k|².
+    The even imaginary terms take a half-plane sign so that the k_y = 0 row stays Hermitian (the 1D convention).
+    Four new tests; pytest 46/46.
+  - `a6_diffusion2d.py` (predictions 3f62df5): 32², 6 forced wavevectors per sample from 144, the 1D recipe.
+- Results (`experiments/A/layer/results/a6_diffusion2d.md`):
+  - All 10 runs at the oracle floor (ratio ≤ 1.002), dispersion error ≤ 0.13 %.
+  - D within 0.03 %, v = (0.4, −0.3) within 0.03 %, k_r within 3.4e-4.
+  - Prediction 1 fails: 4–28 kept modes per run are 2–9 % off in stage 1 (few samples per wavevector, high |k|).
+    Predictions 2 and 3 hold.
+- Decisions: the (A) linear recipe works in 2D unchanged. Anisotropic diffusion would need a quadratic form in k
+  (not implemented).
+- Next: the joint fit without stage 1 (1D and 2D); then deep models with the (C) E5 probe.
 
 ### 2026-11-18 — (A) pole layer: observability cut fixes the beam
 
