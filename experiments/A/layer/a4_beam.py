@@ -139,6 +139,59 @@ def wls(ks, y, w, powers):
     return np.linalg.lstsq(V * sw[:, None], y * sw, rcond=None)[0]
 
 
+def fit_beam(data, t, kept, device):
+    """Stages 2 and 3 on the stage-1 modes `kept`: weighted polynomials, layer init, L-BFGS. Returns a dict."""
+    dt = float(t[1] - t[0])
+    ks = np.array([m["k"] for m in kept], float)
+    w = 1 / np.array([max(m["resid"], 1e-6) for m in kept]) ** 2
+    model = WavenumberPoleLayer1d(2, t, mu_degree=(3, 3), beta_degree=2, im_powers=(1, 2, 3), modes=A.MODES,
+                                  re_max=A.RE_MAX, k_ref=K_REF).to(device)
+    with torch.no_grad():
+        for i in range(2):
+            mu_i = np.array([complex(*m["mu"][i]) for m in kept])
+            b_i = np.array([complex(*m["b"][i]) for m in kept])
+            a = wls(ks, mu_i.real, w, [0, 2, 4]) * K_REF ** np.array([0, 2, 4])
+            c = wls(ks, mu_i.imag, w, [1, 2, 3]) * K_REF ** np.array([1, 2, 3])
+            br = wls(ks, b_i.real, w, [0, 2]) * K_REF ** np.array([0, 2])
+            bi = wls(ks, b_i.imag, w, [0, 2]) * K_REF ** np.array([0, 2])
+            model.mu_re[i] = torch.tensor(a)
+            model.mu_im[i] = torch.tensor(c)
+            model.beta[i, :, 0], model.beta[i, :, 1] = torch.tensor(br), torch.tensor(bi)
+    c_init = float(model.mu_im[0, 1]) / K_REF ** 2
+    (xtr, ytr), (xte, yte) = ((x.to(device) for x in data[k]) for k in ("train", "test"))
+    with torch.no_grad():
+        test0 = float(A.rel(model(xte), yte))
+    opt = torch.optim.LBFGS(model.parameters(), max_iter=200, line_search_fn="strong_wolfe",
+                            tolerance_grad=1e-12, tolerance_change=1e-15, history_size=50)
+
+    def closure():
+        opt.zero_grad()
+        loss = A.rel(model(xtr), ytr)
+        loss.backward()
+        return loss
+
+    opt.step(closure)
+    with torch.no_grad():
+        test = float(A.rel(model(xte), yte))
+        mu, _ = model.poles(torch.tensor(KS, dtype=torch.float64, device=device))
+        mu = mu.cpu().numpy()
+        # oracle: true poles and residues in the same layer
+        orc = WavenumberPoleLayer1d(2, t, mu_degree=(1, 3), beta_degree=1, im_powers=(1, 2, 3),
+                                    modes=A.MODES).to(device)
+        orc.mu_re.zero_(), orc.mu_im.zero_(), orc.beta.zero_()
+        orc.mu_im[0, 1], orc.mu_im[1, 1] = C_BEAM, -C_BEAM
+        orc.beta[:, 0, 0] = 0.5
+        oracle = float(A.rel(orc(xte), yte))
+    lab = 0 if mu[0, -1].imag > 0 else 1
+    c_hat = float(model.mu_im[lab, 1]) / K_REF ** 2
+    k3 = KS >= 3
+    re_ratio = float(np.max(np.abs(mu[:, k3].real) / np.abs(mu[:, k3].imag)))
+    true = np.stack([true_poles(KS)[0], true_poles(KS)[1]])
+    mu_sorted = np.stack([mu[lab], mu[1 - lab]])
+    return dict(kept=[int(k) for k in ks], c_init=c_init, c=c_hat, re_ratio=re_ratio, test_init=test0, test=test,
+                oracle=oracle, disp_err=float(np.linalg.norm(mu_sorted - true) / np.linalg.norm(true)))
+
+
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     out = []
@@ -157,55 +210,12 @@ def main():
             tp = true_poles(m["k"])
             errs.append(max(abs(complex(*m["mu"][i]) - tp[i]) / abs(tp[i]) for i in range(2)))
         kept = [m for m in modes if max(abs(complex(*z)) for z in m["mu"]) * dt <= CUT]
-        ks = np.array([m["k"] for m in kept], float)
-        w = 1 / np.array([max(m["resid"], 1e-6) for m in kept]) ** 2
-        model = WavenumberPoleLayer1d(2, t, mu_degree=(3, 3), beta_degree=2, im_powers=(1, 2, 3), modes=A.MODES,
-                                      re_max=A.RE_MAX, k_ref=K_REF).to(device)
-        with torch.no_grad():
-            for i in range(2):
-                mu_i = np.array([complex(*m["mu"][i]) for m in kept])
-                b_i = np.array([complex(*m["b"][i]) for m in kept])
-                a = wls(ks, mu_i.real, w, [0, 2, 4]) * K_REF ** np.array([0, 2, 4])
-                c = wls(ks, mu_i.imag, w, [1, 2, 3]) * K_REF ** np.array([1, 2, 3])
-                br = wls(ks, b_i.real, w, [0, 2]) * K_REF ** np.array([0, 2])
-                bi = wls(ks, b_i.imag, w, [0, 2]) * K_REF ** np.array([0, 2])
-                model.mu_re[i] = torch.tensor(a)
-                model.mu_im[i] = torch.tensor(c)
-                model.beta[i, :, 0], model.beta[i, :, 1] = torch.tensor(br), torch.tensor(bi)
-        c_init = float(model.mu_im[0, 1]) / K_REF ** 2
-        (xtr, ytr), (xte, yte) = ((x.to(device) for x in data[k]) for k in ("train", "test"))
-        with torch.no_grad():
-            test0 = float(A.rel(model(xte), yte))
-        opt = torch.optim.LBFGS(model.parameters(), max_iter=200, line_search_fn="strong_wolfe",
-                                tolerance_grad=1e-12, tolerance_change=1e-15, history_size=50)
-
-        def closure():
-            opt.zero_grad()
-            loss = A.rel(model(xtr), ytr)
-            loss.backward()
-            return loss
-
-        opt.step(closure)
-        with torch.no_grad():
-            test = float(A.rel(model(xte), yte))
-            mu, _ = model.poles(torch.tensor(KS, dtype=torch.float64, device=device))
-            mu = mu.cpu().numpy()
-            # oracle: true poles and residues in the same layer
-            orc = WavenumberPoleLayer1d(2, t, mu_degree=(1, 3), beta_degree=1, im_powers=(1, 2, 3),
-                                        modes=A.MODES).to(device)
-            orc.mu_re.zero_(), orc.mu_im.zero_(), orc.beta.zero_()
-            orc.mu_im[0, 1], orc.mu_im[1, 1] = C_BEAM, -C_BEAM
-            orc.beta[:, 0, 0] = 0.5
-            floors[ds] = float(A.rel(orc(xte), yte))
-        lab = 0 if mu[0, -1].imag > 0 else 1
-        c_hat = float(model.mu_im[lab, 1]) / K_REF ** 2
-        k3 = KS >= 3
-        re_ratio = float(np.max(np.abs(mu[:, k3].real) / np.abs(mu[:, k3].imag)))
-        true = np.stack([true_poles(KS)[0], true_poles(KS)[1]])
-        mu_sorted = np.stack([mu[lab], mu[1 - lab]])
+        fit = fit_beam(data, t, kept, device)
+        c_init, c_hat, re_ratio, test0, test, floors[ds], dispe, ks = (fit[k] for k in (
+            "c_init", "c", "re_ratio", "test_init", "test", "oracle", "disp_err", "kept"))
         r = dict(data_seed=ds, modes=modes, mode_err=errs, kept=[int(k) for k in ks], c_init=c_init, c=c_hat,
                  re_ratio=re_ratio, test_init=test0, test=test, oracle=floors[ds],
-                 disp_err=float(np.linalg.norm(mu_sorted - true) / np.linalg.norm(true)), seconds=round(time.time() - t0, 1))
+                 disp_err=dispe, seconds=round(time.time() - t0, 1))
         out.append(r)
         print(ds, "stage1 err k>=3 max", f"{max(errs[2:]):.2e}", "k=1,2", [f"{e:.2e}" for e in errs[:2]],
               f"c init {c_init:.5f} -> {c_hat:.5f}", f"re/im {re_ratio:.1e}", f"test {test0:.2e} -> {test:.2e} (oracle "
