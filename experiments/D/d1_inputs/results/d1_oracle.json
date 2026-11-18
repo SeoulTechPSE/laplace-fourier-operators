@@ -1,0 +1,2552 @@
+{
+ "p2|step|256|fourier": {
+  "system": "p2",
+  "family": "step",
+  "n": 256,
+  "path": "fourier",
+  "rel": 0.0033428126532649097,
+  "first": 1.6451474127954329e+298,
+  "last": 0.004200172507292341,
+  "maxerr": 0.00996525180602515
+ },
+ "p2|step|256|zoh": {
+  "system": "p2",
+  "family": "step",
+  "n": 256,
+  "path": "zoh",
+  "rel": 0.022531940886581444,
+  "first": 0.0,
+  "last": 5.992425010413963e-05,
+  "maxerr": 0.056778521535677785
+ },
+ "p2|step|1024|fourier": {
+  "system": "p2",
+  "family": "step",
+  "n": 1024,
+  "path": "fourier",
+  "rel": 0.0007074067370708894,
+  "first": 7.635871061874356e+297,
+  "last": 0.0005146884577468296,
+  "maxerr": 0.0024326312236476605
+ },
+ "p2|step|1024|fourier_pad2": {
+  "system": "p2",
+  "family": "step",
+  "n": 1024,
+  "path": "fourier_pad2",
+  "rel": 0.000223723700668967,
+  "first": 3.701750744100804e+295,
+  "last": 0.0005131340266727367,
+  "maxerr": 0.0016456499531538262
+ },
+ "p2|step|1024|fourier_pad4": {
+  "system": "p2",
+  "family": "step",
+  "n": 1024,
+  "path": "fourier_pad4",
+  "rel": 0.00022376670977156203,
+  "first": 3.8375676078234254e+295,
+  "last": 0.0005124252274703086,
+  "maxerr": 0.0016449903788611133
+ },
+ "p2|step|1024|zoh": {
+  "system": "p2",
+  "family": "step",
+  "n": 1024,
+  "path": "zoh",
+  "rel": 0.005549947310489273,
+  "first": 0.0,
+  "last": 1.5555086247952105e-05,
+  "maxerr": 0.014193455839175684
+ },
+ "p2|step|1024|foh": {
+  "system": "p2",
+  "family": "step",
+  "n": 1024,
+  "path": "foh",
+  "rel": 1.0840662701588709e-19,
+  "first": 0.0,
+  "last": 0.0,
+  "maxerr": 1.6877443856874351e-18
+ },
+ "p2|step|1024|cheb16": {
+  "system": "p2",
+  "family": "step",
+  "n": 1024,
+  "path": "cheb16",
+  "rel": 0.15536238648841505,
+  "first": 4.753034781547315e+298,
+  "last": 0.0211199151837101,
+  "maxerr": 0.3161281314139692
+ },
+ "p2|step|1024|cheb64": {
+  "system": "p2",
+  "family": "step",
+  "n": 1024,
+  "path": "cheb64",
+  "rel": 0.01033027741540779,
+  "first": 3.5656516312208273e+297,
+  "last": 0.0004775411152565348,
+  "maxerr": 0.054400011719756974
+ },
+ "p2|step|1024|cheb256": {
+  "system": "p2",
+  "family": "step",
+  "n": 1024,
+  "path": "cheb256",
+  "rel": 23942693.38200048,
+  "first": Infinity,
+  "last": 9917642.675576203,
+  "maxerr": 64074360.135967106
+ },
+ "p2|step|4096|fourier": {
+  "system": "p2",
+  "family": "step",
+  "n": 4096,
+  "path": "fourier",
+  "rel": 0.0001739443683246224,
+  "first": 4.664956557859453e+297,
+  "last": 6.427205493150101e-05,
+  "maxerr": 0.0006050548522592927
+ },
+ "p2|step|4096|zoh": {
+  "system": "p2",
+  "family": "step",
+  "n": 4096,
+  "path": "zoh",
+  "rel": 0.0014275632643831707,
+  "first": 0.0,
+  "last": 5.920209531739019e-06,
+  "maxerr": 0.0035456496334407635
+ },
+ "p2|step|fine|fourier": {
+  "system": "p2",
+  "family": "step",
+  "n": "fine",
+  "path": "fourier",
+  "rel": 0.0027961074131260125,
+  "first": 7.785785095316302e+297,
+  "last": 0.0005153225847585967,
+  "maxerr": 0.007487263543814588
+ },
+ "p2|step|fine|fourier_pad2": {
+  "system": "p2",
+  "family": "step",
+  "n": "fine",
+  "path": "fourier_pad2",
+  "rel": 0.002728279326971548,
+  "first": 3.7937241735146195e+295,
+  "last": 0.000513412951419956,
+  "maxerr": 0.007615625081944258
+ },
+ "p2|step|fine|zoh": {
+  "system": "p2",
+  "family": "step",
+  "n": "fine",
+  "path": "zoh",
+  "rel": 0.005445850260319111,
+  "first": 0.0,
+  "last": 1.1303138708388258e-05,
+  "maxerr": 0.01286204693473028
+ },
+ "p2|step|fine|foh": {
+  "system": "p2",
+  "family": "step",
+  "n": "fine",
+  "path": "foh",
+  "rel": 0.0027205380427341615,
+  "first": 0.0,
+  "last": 6.390023472750978e-06,
+  "maxerr": 0.006653054040402149
+ },
+ "p2|step|fine|cheb64": {
+  "system": "p2",
+  "family": "step",
+  "n": "fine",
+  "path": "cheb64",
+  "rel": 0.010901084885588674,
+  "first": 4.195236319250243e+297,
+  "last": 0.0004991705798400248,
+  "maxerr": 0.05673531182337441
+ },
+ "p2|ramp|256|fourier": {
+  "system": "p2",
+  "family": "ramp",
+  "n": 256,
+  "path": "fourier",
+  "rel": 0.005115174670733373,
+  "first": 3.482830098789481e+298,
+  "last": 0.004247453746683438,
+  "maxerr": 0.01759756469681807
+ },
+ "p2|ramp|256|zoh": {
+  "system": "p2",
+  "family": "ramp",
+  "n": 256,
+  "path": "zoh",
+  "rel": 0.004642513962445008,
+  "first": 0.0,
+  "last": 0.0026754399534234417,
+  "maxerr": 0.004636604700133853
+ },
+ "p2|ramp|1024|fourier": {
+  "system": "p2",
+  "family": "ramp",
+  "n": 1024,
+  "path": "fourier",
+  "rel": 0.0012139491802750694,
+  "first": 1.558272738181593e+298,
+  "last": 0.0005185691470810687,
+  "maxerr": 0.004301294339874843
+ },
+ "p2|ramp|1024|fourier_pad2": {
+  "system": "p2",
+  "family": "ramp",
+  "n": 1024,
+  "path": "fourier_pad2",
+  "rel": 0.00022631632755534852,
+  "first": 1.1582774385716428e+294,
+  "last": 0.0005185966132502699,
+  "maxerr": 0.002870874143227917
+ },
+ "p2|ramp|1024|fourier_pad4": {
+  "system": "p2",
+  "family": "ramp",
+  "n": 1024,
+  "path": "fourier_pad4",
+  "rel": 0.00022637085498595962,
+  "first": 1.6492234421203776e+295,
+  "last": 0.0005186038592159235,
+  "maxerr": 0.002870875363773293
+ },
+ "p2|ramp|1024|zoh": {
+  "system": "p2",
+  "family": "ramp",
+  "n": 1024,
+  "path": "zoh",
+  "rel": 0.0011963127028786953,
+  "first": 0.0,
+  "last": 0.0006902826914347282,
+  "maxerr": 0.0012020956401554543
+ },
+ "p2|ramp|1024|foh": {
+  "system": "p2",
+  "family": "ramp",
+  "n": 1024,
+  "path": "foh",
+  "rel": 7.627498222397416e-22,
+  "first": 0.0,
+  "last": 0.0,
+  "maxerr": 1.208646460686226e-20
+ },
+ "p2|ramp|1024|cheb16": {
+  "system": "p2",
+  "family": "ramp",
+  "n": 1024,
+  "path": "cheb16",
+  "rel": 0.009276605344215334,
+  "first": 3.67644606624949e+297,
+  "last": 0.0007375984984310786,
+  "maxerr": 0.013571754666371911
+ },
+ "p2|ramp|1024|cheb64": {
+  "system": "p2",
+  "family": "ramp",
+  "n": 1024,
+  "path": "cheb64",
+  "rel": 0.0001460562093561676,
+  "first": 6.538881336426601e+295,
+  "last": 3.759872606552701e-06,
+  "maxerr": 0.000429017322637975
+ },
+ "p2|ramp|1024|cheb256": {
+  "system": "p2",
+  "family": "ramp",
+  "n": 1024,
+  "path": "cheb256",
+  "rel": 89865.71930103868,
+  "first": 1.2380701976585224e+306,
+  "last": 20600.189604916544,
+  "maxerr": 284666.7168253392
+ },
+ "p2|ramp|4096|fourier": {
+  "system": "p2",
+  "family": "ramp",
+  "n": 4096,
+  "path": "fourier",
+  "rel": 0.00029241495291636296,
+  "first": 7.276768263506994e+297,
+  "last": 6.487158933446427e-05,
+  "maxerr": 0.0010694959403778157
+ },
+ "p2|ramp|4096|zoh": {
+  "system": "p2",
+  "family": "ramp",
+  "n": 4096,
+  "path": "zoh",
+  "rel": 0.00028692196016476734,
+  "first": 0.0,
+  "last": 0.000165327776164705,
+  "maxerr": 0.0002891661540341664
+ },
+ "p2|ramp|fine|fourier": {
+  "system": "p2",
+  "family": "ramp",
+  "n": "fine",
+  "path": "fourier",
+  "rel": 0.0011866888250061218,
+  "first": 1.6436188158484855e+298,
+  "last": 0.0005183125565762275,
+  "maxerr": 0.0043061643321763215
+ },
+ "p2|ramp|fine|fourier_pad2": {
+  "system": "p2",
+  "family": "ramp",
+  "n": "fine",
+  "path": "fourier_pad2",
+  "rel": 0.00022123876007761523,
+  "first": 1.212482921677217e+294,
+  "last": 0.0005183372574094824,
+  "maxerr": 0.002874057596154009
+ },
+ "p2|ramp|fine|zoh": {
+  "system": "p2",
+  "family": "ramp",
+  "n": "fine",
+  "path": "zoh",
+  "rel": 0.0011387993841987611,
+  "first": 0.0,
+  "last": 0.0006563532170898308,
+  "maxerr": 0.001146306470527918
+ },
+ "p2|ramp|fine|foh": {
+  "system": "p2",
+  "family": "ramp",
+  "n": "fine",
+  "path": "foh",
+  "rel": 2.128728801608982e-06,
+  "first": 0.0,
+  "last": 2.6038065739373977e-09,
+  "maxerr": 6.016226384375801e-06
+ },
+ "p2|ramp|fine|cheb64": {
+  "system": "p2",
+  "family": "ramp",
+  "n": "fine",
+  "path": "cheb64",
+  "rel": 0.00011978148493264283,
+  "first": 7.607705605619943e+295,
+  "last": 3.460854660690278e-06,
+  "maxerr": 0.0003631979068231452
+ },
+ "p2|prbs|256|fourier": {
+  "system": "p2",
+  "family": "prbs",
+  "n": 256,
+  "path": "fourier",
+  "rel": 0.005617769613665188,
+  "first": 0.016893665717250476,
+  "last": 0.008099795005465165,
+  "maxerr": 0.010535555735200902
+ },
+ "p2|prbs|256|zoh": {
+  "system": "p2",
+  "family": "prbs",
+  "n": 256,
+  "path": "zoh",
+  "rel": 0.07686140317514167,
+  "first": 0.0,
+  "last": 0.09436754502939923,
+  "maxerr": 0.09170722663264574
+ },
+ "p2|prbs|1024|fourier": {
+  "system": "p2",
+  "family": "prbs",
+  "n": 1024,
+  "path": "fourier",
+  "rel": 0.0008619075004792686,
+  "first": 0.002357910783175831,
+  "last": 0.0007639276070012665,
+  "maxerr": 0.0022992932366780257
+ },
+ "p2|prbs|1024|fourier_pad2": {
+  "system": "p2",
+  "family": "prbs",
+  "n": 1024,
+  "path": "fourier_pad2",
+  "rel": 0.000661377567817186,
+  "first": 0.0019145651970909833,
+  "last": 0.0006246187968190118,
+  "maxerr": 0.001997615218038793
+ },
+ "p2|prbs|1024|fourier_pad4": {
+  "system": "p2",
+  "family": "prbs",
+  "n": 1024,
+  "path": "fourier_pad4",
+  "rel": 0.0006610872459055972,
+  "first": 0.0019138232159291147,
+  "last": 0.0006258805133859135,
+  "maxerr": 0.00199797547917235
+ },
+ "p2|prbs|1024|zoh": {
+  "system": "p2",
+  "family": "prbs",
+  "n": 1024,
+  "path": "zoh",
+  "rel": 0.01879646912800967,
+  "first": 0.0,
+  "last": 0.017404996127677555,
+  "maxerr": 0.022869510661911018
+ },
+ "p2|prbs|1024|foh": {
+  "system": "p2",
+  "family": "prbs",
+  "n": 1024,
+  "path": "foh",
+  "rel": 0.0,
+  "first": 0.0,
+  "last": 0.0,
+  "maxerr": 0.0
+ },
+ "p2|prbs|1024|cheb16": {
+  "system": "p2",
+  "family": "prbs",
+  "n": 1024,
+  "path": "cheb16",
+  "rel": 0.5856077679837649,
+  "first": 0.08683659574846059,
+  "last": 0.125995458411565,
+  "maxerr": 0.7141899595368011
+ },
+ "p2|prbs|1024|cheb64": {
+  "system": "p2",
+  "family": "prbs",
+  "n": 1024,
+  "path": "cheb64",
+  "rel": 0.030484011780189904,
+  "first": 0.007091826810705639,
+  "last": 0.005367531873966026,
+  "maxerr": 0.07333095706287682
+ },
+ "p2|prbs|1024|cheb256": {
+  "system": "p2",
+  "family": "prbs",
+  "n": 1024,
+  "path": "cheb256",
+  "rel": 62547631.11409974,
+  "first": 319317079.02867603,
+  "last": 46488109.18571221,
+  "maxerr": 241591764.66209948
+ },
+ "p2|prbs|4096|fourier": {
+  "system": "p2",
+  "family": "prbs",
+  "n": 4096,
+  "path": "fourier",
+  "rel": 0.00016934486992180667,
+  "first": 0.0009120702151652895,
+  "last": 0.0001044268951247943,
+  "maxerr": 0.0005906009258681176
+ },
+ "p2|prbs|4096|zoh": {
+  "system": "p2",
+  "family": "prbs",
+  "n": 4096,
+  "path": "zoh",
+  "rel": 0.0049383114210583955,
+  "first": 0.0,
+  "last": 0.004927662357621976,
+  "maxerr": 0.0057029018653432725
+ },
+ "p2|prbs|fine|fourier": {
+  "system": "p2",
+  "family": "prbs",
+  "n": "fine",
+  "path": "fourier",
+  "rel": 0.009237389789646902,
+  "first": 0.003708606162691459,
+  "last": 0.007104599215837746,
+  "maxerr": 0.015127313920812839
+ },
+ "p2|prbs|fine|fourier_pad2": {
+  "system": "p2",
+  "family": "prbs",
+  "n": "fine",
+  "path": "fourier_pad2",
+  "rel": 0.009232396765920824,
+  "first": 0.0019107148792848506,
+  "last": 0.0070880500432872855,
+  "maxerr": 0.01522694759894545
+ },
+ "p2|prbs|fine|zoh": {
+  "system": "p2",
+  "family": "prbs",
+  "n": "fine",
+  "path": "zoh",
+  "rel": 0.019150062018283447,
+  "first": 4.12651659040256e-14,
+  "last": 0.015860857437212657,
+  "maxerr": 0.031014451543409052
+ },
+ "p2|prbs|fine|foh": {
+  "system": "p2",
+  "family": "prbs",
+  "n": "fine",
+  "path": "foh",
+  "rel": 0.009164459834626399,
+  "first": 4.12651659040256e-14,
+  "last": 0.007192598500656753,
+  "maxerr": 0.014489510130501572
+ },
+ "p2|prbs|fine|cheb64": {
+  "system": "p2",
+  "family": "prbs",
+  "n": "fine",
+  "path": "cheb64",
+  "rel": 0.029484006668262678,
+  "first": 0.005550003444755094,
+  "last": 0.010751538702747417,
+  "maxerr": 0.076380920836179
+ },
+ "p2|smooth|256|fourier": {
+  "system": "p2",
+  "family": "smooth",
+  "n": 256,
+  "path": "fourier",
+  "rel": 0.0031491177618741626,
+  "first": 0.009829665877629165,
+  "last": 0.005854080642087158,
+  "maxerr": 0.009636979109807398
+ },
+ "p2|smooth|256|zoh": {
+  "system": "p2",
+  "family": "smooth",
+  "n": 256,
+  "path": "zoh",
+  "rel": 0.009680345420781727,
+  "first": 0.0048995825596724295,
+  "last": 0.01022620459493852,
+  "maxerr": 0.009615830254842788
+ },
+ "p2|smooth|1024|fourier": {
+  "system": "p2",
+  "family": "smooth",
+  "n": 1024,
+  "path": "fourier",
+  "rel": 0.0006836198946995322,
+  "first": 0.0025152645933525335,
+  "last": 0.0006492421895994364,
+  "maxerr": 0.0026049284338281625
+ },
+ "p2|smooth|1024|fourier_pad2": {
+  "system": "p2",
+  "family": "smooth",
+  "n": 1024,
+  "path": "fourier_pad2",
+  "rel": 0.0004986791402604989,
+  "first": 0.0019043180619653967,
+  "last": 0.0005099705228141845,
+  "maxerr": 0.0024155679863976155
+ },
+ "p2|smooth|1024|fourier_pad4": {
+  "system": "p2",
+  "family": "smooth",
+  "n": 1024,
+  "path": "fourier_pad4",
+  "rel": 0.0004986262749315548,
+  "first": 0.001903296178747122,
+  "last": 0.0005097904744063365,
+  "maxerr": 0.002415649761252508
+ },
+ "p2|smooth|1024|zoh": {
+  "system": "p2",
+  "family": "smooth",
+  "n": 1024,
+  "path": "zoh",
+  "rel": 0.002169946514467014,
+  "first": 0.0013356790357490838,
+  "last": 0.002067884837307044,
+  "maxerr": 0.00253163866833033
+ },
+ "p2|smooth|1024|foh": {
+  "system": "p2",
+  "family": "smooth",
+  "n": 1024,
+  "path": "foh",
+  "rel": 0.0,
+  "first": 0.0,
+  "last": 0.0,
+  "maxerr": 0.0
+ },
+ "p2|smooth|1024|cheb16": {
+  "system": "p2",
+  "family": "smooth",
+  "n": 1024,
+  "path": "cheb16",
+  "rel": 0.0005230911120221342,
+  "first": 0.00013255436955544414,
+  "last": 0.0003254068850006089,
+  "maxerr": 0.0005207857689549173
+ },
+ "p2|smooth|1024|cheb64": {
+  "system": "p2",
+  "family": "smooth",
+  "n": 1024,
+  "path": "cheb64",
+  "rel": 4.801694161534541e-06,
+  "first": 3.579897171777834e-06,
+  "last": 5.370600370711358e-06,
+  "maxerr": 5.329366030607728e-06
+ },
+ "p2|smooth|1024|cheb256": {
+  "system": "p2",
+  "family": "smooth",
+  "n": 1024,
+  "path": "cheb256",
+  "rel": 5.214716234116327e-06,
+  "first": 8.16143010008165e-06,
+  "last": 5.411535328865208e-06,
+  "maxerr": 6.8597448942269465e-06
+ },
+ "p2|smooth|4096|fourier": {
+  "system": "p2",
+  "family": "smooth",
+  "n": 4096,
+  "path": "fourier",
+  "rel": 0.0001899966442934897,
+  "first": 0.0008158508742426075,
+  "last": 8.197314597313e-05,
+  "maxerr": 0.0006508128452821924
+ },
+ "p2|smooth|4096|zoh": {
+  "system": "p2",
+  "family": "smooth",
+  "n": 4096,
+  "path": "zoh",
+  "rel": 0.0006161573412204308,
+  "first": 0.0005328362317793821,
+  "last": 0.0005455503941608191,
+  "maxerr": 0.0007162803046854265
+ },
+ "p2|smooth|fine|fourier": {
+  "system": "p2",
+  "family": "smooth",
+  "n": "fine",
+  "path": "fourier",
+  "rel": 0.0006731491977102883,
+  "first": 0.003261583327594038,
+  "last": 0.0006475837374296711,
+  "maxerr": 0.002452002565266894
+ },
+ "p2|smooth|fine|fourier_pad2": {
+  "system": "p2",
+  "family": "smooth",
+  "n": "fine",
+  "path": "fourier_pad2",
+  "rel": 0.000492515663276057,
+  "first": 0.0019104313202210547,
+  "last": 0.0004936720174019526,
+  "maxerr": 0.002279338521410844
+ },
+ "p2|smooth|fine|zoh": {
+  "system": "p2",
+  "family": "smooth",
+  "n": "fine",
+  "path": "zoh",
+  "rel": 0.003060267171382015,
+  "first": 0.0026329001987522417,
+  "last": 0.0023889593417614615,
+  "maxerr": 0.0033148273124702127
+ },
+ "p2|smooth|fine|foh": {
+  "system": "p2",
+  "family": "smooth",
+  "n": "fine",
+  "path": "foh",
+  "rel": 7.490279876867968e-06,
+  "first": 5.387154362252692e-06,
+  "last": 6.448217280497958e-06,
+  "maxerr": 7.552354661641564e-06
+ },
+ "p2|smooth|fine|cheb64": {
+  "system": "p2",
+  "family": "smooth",
+  "n": "fine",
+  "path": "cheb64",
+  "rel": 2.1965812144364387e-08,
+  "first": 1.5797516470523293e-08,
+  "last": 1.8910690133257364e-08,
+  "maxerr": 2.214779904363921e-08
+ },
+ "p2|periodic|256|fourier": {
+  "system": "p2",
+  "family": "periodic",
+  "n": 256,
+  "path": "fourier",
+  "rel": 0.0006673394245545266,
+  "first": 0.0003306791271340784,
+  "last": 0.0007142184238121123,
+  "maxerr": 0.0007169580278044787
+ },
+ "p2|periodic|256|zoh": {
+  "system": "p2",
+  "family": "periodic",
+  "n": 256,
+  "path": "zoh",
+  "rel": 0.03355518004490961,
+  "first": 0.023774029762477444,
+  "last": 0.03013463468840566,
+  "maxerr": 0.03567945124519992
+ },
+ "p2|periodic|1024|fourier": {
+  "system": "p2",
+  "family": "periodic",
+  "n": 1024,
+  "path": "fourier",
+  "rel": 3.8600037647845605e-05,
+  "first": 2.1086931656953348e-05,
+  "last": 4.385774552774231e-05,
+  "maxerr": 4.104528824706648e-05
+ },
+ "p2|periodic|1024|fourier_pad2": {
+  "system": "p2",
+  "family": "periodic",
+  "n": 1024,
+  "path": "fourier_pad2",
+  "rel": 0.0004138797721542144,
+  "first": 0.002000633788767121,
+  "last": 0.00045737929693709525,
+  "maxerr": 0.001447811421008053
+ },
+ "p2|periodic|1024|fourier_pad4": {
+  "system": "p2",
+  "family": "periodic",
+  "n": 1024,
+  "path": "fourier_pad4",
+  "rel": 0.0004142084340645351,
+  "first": 0.002002026793288326,
+  "last": 0.0004581678832489152,
+  "maxerr": 0.001449068061018651
+ },
+ "p2|periodic|1024|zoh": {
+  "system": "p2",
+  "family": "periodic",
+  "n": 1024,
+  "path": "zoh",
+  "rel": 0.007698396952959855,
+  "first": 0.005079346256462027,
+  "last": 0.008868709229445063,
+  "maxerr": 0.008479479230713495
+ },
+ "p2|periodic|1024|foh": {
+  "system": "p2",
+  "family": "periodic",
+  "n": 1024,
+  "path": "foh",
+  "rel": 0.0,
+  "first": 0.0,
+  "last": 0.0,
+  "maxerr": 0.0
+ },
+ "p2|periodic|1024|cheb16": {
+  "system": "p2",
+  "family": "periodic",
+  "n": 1024,
+  "path": "cheb16",
+  "rel": 0.15728936064020574,
+  "first": 0.015530092503233808,
+  "last": 0.04969883338006789,
+  "maxerr": 0.1764475759618129
+ },
+ "p2|periodic|1024|cheb64": {
+  "system": "p2",
+  "family": "periodic",
+  "n": 1024,
+  "path": "cheb64",
+  "rel": 3.844925214697536e-05,
+  "first": 2.100456286341113e-05,
+  "last": 4.36864218730023e-05,
+  "maxerr": 4.0884950959590984e-05
+ },
+ "p2|periodic|1024|cheb256": {
+  "system": "p2",
+  "family": "periodic",
+  "n": 1024,
+  "path": "cheb256",
+  "rel": 3.857533133482579e-05,
+  "first": 2.147614737012138e-05,
+  "last": 4.3542480413892266e-05,
+  "maxerr": 4.0878010238015524e-05
+ },
+ "p2|periodic|4096|fourier": {
+  "system": "p2",
+  "family": "periodic",
+  "n": 4096,
+  "path": "fourier",
+  "rel": 2.577114708427538e-06,
+  "first": 1.3490749303546267e-06,
+  "last": 2.771755656420328e-06,
+  "maxerr": 2.765159542117255e-06
+ },
+ "p2|periodic|4096|zoh": {
+  "system": "p2",
+  "family": "periodic",
+  "n": 4096,
+  "path": "zoh",
+  "rel": 0.0019040668979005606,
+  "first": 0.00110477231835114,
+  "last": 0.0020804370607634013,
+  "maxerr": 0.002064421246256029
+ },
+ "p2|periodic|fine|fourier": {
+  "system": "p2",
+  "family": "periodic",
+  "n": "fine",
+  "path": "fourier",
+  "rel": 4.547851117838838e-06,
+  "first": 2.0470368698384986e-05,
+  "last": 4.854936850576909e-06,
+  "maxerr": 1.5420541574215088e-05
+ },
+ "p2|periodic|fine|fourier_pad2": {
+  "system": "p2",
+  "family": "periodic",
+  "n": "fine",
+  "path": "fourier_pad2",
+  "rel": 0.00044045004566398393,
+  "first": 0.001901990637997095,
+  "last": 0.00046151518414516034,
+  "maxerr": 0.001556250097337177
+ },
+ "p2|periodic|fine|zoh": {
+  "system": "p2",
+  "family": "periodic",
+  "n": "fine",
+  "path": "zoh",
+  "rel": 0.007627699804896244,
+  "first": 0.006165133786564364,
+  "last": 0.010255457589541531,
+  "maxerr": 0.008017812425678065
+ },
+ "p2|periodic|fine|foh": {
+  "system": "p2",
+  "family": "periodic",
+  "n": "fine",
+  "path": "foh",
+  "rel": 3.9924180469199114e-05,
+  "first": 1.7196190049924714e-05,
+  "last": 4.634417018273912e-05,
+  "maxerr": 4.0626988749859454e-05
+ },
+ "p2|periodic|fine|cheb64": {
+  "system": "p2",
+  "family": "periodic",
+  "n": "fine",
+  "path": "cheb64",
+  "rel": 1.1708282347969396e-07,
+  "first": 5.042559479856362e-08,
+  "last": 1.359135318697483e-07,
+  "maxerr": 1.1914415792561964e-07
+ },
+ "p4|step|256|fourier": {
+  "system": "p4",
+  "family": "step",
+  "n": 256,
+  "path": "fourier",
+  "rel": 0.0023905050631427656,
+  "first": 1.7748723951621748e+298,
+  "last": 0.001788313785647797,
+  "maxerr": 0.0075320119233305725
+ },
+ "p4|step|256|zoh": {
+  "system": "p4",
+  "family": "step",
+  "n": 256,
+  "path": "zoh",
+  "rel": 0.016545267788303307,
+  "first": 0.0,
+  "last": 0.0011562260847295053,
+  "maxerr": 0.044108517528010344
+ },
+ "p4|step|1024|fourier": {
+  "system": "p4",
+  "family": "step",
+  "n": 1024,
+  "path": "fourier",
+  "rel": 0.00051149008406603,
+  "first": 8.24994162144306e+297,
+  "last": 0.00021369949235945605,
+  "maxerr": 0.0018184878393602392
+ },
+ "p4|step|1024|fourier_pad2": {
+  "system": "p4",
+  "family": "step",
+  "n": 1024,
+  "path": "fourier_pad2",
+  "rel": 0.00014609552816558676,
+  "first": 4.0584426536965106e+295,
+  "last": 0.00021138856679577708,
+  "maxerr": 0.0012241221830660042
+ },
+ "p4|step|1024|fourier_pad4": {
+  "system": "p4",
+  "family": "step",
+  "n": 1024,
+  "path": "fourier_pad4",
+  "rel": 0.00014617813801376904,
+  "first": 4.206332604511927e+295,
+  "last": 0.00021146511172001205,
+  "maxerr": 0.0012247179279697615
+ },
+ "p4|step|1024|zoh": {
+  "system": "p4",
+  "family": "step",
+  "n": 1024,
+  "path": "zoh",
+  "rel": 0.0040406228532494474,
+  "first": 0.0,
+  "last": 0.0002663355328034796,
+  "maxerr": 0.010947421909627315
+ },
+ "p4|step|1024|foh": {
+  "system": "p4",
+  "family": "step",
+  "n": 1024,
+  "path": "foh",
+  "rel": 2.1715902333961566e-16,
+  "first": 0.0,
+  "last": 1.6060491207318187e-16,
+  "maxerr": 3.719828263850581e-16
+ },
+ "p4|step|1024|cheb16": {
+  "system": "p4",
+  "family": "step",
+  "n": 1024,
+  "path": "cheb16",
+  "rel": 0.11490995338204953,
+  "first": 5.679474386613067e+298,
+  "last": 0.013737280064834656,
+  "maxerr": 0.2465782700489022
+ },
+ "p4|step|1024|cheb64": {
+  "system": "p4",
+  "family": "step",
+  "n": 1024,
+  "path": "cheb64",
+  "rel": 0.006833508789580243,
+  "first": 4.030126256130352e+297,
+  "last": 0.00020185420773847435,
+  "maxerr": 0.04056132907397511
+ },
+ "p4|step|1024|cheb256": {
+  "system": "p4",
+  "family": "step",
+  "n": 1024,
+  "path": "cheb256",
+  "rel": 18641984.611758135,
+  "first": Infinity,
+  "last": 3875355.5272219153,
+  "maxerr": 50385968.83651619
+ },
+ "p4|step|4096|fourier": {
+  "system": "p4",
+  "family": "step",
+  "n": 4096,
+  "path": "fourier",
+  "rel": 0.00013267661282582004,
+  "first": 5.040693155151673e+297,
+  "last": 2.756216739026659e-05,
+  "maxerr": 0.0004586951655459298
+ },
+ "p4|step|4096|zoh": {
+  "system": "p4",
+  "family": "step",
+  "n": 4096,
+  "path": "zoh",
+  "rel": 0.0010918267047221944,
+  "first": 0.0,
+  "last": 7.933272305595457e-05,
+  "maxerr": 0.0028073108083572686
+ },
+ "p4|step|fine|fourier": {
+  "system": "p4",
+  "family": "step",
+  "n": "fine",
+  "path": "fourier",
+  "rel": 0.001939209957918798,
+  "first": 8.411968683100417e+297,
+  "last": 0.00024391382084551852,
+  "maxerr": 0.005952499059869019
+ },
+ "p4|step|fine|fourier_pad2": {
+  "system": "p4",
+  "family": "step",
+  "n": "fine",
+  "path": "fourier_pad2",
+  "rel": 0.0019832049976719925,
+  "first": 4.159352670867417e+295,
+  "last": 0.0002444515998149695,
+  "maxerr": 0.005825677000281304
+ },
+ "p4|step|fine|zoh": {
+  "system": "p4",
+  "family": "step",
+  "n": "fine",
+  "path": "zoh",
+  "rel": 0.003963298933175858,
+  "first": 0.0,
+  "last": 0.0001965895537036873,
+  "maxerr": 0.010680186403623986
+ },
+ "p4|step|fine|foh": {
+  "system": "p4",
+  "family": "step",
+  "n": "fine",
+  "path": "foh",
+  "rel": 0.001978753729122554,
+  "first": 0.0,
+  "last": 0.00010921131296313212,
+  "maxerr": 0.005458930859084544
+ },
+ "p4|step|fine|cheb64": {
+  "system": "p4",
+  "family": "step",
+  "n": "fine",
+  "path": "cheb64",
+  "rel": 0.007285519873497652,
+  "first": 4.746029209194157e+297,
+  "last": 0.0002711930252966802,
+  "maxerr": 0.04208762616715385
+ },
+ "p4|ramp|256|fourier": {
+  "system": "p4",
+  "family": "ramp",
+  "n": 256,
+  "path": "fourier",
+  "rel": 0.007420150291273861,
+  "first": 3.760030676651785e+298,
+  "last": 0.004061585494571989,
+  "maxerr": 0.01637444349687111
+ },
+ "p4|ramp|256|zoh": {
+  "system": "p4",
+  "family": "ramp",
+  "n": 256,
+  "path": "zoh",
+  "rel": 0.009153097161864902,
+  "first": 0.0,
+  "last": 0.005958289064897907,
+  "maxerr": 0.005643442165957158
+ },
+ "p4|ramp|1024|fourier": {
+  "system": "p4",
+  "family": "ramp",
+  "n": 1024,
+  "path": "fourier",
+  "rel": 0.0019477924107326782,
+  "first": 1.6835826224496215e+298,
+  "last": 0.0005357015246122833,
+  "maxerr": 0.004233135646230346
+ },
+ "p4|ramp|1024|fourier_pad2": {
+  "system": "p4",
+  "family": "ramp",
+  "n": 1024,
+  "path": "fourier_pad2",
+  "rel": 0.00032466261979297706,
+  "first": 1.2744312831456395e+294,
+  "last": 0.0005329599772121484,
+  "maxerr": 0.0028162826699341913
+ },
+ "p4|ramp|1024|fourier_pad4": {
+  "system": "p4",
+  "family": "ramp",
+  "n": 1024,
+  "path": "fourier_pad4",
+  "rel": 0.0003247408338492095,
+  "first": 1.8068467725276686e+295,
+  "last": 0.0005329660713362123,
+  "maxerr": 0.0028162683133642003
+ },
+ "p4|ramp|1024|zoh": {
+  "system": "p4",
+  "family": "ramp",
+  "n": 1024,
+  "path": "zoh",
+  "rel": 0.0025631834742719005,
+  "first": 0.0,
+  "last": 0.0016815303815751088,
+  "maxerr": 0.0015750381380612065
+ },
+ "p4|ramp|1024|foh": {
+  "system": "p4",
+  "family": "ramp",
+  "n": 1024,
+  "path": "foh",
+  "rel": 4.228073959624611e-16,
+  "first": 0.0,
+  "last": 3.185461135538478e-16,
+  "maxerr": 6.080457149820781e-16
+ },
+ "p4|ramp|1024|cheb16": {
+  "system": "p4",
+  "family": "ramp",
+  "n": 1024,
+  "path": "cheb16",
+  "rel": 0.012472208193585275,
+  "first": 4.4122086124781165e+297,
+  "last": 0.001187947286613456,
+  "maxerr": 0.015167573244386334
+ },
+ "p4|ramp|1024|cheb64": {
+  "system": "p4",
+  "family": "ramp",
+  "n": 1024,
+  "path": "cheb64",
+  "rel": 0.0002163744858221596,
+  "first": 7.402044611103995e+295,
+  "last": 3.738749957213958e-06,
+  "maxerr": 0.00044067027541810303
+ },
+ "p4|ramp|1024|cheb256": {
+  "system": "p4",
+  "family": "ramp",
+  "n": 1024,
+  "path": "cheb256",
+  "rel": 137118.16504991724,
+  "first": 1.3363476182262938e+306,
+  "last": 20267.57059080206,
+  "maxerr": 269373.7064243719
+ },
+ "p4|ramp|4096|fourier": {
+  "system": "p4",
+  "family": "ramp",
+  "n": 4096,
+  "path": "fourier",
+  "rel": 0.0004449559187222452,
+  "first": 7.862879022539056e+297,
+  "last": 6.393927641420163e-05,
+  "maxerr": 0.0010012588303579257
+ },
+ "p4|ramp|4096|zoh": {
+  "system": "p4",
+  "family": "ramp",
+  "n": 4096,
+  "path": "zoh",
+  "rel": 0.0006002189678242478,
+  "first": 0.0,
+  "last": 0.00039256883994380964,
+  "maxerr": 0.0003681742817580266
+ },
+ "p4|ramp|fine|fourier": {
+  "system": "p4",
+  "family": "ramp",
+  "n": "fine",
+  "path": "fourier",
+  "rel": 0.0017592202497270246,
+  "first": 1.7757919639170064e+298,
+  "last": 0.0004996604698614935,
+  "maxerr": 0.003977204770517696
+ },
+ "p4|ramp|fine|fourier_pad2": {
+  "system": "p4",
+  "family": "ramp",
+  "n": "fine",
+  "path": "fourier_pad2",
+  "rel": 0.000293196344130466,
+  "first": 1.3340138566197544e+294,
+  "last": 0.0004971072817528875,
+  "maxerr": 0.002645855203656634
+ },
+ "p4|ramp|fine|zoh": {
+  "system": "p4",
+  "family": "ramp",
+  "n": "fine",
+  "path": "zoh",
+  "rel": 0.002332985461228309,
+  "first": 0.0,
+  "last": 0.0015242248699130442,
+  "maxerr": 0.0014323885323473183
+ },
+ "p4|ramp|fine|foh": {
+  "system": "p4",
+  "family": "ramp",
+  "n": "fine",
+  "path": "foh",
+  "rel": 2.796837012706481e-06,
+  "first": 0.0,
+  "last": 1.1856019535723174e-07,
+  "maxerr": 5.13071511176231e-06
+ },
+ "p4|ramp|fine|cheb64": {
+  "system": "p4",
+  "family": "ramp",
+  "n": "fine",
+  "path": "cheb64",
+  "rel": 0.0001629149797332296,
+  "first": 8.607722501527289e+295,
+  "last": 3.4778499632648232e-06,
+  "maxerr": 0.00034552112512141144
+ },
+ "p4|prbs|256|fourier": {
+  "system": "p4",
+  "family": "prbs",
+  "n": 256,
+  "path": "fourier",
+  "rel": 0.005880012405215957,
+  "first": 0.016776176557452706,
+  "last": 0.008234381715395131,
+  "maxerr": 0.00870484845545208
+ },
+ "p4|prbs|256|zoh": {
+  "system": "p4",
+  "family": "prbs",
+  "n": 256,
+  "path": "zoh",
+  "rel": 0.08087433736314074,
+  "first": 1.1255577125337183e-16,
+  "last": 0.10360936114308056,
+  "maxerr": 0.08799306368364465
+ },
+ "p4|prbs|1024|fourier": {
+  "system": "p4",
+  "family": "prbs",
+  "n": 1024,
+  "path": "fourier",
+  "rel": 0.0008535676282170183,
+  "first": 0.0021498025724257406,
+  "last": 0.0006712781753416193,
+  "maxerr": 0.0018671444194349658
+ },
+ "p4|prbs|1024|fourier_pad2": {
+  "system": "p4",
+  "family": "prbs",
+  "n": 1024,
+  "path": "fourier_pad2",
+  "rel": 0.0006787270223063584,
+  "first": 0.00194675336952852,
+  "last": 0.0007476011728568658,
+  "maxerr": 0.0016728752994730279
+ },
+ "p4|prbs|1024|fourier_pad4": {
+  "system": "p4",
+  "family": "prbs",
+  "n": 1024,
+  "path": "fourier_pad4",
+  "rel": 0.0006786279024998685,
+  "first": 0.0019458111393165854,
+  "last": 0.0007474307459162928,
+  "maxerr": 0.0016724446335721246
+ },
+ "p4|prbs|1024|zoh": {
+  "system": "p4",
+  "family": "prbs",
+  "n": 1024,
+  "path": "zoh",
+  "rel": 0.01913137129860623,
+  "first": 1.4769067238017126e-16,
+  "last": 0.019308377501491912,
+  "maxerr": 0.021622597776390404
+ },
+ "p4|prbs|1024|foh": {
+  "system": "p4",
+  "family": "prbs",
+  "n": 1024,
+  "path": "foh",
+  "rel": 1.4477372892099122e-16,
+  "first": 1.4769067238017126e-16,
+  "last": 1.5195334235910439e-16,
+  "maxerr": 2.3849882593268696e-16
+ },
+ "p4|prbs|1024|cheb16": {
+  "system": "p4",
+  "family": "prbs",
+  "n": 1024,
+  "path": "cheb16",
+  "rel": 0.5788428056913006,
+  "first": 0.09820985091349158,
+  "last": 0.38250009306335464,
+  "maxerr": 0.6030620622548787
+ },
+ "p4|prbs|1024|cheb64": {
+  "system": "p4",
+  "family": "prbs",
+  "n": 1024,
+  "path": "cheb64",
+  "rel": 0.030891126918153898,
+  "first": 0.007553338244307364,
+  "last": 0.006746919187237867,
+  "maxerr": 0.06152077668129104
+ },
+ "p4|prbs|1024|cheb256": {
+  "system": "p4",
+  "family": "prbs",
+  "n": 1024,
+  "path": "cheb256",
+  "rel": 66793281.214203924,
+  "first": 319864571.1202092,
+  "last": 43352174.986457735,
+  "maxerr": 201435395.7536751
+ },
+ "p4|prbs|4096|fourier": {
+  "system": "p4",
+  "family": "prbs",
+  "n": 4096,
+  "path": "fourier",
+  "rel": 0.00018031225307058778,
+  "first": 0.0009287442418328796,
+  "last": 9.28748466083883e-05,
+  "maxerr": 0.0004578617852596037
+ },
+ "p4|prbs|4096|zoh": {
+  "system": "p4",
+  "family": "prbs",
+  "n": 4096,
+  "path": "zoh",
+  "rel": 0.005193949574437017,
+  "first": 1.4201607236412609e-16,
+  "last": 0.005346805568017653,
+  "maxerr": 0.005631521160282654
+ },
+ "p4|prbs|fine|fourier": {
+  "system": "p4",
+  "family": "prbs",
+  "n": "fine",
+  "path": "fourier",
+  "rel": 0.010155213258850855,
+  "first": 0.003770102516320169,
+  "last": 0.010879343613769743,
+  "maxerr": 0.014428425151286346
+ },
+ "p4|prbs|fine|fourier_pad2": {
+  "system": "p4",
+  "family": "prbs",
+  "n": "fine",
+  "path": "fourier_pad2",
+  "rel": 0.010160167653865515,
+  "first": 0.0019425602846718096,
+  "last": 0.01086486753221202,
+  "maxerr": 0.01430130167640093
+ },
+ "p4|prbs|fine|zoh": {
+  "system": "p4",
+  "family": "prbs",
+  "n": "fine",
+  "path": "zoh",
+  "rel": 0.01942083963911743,
+  "first": 1.725307040878502e-13,
+  "last": 0.02393525790062511,
+  "maxerr": 0.028408644231646657
+ },
+ "p4|prbs|fine|foh": {
+  "system": "p4",
+  "family": "prbs",
+  "n": "fine",
+  "path": "foh",
+  "rel": 0.010124125196778667,
+  "first": 1.725307040878502e-13,
+  "last": 0.010927625227630036,
+  "maxerr": 0.013669403256699231
+ },
+ "p4|prbs|fine|cheb64": {
+  "system": "p4",
+  "family": "prbs",
+  "n": "fine",
+  "path": "cheb64",
+  "rel": 0.03105429285889548,
+  "first": 0.005798779484698688,
+  "last": 0.01375714854496966,
+  "maxerr": 0.06357351217845383
+ },
+ "p4|smooth|256|fourier": {
+  "system": "p4",
+  "family": "smooth",
+  "n": 256,
+  "path": "fourier",
+  "rel": 0.0018805599626981655,
+  "first": 0.009786525006348194,
+  "last": 0.0028028720718233577,
+  "maxerr": 0.006569299955769886
+ },
+ "p4|smooth|256|zoh": {
+  "system": "p4",
+  "family": "smooth",
+  "n": 256,
+  "path": "zoh",
+  "rel": 0.008909832413317805,
+  "first": 0.004931685913071563,
+  "last": 0.007684597706901275,
+  "maxerr": 0.010477261032430862
+ },
+ "p4|smooth|1024|fourier": {
+  "system": "p4",
+  "family": "smooth",
+  "n": 1024,
+  "path": "fourier",
+  "rel": 0.0004034603148677605,
+  "first": 0.002555925598108081,
+  "last": 0.00021169505924556318,
+  "maxerr": 0.0014977506657174258
+ },
+ "p4|smooth|1024|fourier_pad2": {
+  "system": "p4",
+  "family": "smooth",
+  "n": 1024,
+  "path": "fourier_pad2",
+  "rel": 0.00030844266458881706,
+  "first": 0.0019350211293345464,
+  "last": 0.00018558727931010816,
+  "maxerr": 0.001398037190868658
+ },
+ "p4|smooth|1024|fourier_pad4": {
+  "system": "p4",
+  "family": "smooth",
+  "n": 1024,
+  "path": "fourier_pad4",
+  "rel": 0.00030839341580356444,
+  "first": 0.0019351614920797,
+  "last": 0.0001856040418634667,
+  "maxerr": 0.001397956441388372
+ },
+ "p4|smooth|1024|zoh": {
+  "system": "p4",
+  "family": "smooth",
+  "n": 1024,
+  "path": "zoh",
+  "rel": 0.0019364378774517294,
+  "first": 0.001351959059149364,
+  "last": 0.0014336882449013295,
+  "maxerr": 0.0022512507534178175
+ },
+ "p4|smooth|1024|foh": {
+  "system": "p4",
+  "family": "smooth",
+  "n": 1024,
+  "path": "foh",
+  "rel": 1.7347747118849542e-16,
+  "first": 1.4038999577184325e-16,
+  "last": 1.3496806618301203e-16,
+  "maxerr": 3.385893265489296e-16
+ },
+ "p4|smooth|1024|cheb16": {
+  "system": "p4",
+  "family": "smooth",
+  "n": 1024,
+  "path": "cheb16",
+  "rel": 0.0002259872111223935,
+  "first": 0.00014593090934631348,
+  "last": 0.00021723018676492078,
+  "maxerr": 0.00030484836892958396
+ },
+ "p4|smooth|1024|cheb64": {
+  "system": "p4",
+  "family": "smooth",
+  "n": 1024,
+  "path": "cheb64",
+  "rel": 3.7757866680334784e-06,
+  "first": 3.59852604527069e-06,
+  "last": 2.2700021265827864e-06,
+  "maxerr": 4.331579053179642e-06
+ },
+ "p4|smooth|1024|cheb256": {
+  "system": "p4",
+  "family": "smooth",
+  "n": 1024,
+  "path": "cheb256",
+  "rel": 3.9458199538660305e-06,
+  "first": 8.162237301707245e-06,
+  "last": 2.453886515329998e-06,
+  "maxerr": 4.942230773893469e-06
+ },
+ "p4|smooth|4096|fourier": {
+  "system": "p4",
+  "family": "smooth",
+  "n": 4096,
+  "path": "fourier",
+  "rel": 0.0001390869483748735,
+  "first": 0.0008291081506261726,
+  "last": 3.993435411208219e-05,
+  "maxerr": 0.00045338968415360893
+ },
+ "p4|smooth|4096|zoh": {
+  "system": "p4",
+  "family": "smooth",
+  "n": 4096,
+  "path": "zoh",
+  "rel": 0.0007096856348334484,
+  "first": 0.0005284396573460785,
+  "last": 0.0004300302920708674,
+  "maxerr": 0.0007014924516094241
+ },
+ "p4|smooth|fine|fourier": {
+  "system": "p4",
+  "family": "smooth",
+  "n": "fine",
+  "path": "fourier",
+  "rel": 0.0004120126433796824,
+  "first": 0.0033191291982260776,
+  "last": 0.0002910988435558978,
+  "maxerr": 0.00140230624982353
+ },
+ "p4|smooth|fine|fourier_pad2": {
+  "system": "p4",
+  "family": "smooth",
+  "n": "fine",
+  "path": "fourier_pad2",
+  "rel": 0.00031206753782570283,
+  "first": 0.0019425255132851562,
+  "last": 0.0002523473297132554,
+  "maxerr": 0.001351868014290786
+ },
+ "p4|smooth|fine|zoh": {
+  "system": "p4",
+  "family": "smooth",
+  "n": "fine",
+  "path": "zoh",
+  "rel": 0.003082566351089659,
+  "first": 0.002626239848277221,
+  "last": 0.0021025920106429565,
+  "maxerr": 0.003025059177423738
+ },
+ "p4|smooth|fine|foh": {
+  "system": "p4",
+  "family": "smooth",
+  "n": "fine",
+  "path": "foh",
+  "rel": 5.949181580079824e-06,
+  "first": 5.4926875892884144e-06,
+  "last": 3.69611258639585e-06,
+  "maxerr": 6.012447187786414e-06
+ },
+ "p4|smooth|fine|cheb64": {
+  "system": "p4",
+  "family": "smooth",
+  "n": "fine",
+  "path": "cheb64",
+  "rel": 1.7445971615158886e-08,
+  "first": 1.6106880000035114e-08,
+  "last": 1.0839449636224634e-08,
+  "maxerr": 1.7631479285234902e-08
+ },
+ "p4|periodic|256|fourier": {
+  "system": "p4",
+  "family": "periodic",
+  "n": 256,
+  "path": "fourier",
+  "rel": 0.0003287611057309504,
+  "first": 0.00034209881619751386,
+  "last": 0.00028684428392540675,
+  "maxerr": 0.0003979019048593373
+ },
+ "p4|periodic|256|zoh": {
+  "system": "p4",
+  "family": "periodic",
+  "n": 256,
+  "path": "zoh",
+  "rel": 0.02159305552215325,
+  "first": 0.024491329216895695,
+  "last": 0.021884961996987085,
+  "maxerr": 0.02557193113618424
+ },
+ "p4|periodic|1024|fourier": {
+  "system": "p4",
+  "family": "periodic",
+  "n": 1024,
+  "path": "fourier",
+  "rel": 1.8887287783010815e-05,
+  "first": 2.132035983003089e-05,
+  "last": 1.609315014303443e-05,
+  "maxerr": 2.2682604735671536e-05
+ },
+ "p4|periodic|1024|fourier_pad2": {
+  "system": "p4",
+  "family": "periodic",
+  "n": 1024,
+  "path": "fourier_pad2",
+  "rel": 0.00029834938271127375,
+  "first": 0.00203259352462624,
+  "last": 0.0002575990865120437,
+  "maxerr": 0.0010179088650537588
+ },
+ "p4|periodic|1024|fourier_pad4": {
+  "system": "p4",
+  "family": "periodic",
+  "n": 1024,
+  "path": "fourier_pad4",
+  "rel": 0.0002985732778154922,
+  "first": 0.002034023475890902,
+  "last": 0.00025803428942084154,
+  "maxerr": 0.0010187919894981837
+ },
+ "p4|periodic|1024|zoh": {
+  "system": "p4",
+  "family": "periodic",
+  "n": 1024,
+  "path": "zoh",
+  "rel": 0.00481622204071995,
+  "first": 0.005141317002871919,
+  "last": 0.004962014694101329,
+  "maxerr": 0.005732547925732637
+ },
+ "p4|periodic|1024|foh": {
+  "system": "p4",
+  "family": "periodic",
+  "n": 1024,
+  "path": "foh",
+  "rel": 1.562226897018643e-16,
+  "first": 1.364092237457871e-16,
+  "last": 1.5716487224288423e-16,
+  "maxerr": 3.1914315724670866e-16
+ },
+ "p4|periodic|1024|cheb16": {
+  "system": "p4",
+  "family": "periodic",
+  "n": 1024,
+  "path": "cheb16",
+  "rel": 0.07113646968689002,
+  "first": 0.01749253799770241,
+  "last": 0.051417644223822515,
+  "maxerr": 0.08616718766647649
+ },
+ "p4|periodic|1024|cheb64": {
+  "system": "p4",
+  "family": "periodic",
+  "n": 1024,
+  "path": "cheb64",
+  "rel": 1.8813507462800308e-05,
+  "first": 2.1237079226991714e-05,
+  "last": 1.603028440845567e-05,
+  "maxerr": 2.2593998288996327e-05
+ },
+ "p4|periodic|1024|cheb256": {
+  "system": "p4",
+  "family": "periodic",
+  "n": 1024,
+  "path": "cheb256",
+  "rel": 1.8859124799361075e-05,
+  "first": 2.2290326978150005e-05,
+  "last": 1.603724983049342e-05,
+  "maxerr": 2.2679543157745395e-05
+ },
+ "p4|periodic|4096|fourier": {
+  "system": "p4",
+  "family": "periodic",
+  "n": 4096,
+  "path": "fourier",
+  "rel": 1.1564450561334827e-06,
+  "first": 1.3705732081073757e-06,
+  "last": 1.209563912697517e-06,
+  "maxerr": 1.344606827779442e-06
+ },
+ "p4|periodic|4096|zoh": {
+  "system": "p4",
+  "family": "periodic",
+  "n": 4096,
+  "path": "zoh",
+  "rel": 0.0012051670694099245,
+  "first": 0.00112726749154602,
+  "last": 0.0014018181424171098,
+  "maxerr": 0.0014113318407806118
+ },
+ "p4|periodic|fine|fourier": {
+  "system": "p4",
+  "family": "periodic",
+  "n": "fine",
+  "path": "fourier",
+  "rel": 2.8706257605807698e-06,
+  "first": 2.0649288444240184e-05,
+  "last": 3.1318933026326973e-06,
+  "maxerr": 9.658971925009246e-06
+ },
+ "p4|periodic|fine|fourier_pad2": {
+  "system": "p4",
+  "family": "periodic",
+  "n": "fine",
+  "path": "fourier_pad2",
+  "rel": 0.0002892738640597986,
+  "first": 0.0019336897694693287,
+  "last": 0.0002328948599334517,
+  "maxerr": 0.0009975396021684561
+ },
+ "p4|periodic|fine|zoh": {
+  "system": "p4",
+  "family": "periodic",
+  "n": "fine",
+  "path": "zoh",
+  "rel": 0.004656792917099632,
+  "first": 0.006158723589244224,
+  "last": 0.0066993639017319745,
+  "maxerr": 0.0057761686337037925
+ },
+ "p4|periodic|fine|foh": {
+  "system": "p4",
+  "family": "periodic",
+  "n": "fine",
+  "path": "foh",
+  "rel": 1.8412434002173886e-05,
+  "first": 1.7254840633196795e-05,
+  "last": 1.8098241000247863e-05,
+  "maxerr": 2.249614732022611e-05
+ },
+ "p4|periodic|fine|cheb64": {
+  "system": "p4",
+  "family": "periodic",
+  "n": "fine",
+  "path": "cheb64",
+  "rel": 5.399623030745507e-08,
+  "first": 5.059694035198493e-08,
+  "last": 5.307515884434105e-08,
+  "maxerr": 6.597213271167017e-08
+ },
+ "p6|step|256|fourier": {
+  "system": "p6",
+  "family": "step",
+  "n": 256,
+  "path": "fourier",
+  "rel": 0.002235111203344948,
+  "first": 2.318491131732716e+298,
+  "last": 0.0031076252512405467,
+  "maxerr": 0.010255888958519466
+ },
+ "p6|step|256|zoh": {
+  "system": "p6",
+  "family": "step",
+  "n": 256,
+  "path": "zoh",
+  "rel": 0.013214365526251503,
+  "first": 0.0,
+  "last": 0.00033066591602065327,
+  "maxerr": 0.05789846379342202
+ },
+ "p6|step|1024|fourier": {
+  "system": "p6",
+  "family": "step",
+  "n": 1024,
+  "path": "fourier",
+  "rel": 0.0004356611684687041,
+  "first": 1.035241867653519e+298,
+  "last": 0.00038159073440657555,
+  "maxerr": 0.002604215741273087
+ },
+ "p6|step|1024|fourier_pad2": {
+  "system": "p6",
+  "family": "step",
+  "n": 1024,
+  "path": "fourier_pad2",
+  "rel": 0.00017791535538076042,
+  "first": 6.676920100816496e+295,
+  "last": 0.0003807408588823026,
+  "maxerr": 0.0017552599443107692
+ },
+ "p6|step|1024|fourier_pad4": {
+  "system": "p6",
+  "family": "step",
+  "n": 1024,
+  "path": "fourier_pad4",
+  "rel": 0.00017801928351291683,
+  "first": 6.894140678988075e+295,
+  "last": 0.0003802815324444312,
+  "maxerr": 0.0017559430562430144
+ },
+ "p6|step|1024|zoh": {
+  "system": "p6",
+  "family": "step",
+  "n": 1024,
+  "path": "zoh",
+  "rel": 0.0032370600550627447,
+  "first": 0.0,
+  "last": 8.23249147571157e-05,
+  "maxerr": 0.014591979778821906
+ },
+ "p6|step|1024|foh": {
+  "system": "p6",
+  "family": "step",
+  "n": 1024,
+  "path": "foh",
+  "rel": 1.1948093240046696e-16,
+  "first": 0.0,
+  "last": 1.1632953712780778e-16,
+  "maxerr": 3.130907851538738e-16
+ },
+ "p6|step|1024|cheb16": {
+  "system": "p6",
+  "family": "step",
+  "n": 1024,
+  "path": "cheb16",
+  "rel": 0.05990508236324664,
+  "first": 8.463448708262885e+298,
+  "last": 0.00734055846998937,
+  "maxerr": 0.18590623511414542
+ },
+ "p6|step|1024|cheb64": {
+  "system": "p6",
+  "family": "step",
+  "n": 1024,
+  "path": "cheb64",
+  "rel": 0.008669075165636525,
+  "first": 6.723780992658652e+297,
+  "last": 0.0003614282818676721,
+  "maxerr": 0.060381936138078046
+ },
+ "p6|step|1024|cheb256": {
+  "system": "p6",
+  "family": "step",
+  "n": 1024,
+  "path": "cheb256",
+  "rel": 13973793.868105896,
+  "first": Infinity,
+  "last": 7329190.10469459,
+  "maxerr": 68161177.16412109
+ },
+ "p6|step|4096|fourier": {
+  "system": "p6",
+  "family": "step",
+  "n": 4096,
+  "path": "fourier",
+  "rel": 0.00010319906912850346,
+  "first": 6.259323438030483e+297,
+  "last": 4.7749884401191204e-05,
+  "maxerr": 0.0006536512664754676
+ },
+ "p6|step|4096|zoh": {
+  "system": "p6",
+  "family": "step",
+  "n": 4096,
+  "path": "zoh",
+  "rel": 0.0008358181346807971,
+  "first": 0.0,
+  "last": 2.2281327970327304e-05,
+  "maxerr": 0.003653610590924087
+ },
+ "p6|step|fine|fourier": {
+  "system": "p6",
+  "family": "step",
+  "n": "fine",
+  "path": "fourier",
+  "rel": 0.0016550381403039969,
+  "first": 1.0556252164855463e+298,
+  "last": 0.00038675131367867555,
+  "maxerr": 0.008231261478423462
+ },
+ "p6|step|fine|fourier_pad2": {
+  "system": "p6",
+  "family": "step",
+  "n": "fine",
+  "path": "fourier_pad2",
+  "rel": 0.0016013659058439064,
+  "first": 6.844447173838154e+295,
+  "last": 0.000382722182682113,
+  "maxerr": 0.008114388281826503
+ },
+ "p6|step|fine|zoh": {
+  "system": "p6",
+  "family": "step",
+  "n": "fine",
+  "path": "zoh",
+  "rel": 0.0031710668412376778,
+  "first": 0.0,
+  "last": 5.684250704768171e-05,
+  "maxerr": 0.013237337556323038
+ },
+ "p6|step|fine|foh": {
+  "system": "p6",
+  "family": "step",
+  "n": "fine",
+  "path": "foh",
+  "rel": 0.0015887817252093418,
+  "first": 0.0,
+  "last": 3.528876262831554e-05,
+  "maxerr": 0.006829412860421722
+ },
+ "p6|step|fine|cheb64": {
+  "system": "p6",
+  "family": "step",
+  "n": "fine",
+  "path": "cheb64",
+  "rel": 0.008879243461793106,
+  "first": 7.670277548799089e+297,
+  "last": 0.00038211595933777283,
+  "maxerr": 0.06322945024192479
+ },
+ "p6|ramp|256|fourier": {
+  "system": "p6",
+  "family": "ramp",
+  "n": 256,
+  "path": "fourier",
+  "rel": 0.003255605615970483,
+  "first": 4.879590485375501e+298,
+  "last": 0.003323169041007121,
+  "maxerr": 0.013194264674169596
+ },
+ "p6|ramp|256|zoh": {
+  "system": "p6",
+  "family": "ramp",
+  "n": 256,
+  "path": "zoh",
+  "rel": 0.004689942078827567,
+  "first": 0.0,
+  "last": 0.0028211553122347846,
+  "maxerr": 0.003380807035060483
+ },
+ "p6|ramp|1024|fourier": {
+  "system": "p6",
+  "family": "ramp",
+  "n": 1024,
+  "path": "fourier",
+  "rel": 0.0007369830748200473,
+  "first": 2.112590973269691e+298,
+  "last": 0.0004100741204076503,
+  "maxerr": 0.0033626783714123336
+ },
+ "p6|ramp|1024|fourier_pad2": {
+  "system": "p6",
+  "family": "ramp",
+  "n": 1024,
+  "path": "fourier_pad2",
+  "rel": 0.0001840624516476032,
+  "first": 2.316025135307162e+294,
+  "last": 0.0004101646367710048,
+  "maxerr": 0.002264199841084325
+ },
+ "p6|ramp|1024|fourier_pad4": {
+  "system": "p6",
+  "family": "ramp",
+  "n": 1024,
+  "path": "fourier_pad4",
+  "rel": 0.00018410681807100754,
+  "first": 2.9411954098638165e+295,
+  "last": 0.00041017044760277213,
+  "maxerr": 0.0022642013744324572
+ },
+ "p6|ramp|1024|zoh": {
+  "system": "p6",
+  "family": "ramp",
+  "n": 1024,
+  "path": "zoh",
+  "rel": 0.00121477917564682,
+  "first": 0.0,
+  "last": 0.000733321039408231,
+  "maxerr": 0.000878121757521444
+ },
+ "p6|ramp|1024|foh": {
+  "system": "p6",
+  "family": "ramp",
+  "n": 1024,
+  "path": "foh",
+  "rel": 1.1815664928862742e-16,
+  "first": 0.0,
+  "last": 1.1696012773985943e-16,
+  "maxerr": 2.6459049362474056e-16
+ },
+ "p6|ramp|1024|cheb16": {
+  "system": "p6",
+  "family": "ramp",
+  "n": 1024,
+  "path": "cheb16",
+  "rel": 0.003076984732995833,
+  "first": 6.459874164362316e+297,
+  "last": 0.00026798293893626896,
+  "maxerr": 0.004847035353009329
+ },
+ "p6|ramp|1024|cheb64": {
+  "system": "p6",
+  "family": "ramp",
+  "n": 1024,
+  "path": "cheb64",
+  "rel": 0.00012659999664877693,
+  "first": 1.2071212848261025e+296,
+  "last": 3.0068826732655415e-06,
+  "maxerr": 0.00035524614806367724
+ },
+ "p6|ramp|1024|cheb256": {
+  "system": "p6",
+  "family": "ramp",
+  "n": 1024,
+  "path": "cheb256",
+  "rel": 52647.47085601796,
+  "first": 1.647354067053965e+306,
+  "last": 16127.65996971993,
+  "maxerr": 216425.03173620132
+ },
+ "p6|ramp|4096|fourier": {
+  "system": "p6",
+  "family": "ramp",
+  "n": 4096,
+  "path": "fourier",
+  "rel": 0.00017405380997685357,
+  "first": 9.763487963213561e+297,
+  "last": 5.128095535477725e-05,
+  "maxerr": 0.0008418310345310821
+ },
+ "p6|ramp|4096|zoh": {
+  "system": "p6",
+  "family": "ramp",
+  "n": 4096,
+  "path": "zoh",
+  "rel": 0.00029150228328098825,
+  "first": 0.0,
+  "last": 0.00017598837006351604,
+  "maxerr": 0.00021069845565864097
+ },
+ "p6|ramp|fine|fourier": {
+  "system": "p6",
+  "family": "ramp",
+  "n": "fine",
+  "path": "fourier",
+  "rel": 0.0007174656831704614,
+  "first": 2.2282990090429167e+298,
+  "last": 0.0004085641075009598,
+  "maxerr": 0.0033563895905359626
+ },
+ "p6|ramp|fine|fourier_pad2": {
+  "system": "p6",
+  "family": "ramp",
+  "n": "fine",
+  "path": "fourier_pad2",
+  "rel": 0.00017915700073681043,
+  "first": 2.4246559417084115e+294,
+  "last": 0.0004086520056656149,
+  "maxerr": 0.0022599134439638645
+ },
+ "p6|ramp|fine|zoh": {
+  "system": "p6",
+  "family": "ramp",
+  "n": "fine",
+  "path": "zoh",
+  "rel": 0.0011554160798896251,
+  "first": 0.0,
+  "last": 0.0006968874889528218,
+  "maxerr": 0.0008348086177834633
+ },
+ "p6|ramp|fine|foh": {
+  "system": "p6",
+  "family": "ramp",
+  "n": "fine",
+  "path": "foh",
+  "rel": 1.2495021546684162e-06,
+  "first": 0.0,
+  "last": 1.4432930565756346e-08,
+  "maxerr": 4.461812197348139e-06
+ },
+ "p6|ramp|fine|cheb64": {
+  "system": "p6",
+  "family": "ramp",
+  "n": "fine",
+  "path": "cheb64",
+  "rel": 0.00010287173696039291,
+  "first": 1.4251244010547e+296,
+  "last": 2.821325306926692e-06,
+  "maxerr": 0.0003043870586676168
+ },
+ "p6|prbs|256|fourier": {
+  "system": "p6",
+  "family": "prbs",
+  "n": 256,
+  "path": "fourier",
+  "rel": 0.007440735078977804,
+  "first": 0.01830731126115229,
+  "last": 0.010369210334530077,
+  "maxerr": 0.014263416659254076
+ },
+ "p6|prbs|256|zoh": {
+  "system": "p6",
+  "family": "prbs",
+  "n": 256,
+  "path": "zoh",
+  "rel": 0.07029943072975095,
+  "first": 1.7159783330004914e-16,
+  "last": 0.09346231338722469,
+  "maxerr": 0.10474595521449222
+ },
+ "p6|prbs|1024|fourier": {
+  "system": "p6",
+  "family": "prbs",
+  "n": 1024,
+  "path": "fourier",
+  "rel": 0.0010235248176399358,
+  "first": 0.0029432537238857108,
+  "last": 0.0009901282024969366,
+  "maxerr": 0.003071595636220959
+ },
+ "p6|prbs|1024|fourier_pad2": {
+  "system": "p6",
+  "family": "prbs",
+  "n": 1024,
+  "path": "fourier_pad2",
+  "rel": 0.0009045259669974708,
+  "first": 0.002030811789397724,
+  "last": 0.0007068162300000359,
+  "maxerr": 0.002860761654460306
+ },
+ "p6|prbs|1024|fourier_pad4": {
+  "system": "p6",
+  "family": "prbs",
+  "n": 1024,
+  "path": "fourier_pad4",
+  "rel": 0.0009049177874999985,
+  "first": 0.002029411075167026,
+  "last": 0.0007047780623294414,
+  "maxerr": 0.002861827881688881
+ },
+ "p6|prbs|1024|zoh": {
+  "system": "p6",
+  "family": "prbs",
+  "n": 1024,
+  "path": "zoh",
+  "rel": 0.01671668196486316,
+  "first": 1.3967530049939403e-16,
+  "last": 0.01721534731395993,
+  "maxerr": 0.02605516806699446
+ },
+ "p6|prbs|1024|foh": {
+  "system": "p6",
+  "family": "prbs",
+  "n": 1024,
+  "path": "foh",
+  "rel": 1.4134271050445944e-16,
+  "first": 1.3967530049939403e-16,
+  "last": 1.4103497301638787e-16,
+  "maxerr": 3.5515246811113726e-16
+ },
+ "p6|prbs|1024|cheb16": {
+  "system": "p6",
+  "family": "prbs",
+  "n": 1024,
+  "path": "cheb16",
+  "rel": 0.40956484794825315,
+  "first": 0.11847875615015258,
+  "last": 0.2330946841452401,
+  "maxerr": 0.5704639198528197
+ },
+ "p6|prbs|1024|cheb64": {
+  "system": "p6",
+  "family": "prbs",
+  "n": 1024,
+  "path": "cheb64",
+  "rel": 0.045696980166172435,
+  "first": 0.010420504088665933,
+  "last": 0.00762027325654271,
+  "maxerr": 0.112920848553102
+ },
+ "p6|prbs|1024|cheb256": {
+  "system": "p6",
+  "family": "prbs",
+  "n": 1024,
+  "path": "cheb256",
+  "rel": 68519700.31215665,
+  "first": 316641843.139873,
+  "last": 56731752.337472826,
+  "maxerr": 334656560.78557587
+ },
+ "p6|prbs|4096|fourier": {
+  "system": "p6",
+  "family": "prbs",
+  "n": 4096,
+  "path": "fourier",
+  "rel": 0.00018755270809500186,
+  "first": 0.0009565330707518383,
+  "last": 0.0001349189395516917,
+  "maxerr": 0.0007958492381452008
+ },
+ "p6|prbs|4096|zoh": {
+  "system": "p6",
+  "family": "prbs",
+  "n": 4096,
+  "path": "zoh",
+  "rel": 0.0041074331087044644,
+  "first": 1.4703802961369773e-16,
+  "last": 0.0047701192803575754,
+  "maxerr": 0.006565180470109885
+ },
+ "p6|prbs|fine|fourier": {
+  "system": "p6",
+  "family": "prbs",
+  "n": "fine",
+  "path": "fourier",
+  "rel": 0.009756206788236143,
+  "first": 0.003924077860582678,
+  "last": 0.008112311528778672,
+  "maxerr": 0.021744650941005757
+ },
+ "p6|prbs|fine|fourier_pad2": {
+  "system": "p6",
+  "family": "prbs",
+  "n": "fine",
+  "path": "fourier_pad2",
+  "rel": 0.00976792602623566,
+  "first": 0.0020256635066049507,
+  "last": 0.008140540981199231,
+  "maxerr": 0.02173092500107516
+ },
+ "p6|prbs|fine|zoh": {
+  "system": "p6",
+  "family": "prbs",
+  "n": "fine",
+  "path": "zoh",
+  "rel": 0.018194864404676957,
+  "first": 4.3602378916112695e-14,
+  "last": 0.016274022175271304,
+  "maxerr": 0.037229494213565736
+ },
+ "p6|prbs|fine|foh": {
+  "system": "p6",
+  "family": "prbs",
+  "n": "fine",
+  "path": "foh",
+  "rel": 0.009752472022753474,
+  "first": 4.3602378916112695e-14,
+  "last": 0.008016641449349288,
+  "maxerr": 0.02021704436194592
+ },
+ "p6|prbs|fine|cheb64": {
+  "system": "p6",
+  "family": "prbs",
+  "n": "fine",
+  "path": "cheb64",
+  "rel": 0.044568549998291386,
+  "first": 0.008518698906050691,
+  "last": 0.014241527824085082,
+  "maxerr": 0.11212245416011647
+ },
+ "p6|smooth|256|fourier": {
+  "system": "p6",
+  "family": "smooth",
+  "n": 256,
+  "path": "fourier",
+  "rel": 0.001970517799319391,
+  "first": 0.010560411377091648,
+  "last": 0.004456373407658747,
+  "maxerr": 0.008943339448213544
+ },
+ "p6|smooth|256|zoh": {
+  "system": "p6",
+  "family": "smooth",
+  "n": 256,
+  "path": "zoh",
+  "rel": 0.008423234596227703,
+  "first": 0.005038610548762957,
+  "last": 0.008957721463473248,
+  "maxerr": 0.009579627622738958
+ },
+ "p6|smooth|1024|fourier": {
+  "system": "p6",
+  "family": "smooth",
+  "n": 1024,
+  "path": "fourier",
+  "rel": 0.0004209154816571422,
+  "first": 0.0026615668339767234,
+  "last": 0.0005335284474121847,
+  "maxerr": 0.002290234978569765
+ },
+ "p6|smooth|1024|fourier_pad2": {
+  "system": "p6",
+  "family": "smooth",
+  "n": 1024,
+  "path": "fourier_pad2",
+  "rel": 0.0003187217619144838,
+  "first": 0.0020176763224143933,
+  "last": 0.0004077387422968325,
+  "maxerr": 0.002190051472187474
+ },
+ "p6|smooth|1024|fourier_pad4": {
+  "system": "p6",
+  "family": "smooth",
+  "n": 1024,
+  "path": "fourier_pad4",
+  "rel": 0.0003183058551315136,
+  "first": 0.002017467927650565,
+  "last": 0.00040746806406252375,
+  "maxerr": 0.0021907167238385396
+ },
+ "p6|smooth|1024|zoh": {
+  "system": "p6",
+  "family": "smooth",
+  "n": 1024,
+  "path": "zoh",
+  "rel": 0.0019823298823717327,
+  "first": 0.0013588444000169095,
+  "last": 0.001649450495518503,
+  "maxerr": 0.0022395933950163987
+ },
+ "p6|smooth|1024|foh": {
+  "system": "p6",
+  "family": "smooth",
+  "n": 1024,
+  "path": "foh",
+  "rel": 1.2061412887944855e-16,
+  "first": 1.447488982772096e-16,
+  "last": 1.260382481229247e-16,
+  "maxerr": 3.085316761465883e-16
+ },
+ "p6|smooth|1024|cheb16": {
+  "system": "p6",
+  "family": "smooth",
+  "n": 1024,
+  "path": "cheb16",
+  "rel": 0.0001774751094885515,
+  "first": 0.00018274531213057827,
+  "last": 0.00016130838333054068,
+  "maxerr": 0.00020435063379276334
+ },
+ "p6|smooth|1024|cheb64": {
+  "system": "p6",
+  "family": "smooth",
+  "n": 1024,
+  "path": "cheb64",
+  "rel": 3.848242719163559e-06,
+  "first": 3.4818108437681122e-06,
+  "last": 3.4213574744170863e-06,
+  "maxerr": 4.705408447552608e-06
+ },
+ "p6|smooth|1024|cheb256": {
+  "system": "p6",
+  "family": "smooth",
+  "n": 1024,
+  "path": "cheb256",
+  "rel": 4.002820066614184e-06,
+  "first": 8.369257622627232e-06,
+  "last": 3.4275949489486387e-06,
+  "maxerr": 5.565603854083178e-06
+ },
+ "p6|smooth|4096|fourier": {
+  "system": "p6",
+  "family": "smooth",
+  "n": 4096,
+  "path": "fourier",
+  "rel": 0.0001147727548921936,
+  "first": 0.0008514389425864528,
+  "last": 6.621597472280273e-05,
+  "maxerr": 0.0006133351625875929
+ },
+ "p6|smooth|4096|zoh": {
+  "system": "p6",
+  "family": "smooth",
+  "n": 4096,
+  "path": "zoh",
+  "rel": 0.0005454746521943296,
+  "first": 0.000516983275667569,
+  "last": 0.0004257498521073005,
+  "maxerr": 0.000656236153576866
+ },
+ "p6|smooth|fine|fourier": {
+  "system": "p6",
+  "family": "smooth",
+  "n": "fine",
+  "path": "fourier",
+  "rel": 0.0004286247972441386,
+  "first": 0.0034688531889325645,
+  "last": 0.00047896594031004454,
+  "maxerr": 0.0022607235126832067
+ },
+ "p6|smooth|fine|fourier_pad2": {
+  "system": "p6",
+  "family": "smooth",
+  "n": "fine",
+  "path": "fourier_pad2",
+  "rel": 0.0002980721525597397,
+  "first": 0.002025811280825877,
+  "last": 0.0003758855457437831,
+  "maxerr": 0.002096999627653017
+ },
+ "p6|smooth|fine|zoh": {
+  "system": "p6",
+  "family": "smooth",
+  "n": "fine",
+  "path": "zoh",
+  "rel": 0.002590569142357428,
+  "first": 0.002635617426521378,
+  "last": 0.002122375012837234,
+  "maxerr": 0.0031424699364845056
+ },
+ "p6|smooth|fine|foh": {
+  "system": "p6",
+  "family": "smooth",
+  "n": "fine",
+  "path": "foh",
+  "rel": 6.02256451927708e-06,
+  "first": 5.427043147218763e-06,
+  "last": 5.61944244713285e-06,
+  "maxerr": 6.6097154418115685e-06
+ },
+ "p6|smooth|fine|cheb64": {
+  "system": "p6",
+  "family": "smooth",
+  "n": "fine",
+  "path": "cheb64",
+  "rel": 1.7661639054573443e-08,
+  "first": 1.5913632103406167e-08,
+  "last": 1.6479200971666843e-08,
+  "maxerr": 1.9383495335787198e-08
+ },
+ "p6|periodic|256|fourier": {
+  "system": "p6",
+  "family": "periodic",
+  "n": 256,
+  "path": "fourier",
+  "rel": 0.00036012283880708276,
+  "first": 0.0003601347246044588,
+  "last": 0.00033036450223688276,
+  "maxerr": 0.0004288625789737304
+ },
+ "p6|periodic|256|zoh": {
+  "system": "p6",
+  "family": "periodic",
+  "n": 256,
+  "path": "zoh",
+  "rel": 0.023742283883463562,
+  "first": 0.025886645622124442,
+  "last": 0.021460221630627677,
+  "maxerr": 0.025873697213356334
+ },
+ "p6|periodic|1024|fourier": {
+  "system": "p6",
+  "family": "periodic",
+  "n": 1024,
+  "path": "fourier",
+  "rel": 1.9255974894970464e-05,
+  "first": 2.128297285901703e-05,
+  "last": 1.8335575586437277e-05,
+  "maxerr": 2.279293914105768e-05
+ },
+ "p6|periodic|1024|fourier_pad2": {
+  "system": "p6",
+  "family": "periodic",
+  "n": 1024,
+  "path": "fourier_pad2",
+  "rel": 0.0002956614991443358,
+  "first": 0.0021284362799128317,
+  "last": 0.00039715816085239547,
+  "maxerr": 0.0014818462310921552
+ },
+ "p6|periodic|1024|fourier_pad4": {
+  "system": "p6",
+  "family": "periodic",
+  "n": 1024,
+  "path": "fourier_pad4",
+  "rel": 0.00029592759862274656,
+  "first": 0.0021300577126027406,
+  "last": 0.00039784264573583175,
+  "maxerr": 0.0014831319133161566
+ },
+ "p6|periodic|1024|zoh": {
+  "system": "p6",
+  "family": "periodic",
+  "n": 1024,
+  "path": "zoh",
+  "rel": 0.004955588204745738,
+  "first": 0.005135543440358737,
+  "last": 0.004917266433754694,
+  "maxerr": 0.0060483321667118214
+ },
+ "p6|periodic|1024|foh": {
+  "system": "p6",
+  "family": "periodic",
+  "n": 1024,
+  "path": "foh",
+  "rel": 1.27481209246354e-16,
+  "first": 1.3696956564791844e-16,
+  "last": 1.4057857339496888e-16,
+  "maxerr": 3.192922907869895e-16
+ },
+ "p6|periodic|1024|cheb16": {
+  "system": "p6",
+  "family": "periodic",
+  "n": 1024,
+  "path": "cheb16",
+  "rel": 0.0553883898373157,
+  "first": 0.02190359896753845,
+  "last": 0.021343859948331073,
+  "maxerr": 0.0674179796557853
+ },
+ "p6|periodic|1024|cheb64": {
+  "system": "p6",
+  "family": "periodic",
+  "n": 1024,
+  "path": "cheb64",
+  "rel": 1.9180758324907442e-05,
+  "first": 2.1199836835337697e-05,
+  "last": 1.826395495570417e-05,
+  "maxerr": 2.2703905175099574e-05
+ },
+ "p6|periodic|1024|cheb256": {
+  "system": "p6",
+  "family": "periodic",
+  "n": 1024,
+  "path": "cheb256",
+  "rel": 1.9219888270163912e-05,
+  "first": 2.2501568721605414e-05,
+  "last": 1.828053102594562e-05,
+  "maxerr": 2.2931969984709264e-05
+ },
+ "p6|periodic|4096|fourier": {
+  "system": "p6",
+  "family": "periodic",
+  "n": 4096,
+  "path": "fourier",
+  "rel": 1.1558657903615355e-06,
+  "first": 1.3584436172594438e-06,
+  "last": 1.4321027106872983e-06,
+  "maxerr": 1.4091140432568763e-06
+ },
+ "p6|periodic|4096|zoh": {
+  "system": "p6",
+  "family": "periodic",
+  "n": 4096,
+  "path": "zoh",
+  "rel": 0.00125428932505559,
+  "first": 0.0011775607551434775,
+  "last": 0.0015293565032130727,
+  "maxerr": 0.0015041884601427362
+ },
+ "p6|periodic|fine|fourier": {
+  "system": "p6",
+  "family": "periodic",
+  "n": "fine",
+  "path": "fourier",
+  "rel": 3.101881110565361e-06,
+  "first": 2.122360774840248e-05,
+  "last": 3.6996273410019635e-06,
+  "maxerr": 1.384297547824469e-05
+ },
+ "p6|periodic|fine|fourier_pad2": {
+  "system": "p6",
+  "family": "periodic",
+  "n": "fine",
+  "path": "fourier_pad2",
+  "rel": 0.00031223811461387097,
+  "first": 0.0020167354713081327,
+  "last": 0.0003770599453203763,
+  "maxerr": 0.001488179298313429
+ },
+ "p6|periodic|fine|zoh": {
+  "system": "p6",
+  "family": "periodic",
+  "n": "fine",
+  "path": "zoh",
+  "rel": 0.0052603346665077025,
+  "first": 0.006076513512227703,
+  "last": 0.005233818735577392,
+  "maxerr": 0.005834698768189107
+ },
+ "p6|periodic|fine|foh": {
+  "system": "p6",
+  "family": "periodic",
+  "n": "fine",
+  "path": "foh",
+  "rel": 1.9277138035853098e-05,
+  "first": 1.708076562151372e-05,
+  "last": 1.884126940654014e-05,
+  "maxerr": 2.222530788041508e-05
+ },
+ "p6|periodic|fine|cheb64": {
+  "system": "p6",
+  "family": "periodic",
+  "n": "fine",
+  "path": "cheb64",
+  "rel": 5.65304515487217e-08,
+  "first": 5.008820015482893e-08,
+  "last": 5.5251265269425396e-08,
+  "maxerr": 6.517524625027208e-08
+ }
+}

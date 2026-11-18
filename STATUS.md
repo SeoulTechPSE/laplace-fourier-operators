@@ -9,7 +9,7 @@ Each session appends one entry using the template at the bottom.
 |---|---|---|---|
 | Shared foundation | 1–4 | nearly done: LNO v1/v2 reproduced (gate met), ALNO/LFNO 1D re-implemented; LTI/PDE/process generators partly | reproduce original LNO results (month 4) — **met** |
 | (C) Pole audit of existing models | 3–5 | **in progress**: E1 done, draft report (`E1_report.md`, updated with E2); paper decisions made (2026-11-18); E1 + E5 merged into one working paper (`experiments/C/paper/c_paper.qmd`, 2026-11-18); submission postponed | — |
-| (D) Non-periodic input representation | 4–8 | not started | differs from padded FNO? (month 8) |
+| (D) Non-periodic input representation | 4–8 | **started** (2026-11-18): oracle comparison of input representations (`experiments/D/d1_inputs/`) | differs from padded FNO? (month 8) |
 | (A) Pole layer and linear validation | 5–10 | not started | dispersion relations recovered (month 10) |
 | (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits, a bootstrap-calibrated order, certificate and order test; reduction-path unresolved rules fail, a location-calibrated split test flags the merge, a combined post-report rule leaves 1 false pole in 40 groups but does not carry over to new p6 E1 groups; an EIVML refit of the reports removes the EIV bias; EIVML through the whole pipeline helps only up to η_u = 0.05; an EIVML elimination of the calibrated report leaves 0 false poles up to p4 30 η_y and p6 E1 0.05, with EIV-bootstrap intervals covering 33/36 at p4 30 η_y), E3 deep first pass done; H1–H3 theory draft (`experiments/C/theory/H1_H2.md`), E5 passes 1–10 (`experiments/C/e5_probe/`; RQ4 rule v4, 0 false trusts over 375 runs) | — |
 | (A) Application 1: process dynamics | 11–16 | not started | — |
@@ -171,6 +171,34 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-18 — (D1) oracle comparison of input representations; (C) theory Propositions 7 and 8
+
+- Done:
+  - (D1) `experiments/D/d1_inputs/d1_oracle.py`, predictions committed first (10d4cb9). True poles of p2 / p4 /
+    p6, 5 input families × 100, no training. Paths: Fourier (textbook LNO), zero padding, ZOH and FOH
+    exponential-integrator recursions, global Chebyshev. Truth on the samples and on a 32× finer grid.
+  - (C) theory (`experiments/C/theory/H1_H2.md`, Section 3c, a057d45):
+    - Proposition 7: the multi-channel wiring decides causality.
+    - Proposition 8: a damped mode is a positive Cauchy mixture of less damped modes, so spare slots can lower a
+      decay rate at no cost, but raising it costs weight mass e^{(a′−a)T}. Check `h8_dephase.py`.
+- Results:
+  - D1, fine truth. The Fourier path costs 4e-4 to 2e-3 on non-periodic inputs, against 3e-6 on periodic ones.
+    The error falls as n^(−1.0 … −1.3) and is spread over the window, not concentrated at the ends (prediction 1
+    part fails).
+  - FOH is best on ramps (1e-6) and good on smooth inputs (6e-6). Chebyshev 64 is best on smooth inputs (2e-8)
+    but worst on steps and PRBS, and a degree-256 fit is unstable.
+  - Steps and PRBS are limited by the sampling in every path.
+  - Proposition 8 check: positive mixtures reproduce a mode with a slower rate to 0.4–2 %, with a faster rate
+    only to 8–21 %.
+- Decisions (proposed, for the user):
+  - D1 hand-off to (A): FOH exponential-integrator recursion as the default time axis, instead of the plan's
+    Chebyshev, with piecewise Chebyshev as an option.
+  - (C) E5 twelfth pass (shared poles) is running.
+- Next:
+  - D1 trained comparison of paths, and piecewise Chebyshev;
+  - E5 twelfth-pass results;
+  - (A) pole layer start after the D1 decision.
 
 ### 2026-11-18 — (C) E5 / RQ4: textbook LNO in shared code; why stored poles miss when the Jacobian pole is right
 

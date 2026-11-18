@@ -61,6 +61,7 @@ SYSTEMS = {
 T_END, N_DEF, N_PER = 20.0, 1024, 100
 FAMILIES = ("step", "ramp", "prbs", "smooth", "periodic")
 END = 0.05
+FINE = 32
 OUT = HERE / "results" / "d1_oracle.json"
 
 
@@ -90,17 +91,33 @@ def inputs(family, t, rng):
 
 
 def fourier(u, t, mu, beta, pad=1):
+    """The textbook LNO v1 layer (`PoleResidueTS1d`, Lemma 1 of `H1_H2.md`) in float64 numpy:
+    y_k = Re (1/m) sum_l alpha_l [K(i w_l) e^{i w_l t_k} - sum_m beta_m e^{mu_m t_k} / (i w_l - mu_m)]."""
     n = t.size
     m = n * pad
-    tt = np.arange(m) * (t[1] - t[0])
+    dt = t[1] - t[0]
+    tt = np.arange(m) * dt
     up = np.zeros((u.shape[0], m))
     up[:, :n] = u
-    layer = PoleResidueTS1d(1, 1, len(mu), tt).double()
+    mu, beta = np.asarray(mu, complex), np.asarray(beta, complex)
+    alpha = np.fft.fft(up, axis=1)                                     # (B, m)
+    iw = 2j * np.pi * np.fft.fftfreq(m, dt)                            # (m,)
+    H = beta[None, :] / (iw[:, None] - mu[None, :])                    # (m, M)
+    steady = np.fft.ifft(alpha * H.sum(1)[None], axis=1)
+    s = alpha @ (1.0 / (iw[:, None] - mu[None, :])) / m                # (B, M)
+    transient = -(s * beta[None]) @ np.exp(np.outer(mu, tt))           # (B, m)
+    return (steady + transient).real[:, :n]
+
+
+def fourier_layer_check(u, t, mu, beta):
+    """The float32 layer itself on a few inputs: the numpy path must agree to float32 precision."""
+    layer = PoleResidueTS1d(1, 1, len(mu), t)
     with torch.no_grad():
-        layer.mu.copy_(torch.tensor(np.asarray(mu), dtype=torch.complex128).reshape(1, 1, -1))
-        layer.beta.copy_(torch.tensor(np.asarray(beta), dtype=torch.complex128).reshape(1, 1, -1))
-        y = layer(torch.tensor(up)[:, None, :])[:, 0].numpy()
-    return y[:, :n]
+        layer.mu.copy_(torch.tensor(np.asarray(mu), dtype=torch.complex64).reshape(1, 1, -1))
+        layer.beta.copy_(torch.tensor(np.asarray(beta), dtype=torch.complex64).reshape(1, 1, -1))
+        y = layer(torch.tensor(u[:4], dtype=torch.float32)[:, None, :])[:, 0].double().numpy()
+    ref = fourier(u[:4], t, mu, beta)
+    return float(np.linalg.norm(y - ref) / np.linalg.norm(ref))
 
 
 def hold(u, t, mu, beta, order):
@@ -141,6 +158,9 @@ def metrics(y, y_ref):
 
 
 def main():
+    t = grid(N_DEF)
+    u = inputs("smooth", t, np.random.default_rng(0))
+    print("float32 layer vs float64 path:", f"{fourier_layer_check(u, t, *SYSTEMS['p6']):.1e}", flush=True)
     res = {}
     for system, (mu, beta) in SYSTEMS.items():
         for fam in FAMILIES:
@@ -160,6 +180,15 @@ def main():
                     paths["zoh"] = lambda: hold(u, t, mu, beta, 0)
                 for p, fn in paths.items():
                     res[f"{system}|{fam}|{n}|{p}"] = dict(system=system, family=fam, n=n, path=p, **metrics(fn(), y))
+            # fairness check: inputs and truth on a 32x finer grid, every path sees only the n = 1024 samples
+            tf = grid((N_DEF - 1) * FINE + 1)
+            uf = inputs(fam, tf, np.random.default_rng([N_DEF, FAMILIES.index(fam), 1]))
+            yf = lti.response(tf, uf, mu, beta)[:, ::FINE]
+            t, u = grid(N_DEF), uf[:, ::FINE]
+            for p, fn in {"fourier": lambda: fourier(u, t, mu, beta), "fourier_pad2": lambda: fourier(u, t, mu, beta, 2),
+                          "zoh": lambda: hold(u, t, mu, beta, 0), "foh": lambda: hold(u, t, mu, beta, 1),
+                          "cheb64": lambda: chebyshev(u, t, mu, beta, 64)}.items():
+                res[f"{system}|{fam}|fine|{p}"] = dict(system=system, family=fam, n="fine", path=p, **metrics(fn(), yf))
             print(system, fam, {p: f"{res[f'{system}|{fam}|{N_DEF}|{p}']['rel']:.1e}" for p in
                                 ("fourier", "fourier_pad2", "zoh", "foh", "cheb64")}, flush=True)
     OUT.parent.mkdir(exist_ok=True)
@@ -179,6 +208,13 @@ def summarize(res):
             cells = [res[f"{system}|{fam}|{N_DEF}|{p}"] for p in paths]
             lines.append(f"| {fam} | " + " | ".join(f"{c['rel']:.1e} ({c['last']:.1e})" for c in cells) + " |")
         lines.append("")
+    fp = ("fourier", "fourier_pad2", "zoh", "foh", "cheb64")
+    lines += [f"**Truth on a {FINE}x finer grid (inputs defined there; paths see the n = {N_DEF} samples): relative L2 "
+              "error, p2 / p4 / p6**", "", "| family | " + " | ".join(fp) + " |", "|---|" + "---|" * len(fp)]
+    for fam in FAMILIES:
+        lines.append(f"| {fam} | " + " | ".join(" / ".join(f"{res[f'{s_}|{fam}|fine|{p}']['rel']:.1e}" for s_ in SYSTEMS)
+                                               for p in fp) + " |")
+    lines.append("")
     lines += ["**Fourier and ZOH paths against n (p6): relative L2 error; log-log slope 256 → 4096**", "",
               "| family | fourier 256 | 1024 | 4096 | slope | zoh 256 | 1024 | 4096 | slope |", "|---|---|---|---|---|---|---|---|---|"]
     for fam in FAMILIES:
