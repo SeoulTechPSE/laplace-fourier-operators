@@ -186,7 +186,7 @@ Things to know:
 - Decisions: the WPO trains with a separate pole learning rate. Stable is the default for dissipative problems.
   The accuracy comparison with FNO is not yet fair (no FNO tuning; both models short of convergence).
 - Next: a learning-rate sweep on the validation split for both models, plus longer training; then the probe bias
-  (weight of the small-amplitude samples).
+  (probe amplitude below the training range, or an effective viscosity absorbed from the nonlinear samples).
 
 ### 2026-11-18 — (A) deep operator: first Burgers run; the WPO's poles do not train at a shared learning rate
 

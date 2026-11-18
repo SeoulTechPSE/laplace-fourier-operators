@@ -70,9 +70,13 @@ same budget, then decide on longer training for both models.
   extrapolation blow-up is gone (a9: errors of 3–8 over (5, 10]). The stable parameterisation helps further:
   lowest error, smallest growth, best probe.
 - **The probe is biased toward stronger damping.** ν̂ is 0.111–0.114 across stable seeds, so the bias is
-  systematic, not seed noise. The data cannot pin the linearisation directly: only the smallest-amplitude samples
-  are near-linear, and the relative loss gives them little absolute weight. This is (C)'s data gate in another
-  form.
+  systematic, not seed noise. The relative loss weights every sample equally, so the near-linear samples are not
+  under-weighted. Three explanations remain, to be tested:
+  - the probe amplitude (ε = 0.01) lies below the smallest training scale (0.03), so the probe extrapolates in
+    amplitude;
+  - the model's linear part absorbs an effective viscosity from the nonlinear transfer in the large samples;
+  - limited capacity.
+  This is (C)'s data gate in another form.
 - **First-layer poles are not the physical poles.** The nearest first-layer pole is 30–70 % off −ν k² for
   k = 4–16. As in (C) E5, only the probe of the whole operator is meaningful in a deep model.
 - **Not yet a fair accuracy comparison.** The WPO got a tuned pole learning rate and the FNO did not, and both are
@@ -82,5 +86,4 @@ same budget, then decide on longer training for both models.
 
 - A fair comparison: learning-rate sweep on the validation split for both models (and the pole ratio for the WPO),
   longer training, 3 seeds.
-- Then the probe bias. Test whether more weight on small-amplitude samples (or a loss in absolute rather than
-  relative error) moves ν̂ toward 0.1.
+- Then the probe bias: probe at several amplitudes, and train with data that reach smaller scales.
