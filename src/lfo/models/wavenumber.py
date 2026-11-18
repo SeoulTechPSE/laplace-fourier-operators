@@ -32,6 +32,18 @@ unchanged well below the cap. `k_ref` evaluates the polynomials in k / k_ref, so
 scale for a first-order optimiser (with k up to 16, a k^4 coefficient otherwise moves Re mu by 6.5e4 per unit step).
 
 Input / output: (batch, n_x, n_t) real fields on a uniform periodic x grid of length `length` and a uniform t grid.
+
+**2D** (`WavenumberPoleLayer2d`, input (batch, n_x, n_y, n_t)). The real part is isotropic, a polynomial in |k|^2;
+the imaginary part is a linear advection term c . k plus optional isotropic powers |k|^p:
+
+    mu_n(k)   = sum_j a_nj |k|^{2j}  +  i (c_nx k_x + c_ny k_y + sum_j e_nj |k|^{p_j})
+    beta_n(k) = sum_j (b_nj + i e'_nj) |k|^{2j}
+
+A real field needs mu(-k) = conj mu(k) and beta(-k) = conj beta(k). Re mu is even and c . k is odd, so they comply.
+The isotropic imaginary terms (Im beta and the |k|^p terms of Im mu) are even, so they are multiplied by the
+half-plane sign s(k) = +1 for k_y > 0 or (k_y = 0, k_x >= 0), and -1 otherwise. This is the 1D convention (evaluate
+on k >= 0, extend by conjugation): the rfft2 layout holds negative k_x only in the row k_y = 0. `modes` keeps
+|k_x index| < modes and k_y index < modes (the FNO corner block); outside it the output is zero.
 """
 from __future__ import annotations
 
@@ -41,7 +53,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-__all__ = ["foh_coefficients", "foh_kernel", "foh_recursion", "foh_response", "WavenumberPoleLayer1d"]
+__all__ = ["foh_coefficients", "foh_kernel", "foh_recursion", "foh_response", "WavenumberPoleLayer1d",
+           "WavenumberPoleLayer2d"]
 
 
 def foh_coefficients(mu: torch.Tensor, dt: float):
@@ -151,3 +164,80 @@ class WavenumberPoleLayer1d(nn.Module):
         g, c = (beta[..., None] * g).sum(0), (beta[..., None] * c).sum(0)     # (K, n_t): sum_n beta_n (.)
         vk = foh_response(g[None], c[None], fk)                               # (b, K, n_t)
         return torch.fft.irfft(vk, n=n_x, dim=1).to(f.dtype)
+
+
+class WavenumberPoleLayer2d(nn.Module):
+    """2D version of `WavenumberPoleLayer1d` on a periodic (x, y) grid; see the module docstring.
+
+    n_poles     N
+    re_degree   number of coefficients of Re mu_n in |k|^2
+    advection   learn c_n . k in Im mu_n
+    im_powers   isotropic powers |k|^p in Im mu_n (default none)
+    beta_degree number of coefficients of beta_n in |k|^2
+    """
+
+    def __init__(self, n_poles: int, t, length=(2 * math.pi, 2 * math.pi), re_degree: int = 3, advection: bool = True,
+                 im_powers: tuple = (), beta_degree: int = 2, stable: bool = False, init_scale: float = 0.1,
+                 modes: int | None = None, re_max: float | None = None, re_tau: float = 0.05, k_ref: float = 1.0):
+        super().__init__()
+        self.modes, self.re_max, self.re_tau, self.k_ref, self.stable = modes, re_max, re_tau, float(k_ref), stable
+        self.length = tuple(float(a) for a in length)
+        self.register_buffer("t", torch.as_tensor(t, dtype=torch.float64).reshape(-1))
+        self.im_powers = tuple(im_powers)
+        self.mu_re = nn.Parameter(init_scale * torch.randn(n_poles, re_degree, dtype=torch.float64))
+        self.adv = nn.Parameter(init_scale * torch.randn(n_poles, 2, dtype=torch.float64)) if advection else None
+        self.mu_im = nn.Parameter(init_scale * torch.randn(n_poles, len(self.im_powers), dtype=torch.float64))
+        self.beta = nn.Parameter(torch.zeros(n_poles, beta_degree, 2, dtype=torch.float64))
+        with torch.no_grad():
+            self.beta[:, 0, 0] = 1.0 / n_poles
+
+    def wavenumbers(self, n_x: int, n_y: int):
+        """(k_x, k_y), each (n_x, n_y // 2 + 1): angular wavenumbers of the rfft2 layout."""
+        dev = self.t.device
+        kx = 2 * math.pi * torch.fft.fftfreq(n_x, self.length[0] / n_x, device=dev, dtype=torch.float64)
+        ky = 2 * math.pi * torch.fft.rfftfreq(n_y, self.length[1] / n_y, device=dev, dtype=torch.float64)
+        return torch.meshgrid(kx, ky, indexing="ij")
+
+    def mask(self, n_x: int, n_y: int):
+        """Boolean (n_x, n_y // 2 + 1): the kept modes."""
+        ix = torch.fft.fftfreq(n_x, 1 / n_x, device=self.t.device).abs()
+        iy = torch.fft.rfftfreq(n_y, 1 / n_y, device=self.t.device)
+        if self.modes is None:
+            return torch.ones(ix.numel(), iy.numel(), dtype=torch.bool, device=self.t.device)
+        return (ix[:, None] < self.modes) & (iy[None, :] < self.modes)
+
+    def poles(self, kx: torch.Tensor, ky: torch.Tensor):
+        """(mu, beta), each (N,) + kx.shape complex128. The polynomials are in k / k_ref. Even imaginary terms carry
+        the half-plane sign s(k) (module docstring)."""
+        kx, ky = kx / self.k_ref, ky / self.k_ref
+        k2 = kx ** 2 + ky ** 2
+        e = lambda w: w.reshape(w.shape + (1,) * kx.dim())
+        re = sum(e(self.mu_re[:, j]) * k2 ** j for j in range(self.mu_re.shape[1]))
+        if self.stable:
+            re = -F.softplus(re)
+        elif self.re_max is not None:
+            re = self.re_max - self.re_tau * F.softplus((self.re_max - re) / self.re_tau)
+        sgn = torch.where((ky > 0) | ((ky == 0) & (kx >= 0)), 1.0, -1.0).to(kx.dtype)   # half-plane sign s(k)
+        im = torch.zeros_like(re)
+        if self.adv is not None:
+            im = im + e(self.adv[:, 0]) * kx + e(self.adv[:, 1]) * ky
+        kabs = k2.sqrt()
+        for j, p in enumerate(self.im_powers):
+            im = im + sgn * e(self.mu_im[:, j]) * kabs ** p
+        b = sum(torch.complex(e(self.beta[:, j, 0]), sgn * e(self.beta[:, j, 1])) * k2 ** j
+                for j in range(self.beta.shape[1]))
+        return torch.complex(re, im), b
+
+    def forward(self, f: torch.Tensor) -> torch.Tensor:
+        b_, n_x, n_y, n_t = f.shape
+        dt = float(self.t[1] - self.t[0])
+        keep = self.mask(n_x, n_y)
+        kx, ky = self.wavenumbers(n_x, n_y)
+        kx, ky = kx[keep], ky[keep]                                           # (M,) kept modes only
+        fk = torch.fft.rfft2(f.to(torch.float64), dim=(1, 2))[:, keep]        # (b, M, n_t)
+        mu, beta = self.poles(kx, ky)                                         # (N, M)
+        g, c = foh_kernel(mu, n_t, dt)
+        g, c = (beta[..., None] * g).sum(0), (beta[..., None] * c).sum(0)     # (M, n_t)
+        vk = torch.zeros(b_, n_x, n_y // 2 + 1, n_t, dtype=torch.complex128, device=f.device)
+        vk[:, keep] = foh_response(g[None], c[None], fk)
+        return torch.fft.irfft2(vk, s=(n_x, n_y), dim=(1, 2)).to(f.dtype)
