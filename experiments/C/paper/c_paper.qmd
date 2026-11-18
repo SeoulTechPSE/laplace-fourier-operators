@@ -307,13 +307,25 @@ cannot detect a bad fit when the output has a large mean: on Lorenz even the mea
     weights in the textbook wiring give 0.5–2.5 %.
   - Trained with the textbook wiring (90 further runs, pre-registered), the LNO has causal Jacobians in every run
     and a lower median test error on all 18 sets.
-  - v4 certifies 37 of these runs, with no false trust. Over all 465 runs, v4 trusts 89 with no false trust.
+  - v4 certifies 37 of these runs, with no false trust. Over all 555 runs, including the shared-pole runs below, v4 trusts
+    121 with no false trust.
   - Where its Jacobian pole is right but no stored pole is within 10 % (12 runs, mostly Lorenz $\rho = 5$), the
     rule declines to read the stored poles, as it should. A decomposition of the small-signal response over the
     stored poles shows why. The modes that carry the oscillation decay at only 19–66 % of the true rate (median
     36 %, against 80 % in runs where a stored pole matches). Several such modes at slightly different
     frequencies dephase, and their sum decays like the true pole. Stored decay rates are therefore less
     reliable than stored frequencies, as on linear systems (@sec-fastreal).
+- **Why decay rates drift downward.** A damped mode is exactly a positive mixture of less damped modes:
+  $e^{(-a+i\omega)t} = \int c_{a-a'}(\nu)\, e^{(-a'+i(\omega+\nu))t}\, d\nu$ for $t \ge 0$, where $c_g$ is the
+  Cauchy density of width $g$ and $a' \le a$.
+  - So spare slots can lower a stored decay rate at no cost in fit. Raising it instead needs weight mass of order
+    $e^{(a'-a)T}$.
+  - Numerically, positive mixtures reproduce a mode with slower slots to 0.4–2 %, and with faster slots only to
+    8–21 %.
+  - Sharing one set of poles across all channel pairs (90 further runs, pre-registered) removes most of this
+    freedom. The stored modes are then damped close to the truth (median 84 % of the true rate, against 70 %).
+  - But the mode then splits in frequency between two shared poles, so the rule certifies no more runs (32 against
+    37). Three of the four predictions for this remedy failed.
 - **No model stores the fast real Lorenz pole** ($-11.8$ and $-12.5$), as with the fast real poles of @sec-fastreal.
 - **Output offsets need care.** On Lorenz the output is $x(t)$ about $C_+ \approx 3.3$ or $4.9$. A learned offset
   with coupled weight decay is pulled towards zero at almost the full learning rate, because its own gradient
