@@ -59,6 +59,34 @@ def stored_fit(h, t, mu):
     return res, parts / parts.sum()
 
 
+@torch.no_grad()
+def analytic_shares(model, t, device):
+    """Post hoc (added after the registered ridge measure ran): effective residue of every stored pole in the
+    small-signal response, from the weights. Impulse in f -> lifting column a_i (fc0) -> layer kernel
+    beta_iok e^{mu_iok tau} -> time-averaged output gain g_o (fc2 diag(act'(fc1 h0(t))) fc1 at f = 0).
+    Returns (shares per stored pole, flattened like mu; relative residual of the reconstructed impulse response
+    after a least-squares scale)."""
+    n = t.size
+    x = torch.zeros(1, n, 1, device=device)
+    if model.use_grid:
+        from lfo.models.lno import _unit_grid
+        x = torch.cat((x, _unit_grid(x.shape, device)), dim=-1)
+    x0 = model.fc0(x).permute(0, 2, 1)                                     # (1, w, n)
+    h0 = (model.conv0(x0) + model.w0(x0)).permute(0, 2, 1)                  # (1, n, w)
+    z = model.fc1(h0)                                                      # (1, n, 128)
+    dact = (1 - torch.tanh(z) ** 2) if model.act is torch.tanh else torch.cos(z)
+    D = (model.fc2.weight[0][None, None, :] * dact) @ model.fc1.weight     # (1, n, w)
+    g = D[0].mean(0)                                                       # (w,)
+    a = model.fc0.weight[:, 0]                                             # (w,)
+    mu, beta = model.conv0.mu, model.conv0.beta                            # (i, o, k)
+    r = a[:, None, None] * beta * g[None, :, None]
+    tau = torch.as_tensor(t[1:800] - t[0], device=device, dtype=torch.float32)
+    E = torch.exp(mu[..., None] * tau.to(torch.complex64))                 # (i, o, k, m)
+    parts = (r[..., None] * E).real                                        # contribution of each stored pole
+    share = parts.pow(2).sum(-1).flatten()
+    return (share / share.sum()).cpu().numpy(), parts.sum((0, 1, 2)).cpu().numpy()
+
+
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     gate = json.loads((P.RESULTS / "e5_gate.json").read_text())
@@ -82,32 +110,55 @@ def main():
             hh, tt = h[1:800], t[1:800]
             pen = {M: [complex(z) for z in P.pencil_poles(hh, float(t[1] - t[0]), M)] for M in (2, 4, 6)}
             res, share = stored_fit(hh, tt, mu)
+            ash, recon = analytic_shares(model, t, device)
+            amu = model.conv0.mu.detach().cpu().numpy().ravel()
+            adist = np.abs(np.where(amu.imag < 0, amu.conj(), amu) - ref) / abs(ref)
+            sc = float(recon @ hh / (recon @ recon))
+            a_res = float(np.linalg.norm(sc * recon - hh) / np.linalg.norm(hh))
+            anear = adist < NEAR
             dist = np.abs(mu - ref) / abs(ref)
             near = dist < NEAR
             top = int(np.argmax(np.where(near, share, -1)))
             out.append(dict(set=tag, seed=r["seed"], d=r["d"], err=r["err"], fit_resid=res,
                             cluster_share=float(share[near].sum()), n_near_big=int((near & (share >= SHARE)).sum()),
                             top_share=float(share[top]), top_dist=float(dist[top]),
-                            top_pole=[mu[top].real, mu[top].imag], closest_dist=float(dist.min()),
-                            pencil={str(M): [[z.real, z.imag] for z in v] for M, v in pen.items()}))
+                            top_pole=[float(mu[top].real), float(mu[top].imag)], closest_dist=float(dist.min()),
+                            pencil={str(M): [[z.real, z.imag] for z in v] for M, v in pen.items()},
+                            a_recon_resid=a_res, a_cluster_share=float(ash[anear].sum()),
+                            a_n_near_big=int((anear & (ash >= SHARE)).sum()),
+                            a_top_share=float(ash.max()), a_top_dist=float(adist[np.argmax(ash)]),
+                            a_cluster_poles=[[float(amu[k].real), float(amu[k].imag), float(ash[k]), float(adist[k])]
+                                             for k in np.argsort(-ash) if anear[k] and ash[k] >= 0.02]))
             x = out[-1]
             print(tag, r["seed"], f"d {x['d']:.2f} fit {res:.3f} cluster {x['cluster_share']:.2f} "
-                  f"n_big {x['n_near_big']} top {x['top_share']:.2f}@{x['top_dist']:.2f}", flush=True)
+                  f"n_big {x['n_near_big']} top {x['top_share']:.2f}@{x['top_dist']:.2f} | analytic recon {a_res:.3f} "
+                  f"cluster {x['a_cluster_share']:.2f} n_big {x['a_n_near_big']} top {x['a_top_share']:.2f}@"
+                  f"{x['a_top_dist']:.2f} poles {[(round(c[0], 2), round(c[1], 2), round(c[2], 2)) for c in x['a_cluster_poles'][:4]]}",
+                  flush=True)
     OUT.write_text(json.dumps(out, indent=1))
     summarize(out)
 
 
 def summarize(out):
-    lines = ["# E5: right Jacobian pole, no stored pole within 10 % (textbook-wired LNO, gated sets, ρ = 5 and oscillators)",
-             "", f"Stored-pole ridge fit of the Jacobian's average impulse response; cluster = stored poles within "
-             f"{NEAR:.0%} of the small-signal pole; big = share ≥ {SHARE:.0%}.", "",
-             "| set | seed | d | J pole error | fit residual | cluster share | big poles in cluster | largest: share @ distance | closest stored pole | order-4 pencil poles |",
-             "|---|---|---|---|---|---|---|---|---|---|"]
+    ref_of = lambda tag: P.MU_TRUE_LZ if tag.startswith("lz_") else P.MU_TRUE_C0 if tag.startswith("c0_") else P.MU_TRUE
+    lines = ["# E5: right Jacobian pole, no stored pole within 10 % (textbook-wired LNO, gated sets except ρ = 10)", "",
+             f"Cluster = stored poles within {NEAR:.0%} of the small-signal pole; big = share ≥ {SHARE:.0%}.", "",
+             "- **ridge** (pre-registered measure): ridge least squares of the Jacobian's average impulse response on "
+             "the stored poles' exponentials.",
+             "- **analytic** (post hoc): effective residue of each stored pole from the weights (lifting column × layer "
+             "residue × time-averaged output gain); its reconstruction residual validates it.",
+             "- **damping ratio**: share-weighted Re μ of the cluster's poles (share ≥ 0.02) / Re of the small-signal pole.",
+             "",
+             "| set | seed | d | J pole error | ridge: fit resid, cluster share | analytic: recon resid, cluster share, big | "
+             "damping ratio | cluster poles (share) |", "|---|---|---|---|---|---|---|---|"]
     for x in sorted(out, key=lambda x: (x["d"] < 0.1, x["set"], x["seed"])):
-        p4 = ", ".join(f"{a:.2f}{b:+.2f}i" for a, b in x["pencil"]["4"])
-        lines.append(f"| `{x['set']}` | {x['seed']} | {x['d']:.2f} | {x['err']:.2f} | {x['fit_resid']:.3f} | "
-                     f"{x['cluster_share']:.2f} | {x['n_near_big']} | {x['top_share']:.2f} @ {x['top_dist']:.2f} | "
-                     f"{x['closest_dist']:.2f} | {p4} |")
+        ref = ref_of(x["set"])
+        cp = np.array(x["a_cluster_poles"]) if x["a_cluster_poles"] else np.zeros((0, 4))
+        dr = (f"{(cp[:, 2] * cp[:, 0]).sum() / cp[:, 2].sum() / ref.real:.2f}" if len(cp) and ref.real else "–")
+        poles = ", ".join(f"{a:.2f}{b:+.2f}i ({w:.2f})" for a, b, w, _ in cp[:4])
+        lines.append(f"| `{x['set']}` | {x['seed']} | {x['d']:.2f} | {x['err']:.2f} | {x['fit_resid']:.3f}, "
+                     f"{x['cluster_share']:.2f} | {x['a_recon_resid']:.3f}, {x['a_cluster_share']:.2f}, "
+                     f"{x['a_n_near_big']} | {dr} | {poles} |")
     (P.RESULTS / "e5_cluster.md").write_text("\n".join(lines) + "\n")
     print("\n".join(lines))
 

@@ -309,7 +309,11 @@ cannot detect a bad fit when the output has a large mean: on Lorenz even the mea
     and a lower median test error on all 18 sets.
   - v4 certifies 37 of these runs, with no false trust. Over all 465 runs, v4 trusts 89 with no false trust.
   - Where its Jacobian pole is right but no stored pole is within 10 % (12 runs, mostly Lorenz $\rho = 5$), the
-    rule declines to read the stored poles, as it should.
+    rule declines to read the stored poles, as it should. A decomposition of the small-signal response over the
+    stored poles shows why. The modes that carry the oscillation decay at only 19–66 % of the true rate (median
+    36 %, against 80 % in runs where a stored pole matches). Several such modes at slightly different
+    frequencies dephase, and their sum decays like the true pole. Stored decay rates are therefore less
+    reliable than stored frequencies, as on linear systems (@sec-fastreal).
 - **No model stores the fast real Lorenz pole** ($-11.8$ and $-12.5$), as with the fast real poles of @sec-fastreal.
 - **Output offsets need care.** On Lorenz the output is $x(t)$ about $C_+ \approx 3.3$ or $4.9$. A learned offset
   with coupled weight decay is pulled towards zero at almost the full learning rate, because its own gradient

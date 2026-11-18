@@ -158,7 +158,9 @@ Suggested next steps (in order):
    to another channel's pole (layer share 0.12–0.82; same weights in the textbook wiring 0.005–0.025).
    A textbook-wired LNO (90 runs) has causal Jacobians in 90/90, fits better on all 18 sets, and v4
    certifies 37 of its runs with no false trust (original wiring 7/90). Over 465 runs v4: 89
-   trusted, 0 false.
+   trusted, 0 false. Textbook wiring now an option in `lfo.models.lno.LNO1d`; where the Jacobian
+   pole is right but stored poles miss, the stored modes are under-damped (median 36 % of the true
+   rate) and dephasing mimics damping.
 
 Things to know:
 
@@ -169,6 +171,26 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-18 — (C) E5 / RQ4: textbook LNO in shared code; why stored poles miss when the Jacobian pole is right
+
+- Done:
+  - `lfo.models.lno.LNO1d(textbook=True)`: optional causal wiring, original stays the default; test
+    `test_lno1d_textbook_wiring_is_causal_and_original_is_not`; pytest 35/35 (c87152a).
+  - `e5_cluster.py` (prediction committed in 4d85fe5): for the 47 textbook LNOs with a correct J pole on the
+    gated sets (ρ = 10 excluded), decomposes the small-signal response over the stored poles.
+- Results:
+  - The registered measure (ridge LS) is unsuitable: cancelling terms spread the energy (cluster ≤ 7 %). The
+    prediction is recorded as failed.
+  - Post hoc analytic residues reconstruct the response to ≤ 3.4 %. They show that the d ≥ 0.1 runs (12) store
+    the oscillation in poles that decay at a median 36 % of the true rate (d < 0.1: 80 %), with a similar
+    frequency spread. Dephasing of several lightly damped modes mimics the true damping.
+  - The cluster prediction holds in only 5 of 12 runs.
+- Decisions: the d check's rejections of these runs are correct (stored decay rates 2–5 × too small).
+- Next: decide the next (C) work package. Options:
+  - a pre-registered remedy for stored decay rates (frequency-spread penalty);
+  - H1–H3 theory;
+  - the user's priorities.
 
 ### 2026-11-18 — (C) E5 / RQ4: causal LNO layer (eleventh pass)
 

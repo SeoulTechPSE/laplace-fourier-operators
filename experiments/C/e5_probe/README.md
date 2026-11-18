@@ -737,9 +737,38 @@ Notes on the predictions:
   probe, and v4 certifies its stored poles in 37 of 90 runs, with no false trust.
 - So the rule now certifies a deep nonlinear operator, not only the linear tied layer.
 
+**Follow-up: right Jacobian pole, no stored pole within 10 %** (`e5_cluster.py`, `results/e5_cluster.md`;
+the prediction was committed with the script, 4d85fe5).
+
+- **Scope.** 47 textbook-wired LNO runs on the gated sets (ρ = 10 excluded: 1344 poles for 799 samples) whose
+  J pole is correct. 12 of them have d ≥ 0.1: 5 on the oscillators, 7 on Lorenz ρ = 5.
+- **Predicted.** In the d ≥ 0.1 runs, ≥ 2 stored poles within 25 % of the reference each carry ≥ 10 % of the
+  response, and together ≥ 50 %; in the d < 0.1 runs a single stored pole within 10 % carries the most.
+- **Registered measure (ridge least squares of h on the stored exponentials): the prediction fails.** The fit
+  leaves < 3.4 % of h, but the cluster carries at most 7 % of the energy. With 512 basis functions for 799
+  samples the fit spreads energy over many cancelling terms, so the measure is unsuitable. Recorded as failed.
+- **Post hoc measure (analytic residues).** Each stored pole's effective residue comes from the weights: lifting
+  column × layer residue × time-averaged output gain. It reconstructs h to 0.1–3.4 %, so it describes the response.
+  - The registered prediction holds in only 5 of the 12 d ≥ 0.1 runs: ≥ 2 large poles and a cluster share
+    ≥ 50 %. In the d < 0.1 runs the largest contributor is often 12–20 % from the reference, so the second part
+    fails too.
+  - **What separates the groups is damping, not clustering.** In the d ≥ 0.1 runs the stored poles that carry the
+    oscillation decay at 19–66 % of the true rate (median 36 %). In the d < 0.1 runs it is 32–106 % (median 80 %;
+    `c0_*` excluded, where the true rate is 0).
+  - Their frequency spread is similar (median 8.5 % vs 6.9 % of the frequency). Several lightly damped stored
+    modes at slightly different frequencies dephase, so their sum decays faster than any of them, and the
+    order-2 pencil reads that as the true damping.
+  - On Lorenz ρ = 5 the response is spread most widely: stored poles across 3.3–4.6i carry it, and those within
+    25 % carry only 26–52 %.
+- **Reading.**
+  - The rule's d check rejects these runs correctly: their stored decay rates are 2–5 times too small, although
+    the operator's small-signal response is right.
+  - Stored decay rates are less reliable than stored frequencies, because a spread of frequencies can stand in
+    for damping. This matches E1's weakly identified decay rates (flat profiles).
+
 **Next.**
 
-- Fix the wiring in shared code as an option (`lfo.models.lno.LNO1d(textbook=True)`, with a test), keeping the
-  original as default for reproduction.
-- The ρ = 5 Lorenz LNOs have the right small-signal pole but no stored pole within 10 % (closest 13–19 %). Find
-  out why (fast-pole interaction? several stored poles sharing one mode?).
+- Use `lfo.models.lno.LNO1d(textbook=True)` (added in c87152a, with a causality test; the original stays the
+  default) for new LNO work.
+- The decay-rate weakness suggests one candidate remedy: a penalty on, or a parameterisation of, the spread of
+  stored frequencies within a mode. This is untested and would need its own pre-registered pass.
