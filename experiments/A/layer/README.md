@@ -335,3 +335,37 @@ validation error is selected.
 - Remove the cap trap: start with Re μ ≤ 0, or use a cap with a nonzero gradient above it. Then rerun the trapped
   starts.
 - Deeper models (lifting / nonlinearity) with the linear probe of (C) E5.
+
+## Eighth validation (2026-11-18): removing the Re-cap trap
+
+`a8_captrap.py` → `results/a8_captrap.md` (predictions 0cd6993). The a7 protocol with two remedies, same draws:
+
+- `leak`: `re_leak = 0.05` (6dcc57d), which gives a slope of 0.05 above the cap;
+- `stable`: the Re coefficients start at −|draw|.
+
+The first launch stopped at beam seed 3: torch's strong-Wolfe line search raised an IndexError on a non-finite
+loss. `a7_joint.fit` now treats that like a non-finite loss, and the run resumed from the finished entries.
+
+| system | a7 | `leak` | `stable` |
+|---|---|---|---|
+| diff, adr (per seed, of 16) | 11 | **16** (every seed) | **16** (every seed) |
+| diff2d, adr2d (of 8) | 5 | **8** | **8** |
+| beam (of 16) | 7, 8, 9, 8, 8 | 13, 9, 15, 12, 12 | 8, 10, 9, 9, 8 |
+| selected start, test / oracle (25 seeds) | ≤ 1.012 | ≤ 1.012 | ≤ 1.012 |
+
+**Predictions against results.**
+
+1. Diffusion and ADR, with each remedy, ≥ 15 of 16 (1D) and ≥ 7 of 8 (2D) in every seed: **holds**, every start
+   succeeds.
+2. Beam, each remedy adds 1–4 successful starts per seed: **fails** for both, in opposite directions. `leak` adds
+   1–7 (two seeds exceed 4); `stable` adds 0–2 (two seeds add none).
+3. The selected start is at the oracle in all 25 seeds with each remedy: **holds.**
+
+**Reading.**
+
+- For first-order systems, the cap trap was the only reason for failed starts. Either remedy removes it.
+- On the beam the leak is the better remedy. With it, a start can pass through the cap on its way to the truth; for
+  the beam the truth sits on the imaginary axis, close to the cap. A stable start only changes which draws fail:
+  0, 3, 5, 7, 8 still fail, by the other mechanisms seen in a7 (dipole pairs, over-damping).
+- Default for later work: `re_leak = 0.05` whenever `re_max` is used. Every deep model in `experiments/A/deep`
+  uses it.

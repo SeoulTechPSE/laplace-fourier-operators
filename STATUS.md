@@ -174,6 +174,20 @@ Things to know:
 
 ## Log
 
+### 2026-11-18 — (A) pole layer: removing the Re-cap trap (leak)
+
+- Done: `re_leak` option in both pole layers (6dcc57d, test). `a8_captrap.py` (predictions 0cd6993): the a7 protocol
+  with a leaky cap (0.05) or stable starts. A torch strong-Wolfe IndexError on a non-finite loss is now treated as a
+  stopped start (the run resumed).
+- Results (`experiments/A/layer/results/a8_captrap.md`):
+  - Diffusion and ADR (1D, 2D): every start succeeds with either remedy (a7: 11/16, 5/8).
+  - Beam: leak 9–15/16, stable 8–10/16 (a7 7–9/16).
+  - The selected start is at the oracle in all 25 seeds.
+  - Predictions 1 and 3 hold. Prediction 2 fails: the leak helps the beam more than predicted, and stable starts
+    help less.
+- Decisions: `re_leak = 0.05` is the default with `re_max` from now on.
+- Next: the deep operator on Burgers (a9, running).
+
 ### 2026-11-18 — (A) pole layer: a joint fit from random starts also recovers every system
 
 - Done: `a7_joint.py` (predictions 12e576a). No stage 1 or 2: random μ coefficients (N(0, 3²) in k / k_ref
