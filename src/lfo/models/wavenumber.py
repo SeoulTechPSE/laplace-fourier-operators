@@ -14,10 +14,14 @@ form, used to check it.
 
 **Pole functions** (Section 4.3, polynomial form). Over the wavenumber k of the spatial grid:
 
-    mu_n(k)   = sum_j a_nj k^{2j}  +  i sum_j c_nj k^{2j+1}      (even real part, odd imaginary part)
+    mu_n(k)   = sum_j a_nj k^{2j}  +  i sum_j c_nj k^{p_j}         (even real part; Im powers p_j, default odd)
     beta_n(k) = sum_j (b_nj + i e_nj) k^{2j}
 
-For real fields this gives mu(-k) = conj(mu(k)), as needed. `stable=True` maps the real part through
+Only k >= 0 is evaluated (rfft), and irfft makes the field real, so any powers p_j are admissible. Odd powers
+(advection, k^3 dispersion) are the default; `im_powers=(1, 2, 3)` adds even ones, needed for a frequency c k^2
+(Euler-Bernoulli beam, where the two poles per k are +-i c k^2). Residues are polynomials in k^2: a transfer function
+whose residues are not (for example the beam's displacement, with residues 1 / (2 i c k^2)) needs another output
+(the beam's velocity: residues 1/2) or a rational residue. `stable=True` maps the real part through
 -softplus(.) so Re mu_n(k) <= 0. Parameters are continuous in k, so the layer can be evaluated on a finer spatial
 grid than it was trained on.
 
@@ -102,13 +106,16 @@ class WavenumberPoleLayer1d(nn.Module):
 
     def __init__(self, n_poles: int, t, length: float = 2 * math.pi, mu_degree=(3, 2), beta_degree: int = 2,
                  stable: bool = False, init_scale: float = 0.1, modes: int | None = None, re_max: float | None = None,
-                 re_tau: float = 0.05, k_ref: float = 1.0):
+                 re_tau: float = 0.05, k_ref: float = 1.0, im_powers: tuple | None = None):
         super().__init__()
         self.modes, self.re_max, self.re_tau, self.k_ref = modes, re_max, re_tau, float(k_ref)
         t = torch.as_tensor(t, dtype=torch.float64).reshape(-1)
         self.register_buffer("t", t)
         self.length, self.stable = float(length), stable
         n_re, n_im = mu_degree
+        # powers of k in Im mu: default odd (1, 3, ...); any powers are valid because only k >= 0 is evaluated
+        self.im_powers = tuple(im_powers) if im_powers is not None else tuple(2 * j + 1 for j in range(n_im))
+        n_im = len(self.im_powers)
         self.mu_re = nn.Parameter(init_scale * torch.randn(n_poles, n_re, dtype=torch.float64))
         self.mu_im = nn.Parameter(init_scale * torch.randn(n_poles, n_im, dtype=torch.float64))
         self.beta = nn.Parameter(torch.zeros(n_poles, beta_degree, 2, dtype=torch.float64))
@@ -128,7 +135,7 @@ class WavenumberPoleLayer1d(nn.Module):
             re = -F.softplus(re)
         elif self.re_max is not None:          # smooth cap Re mu <= re_max; identity to < 1e-6 below re_max - 15 tau
             re = self.re_max - self.re_tau * F.softplus((self.re_max - re) / self.re_tau)
-        im = sum(self.mu_im[:, j, None] * k * k2 ** j for j in range(self.mu_im.shape[1]))
+        im = sum(self.mu_im[:, j, None] * k ** p for j, p in enumerate(self.im_powers))
         b = sum(torch.complex(self.beta[:, j, 0, None], self.beta[:, j, 1, None]) * k2 ** j
                 for j in range(self.beta.shape[1]))
         return torch.complex(re, im), b

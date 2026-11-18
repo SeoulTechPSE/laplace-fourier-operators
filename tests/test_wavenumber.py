@@ -90,3 +90,22 @@ def test_mode_truncation_and_growth_cap():
         out = layer(f)
     assert re.max() <= 0.5 and torch.isfinite(re).all()
     assert out.abs().max() < 1e-12
+
+
+def test_even_imaginary_powers_give_the_beam_velocity():
+    """Beam u_tt = -c^2 u_xxxx + f, velocity output: poles +-i c k^2, residues 1/2 (im_powers with k^2)."""
+    n_x, n_t, c = 32, 201, 0.1
+    t = np.linspace(0, 4, n_t)
+    x = np.arange(n_x) * 2 * math.pi / n_x
+    a = np.random.default_rng(4).normal(size=n_t)
+    f = np.sin(3 * x)[:, None] * a[None]
+    w = c * 9
+    v = lti.response(t, a, np.array([1j * w, -1j * w]), np.array([0.5 + 0j, 0.5 + 0j]))
+    layer = WavenumberPoleLayer1d(2, t, mu_degree=(1, 3), beta_degree=1, im_powers=(1, 2, 3))
+    with torch.no_grad():
+        layer.mu_re.zero_(), layer.mu_im.zero_(), layer.beta.zero_()
+        layer.mu_im[0, 1], layer.mu_im[1, 1] = c, -c
+        layer.beta[:, 0, 0] = 0.5
+        out = layer(torch.tensor(f[None]))[0].numpy()
+    ref = np.sin(3 * x)[:, None] * v[None]
+    assert np.abs(out - ref).max() < 1e-10 * np.abs(ref).max()
