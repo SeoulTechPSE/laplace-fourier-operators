@@ -1,4 +1,4 @@
-"""(C) E5: figures for the E5 note (`paper/e5_note.qmd`).
+"""(C) E5: figures for the project C paper (`experiments/C/paper/c_paper.qmd`, Section 6).
 
     python experiments/C/e5_probe/figures.py      # writes figures/*.png and *.pdf
 

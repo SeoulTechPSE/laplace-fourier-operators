@@ -1,5 +1,5 @@
 ---
-title: "Do Laplace–Fourier Neural Operators Learn the True Poles? An Audit on Linear Systems"
+title: "Do Laplace Neural Operators Learn Physical Poles? An Audit on Linear Systems and a Trust Rule for Nonlinear Ones"
 author: "Kee-Youn Yoo"
 date: 2026-11-18
 format:
@@ -15,33 +15,81 @@ bibliography: references.bib
 csl: ieee.csl
 ---
 
-<!-- Workshop paper draft (project C, E1). Decisions: STATUS.md 2026-11-18 and E1_report.md,
-"Decisions for the paper". Sources for every number: experiments/C/e1_audit/README.md,
-results/summary.md, results/per_pole.md; E2 paragraph: experiments/C/theory/README.md. -->
+<!-- Project C working paper: E1 (linear audit) and E5 / RQ4 (nonlinear trust rule), merged 2026-11-18 from
+experiments/C/e1_audit/paper/e1_workshop.qmd and experiments/C/e5_probe/paper/e5_note.qmd (see git history).
+Submission postponed; venue and length open. Sources for every number: experiments/C/e1_audit/README.md,
+results/summary.md, results/per_pole.md (E1); experiments/C/theory/README.md (E2 paragraph);
+experiments/C/e5_probe/README.md, results/e5_gate.md, results/e5_v4.md and results/e5_*prereg*.md (E5).
+Figures: experiments/C/e1_audit/figures.py, experiments/C/e5_probe/figures.py. -->
 
 ## Abstract {.unnumbered}
 
-Laplace-type neural operators represent the transient part of the solution by learned poles and residues. Several of them claim that these poles are interpretable as the system's physical poles. We test this claim on linear time-invariant systems whose poles are known. We audit three models: LNO, ALNO and LFNO. We study them in two settings. In the first, each model is reduced to one pole–residue layer, so its poles can be compared directly with the truth. In the second, we use the full architectures at a matched parameter budget. Across 900 training runs we find three things.
+Laplace-type neural operators represent the transient part of a solution by learned poles and residues, and
+these poles are often read as the system's natural frequencies and decay rates. We test that reading in two
+steps.
 
-1. Under the published training protocols, the poles cannot move far enough. The learning-rate schedule caps how far a pole can travel, and most poles stop at that cap.
+**Linear systems with known poles.** We audit LNO, ALNO and LFNO in 900 training runs, both as single
+pole–residue layers and as full architectures. We find three things:
+
+1. Under the published protocols the poles cannot move far enough: the learning-rate schedule caps their
+   travel.
 2. Once they can move, the lightly damped complex poles are found.
 3. Fast real poles are not found by any published recipe, although the data identify them.
 
-The models fit the data equally well whether their poles are right or wrong. A low test error is therefore not evidence that the poles are physical. We propose that claims of pole interpretability be backed by pole error and seed spread on systems with known poles.
+Models fit equally well with right or wrong poles, so test error does not certify poles.
+
+**Nonlinear systems.** Here the comparable quantity is the small-signal pole, the pole of the linearisation at
+the operating point. We build a rule that reads a stored pole as physical only when probes of the trained
+operator and a check on the training data agree. It took four versions, each pre-registered before the test that
+followed. The tests cover five systems (damped and undamped Duffing, a driven pendulum, forced Lorenz at $\rho = 5$ and
+10), 18 data sets and 375 trained models.
+
+The final rule makes no false trust in any of them. On the system it had not seen it trusts 8 of 75 models, all
+within 4 %. It requires:
+
+- a causal, shift-invariant small-signal Jacobian whose pole matches a stored pole;
+- agreement between two independent probes;
+- a good fit relative to the output's variation;
+- an equivalent linear pole of the data that stays near its small-amplitude value.
+
+The published LNO configuration never moves its poles, and the LNOs that do hold physical poles rarely have
+causal Jacobians, so the rule mostly certifies a linear pole–residue layer.
 
 ## Introduction
 
-Neural operators with a Laplace (pole–residue) branch represent a solution operator as a sum of exponentially decaying or oscillating modes, $\sum_n \beta_n / (s - \mu_n)$, often in parallel with a Fourier (steady-state) branch [@cao2024lno; @kim2026pilno; @ha2026lfno; @ha2025bestofboth]. The poles $\mu_n$ are trainable. Their appeal is interpretability: if the learned $\mu_n$ are the system's poles, the model exposes natural frequencies and decay rates, which neither a Fourier neural operator [@li2021fno] nor a generic network can.
+Neural operators with a Laplace (pole–residue) branch represent a solution operator as a sum of exponentially
+decaying or oscillating modes, $\sum_n \beta_n / (s - \mu_n)$, often in parallel with a Fourier (steady-state)
+branch [@cao2024lno; @kim2026pilno; @ha2026lfno; @ha2025bestofboth]. The poles $\mu_n$ are trainable. Their
+appeal is interpretability: if the learned $\mu_n$ are the system's poles, the model exposes natural frequencies
+and decay rates, which neither a Fourier neural operator [@li2021fno] nor a generic network can.
 
-This claim is rarely tested. Benchmarks report test error, and test error does not depend on whether the poles are physical. Two branches that can take over each other's role, or many poles that jointly approximate one, give the same output with different poles. We ask a direct question: **on linear systems with known poles, do the poles learned by these models match the truth, and how much do they vary across seeds?**
+This claim is rarely tested. Benchmarks report test error, and test error does not depend on whether the poles
+are physical. Two branches that can take over each other's role, or many poles that jointly approximate one, give
+the same output with different poles. We ask two questions:
+
+- **On linear systems with known poles**, do the learned poles match the truth, and how much do they vary across
+  seeds? (Sections 2–3)
+- **On nonlinear systems**, where "the pole" is the small-signal pole of the linearisation at the operating point,
+  when may a stored pole be read as that pole? (Sections 4–7)
+
+A stored pole of a nonlinear model can differ from the small-signal pole for three reasons:
+
+1. it never moved from its initialisation;
+2. the model carries the dynamics elsewhere, in its nonlinearity or its steady branch;
+3. it is a valid *equivalent* linear pole of the training amplitudes, which have drifted from the small-signal
+   regime.
 
 **Contributions.**
 
-1. An audit of LNO v1 [@cao2024lno], ALNO [@kim2026pilno] and LFNO [@ha2026lfno; @ha2025bestofboth] on three linear systems with 2, 4 and 6 known poles, under the published protocols and controls (900 runs).
+1. An audit of LNO v1 [@cao2024lno], ALNO [@kim2026pilno] and LFNO [@ha2026lfno; @ha2025bestofboth] on three
+   linear systems with 2, 4 and 6 known poles, under the published protocols and controls (900 runs).
 2. A mechanism for the main failure: the learning-rate schedule bounds the total pole travel.
 3. A separation of what training fails to find from what the data cannot identify, for fast real poles.
+4. A trust rule for stored poles of nonlinear operators. It combines a Jacobian probe, an odd-part LTI probe and
+   a gate on the data. It is built in four pre-registered versions, every failure is kept in the record, and the
+   final version is tested on a system it had not seen.
 
-## Setup
+## Linear systems: setup {#sec-lin-setup}
 
 **Systems.** We use three systems:
 
@@ -75,7 +123,7 @@ ALNO and LFNO have no public code and were re-implemented from the papers. Their
 
 **Metrics.** We fold learned poles to $\operatorname{Im} \ge 0$ and match them to the true poles. The pole error is the mean relative error after matching. A pole is *recovered* if its relative error is below 0.1. The *oracle*, true poles in one tied layer, reproduces the outputs to about $10^{-3}$, the representation floor of the layer.
 
-## Results
+## Linear systems: results {#sec-lin-results}
 
 | setting | model | protocol / init | p2 | p4 | p6 | test rel. L2 (p6) |
 |---|---|---|---|---|---|---|
@@ -88,38 +136,38 @@ ALNO and LFNO have no public code and were re-implemented from the papers. Their
 | deep† | LFNO | `lfno_paper`, `stable` | 0.20 ± 0.01 | 0.44 ± 0.06 | 0.51 ± 0.01 | 4.3e-2 (3/5 diverged) |
 | deep | all | `lno` init | 0.94–0.97 | 0.87–0.94 | 0.95–0.97 | ≈ 1.0 (no training) |
 
-: Pole error (mean relative error after matching; mean ± std over seeds; diverged runs excluded). †Closest pooled pole, an optimistic upper bound. The full grid of models, protocols and initialisations is in Appendix A. {#tbl-main tbl-colwidths="[8,12,20,14,14,14,18]"}
+: Pole error (mean relative error after matching; mean ± std over seeds; diverged runs excluded). †Closest pooled pole, an optimistic upper bound. The full grid of models, protocols and initialisations is in the appendix. {#tbl-main tbl-colwidths="[8,12,20,14,14,14,18]"}
 
-### Under the published protocols the poles cannot move far enough
+### Under the published protocols the poles cannot move far enough {#sec-travel}
 
 Adam moves each parameter by about the learning rate per step, so the schedule bounds the total travel of a pole: $\sum \mathrm{lr} \times \text{steps} = 4.0$ for `common` and 3.6 for `lfno_paper`. The `stable` initialisation starts at $|\mu| \approx 20$, while the true poles have $|\operatorname{Im}\mu| \le 4$.
 
 With the `stable` initialisation:
 
-- 35–92 % of the layer poles end within 10 % of the bound (Fig. 1, left);
+- 35–92 % of the layer poles end within 10 % of the bound (@fig-travel, left);
 - deep-model poles move $\Delta\operatorname{Im} \approx -3.9$ with $\Delta\operatorname{Re} \approx 0$, travelling down in frequency at full speed for the whole run;
 - fewer than 0.3 % of pooled deep poles leave the initial decay range.
 
 With the original `lno` initialisation the poles start unstable, and no deep model trains (test error ≈ 1).
 
-![Pole travel as a fraction of the travel bound, `stable` initialisation. Left: published protocol; the mass sits at the bound. Right: with a ten-times pole learning rate, no pole reaches it.](../figures/fig1_travel.png){#fig-travel width=95%}
+![Pole travel as a fraction of the travel bound, `stable` initialisation. Left: published protocol; the mass sits at the bound. Right: with a ten-times pole learning rate, no pole reaches it.](../e1_audit/figures/fig1_travel.png){#fig-travel width=95%}
 
 ### Once the poles can move, the oscillatory poles are found
 
-A ten-times pole learning rate raises the bound to 40, and no pole saturates it any longer. The tied layer's pole error drops from 5.4 / 14.8 / 6.4 to 0.04 / 1.6 / 0.83 (p2 / p4 / p6). In the deep models the closest pooled poles recover the complex pairs in 89–100 % of runs (Fig. 2).
+A ten-times pole learning rate raises the bound to 40, and no pole saturates it any longer. The tied layer's pole error drops from 5.4 / 14.8 / 6.4 to 0.04 / 1.6 / 0.83 (p2 / p4 / p6). In the deep models the closest pooled poles recover the complex pairs in 89–100 % of runs (@fig-recovery).
 
 The deep test error does not change (ALNO 1.6e-2 → 1.7e-2): the published models are equally accurate whether or not their poles are right. Two further observations:
 
 - With the LFNO protocol about 60 % of LFNO's learned poles end unstable ($\operatorname{Re}\mu > 0$), and 10 of 30 deep LFNO runs diverged.
 - A weight decay of 0.01 on the poles pulls real poles towards zero, even from a warm start (−2 moves by +1.7).
 
-![Fraction of runs recovering each true pole (relative error < 0.1); shaded: real poles. Top: tied single layer, 10 seeds. Bottom: deep ALNO and LFNO, closest pooled pole (an optimistic upper bound), 5 seeds each. Only the warm start recovers the fast real poles −1 and −2.](../figures/fig2_recovery.png){#fig-recovery width=95%}
+![Fraction of runs recovering each true pole (relative error < 0.1); shaded: real poles. Top: tied single layer, 10 seeds. Bottom: deep ALNO and LFNO, closest pooled pole (an optimistic upper bound), 5 seeds each. Only the warm start recovers the fast real poles −1 and −2.](../e1_audit/figures/fig2_recovery.png){#fig-recovery width=95%}
 
-### Fast real poles are not found, although the data identify them
+### Fast real poles are not found, although the data identify them {#sec-fastreal}
 
 Without a warm start the real poles −1 and −2 are recovered in 0–10 % of runs in every setting, including the tied layer with enough travel. Meanwhile the models still fit: the tied layer on p6 reaches a test error of 8e-3 without −2. The learned poles matched to −1 and −2 are lightly damped complex poles near $-0.5 \pm (0.1\text{–}0.9)i$.
 
-Is this a training failure or a limit of the data? Profiles [@raue2009profile] of the layer's error in each real pole's decay rate are flat within a few times its representation floor (Fig. 3): fixing the decay rate of −2 anywhere in [−6, −1] costs at most 2.1e-3, below the test error of good-fit runs. The complex poles, by contrast, have sharp profiles. That floor, however, comes from the layer's band-limited input hold, not from the data. A follow-up study (to appear) shows that the E1 data do identify these poles:
+Is this a training failure or a limit of the data? Profiles [@raue2009profile] of the layer's error in each real pole's decay rate are flat within a few times its representation floor (@fig-profile): fixing the decay rate of −2 anywhere in [−6, −1] costs at most 2.1e-3, below the test error of good-fit runs. The complex poles, by contrast, have sharp profiles. That floor, however, comes from the layer's band-limited input hold, not from the data. A follow-up study (to appear) shows that the E1 data do identify these poles:
 
 
 - A training recipe without prior knowledge of the poles recovers −1 / −2 on p6 in 95 / 70 % of runs. It uses real-constrained slots on a log grid of decay rates, a damping bound on complex slots, multi-start and an L-BFGS polish.
@@ -128,37 +176,194 @@ Is this a training failure or a limit of the data? Profiles [@raue2009profile] o
 
 The fast real poles are therefore missed by the published recipes, not hidden by the data.
 
-![Profile of each p6 pole's decay rate for the tied single layer: $\operatorname{Re}\mu$ of one pole is fixed at c × truth and all other parameters are re-fitted. The complex poles have sharp minima; the real poles −1 and −2 stay within a few times the representation floor (dashed) over a wide range, below the test error of good-fit runs (dotted).](../figures/fig3_profile.png){#fig-profile width=72%}
+![Profile of each p6 pole's decay rate for the tied single layer: $\operatorname{Re}\mu$ of one pole is fixed at c × truth and all other parameters are re-fitted. The complex poles have sharp minima; the real poles −1 and −2 stay within a few times the representation floor (dashed) over a wide range, below the test error of good-fit runs (dotted).](../e1_audit/figures/fig3_profile.png){#fig-profile width=72%}
+
+## Nonlinear systems: setting {#sec-setting}
+
+**Systems and data.** All sets use the LNO time grid ($T = 20.47$, $\Delta t = 0.01$, 2048 points) and splits of
+200 / 50 / 130. The original LNO data use inputs $A \sin 5t$, $A \in [0.05, 10]$. We checked the original data
+against our own simulations (relative error $2.4\cdot10^{-4}$ to $1.2\cdot10^{-1}$). The new sets use the four input
+families of @sec-lin-setup (step, ramp, pseudo-random binary, smooth random) scaled to a band of peak $|f|$. Each band was
+chosen from a scan of the data alone, before any model was trained.
+
+| system | small-signal pole | sets |
+|---|---|---|
+| damped Duffing $x''+0.5x'+x+x^3=f$ | $-0.25 \pm 0.968i$ | `small`, `mixed`, `medium`, `moderate`, `wide` |
+| driven pendulum $x''+0.5x'+\sin x=f$ | $-0.25 \pm 0.968i$ | `pend_orig`, `pend_medium`, `pend_large`, `pend_wide` |
+| undamped Duffing $x''+x+x^3=f$ | $\pm i$ | `c0_orig`, `c0_small`, `c0_medium` |
+| forced Lorenz, $\rho = 5$, output $x$ | $-0.929 \pm 4.148i$ (and $-11.8$) | `lz_orig`, `lz_small`, `lz_wide` |
+| forced Lorenz, $\rho = 10$, output $x$ | $-0.596 \pm 6.174i$ (and $-12.5$) | `lz_r10_orig`, `lz_r10_small`, `lz_r10_wide` |
+
+: The five systems and 18 data sets. Lorenz: $x'=10(y-x)$, $y'=x(\rho-z)-y$, $z'=xy-\tfrac83 z-f$
+[@cao2024lno]. Its operating point is the equilibrium $C_+$; the new Lorenz sets start there, and the original
+data start from $x(0)=1$. {#tbl-systems tbl-colwidths="[36,30,34]"}
+
+**Models.** We use four variants, five seeds each, all trained with the original LNO protocol (complex Adam,
+lr 0.002, weight decay $10^{-4}$, step decay 0.5 every 100 epochs, 1000 epochs):
+
+- the original one-layer LNO for each benchmark [@cao2024lno], with 128–1344 stored poles;
+- the same LNO with the pole learning rate ×10;
+- the same LNO with the `stable` initialisation (@sec-lin-setup) and the pole learning rate ×10;
+- the linear tied pole–residue layer of @sec-lin-setup with 4 slots, the same initialisation and the pole learning rate ×10.
+
+On Lorenz the tied layer has a learned output offset $b(t)$, which does not depend on the input.
+
+**Probes.** Let $G$ be the trained operator.
+
+- **Jacobian probe.** $J = \partial G/\partial f$ at $f = 0$ (2048 × 2048, by automatic differentiation). It is
+  *valid* if it is causal (less than 10 % of $\lVert J\rVert$ above the diagonal) and shift-invariant (a Toeplitz
+  fit leaves less than 10 % of its causal part). Its pole $\mu_J$ comes from an order-2 matrix pencil on the mean
+  subdiagonals. On the true Lorenz impulse responses this pencil is biased by 2.8 % ($\rho=5$) and 1.1 %
+  ($\rho=10$).
+- **LTI probe.** The odd part $(G(\varepsilon u)-G(-\varepsilon u))/2\varepsilon$ on 16 smooth random inputs,
+  $\varepsilon = 0.01$. One complex pair is fitted (first-order hold), giving $\mu_\text{LTI}$.
+- **Agreement with a stored pole.** $d = \min_n |\mu_n-\mu_J|/|\mu_J|$.
+
+**Data side.** The *equivalent linear pole* of a set of samples is the best single complex pair fitted to all of
+them (on Lorenz, to centred data). A model that fits well and is linear in its stored poles can only learn this
+pole. It equals the small-signal pole only when the training amplitudes are small enough.
+
+A trusted run is **correct** if $|\mu_J-\mu_\star|/|\mu_\star| < 0.1$, where $\mu_\star$ is the small-signal pole.
+
+## Nonlinear systems: a trust rule and how it was built {#sec-history}
+
+| rule | conditions | fixed before | motivating failure |
+|---|---|---|---|
+| v1 | $J$ valid, $d<0.1$, test rel. $L_2<0.5$ | pass 4 | published LNO: stored poles at their initialisation, Jacobian non-causal (passes 1–2) |
+| v2 | v1 and data gate: linear fit of all training data leaves $<0.1$ | pass 5 | `mixed`: 2 trusted runs 43 % and 86 % off; they are the data's equivalent pole |
+| v3 | v1 and data gate: lowest fifth by amplitude linear ($<0.1$), equivalent-pole shift all vs. low $<0.1$ | pass 7 | v2 abstains on the pendulum although every candidate is correct (softening spring: large residual, small pole shift) |
+| v4 | v3 gate, $J$ valid, $d<0.1$, probe agreement $|\mu_\text{LTI}-\mu_J|/|\mu_J|<0.1$, centred fit error $<0.5$ | pass 10 | Lorenz $\rho=5$: a slow Jacobian pole matched by an unmoved stored pole (96 % off) |
+
+: The four versions. Pass numbers refer to `experiments/C/e5_probe/README.md`. The v3 threshold was first 0.05 and
+was set to 0.1 before the pass-7 test. {#tbl-rules tbl-colwidths="[6,40,10,44]"}
+
+v1 was defined after a first look at 20 runs, so those runs are development data. Every later version was written
+down, with predictions, before the runs that test it. Two predictions failed and are reported as such:
+
+- v3's prediction of no false trust on Lorenz $\rho=5$;
+- a tied-layer fit prediction on Lorenz $\rho=10$. The cause was the protocol's weight decay on the output offset
+  (@sec-models).
+
+## Nonlinear systems: results {#sec-results}
+
+| rule | trusted | false | missed | prospective sets / runs | prospective trusted / false / missed |
+|---|---|---|---|---|---|
+| v1 | 66 | 9 | 0 | 18 / 375 | 66 / 9 / 0 |
+| v2 | 28 | 0 | 29 | 16 / 335 | 22 / 0 / 29 |
+| v3 | 55 | 3 | 5 | 11 / 235 | 29 / 3 / 5 |
+| v4 | 52 | **0** | 5 | 3 / 75 | 8 / **0** / 0 |
+
+: Every rule applied to all 18 sets (left), and only to the sets tested after the rule was fixed (right).
+Missed: correct runs that v1 trusts and the rule does not. {#tbl-totals tbl-colwidths="[8,12,10,10,28,32]"}
+
+**The data gate.** A run that fits the training data well learns the data's equivalent linear pole. So the data
+must show that this pole has not moved far from its small-amplitude value (@fig-gate).
+
+- v1 alone trusts 6 wrong poles on the two hardening Duffing sets (`mixed`, `moderate`), where the equivalent
+  pole has moved 18–61 %.
+- v2's residual gate removes them, but it also rejects the pendulum sets. There the residual is large while the
+  pole hardly moves.
+- v3's pole-shift gate keeps both cases right on the oscillators. Its cost is the undamped set `c0_medium`: a
+  1.4 % pole error already leaves a 15 % residual over the 20 s window when there is no damping, so the gate
+  abstains on 5 correct runs.
+
+![The v3 data gate on all 18 sets. Squares inside the shaded region are the sets where the gate passes and the model checks of v1 and v3 still trust a wrong pole (both Lorenz).](../e5_probe/figures/fig1_gate.png){#fig-gate width=68%}
+
+**Probe agreement.** On Lorenz the data gate passes, and v3 still trusts three wrong poles. They show two failure
+modes:
+
+- *Slow mode.* An original-initialisation LNO ($\rho=5$ and $\rho=10$, the same seed) has a Jacobian that decays
+  at a slow pole near the origin. A stored pole that never moved from its initialisation sits at the same place,
+  so $d = 0.02$–$0.07$. The model's odd-part response to small inputs has a very different pole: the two probes
+  differ by a factor of about 1900 and 4800.
+- *Fast mode.* A tied layer ($\rho=10$) has a spurious Jacobian pole at $-1.5+39.4i$ that matches one of its stored
+  poles. Its LTI probe gives $-2.1+3.6i$ ($a=0.91$).
+
+The two probes measure the same small-signal linearisation in different ways, so a physical pole must appear in
+both. In all 52 correct trusted runs they agree within 4 %. In the three false ones they disagree by 0.91 to
+4800 (@fig-agree). The centred fit criterion decided no case here. It is kept because the plain relative error
+cannot detect a bad fit when the output has a large mean: on Lorenz even the mean trajectory scores 0.011–0.11.
+
+![Probe agreement against Jacobian pole error for every run that v1 trusts. v4 keeps only blue points left of the vertical line. The six squares above the horizontal line (some overlap) are rejected by the data gate; the three blue points above it are rejected by probe agreement.](../e5_probe/figures/fig2_agree.png){#fig-agree width=68%}
+
+## What the probes say about the models {#sec-models}
+
+- **The published LNO configuration does not learn physical poles.** In every seed, all 256 stored poles of the
+  Duffing LNO stay at their initialisation ($|\mu|\approx0.1$), and none is near the small-signal pole. This is
+  the travel bound of @sec-travel in a nonlinear model. The model still captures the dynamics: secant (equivalent-linear)
+  probes of its response follow the data's amplitude-dependent pole to 0.1–1.5 % up to $A = 7$. The physics
+  sits in the nonlinearity and the Fourier branch, not in the poles.
+- **A stable initialisation and a 10× pole learning rate put physical poles into the LNO.**
+  - On the oscillators and on Lorenz $\rho = 10$, most seeds store poles within 10 % of the small-signal pole.
+  - Their Jacobian poles are within 10 % in most runs on the simulated sets, and these LNOs give the best fits.
+  - But their Jacobians are usually slightly non-causal (0.05–0.43 of the norm above the diagonal). So v4
+    certifies only 7 of these 90 runs; of its 52 trusted runs, 45 are linear tied layers.
+  - Why these Jacobians are non-causal is open.
+- **No model stores the fast real Lorenz pole** ($-11.8$ and $-12.5$), as with the fast real poles of @sec-fastreal.
+- **Output offsets need care.** On Lorenz the output is $x(t)$ about $C_+ \approx 3.3$ or $4.9$. A learned offset
+  with coupled weight decay is pulled towards zero at almost the full learning rate, because its own gradient
+  vanishes at the optimum. The tied layer then fits worse than the mean trajectory. With the offset excluded from
+  weight decay it fits ($e_c$ 0.02–0.22), and 7 of 10 such runs on the gated $\rho = 10$ sets are trusted, all
+  within 2–3 %.
 
 ## Discussion
 
-**Test error does not certify poles.** In every setting, models with correct and incorrect poles reach similar test errors. A model can therefore be accurate and still have uninterpretable poles. The published recipes produce exactly this combination for real poles, and for all poles when travel is capped.
+**Test error does not certify poles.** In every linear setting, models with correct and incorrect poles reach
+similar test errors. On nonlinear systems the published LNO fits and even follows the amplitude-dependent dynamics
+(secant probes within 1.5 %), while its stored poles stay at their initialisation. A model can therefore be
+accurate and still have uninterpretable poles.
 
-**What to report.** A claim that learned poles are physical should come with checks on systems with known poles:
+**What to report.** A claim that learned poles are physical should come with checks.
 
-- the pole error after matching;
-- the spread over seeds;
-- the pole travel relative to the learning-rate budget.
+- On systems with known poles:
+  - the pole error after matching;
+  - the spread over seeds;
+  - the pole travel relative to the learning-rate budget.
 
-For deep models, a pooled closest-pole match is only an upper bound and should be labelled as such.
+  For deep models, a pooled closest-pole match is only an upper bound and should be labelled as such.
+- On nonlinear systems, before a stored pole is reported as physical, check that:
+  1. the operator's small-signal Jacobian is causal and shift-invariant;
+  2. its pole agrees with a stored pole and with an independent odd-part probe;
+  3. the fit is good relative to the output's variation;
+  4. the training data's equivalent linear pole stays within the claimed accuracy of its small-amplitude value.
 
-**Simple fixes go a long way, but not all the way.** Raising the pole learning rate, or initialising within the right frequency band, recovers the oscillatory poles. Real poles need a parameterisation that keeps real slots real.
+  If any check fails, report the probe poles, which describe the operator, and not the stored poles.
+
+**Simple fixes go a long way, but not all the way.** Raising the pole learning rate, or initialising within the
+right frequency band, recovers the oscillatory poles on linear systems. The same change (stable initialisation,
+pole learning rate × 10) puts physical poles into the nonlinear LNOs. Real poles need a parameterisation that
+keeps real slots real. Learned output offsets should be excluded from weight decay.
 
 ## Limitations {.unnumbered}
+
+**Linear audit.**
 
 - ALNO and LFNO are re-implementations, and neither paper states its initialisation.
 - We use three systems, one data seed, one window and one grid.
 - The deep metric is an optimistic bound.
 - The layer setting does not match parameter budgets; the deep setting does.
-- LNO v1 at the matched 5.9k budget does not train from its original initialisation, and its published 1.8k configuration was not run.
+- LNO v1 at the matched 5.9k budget does not train from its original initialisation, and its published 1.8k
+  configuration was not run.
 - The follow-up recipe was tested on the tied single layer only.
+
+**Nonlinear trust rule.**
+
+- **The rule was refined after failures.** Each version is the answer to a failure of the previous one. The
+  prospective record is therefore small for the latest version: v4 was tested on 75 models of one system and
+  trusted 8. Its zero false trusts on the earlier sets are partly fit to those sets.
+- **One pair.** The probes read one complex pair, the dominant small-signal pole. Higher-order or real poles are
+  not certified; the fast Lorenz pole was never learned.
+- **Cost.** The rule abstains on undamped poles at moderate amplitude (`c0_medium`). It also needs
+  low-amplitude samples in the training data to evaluate the gate.
+- **Scope.** The systems are low-order ODEs with a scalar input and output. All models were trained with one
+  protocol, and the LNO is the only deep architecture probed.
 
 ## References {.unnumbered}
 
 ::: {#refs}
 :::
 
-## Appendix A: full grid {.unnumbered}
+## Appendix: full grid of the linear audit {.unnumbered}
 
 <!-- Copied from results/summary.md (2026-11-18); regenerate with e1_audit.py --summarize if the runs change. -->
 

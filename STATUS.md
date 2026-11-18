@@ -8,7 +8,7 @@ Each session appends one entry using the template at the bottom.
 | Work package | Months | Status | Gate |
 |---|---|---|---|
 | Shared foundation | 1–4 | nearly done: LNO v1/v2 reproduced (gate met), ALNO/LFNO 1D re-implemented; LTI/PDE/process generators partly | reproduce original LNO results (month 4) — **met** |
-| (C) Pole audit of existing models | 3–5 | **in progress**: E1 done, draft report (`E1_report.md`, updated with E2); paper decisions made (2026-11-18); workshop paper draft written (`paper/e1_workshop.qmd`) | — |
+| (C) Pole audit of existing models | 3–5 | **in progress**: E1 done, draft report (`E1_report.md`, updated with E2); paper decisions made (2026-11-18); E1 + E5 merged into one working paper (`experiments/C/paper/c_paper.qmd`, 2026-11-18); submission postponed | — |
 | (D) Non-periodic input representation | 4–8 | not started | differs from padded FNO? (month 8) |
 | (A) Pole layer and linear validation | 5–10 | not started | dispersion relations recovered (month 10) |
 | (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits, a bootstrap-calibrated order, certificate and order test; reduction-path unresolved rules fail, a location-calibrated split test flags the merge, a combined post-report rule leaves 1 false pole in 40 groups but does not carry over to new p6 E1 groups; an EIVML refit of the reports removes the EIV bias; EIVML through the whole pipeline helps only up to η_u = 0.05; an EIVML elimination of the calibrated report leaves 0 false poles up to p4 30 η_y and p6 E1 0.05, with EIV-bootstrap intervals covering 33/36 at p4 30 η_y), E3 deep first pass done; H1–H3 theory draft (`experiments/C/theory/H1_H2.md`), E5 passes 1–10 (`experiments/C/e5_probe/`; RQ4 rule v4, 0 false trusts over 375 runs) | — |
@@ -152,8 +152,8 @@ Suggested next steps (in order):
    E5 write-up. Tenth pass (pre-registered): rule v4 = v3 gate + LTI/Jacobian probe agreement +
    centred fit; on Lorenz ρ = 10 it makes no false trust where v3 makes 2. Over 18 sets / 375
    runs: v4 52 trusted, 0 false, 5 missed. The tied layer needs its output offset excluded from
-   weight decay. RQ4 rule = v4. E5 companion note `experiments/C/e5_probe/paper/e5_note.qmd` (6 pages,
-   2 figures). Next: user review of both drafts.
+   weight decay. RQ4 rule = v4. The E1 draft and the E5 note are merged into one working paper,
+   `experiments/C/paper/c_paper.qmd` (13 pages, 5 figures); submission postponed (user, 2026-11-18).
 
 Things to know:
 
@@ -164,6 +164,15 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-18 — (C) paper: E1 and E5 merged into one working paper
+
+- Done: `experiments/C/paper/c_paper.qmd` (13 pages, 5 figures, appendix grid). Part I (Sections 2–3) is the E1
+  audit and Part II (Sections 4–6) the E5 trust rule, with one abstract, introduction, discussion and limitations.
+  `references.bib` and `ieee.csl` moved to `experiments/C/paper/`; the two separate drafts removed (in git history).
+- Decisions: submission postponed to continue the research (user, 2026-11-18). This supersedes the earlier split
+  "workshop paper = E1 + E2 paragraph"; venue and length are open.
+- Next: E5 eleventh pass, why stable-init LNO Jacobians are non-causal (the rule certifies only 7 of 90 such runs).
 
 ### 2026-11-18 — (C) E5 / RQ4: companion note
 
