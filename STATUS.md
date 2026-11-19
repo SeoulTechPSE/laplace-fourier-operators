@@ -12,7 +12,7 @@ Each session appends one entry using the template at the bottom.
 | (D) Non-periodic input representation | 4–8 | **started** (2026-11-18): oracle comparison of input representations (`experiments/D/d1_inputs/`) | differs from padded FNO? (month 8) |
 | (A) Pole layer and linear validation | 5–10 | **started** (2026-11-18): wavenumber pole layer (FOH time axis, `lfo.models.wavenumber`); 1D diffusion, ADR, beam and 2D diffusion, ADR dispersion recovered in every seed (two-stage, or joint fit with a leaky cap); deep operator on Burgers, Cahn–Hilliard 1D / 2D; working paper draft | dispersion relations recovered (month 10) |
 | (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits, a bootstrap-calibrated order, certificate and order test; reduction-path unresolved rules fail, a location-calibrated split test flags the merge, a combined post-report rule leaves 1 false pole in 40 groups but does not carry over to new p6 E1 groups; an EIVML refit of the reports removes the EIV bias; EIVML through the whole pipeline helps only up to η_u = 0.05; an EIVML elimination of the calibrated report leaves 0 false poles up to p4 30 η_y and p6 E1 0.05, with EIV-bootstrap intervals covering 33/36 at p4 30 η_y), E3 deep first pass done; H1–H3 theory draft (`experiments/C/theory/H1_H2.md`), E5 passes 1–10 (`experiments/C/e5_probe/`; RQ4 rule v4, 0 false trusts over 375 runs) | — |
-| (A) Application 1: process dynamics | 11–16 | not started | — |
+| (A) Application 1: process dynamics | 11–16 | **started** (2026-11-19): delay layer; FOPDT / SOPDT identified | — |
 | (D) Initial conditions and rollout | 13–19 | not started | — |
 | (A) Application 2: Cahn–Hilliard | 17–22 | not started | recover k_c, k_max (month 20) |
 | Consolidation and code release | 23–24 | not started | — |
@@ -173,6 +173,18 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-19 — (A) Application 1 started: exact delayed FOH layer; FOPDT / SOPDT
+
+- Done: `lfo.models.PoleResidueDelay` (5814b1b, 3 tests; pytest 59/59); `experiments/A/process/a20_fopdt.py`
+  (predictions 1989e24).
+- Results (`experiments/A/process/README.md`):
+  - Delay layer at the oracle; FOPDT θ, K, τ exact to 1e-4; SOPDT θ within 1.1 % (K, τ within 0.08 %).
+  - Pole-only (4 complex poles) at 1.06–1.95× the oracle, with no readable delay.
+  - ARX: θ to one sample, τ within 1 %.
+  - Prediction 1 fails narrowly (SOPDT θ 1.1 %); 2 fails (the pole-only model approximates the delay to within the
+    sampling floor); 3 holds.
+- Next: noise; CSTR (linear probe); axial-dispersion reactor (delay as −i v k).
 
 ### 2026-11-19 — (A) 2D deep operator on forced 2D Cahn–Hilliard; working paper draft
 

@@ -1,0 +1,52 @@
+# (A) Application 1: process dynamics with time delay
+
+Plan: `docs/proposal_A_wavenumber_pole_operator.qmd`, Section 5. Shared code: `lfo.models.PoleResidueDelay`
+(`lfo/models/delay.py`). It implements K(s) = Σ β_n e^{−θ_n s} / (s − μ_n) with an exact delayed first-order hold:
+the undelayed FOH state plus a partial FOH step to t_j − θ. This is exact for piecewise-linear inputs and
+differentiable in θ, including delays that are not multiples of the sample time. Tests: zero and integer delays,
+the FOPDT step response at a fractional delay, and the gradient against finite differences.
+
+## First step (2026-11-19): FOPDT and SOPDT
+
+`a20_fopdt.py` → `results/a20_fopdt.md` (predictions 1989e24).
+
+**Setup.**
+- Systems: FOPDT (K = 2, τ = 1.5, θ = 1.37) and SOPDT (K = 1, τ = 2.0 / 0.5, θ = 0.83).
+- Data: dt = 0.05 and T = 20. Inputs are E1-family signals. The truth is the exact undelayed response on a 32×
+  finer grid, shifted by θ. No noise; data seeds 0–4.
+- Oracle floor: about 1 %, from steps and PRBS jumps between samples.
+
+**Models.**
+- `pdelay`: the delay layer at the true order (10 starts, L-BFGS, selection by validation).
+- `pole_only`: 4 complex poles without delay (the LNO-type representation).
+- `arx`: ARX with na = order and nb = order + 1, and the integer delay nk chosen by validation.
+
+| system | model | test / oracle | θ̂ (truth) | K̂ | τ̂ |
+|---|---|---|---|---|---|
+| FOPDT | pdelay | **1.00** | **1.3701** (1.37) | **2.0000** | **1.4998–1.4999** |
+| FOPDT | pole only | 1.57–1.95 | – | – | – |
+| FOPDT | ARX | 1.12–1.18 | 1.35 (one sample off) | 2.002–2.003 | 1.514–1.519 |
+| SOPDT | pdelay | **1.00** | 0.823–0.839 (0.83) | **1.0000** | **2.0000; 0.4996–0.4999** |
+| SOPDT | pole only | 1.06–1.09 | – | – | – |
+| SOPDT | ARX | 1.08–1.12 | 0.85 | 0.9999–1.0003 | 1.998–2.004; 0.499–0.501 |
+
+**Predictions against results.**
+
+1. `pdelay`: θ, K and every τ within 1 % in every seed: **fails narrowly.**
+   - FOPDT is exact to 1e-4.
+   - SOPDT's θ is off by 0.04–1.1 % (seed 0 at 1.1 %), while K and τ are within 0.08 %.
+   - The test error is at the oracle in every seed.
+2. `pole_only` ≥ 5× the oracle: **fails.** It reaches 1.06–1.95×. Four complex poles approximate the delay (as a
+   Padé approximant would) to within about the 1 % sampling floor.
+3. ARX: θ̂ within one sample, with a test error above `pdelay`'s: **holds.**
+
+**Reading.**
+
+- **Only the delay layer gives θ as a continuous, accurate parameter.** ARX resolves θ to the sample (0.05), and
+  its time constants are 1 % off on FOPDT. The pole-only model fits nearly as well but has no delay to read.
+  Test error again does not certify structure, as in (C).
+- **SOPDT's θ is the least identifiable parameter.** A fast lag (τ₂ = 0.5) and a delay are partly
+  interchangeable at the output, so θ scatters by ~1 % while τ₂ is right to 0.08 %.
+- The sampling floor (~1 %) hides the pole-only model's structural error here. With smooth inputs only, or noise
+  added, the comparison would change. Next steps: noise, then the CSTR (linear-probe poles) and the
+  axial-dispersion reactor (delay as −i v k).
