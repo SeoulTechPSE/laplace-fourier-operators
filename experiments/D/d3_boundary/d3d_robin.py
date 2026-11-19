@@ -29,6 +29,10 @@ finer time grid. T = 5, n_t = 201, splits 200 / 50 / 100, data seeds 0-4. Fit: t
 **Checks before any fit.** Roots satisfy the equation to 1e-12; dk_1/dbeta from autograd 0.2036559 against
 0.2036559 by finite differences; cond(Phi) = 1.4. Oracle: 5.6e-3 (seed 0), 5.9e-3 (seed 1).
 
+**Fix before any result** (first launch crashed in seed 0 `robin` on a singular basis). beta is now
+parameterised as softplus(rho) > 0, the physical range (H > 0): for -1 < beta < 0 the first root leaves the bracket
+((1/2) pi, pi). A start whose basis is singular is skipped.
+
 **Predictions** (written before running).
 
 1. `robin`: in every seed, test error <= 1.2x the oracle, beta within 2 %, D within 1 %, and each channel law within
@@ -120,8 +124,15 @@ class RobinLayer(nn.Module):
         self.kref = float(np.pi * N)
         self.core = B.WavenumberPoleLayer1d(1, t, re_max=0.5, re_leak=0.05, k_ref=self.kref)
         self.c = nn.Parameter(torch.zeros(2, 4, dtype=torch.float64))
-        self.beta = nn.Parameter(torch.tensor(float(beta0), dtype=torch.float64), requires_grad=learn)
+        # beta = softplus(rho) > 0 (H > 0: heat loss); for -1 < beta < 0 the first root leaves ((1/2) pi, pi)
+        rho0 = math.log(math.expm1(beta0)) if beta0 > 0 else -50.0
+        self.rho = nn.Parameter(torch.tensor(rho0, dtype=torch.float64), requires_grad=learn)
+        self.register_buffer("zero", torch.tensor(beta0 == 0))
         self.register_buffer("x", torch.tensor(X, dtype=torch.float64))
+
+    @property
+    def beta(self):
+        return torch.zeros_like(self.rho) if bool(self.zero) else torch.nn.functional.softplus(self.rho)
 
     def law(self, k):
         kk = k / self.kref
@@ -165,9 +176,12 @@ def fit(kind, data, t, device):
         except (RuntimeError, IndexError):
             pass
         with torch.no_grad():
-            if kind == "robin" and not -0.4 < float(m.beta) < 50:
+            if kind == "robin" and not 0 < float(m.beta) < 50:
                 continue
-            v = float(A.rel(m(fva, bva), yva))
+            try:
+                v = float(A.rel(m(fva, bva), yva))
+            except RuntimeError:                     # singular basis: start failed
+                continue
         if math.isfinite(v) and (best is None or v < best[0]):
             best = (v, m)
     return None if best is None else best[1]
