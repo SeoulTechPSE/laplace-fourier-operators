@@ -127,6 +127,51 @@ changes that were confounded in d2c's `base` (same model, 6000 steps, batch 25, 
 - For the paper: report rollout error, not window error, when choosing training data for chained windows; include
   developed start states.
 
+## Fifth pass (2026-11-20): initial fields outside the training range; rollout over 10 windows
+
+`d2e_ic_generalisation.py` → `results/d2e_ic_generalisation.md` (predictions 554d0f4). The three d2b models,
+all trained on d2c's developed-start windows (400 windows, 3 seeds; `wpo_ic` reproduces d2c `base` exactly:
+rollout 0.0411, 0.0451, 0.0411). Evaluated on:
+- `id`: fresh windows;
+- `amp`: initial-field scale 1–3× (training ≤ 1);
+- `high`: initial field on modes 9–16 only (training 1–8);
+- `roll4`: d2c's 4-window set;
+- `roll10`: 10 windows over [0, 50], with the forcing drawn per window from the training family.
+
+| model | params | id | amp (ratio to id) | high (ratio to id) | roll4 | roll10 | roll10 / its first 4 windows |
+|---|---|---|---|---|---|---|---|
+| wpo_ic | 61.1 k | 0.0221 | 0.252 (10.8–11.9) | **0.0159 (0.70–0.76)** | **0.0424** | 0.0550 | 1.48–1.59 |
+| wpo_chan | 59.6 k | 0.0251 | 0.297 (11.0–12.6) | 0.0271 (0.95–1.28) | 0.0478 | 0.0703 | 1.51–1.56 |
+| tfno_chan | 59.1 k | 0.0215 | **0.189 (8.5–9.3)** | 0.0714 (3.1–3.6) | 0.0441 | **0.0490** | **1.33–1.39** |
+
+Per-window error on `roll10` (mean over seeds), windows 1–10:
+- wpo_ic: 0.022, 0.034, 0.039, 0.033, 0.033, 0.037, 0.036, 0.037, 0.038, 0.047;
+- wpo_chan: 0.025, 0.044, 0.085, 0.071, 0.062, 0.066, 0.055, 0.064, 0.061, 0.066;
+- tfno_chan: 0.021, 0.032, 0.047, 0.043, 0.041, 0.043, 0.037, 0.039, 0.042, 0.048.
+
+**Predictions against results.**
+1. `wpo_ic` has the lowest `roll4` error, at most 0.9× `tfno_chan`'s: **fails.** It is lowest, but only by 4 %
+   (0.96×). Developed-start training helped the TFNO more (0.061 in d2b → 0.044) than the IC-path WPO (0.054 →
+   0.042).
+2. `high`: `wpo_ic`'s ratio at most half of both others': **fails.** It holds against the TFNO (0.72 against 3.3),
+   not against `wpo_chan` (1.08).
+3. `amp`: every ratio ≥ 2, and `wpo_ic` not more than 10 % below `wpo_chan`: **holds** (8.5–12.6; 11.4 against
+   11.9).
+4. `roll10` ≤ 1.5× its first 4 windows for `wpo_ic` in every seed: **fails** (1.48, 1.54, 1.59).
+
+**Reading.**
+- **Unseen modes in the initial field.** The TFNO's error triples. The WPOs, whose time axis is a pole response in
+  every mode, do not degrade (the ratio is below 1, because high modes decay within the window). The IC path is
+  better than the channel input (0.72 against 1.08), but by less than predicted. This is the one clear structural
+  gain over the TFNO.
+- **Larger initial amplitudes** cost every model about 10×. The TFNO degrades least (8.8×). A stronger nonlinear
+  regime is not something the pole structure extrapolates.
+- **Long rollout.** No model blows up. Per-window errors saturate after window 3 (`wpo_ic` at 0.033–0.038 in windows
+  3–9). The common rise in window 10 in all three models is a property of that window's forcing draws.
+  Prediction 4's ratio is therefore set mostly by window 10. The TFNO has the lowest error over 10 windows (0.049
+  against 0.055). With developed-start training, the IC-path WPO's rollout advantage from d2b is gone over long
+  horizons.
+
 ## Sixth pass (2026-11-20): a damped beam with initial displacement and velocity
 
 `d2f_beam_ic.py` → `results/d2f_beam_ic.md` (predictions 19ce7dc). u_tt = −c²u_xxxx + η u_xxt + f (c = 0.04,
