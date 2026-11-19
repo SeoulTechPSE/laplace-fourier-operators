@@ -209,3 +209,28 @@ nonlinear samples (WPO 2.2× lower error) and how LTI the small-signal response 
 - For (A) this marks a boundary. The pole readout is the physical one when the modes are Fourier modes of a
   translation-invariant problem (a24, periodic): there λ(k), including −ivk, is identified exactly. In open-boundary
   convective systems, the useful structures are a delay plus dispersion, or the boundary handling of project (D).
+
+## CSTR from closed-loop data with measurement noise (2026-11-19)
+
+`a26_cstr_closed_loop.py` → `results/a26_cstr_closed_loop.md` (predictions df503db). A PI loop (Kc 1, Ki 0.5),
+with noise σ equal to 2 % of the median rms of y. Every model is tested on clean open-loop data.
+
+| regime | WPO probe error (3 seeds) | WPO clean test | linear (output error) pole | ARX(2, 2) pole |
+|---|---|---|---|---|
+| open | 0.3–0.7 % | 0.018–0.020 | −0.765 ± 0.964 i | wrong (−0.02 ± 0.18 i) |
+| open, noisy | 0.06–0.5 % | 0.018–0.019 | −0.758 ± 0.969 i | wrong |
+| closed | 0.3–0.6 % | 0.029–0.030 | −0.771 ± 0.966 i | wrong |
+| closed, noisy | 0.4–1.1 % | 0.037–0.047 | −0.772 ± 0.973 i | wrong |
+
+**Predictions against results.**
+1. WPO probe within 2 % in every regime: **holds** (≤ 1.1 %).
+2. Output-error linear pole within 2 % in every regime: **holds** (0.4–1.4 %). The table file reports 1.6 for the
+   closed-loop rows because `err` compared the conjugate root with the +i Jacobian root. The poles themselves are
+   correct (to fix in the script).
+3. ARX within 2 % without noise: **fails.** ARX(2, 2) is wrong in every regime, noise-free included. Equation-error
+   ARX on this nonlinear plant with these orders does not give the linear poles; its noisy-closed-loop bias cannot
+   be separated from that.
+
+**Reading.** Output-error fits, both the deep WPO's probe and the linear pair, are unaffected by closed-loop
+operation with white measurement noise, as theory says. Closed-loop data cost the WPO accuracy on the open-loop
+test set (0.018 → 0.03–0.047): the loop narrows the input excitation.
