@@ -31,6 +31,10 @@ integrator, since the mean is driven by the net influx.
    constant.
 2. `nobc`: test error >= 3x the oracle in every case and seed.
 
+The first launch stopped at NN seed 1 `nobc`, where every start ended with a non-finite loss: the k = 0 mode is
+an integrator and nothing drives it without the boundary channel. Such a fit is now recorded as failed (ratio inf),
+and the run resumes from the finished entries.
+
     python experiments/D/d3_boundary/d3b_bc_types.py      # results/d3b_bc_types.md / .json
 """
 from __future__ import annotations
@@ -149,7 +153,7 @@ def fit(name, bc, data, t, device):
             v = float(A.rel(m(fva, bva), yva))
         if math.isfinite(v) and (best is None or v < best[0]):
             best = (v, m)
-    return best[1]
+    return None if best is None else best[1]          # None: every start ended non-finite (reported as a failed fit)
 
 
 @torch.no_grad()
@@ -170,7 +174,8 @@ def oracle(name, data, t, device):
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     t = np.linspace(0, T, NT)
-    out = []
+    out = json.loads(OUT.read_text()) if OUT.exists() else []                 # resume
+    done = {(r["case"], r["seed"], r["model"]) for r in out}
     for name in ("DD", "NN", "DN"):
         law_true = case(name)[4]
         for seed in range(5):
@@ -178,8 +183,16 @@ def main():
             floor = oracle(name, data, t, device)
             fte, bte, yte = (x.to(device) for x in data["test"])
             for bc in (True, False):
+                if (name, seed, "bc" if bc else "nobc") in done:
+                    continue
                 t0 = time.time()
                 m = fit(name, bc, data, t, device)
+                if m is None:
+                    out.append(dict(case=name, seed=seed, model="bc" if bc else "nobc", oracle=floor, ratio=float("inf"),
+                                    failed=True))
+                    OUT.write_text(json.dumps(out, indent=1))
+                    print(name, seed, "bc" if bc else "nobc", "every start non-finite", flush=True)
+                    continue
                 with torch.no_grad():
                     test = float(A.rel(m(fte, bte), yte))
                 r = dict(case=name, seed=seed, model="bc" if bc else "nobc", oracle=floor, ratio=test / floor,
