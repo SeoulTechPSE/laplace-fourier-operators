@@ -66,11 +66,11 @@ S = np.sin(np.outer(np.arange(1, N + 1), np.arange(1, N + 1)) * np.pi / (N + 1))
 
 def dst(u):
     """Interior field (..., N, n_t) -> sine coefficients (..., N, n_t)."""
-    return torch.einsum("mi,...it->...mt", torch.tensor(S * 2 / (N + 1)), u)
+    return torch.einsum("mi,...it->...mt", torch.tensor(S * 2 / (N + 1), device=u.device), u)
 
 
 def idst(c):
-    return torch.einsum("im,...mt->...it", torch.tensor(S), c)
+    return torch.einsum("im,...mt->...it", torch.tensor(S, device=c.device), c)
 
 
 def c_true(k):
