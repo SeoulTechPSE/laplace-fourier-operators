@@ -119,6 +119,22 @@ Rollout chains 4 windows over [0, 20].
   They act differently. More windows lower the window error, and the rollout error follows at a ratio of about 2.5.
   Developed start states raise the error on fresh test windows by 14 % but cut the rollout-to-window ratio to
   about 1.9. Training data for chained windows should therefore be chosen by rollout error, not window error.
+- **Generalisation and long rollout.** All three models were retrained on developed-start windows.
+  - Initial fields on modes never seen in training (9–16): the TFNO's error triples. The two pole-based models do
+    not degrade, because their time axis is a pole response in every mode. The IC path is better than the channel
+    input (0.72 against 1.08 of the in-distribution error).
+  - Initial amplitudes 1–3× beyond training cost every model about 10×, the TFNO least (8.8×).
+  - Over 10 windows no model blows up, and per-window errors saturate after window 3. The TFNO has the lowest
+    10-window error (0.049 against 0.055), and the IC path's 4-window lead shrinks to 4 %. With good training
+    data, the structural rollout advantage is small.
+- **Two initial fields: a damped beam.** u_tt = −c²u_xxxx + η u_xxt + f, observed through its displacement, with
+  random initial displacement and velocity. For a second-order mode, the free-response coefficients are fixed by
+  the poles: (v₀ − μ₂u₀)/(μ₁ − μ₂) and (μ₁u₀ − v₀)/(μ₁ − μ₂), with no free γ. They and the forcing residues
+  scale as 1/k², which a polynomial cannot express.
+  - With the coefficients written this way (8 reals in all), the layer is at the oracle in every seed, with c and
+    η within 1e-4. Four chained windows reproduce the oracle's rollout (0.997–1.001×). The velocity passed between
+    windows comes from the model's own modal states, since only u is observed.
+  - Free polynomial laws in their place are 50–90× worse, and withholding v₀ gives ~100×.
 
 ## Boundaries in space {#sec-bc}
 
@@ -159,6 +175,12 @@ poles.
   h within 0.5 % in every seed, at 1.00–1.11× the oracle. Two of the five seeds needed more iterations after the
   release than were pre-registered (post hoc: 600 iterations reach the oracle and D within 0.7 %). Parameters that
   set the basis, rather than the coefficients in it, are best found by an outer search.
+- **A variable coefficient.** For u_t = (D(x)u_x)_x with D varying threefold, the eigenfunctions are not sines.
+  The best diagonal sine model is 15–27× the oracle. A learned orthogonal basis change Q = exp(S − Sᵀ), fitted
+  with one pole per mode, reaches 1.09–1.21× and recovers the eigenvalues of modes 1–6 within 0.6 %. The weakly
+  excited modes 7–8 missed the pre-registered 1 % in 2 of 5 seeds. Post hoc, 1800 more iterations bring one such
+  seed to 1.001×, with eigenvalues within 0.06 % and every eigenvector overlap ≥ 0.9998. The learned object is the
+  eigen-decomposition; recovering D(x) from it is left open.
 - **Where it stops:** project A's Danckwerts reactor (a27) is a convective problem with an inlet and an outlet,
   observed only at the outlet. There the modal poles were not identifiable, and a dead time plus lags described the
   data best. Boundaries work as a channel when the basis diagonalises the operator and the field is observed.
@@ -179,7 +201,8 @@ an exact, causal time axis that does not assume periodicity (D1).
 - Deep rollout: one system (Burgers); the semigroup regulariser and pushforward training did not help at this
   budget.
 - Boundaries: diffusion (Dirichlet, Neumann, mixed) and constant-coefficient advection with Dirichlet values;
-  Robin boundaries with one unknown coefficient found by a profile. Variable coefficients remain.
+  Robin boundaries with one unknown coefficient found by a profile; one variable coefficient, as an
+  eigen-decomposition (D(x) itself not recovered).
 - Every test error is limited by the sampling floor of steps and PRBS (about 1 %).
 
 ## References {.unnumbered}

@@ -167,8 +167,8 @@ Per-window error on `roll10` (mean over seeds), windows 1–10:
 - **Larger initial amplitudes** cost every model about 10×. The TFNO degrades least (8.8×). A stronger nonlinear
   regime is not something the pole structure extrapolates.
 - **Long rollout.** No model blows up. Per-window errors saturate after window 3 (`wpo_ic` at 0.033–0.038 in windows
-  3–9). The common rise in window 10 in all three models is a property of that window's forcing draws.
-  Prediction 4's ratio is therefore set mostly by window 10. The TFNO has the lowest error over 10 windows (0.049
+  3–9). All three models rise in window 10, so the rise most likely comes from that window's forcing
+  draws (not checked). Prediction 4's ratio is set mostly by that window. The TFNO has the lowest error over 10 windows (0.049
   against 0.055). With developed-start training, the IC-path WPO's rollout advantage from d2b is gone over long
   horizons.
 

@@ -13,7 +13,7 @@ Each session appends one entry using the template at the bottom.
 | (A) Pole layer and linear validation | 5–10 | **started** (2026-11-18): wavenumber pole layer (FOH time axis, `lfo.models.wavenumber`); 1D diffusion, ADR, beam and 2D diffusion, ADR dispersion recovered in every seed (two-stage, or joint fit with a leaky cap); deep operator on Burgers, Cahn–Hilliard 1D / 2D; working paper draft | dispersion relations recovered (month 10) |
 | (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits, a bootstrap-calibrated order, certificate and order test; reduction-path unresolved rules fail, a location-calibrated split test flags the merge, a combined post-report rule leaves 1 false pole in 40 groups but does not carry over to new p6 E1 groups; an EIVML refit of the reports removes the EIV bias; EIVML through the whole pipeline helps only up to η_u = 0.05; an EIVML elimination of the calibrated report leaves 0 false poles up to p4 30 η_y and p6 E1 0.05, with EIV-bootstrap intervals covering 33/36 at p4 30 η_y), E3 deep first pass done; H1–H3 theory draft (`experiments/C/theory/H1_H2.md`), E5 passes 1–14 (`experiments/C/e5_probe/`; RQ4 rule v4: 0 false trusts over the first 375 runs, 2 over 735 (few-pole LNO); four shared poles store the true decay rates; v5 adds a data-pole check: 1 false trust over 735, at the 10 % line) | — |
 | (A) Application 1: process dynamics | 11–16 | **started** (2026-11-19): delay layer; FOPDT / SOPDT identified | — |
-| (D) Initial conditions and rollout | 13–19 | **started** (2026-11-19): IC path in the wavenumber layer, exact window chaining (linear); deep Burgers rollout (pushforward / semigroup did not help; developed start states and window count each −15 %); Dirichlet, Neumann, mixed, advective and Robin boundaries as channels (Robin coefficient by a profile) | — |
+| (D) Initial conditions and rollout | 13–19 | **started** (2026-11-19): IC path in the wavenumber layer, exact window chaining (linear); deep Burgers rollout (pushforward / semigroup did not help; developed start states and window count each −15 %); Dirichlet, Neumann, mixed, advective and Robin boundaries as channels (Robin coefficient by a profile); out-of-range initial fields and 10-window rollout; beam with two initial fields; variable coefficient by a learned basis | — |
 | (A) Application 2: Cahn–Hilliard | 17–22 | not started | recover k_c, k_max (month 20) |
 | Consolidation and code release | 23–24 | not started | — |
 
@@ -173,6 +173,29 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-20 — (D) initial fields out of range and 10-window rollout; a beam with two initial fields; a variable coefficient
+
+- Done:
+  - `experiments/D/d2_initial_conditions/d2e_ic_generalisation.py` (predictions 554d0f4): the three d2b models
+    on developed-start training, evaluated on out-of-range amplitudes, unseen initial modes and 10 windows.
+  - `d2f_beam_ic.py` (predictions 19ce7dc): damped beam, displacement output, initial displacement and velocity,
+    IC coefficients from the poles.
+  - `experiments/D/d3_boundary/d3f_variable.py` (predictions 90228c3): D(x) varying threefold, a learned
+    orthogonal basis. Post hoc: seed 4 refitted with more iterations (scratch).
+  - READMEs and the D paper updated.
+- Results:
+  - d2e: unseen initial modes 9–16: TFNO 3.3× its in-distribution error, WPO IC path 0.72×, WPO channel 1.08×.
+    Amplitudes 1–3×: every model ~10× (TFNO 8.8×). Over 10 windows the per-window errors saturate; TFNO lowest
+    (0.049 against 0.055). Predictions 1, 2 and 4 fail; 3 holds.
+  - d2f: `struct` at the oracle in every seed, c and η within 1e-4, rollout 0.997–1.001× the oracle's. Free
+    polynomial laws 51–88×; v₀ withheld 94–168×. All three predictions hold.
+  - d3f: `mix` 1.09–1.21×, eigenvalues m ≤ 6 within 0.6 %; `diag` 15–27×. Prediction 1 fails (seed 4 ratio;
+    modes 7–8 in 2 of 5 seeds; v₈ < 0.999 in 4 of 5). 2 holds. Post hoc: +1800 iterations give 1.001×, all
+    m ≤ 8 within 0.06 %.
+- Decisions: none.
+- Next: a fit budget by convergence rather than a fixed iteration count (d3e and d3f both missed on it); D(x)
+  from the learned eigen-decomposition; D paper consolidation.
 
 ### 2026-11-20 — (C) E5 fourteenth pass: rule v5
 
