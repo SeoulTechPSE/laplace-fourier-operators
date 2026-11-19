@@ -50,7 +50,12 @@ RQ4 indicator: d = distance from the J impulse-response pole to the nearest stor
 | lnots_stable_plr10 | 2 | 0.000 | 4/84, -0.063+6.228i (0.09) | -0.665+6.008i (0.03), 0.10–0.10 | 0.01, 0.16 | -0.606+5.963i (0.03) | no, 0.08 | no |
 | lnots_stable_plr10 | 3 | 0.002 | 0/84, -0.100+5.707i (0.11) | -2.965+3.502i (0.58), 0.34–0.34 | 0.00, 0.10 | -1.369+4.046i (0.37) | no, 0.25 | no |
 | lnots_stable_plr10 | 4 | 0.001 | 1/84, -0.114+5.918i (0.09) | -0.844+5.763i (0.08), 0.19–0.20 | 0.02, 0.45 | -0.745+5.523i (0.11) | no, 0.11 | no |
+| lnots4_stable_plr10 | 0 | 0.000 | 1/4, -0.368+5.921i (0.05) | -0.712+5.921i (0.04), 0.21–0.21 | 0.01, 0.02 | -0.564+5.776i (0.06) | yes, 0.04 | **yes** |
+| lnots4_stable_plr10 | 1 | 0.000 | 1/4, -0.597+6.060i (0.02) | -0.619+6.042i (0.02), 0.04–0.04 | 0.01, 0.04 | -0.611+6.051i (0.02) | yes, 0.00 | **yes** |
+| lnots4_stable_plr10 | 2 | 0.001 | 0/4, -0.857+4.422i (0.29) | -1.117+4.982i (0.21), 0.19–0.19 | 0.01, 0.02 | -1.047+4.672i (0.25) | yes, 0.07 | **yes** |
+| lnots4_stable_plr10 | 3 | 0.001 | 1/4, -0.389+5.821i (0.07) | -0.738+5.944i (0.04), 0.23–0.23 | 0.00, 0.01 | -0.558+5.818i (0.06) | yes, 0.03 | **yes** |
+| lnots4_stable_plr10 | 4 | 0.002 | 0/4, -0.946+2.153i (0.65) | -1.607+2.347i (0.64), 0.10–0.10 | 0.02, 0.18 | -1.413+1.973i (0.69) | no, 0.21 | no |
 
-Trusted runs (rule v1): 4 of 35. Their J impulse-response pole vs the reference (and vs the data's equivalent pole): tied4o_stable_plr10 s0 0.02 (0.01), tied4o_stable_plr10 s1 0.02 (0.02), tied4o_stable_plr10 s2 0.02 (0.03), tied4o_stable_plr10 s3 0.03 (0.05)
+Trusted runs (rule v1): 8 of 40. Their J impulse-response pole vs the reference (and vs the data's equivalent pole): tied4o_stable_plr10 s0 0.02 (0.01), tied4o_stable_plr10 s1 0.02 (0.02), tied4o_stable_plr10 s2 0.02 (0.03), tied4o_stable_plr10 s3 0.03 (0.05), lnots4_stable_plr10 s0 0.06 (0.06), lnots4_stable_plr10 s1 0.02 (0.02), lnots4_stable_plr10 s2 0.25 (0.24), lnots4_stable_plr10 s3 0.06 (0.05)
 
 Rule v2 linearity gate: the data's best linear pair leaves 0.045 of the output (gate 0.1): **passed**, v2 trusts the same runs as v1.

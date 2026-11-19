@@ -804,3 +804,43 @@ Pre-registered in `results/e5_shared_prereg.md` (65c63b7; its baseline numbers w
 - A remedy for the remaining split would need a penalty on stored poles within a mode, or fewer poles (one per
   mode), at some cost in fit. Not run.
 - `lfo.models.lno.LNO1d(textbook=True)` (c87152a) for new LNO work.
+
+## Thirteenth pass (2026-11-19): four shared poles against the split mode
+
+Pre-registered in `results/e5_few_prereg.md` (a5666e5). Rule v4 unchanged.
+
+**Variant** `lnots4_stable_plr10`: the twelfth-pass shared-pole LNO with only 4 shared poles on every set (865–869
+parameters against 1057–3489 for `lnotb`). 90 runs.
+
+Counts below use one definition for all three variants (correct J pole: error < 0.1 and a valid Jacobian, on the
+v3-gated sets without ρ = 10). It gives 13 / 43 for `lnots` where the twelfth pass reported 14 / 45.
+
+| prediction (baselines `lnots` / `lnotb`) | result |
+|---|---|
+| 1. v4: no false trust, ≥ 40 trusted (32 / 37) | **55 trusted, but 2 false: fails** |
+| 2. correct J pole with d ≥ 0.1: ≤ 15 % (13 / 43 / 12 / 47) | **0 / 45: holds** |
+| 3. `lz_small` + `lz_wide`: ≥ 3 of 10 trusted (2 / 0) | **9 of 10: holds** |
+| 4. median test error within 2× of `lnotb` on ≥ 12 of 18 sets | **12 / 18: holds** (at the threshold) |
+| 5. reported: damping ratio of the stored modes | **1.00 (IQR 0.99–1.01)**, against 0.84 / 0.70 |
+
+**Reading.**
+
+- **With no spare poles there is nothing to split or substitute.** The stored modes decay at the true rate, and in
+  every run with a correct Jacobian pole a stored pole is within 10 % of it. This is the mechanism of Proposition 8
+  (`experiments/C/theory/H1_H2.md`) and of the twelfth-pass split, removed by construction.
+- **v4 certifies 55 runs**, the most of any LNO variant, including 9 of 10 on the Lorenz ρ = 5 sets where the
+  textbook LNO had none.
+- **Two false trusts.**
+  - `lz_small` seed 4: J pole 10.4 % off, just over the 10 % line; probe agreement 0.04, centred error 0.05.
+  - `lz_r10_small` seed 2: J pole 25 % off; agreement 0.07, centred error 0.17, d 0.07.
+  - In both, the probes agree with the stored pole and with each other but not with the reference: with four
+    poles the model's small-signal response is consistently wrong. v4 checks consistency, not truth, and a
+    constrained model can be consistently wrong.
+- **Fit costs.** Median test error is more than 2× the textbook LNO's on 6 sets: `pend_orig` 9.6×, `lz_orig` 2.4×,
+  `lz_r10_orig` 2.3×, `medium` 2.2×, `c0_orig` 2.1×, `c0_medium` 2.1×. Better on `lz_small` and `lz_r10_small`
+  (0.48×, 0.35×).
+- Over 18 sets / 645 runs: v3 182 trusted, 8 false, 25 missed; **v4 176 trusted, 2 false**, 25 missed.
+
+**Next.** A trust rule for few-pole models needs a check that is independent of the model's own consistency, for
+example a pole fitted directly to low-amplitude data (the v3 gate's equivalent linear pole) compared with the
+stored pole.

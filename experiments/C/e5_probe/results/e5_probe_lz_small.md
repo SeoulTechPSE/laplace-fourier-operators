@@ -45,7 +45,12 @@ RQ4 indicator: d = distance from the J impulse-response pole to the nearest stor
 | lnots_stable_plr10 | 2 | 0.000 | 1/16, -0.521+4.059i (0.10) | -0.906+3.955i (0.05), 0.09–0.09 | 0.01, 0.02 | -0.836+3.862i (0.07) | yes, 0.09 | **yes** |
 | lnots_stable_plr10 | 3 | 0.000 | 0/16, -0.448+3.755i (0.15) | -0.887+3.934i (0.05), 0.09–0.09 | 0.01, 0.11 | -0.820+3.827i (0.08) | no, 0.10 | no |
 | lnots_stable_plr10 | 4 | 0.001 | 0/16, -0.341+4.414i (0.15) | -0.892+3.901i (0.06), 0.10–0.10 | 0.01, 0.11 | -0.829+3.792i (0.09) | no, 0.11 | no |
+| lnots4_stable_plr10 | 0 | 0.000 | 1/4, -1.008+3.923i (0.06) | -0.931+4.019i (0.03), 0.04–0.04 | 0.01, 0.02 | -0.931+4.029i (0.03) | yes, 0.03 | **yes** |
+| lnots4_stable_plr10 | 1 | 0.001 | 0/4, -0.398+3.770i (0.15) | -0.950+3.837i (0.07), 0.12–0.12 | 0.00, 0.01 | -0.886+3.684i (0.11) | yes, 0.13 | no |
+| lnots4_stable_plr10 | 2 | 0.000 | 1/4, -0.537+4.047i (0.10) | -0.902+3.963i (0.04), 0.08–0.08 | 0.00, 0.02 | -0.844+3.877i (0.07) | yes, 0.09 | **yes** |
+| lnots4_stable_plr10 | 3 | 0.000 | 1/4, -0.526+4.037i (0.10) | -0.906+4.010i (0.03), 0.05–0.05 | 0.01, 0.02 | -0.902+4.012i (0.03) | yes, 0.09 | **yes** |
+| lnots4_stable_plr10 | 4 | 0.001 | 0/4, -0.567+3.759i (0.12) | -0.929+3.852i (0.07), 0.10–0.11 | 0.00, 0.05 | -0.861+3.710i (0.10) | yes, 0.08 | **yes** |
 
-Trusted runs (rule v1): 1 of 30. Their J impulse-response pole vs the reference (and vs the data's equivalent pole): lnots_stable_plr10 s2 0.07 (0.06)
+Trusted runs (rule v1): 5 of 35. Their J impulse-response pole vs the reference (and vs the data's equivalent pole): lnots_stable_plr10 s2 0.07 (0.06), lnots4_stable_plr10 s0 0.03 (0.02), lnots4_stable_plr10 s2 0.07 (0.06), lnots4_stable_plr10 s3 0.03 (0.03), lnots4_stable_plr10 s4 0.10 (0.09)
 
 Rule v2 linearity gate: the data's best linear pair leaves 0.027 of the output (gate 0.1): **passed**, v2 trusts the same runs as v1.

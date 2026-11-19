@@ -45,7 +45,8 @@ followed. The tests cover five systems (damped and undamped Duffing, a driven pe
 10), 18 data sets and 375 trained models.
 
 The final rule makes no false trust in any of them. On the system it had not seen it trusts 8 of 75 models, all
-within 4 %. It requires:
+within 4 %. On 270 later models it trusts 124 with 2 false trusts (10 % and 25 % off), both in a few-pole variant.
+It requires:
 
 - a causal, shift-invariant small-signal Jacobian whose pole matches a stored pole;
 - agreement between two independent probes;
@@ -307,8 +308,8 @@ cannot detect a bad fit when the output has a large mean: on Lorenz even the mea
     weights in the textbook wiring give 0.5–2.5 %.
   - Trained with the textbook wiring (90 further runs, pre-registered), the LNO has causal Jacobians in every run
     and a lower median test error on all 18 sets.
-  - v4 certifies 37 of these runs, with no false trust. Over all 555 runs, including the shared-pole runs below, v4 trusts
-    121 with no false trust.
+  - v4 certifies 37 of these runs, with no false trust. Over all 645 runs, including the shared- and few-pole runs
+    below, v4 trusts 176 with 2 false trusts.
   - Where its Jacobian pole is right but no stored pole is within 10 % (12 runs, mostly Lorenz $\rho = 5$), the
     rule declines to read the stored poles, as it should. A decomposition of the small-signal response over the
     stored poles shows why. The modes that carry the oscillation decay at only 19–66 % of the true rate (median
@@ -326,6 +327,13 @@ cannot detect a bad fit when the output has a large mean: on Lorenz even the mea
     freedom. The stored modes are then damped close to the truth (median 84 % of the true rate, against 70 %).
   - But the mode then splits in frequency between two shared poles, so the rule certifies no more runs (32 against
     37). Three of the four predictions for this remedy failed.
+  - With only 4 shared poles (90 further runs, pre-registered), there is no spare pole to split a mode or to
+    substitute a slower one. The stored modes then decay at the true rate (median 100 %, IQR 99–101 %), no run with
+    a correct Jacobian pole lacks a stored pole within 10 % (0 of 45), and the rule certifies 55 runs, 9 of 10 on
+    the Lorenz sets where it had certified none or 2. The cost is fit (median test error within 2× of the textbook
+    LNO on only 12 of 18 sets; 9.6× worse on `pend_orig`) and 2 false trusts: Jacobian poles 10 % and 25 % off,
+    which v4's probe agreement and data gate did not catch. Three of the four predictions held; the one that
+    required no false trust failed.
 - **No model stores the fast real Lorenz pole** ($-11.8$ and $-12.5$), as with the fast real poles of @sec-fastreal.
 - **Output offsets need care.** On Lorenz the output is $x(t)$ about $C_+ \approx 3.3$ or $4.9$. A learned offset
   with coupled weight decay is pulled towards zero at almost the full learning rate, because its own gradient
@@ -377,7 +385,8 @@ keeps real slots real. Learned output offsets should be excluded from weight dec
 
 - **The rule was refined after failures.** Each version is the answer to a failure of the previous one. The
   prospective record is therefore small for the latest version: v4 was tested on 75 models of one system and
-  trusted 8. Its zero false trusts on the earlier sets are partly fit to those sets.
+  trusted 8. Its zero false trusts on the earlier sets are partly fit to those sets. On the few-pole LNO it made 2
+  false trusts in 55, so its record depends on the model class.
 - **One pair.** The probes read one complex pair, the dominant small-signal pole. Higher-order or real poles are
   not certified; the fast Lorenz pole was never learned.
 - **Cost.** The rule abstains on undamped poles at moderate amplitude (`c0_medium`). It also needs

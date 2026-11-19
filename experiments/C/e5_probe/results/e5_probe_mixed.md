@@ -45,7 +45,12 @@ RQ4 indicator: d = distance from the J impulse-response pole to the nearest stor
 | lnots_stable_plr10 | 2 | 0.151 | 0/16, -0.323+1.075i (0.13) | -0.273+1.194i (0.23), 0.44–0.45 | 0.01, 0.01 | -0.319+1.266i (0.31) | yes, 0.12 | no |
 | lnots_stable_plr10 | 3 | 0.142 | 0/16, -0.306+1.055i (0.10) | -0.226+1.086i (0.12), 0.36–0.51 | 0.01, 0.02 | -0.280+1.175i (0.21) | yes, 0.10 | no |
 | lnots_stable_plr10 | 4 | 0.153 | 0/16, -0.303+1.124i (0.16) | -0.265+1.153i (0.19), 0.46–0.52 | 0.01, 0.01 | -0.321+1.248i (0.29) | yes, 0.10 | **yes** |
+| lnots4_stable_plr10 | 0 | 0.335 | 0/4, -0.846+15.405i (14.45) | -18.731-0.012i (18.51), 0.05–0.27 | 0.01, 0.00 | -1.282+16.585i (15.65) | yes, 0.04 | **yes** |
+| lnots4_stable_plr10 | 1 | 0.197 | 0/4, -0.423+1.541i (0.60) | -0.249+1.333i (0.36), 0.41–0.61 | 0.01, 0.01 | -0.391+1.457i (0.51) | yes, 0.06 | **yes** |
+| lnots4_stable_plr10 | 2 | 0.170 | 0/4, -0.490+1.322i (0.43) | -0.206+1.193i (0.23), 0.41–0.69 | 0.00, 0.01 | -0.293+1.319i (0.35) | yes, 0.15 | no |
+| lnots4_stable_plr10 | 3 | 0.339 | 0/4, -0.701+24.640i (23.68) | -189.674-0.000i (189.43), 0.03–0.22 | 0.00, 0.00 | -1.438+26.489i (25.55) | yes, 0.04 | **yes** |
+| lnots4_stable_plr10 | 4 | 0.166 | 0/4, -0.298+1.187i (0.22) | -0.285+1.313i (0.35), 0.36–0.53 | 0.00, 0.01 | -0.345+1.360i (0.40) | yes, 0.12 | no |
 
-Trusted runs (rule v1): 8 of 30. Their J impulse-response pole vs the reference (and vs the data's equivalent pole): tied4_stable_plr10 s0 0.86 (0.09), tied4_stable_plr10 s3 0.43 (0.31), lnotb_stable_plr10 s0 0.16 (0.46), lnotb_stable_plr10 s1 0.20 (0.42), lnotb_stable_plr10 s2 0.23 (0.41), lnotb_stable_plr10 s4 0.21 (0.42), lnots_stable_plr10 s0 0.19 (0.43), lnots_stable_plr10 s4 0.29 (0.39)
+Trusted runs (rule v1): 11 of 35. Their J impulse-response pole vs the reference (and vs the data's equivalent pole): tied4_stable_plr10 s0 0.86 (0.09), tied4_stable_plr10 s3 0.43 (0.31), lnotb_stable_plr10 s0 0.16 (0.46), lnotb_stable_plr10 s1 0.20 (0.42), lnotb_stable_plr10 s2 0.23 (0.41), lnotb_stable_plr10 s4 0.21 (0.42), lnots_stable_plr10 s0 0.19 (0.43), lnots_stable_plr10 s4 0.29 (0.39), lnots4_stable_plr10 s0 15.65 (7.54), lnots4_stable_plr10 s1 0.51 (0.30), lnots4_stable_plr10 s3 25.55 (12.58)
 
 Rule v2 linearity gate: the data's best linear pair leaves 0.439 of the output (gate 0.1): **failed**, v2 reads no linear pole as physical on this set.
