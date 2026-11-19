@@ -270,6 +270,16 @@ sample time (a20).
     size.
   - The FNO's probe and the best linear fit are also within 1 %. At a stable focus, every reading of the
     linearisation agrees.
+- **Closed loop with measurement noise** (a26, a28).
+  - With a PI loop and 2 % noise, the output-error fits (WPO probe, linear pair) stay within 1.1 % of the Jacobian
+    pair.
+  - Equation-error ARX fails in every regime. An amplitude gate reduces its error from 88 % to 7 % noise-free, but
+    the noise then destroys it.
+- **Open boundaries** (a27). A Danckwerts reactor, inlet → outlet, Péclet 20.
+  - A delay plus two lags fits best: mean delay 0.97 against a residence time of 1.0.
+  - Modal or free poles do not recover the eigenvalues: they spend themselves approximating the transport delay.
+  - The pole readout is physical for translation-invariant problems; open-boundary convective systems need the
+    boundary handling of project (D).
 
 ## Discussion
 

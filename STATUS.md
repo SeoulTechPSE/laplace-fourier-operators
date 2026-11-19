@@ -174,6 +174,20 @@ Things to know:
 
 ## Log
 
+### 2026-11-19 — (A) closed-loop CSTR and the ARX comparison
+
+- Done: `experiments/A/process/a26_cstr_closed_loop.py` (df503db; pole errors made conjugate-safe and the table
+  regenerated from stored poles, ee3a87b); `a28_arx_orders.py`.
+- Results:
+  - Closed loop with 2 % measurement noise: the WPO probe and the output-error linear pair stay within 1.1 % of
+    the Jacobian pair. Closed-loop data raise the WPO's open-loop test error (0.018 → 0.03–0.047).
+  - ARX (equation error) fails in every regime. An amplitude gate reduces its error from 88 % to 7 % noise-free, but
+    2 % noise destroys it (22–52×).
+  - a26: predictions 1, 2 hold; 3 fails. a28: 1 fails narrowly (7.1 % against 5 %); 2 holds.
+- Decisions: output-error pole layers are the identification tool for process data; equation-error ARX is
+  reported as a baseline only.
+- Next: project (D) boundary handling for open-boundary systems (a27 showed modal poles are not identifiable there).
+
 ### 2026-11-19 — (A) Danckwerts reactor: in open-boundary convective systems the outlet does not identify eigenvalues
 
 - Done: `experiments/A/process/a27_danckwerts.py` (predictions 0bcea43): inlet → outlet of a Danckwerts dispersion

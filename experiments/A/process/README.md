@@ -234,3 +234,32 @@ with noise σ equal to 2 % of the median rms of y. Every model is tested on clea
 **Reading.** Output-error fits, both the deep WPO's probe and the linear pair, are unaffected by closed-loop
 operation with white measurement noise, as theory says. Closed-loop data cost the WPO accuracy on the open-loop
 test set (0.018 → 0.03–0.047): the loop narrows the input excitation.
+
+## Why ARX failed on the CSTR: orders and an amplitude gate (2026-11-19)
+
+`a28_arx_orders.py` → `results/a28_arx_orders.md` (predictions committed before the run). The a26 data. ARX orders
+2, 4 and 6 are fitted on all samples, or on the quarter with the smallest input rms. Entries are the relative error
+of the slowest oscillatory pole.
+
+| regime | samples | ARX(2,2) | ARX(4,4) | ARX(6,6) |
+|---|---|---|---|---|
+| open | all | 0.88 | 0.90 | 34 |
+| open | smallest quarter | 0.31 | 0.092 | **0.071** |
+| open, noisy | smallest quarter | 52 | 28 | 23 |
+| closed | smallest quarter | 0.38 | 0.12 | 0.093 |
+| closed, noisy | smallest quarter | 52 | 28 | 22 |
+
+**Predictions against results.**
+1. Noise-free open loop: the gate gives the pair within 5 % at some order, and no order does without it: **fails
+   narrowly.** The best is 7.1 %, while every order without the gate is ≥ 88 % off.
+2. Noisy closed loop, gated: every order more than 10 % off: **holds.**
+
+**Reading.**
+- Most of ARX's failure in a26 came from the nonlinear samples dominating the equation-error fit. Restricting it to
+  the smallest quarter cuts the error twelvefold.
+- The remaining ~7 % reflects order and sampling: ARX maps poles through z = e^{μ dt} from a fit of one-step
+  predictions.
+- Even 2 % measurement noise destroys the equation-error estimate. The small samples have the lowest
+  signal-to-noise ratio, so the gate that removes the nonlinearity amplifies the noise.
+- The output-error fits (a26) need neither a gate nor an order choice. That is the practical case for the pole
+  layers as identification tools.
