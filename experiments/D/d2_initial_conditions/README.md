@@ -97,3 +97,32 @@ a11 settings, 3 seeds, 6000 steps), trained three ways on the same 200 two-windo
   per-window errors, not a distribution shift.
 - For the paper: train on windows that start from developed states; the plan's two remedies are recorded as
   negative results at this budget.
+
+## Fourth pass (2026-11-20): developed start states against window count
+
+`d2d_start_states.py` → `results/d2d_start_states.md` (predictions 450deaa). A 2 × 2 design separating the two
+changes that were confounded in d2c's `base` (same model, 6000 steps, batch 25, 3 seeds; `dev400` is d2c `base`):
+
+| condition | windows | start states | window test (mean) | rollout over [0, 20] (mean; per seed) | rollout / test |
+|---|---|---|---|---|---|
+| fresh200 | 200 | fresh (as d2b) | 0.0236 | 0.0599 (0.0552, 0.0614, 0.0630) | 2.37–2.68 |
+| fresh400 | 400 | fresh | **0.0194** | 0.0498 (0.0497, 0.0509, 0.0487) | 2.51–2.67 |
+| dev200 | 200 | half developed | 0.0269 | 0.0503 (0.0478, 0.0490, 0.0541) | 1.83–1.93 |
+| dev400 | 400 | half developed | 0.0221 | **0.0424** (0.0411, 0.0451, 0.0411) | 1.81–2.12 |
+
+**Predictions against results.**
+1. `dev200` rolls out better than `fresh400`: **fails**, narrowly (0.0503 against 0.0498; within seed spread).
+2. At equal count, developed start states lower the rollout error by at least 10 %: **holds** (dev200 / fresh200 =
+   0.84, dev400 / fresh400 = 0.85).
+3. `fresh400` has a window test error at or below `dev400`'s: **holds** (0.0194 against 0.0221).
+
+**Reading.**
+- Both effects are real and of similar size: doubling the windows lowers the rollout error by 15–17 %, and making
+  half of them developed lowers it by 15–16 %. They add up (fresh200 → dev400: −29 %). The d2c gain over d2b was
+  about half each, not mostly start states as prediction 1 assumed.
+- The two act differently. More fresh windows lower the window error (−18 %) and the rollout error follows with the
+  same ratio (~2.5). Developed start states *raise* the error on fresh test windows (+14 % at both counts) but cut
+  the rollout / test ratio from ~2.5 to ~1.9: they buy coverage of the states a rollout visits at the cost of the
+  initial-state distribution the window test measures.
+- For the paper: report rollout error, not window error, when choosing training data for chained windows; include
+  developed start states.
