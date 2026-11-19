@@ -168,3 +168,43 @@ Continuing L-BFGS with β free for 300 more iterations brings both seeds onto ev
   e^{αx} changes the basis smoothly and does not flatten at a boundary of its range as softplus(ρ) does at β → 0.
 - The pre-registered budget (300 iterations after release) was too short in 2 of 5 seeds. The recorded result
   stays a partial failure. With 600 iterations, all criteria hold in the two seeds checked.
+
+## Sixth pass (2026-11-20): a variable coefficient, with the basis learned
+
+`d3f_variable.py` → `results/d3f_variable.md` (predictions 90228c3). u_t = (D(x) u_x)_x + f on [0, 1] with
+u = 0 at both ends and D(x) = 0.02 (1 + 0.5 cos πx). The eigenfunctions are not sines: the overlap of eigenvector m
+with sine m is 0.98 for m = 1 and falls to 0.13 for m = 8. Truth and models share the 32-mode sine space, so the
+only floor is the time axis.
+- `mix`: a learned orthogonal basis change Q = exp(S − Sᵀ), starting from the sine basis, plus one free pole per
+  mode (528 reals).
+- `diag`: the sine basis with free poles (32 reals).
+- L-BFGS, 600 iterations, 4 starts, 5 data seeds. Claims are on the excited eigenmodes m ≤ 8.
+
+| model | test / oracle | eigenvalue error m ≤ 6 | eigenvalue error m = 7, 8 | min abs(⟨v_m, v̂_m⟩), m ≤ 7 / m = 8 |
+|---|---|---|---|---|
+| mix | 1.09–1.21 | ≤ 0.6 % | ≤ 1.1 % / ≤ 2.5 % | 0.9993 / 0.985–0.999 |
+| diag | 15–27 | up to 10 % | – | 0.28 / 0.13 (the sine basis) |
+
+Oracle test error 5.4–9.5e-3.
+
+**Predictions against results.**
+1. `mix` at ≤ 1.2× the oracle, λ₁..₈ within 1 % and |⟨v_m, v̂_m⟩| ≥ 0.999 for m ≤ 8, in every seed: **fails.** The
+   error ratio holds in 4 of 5 seeds (seed 4: 1.21). The eigenvalues hold in 3 of 5 (seed 2 λ₇ 1.1 %, seed 4 λ₈
+   2.5 %). The eigenvectors hold for m ≤ 7 in every seed, but m = 8 is below 0.999 in 4 of 5 (0.985–0.998).
+2. `diag` ≥ 3× the oracle: **holds** (15–27×).
+
+**Diagnosis (post hoc; seed 4 refitted, which reproduces the table exactly; scratch script, not committed).**
+- Eigenmode 8 carries 0.9 % of the training forcing energy (mode 1: 64 %, mode 4: 3.6 %).
+- Continuing L-BFGS converges to the oracle:
+  - +600 iterations: 1.04×; λ₈ 0.55 %; v₈ 0.9976.
+  - +1200: 1.006×; λ₈ 0.13 %; v₈ 0.99976.
+  - +1800: 1.001×; λ₁..₈ within 0.06 %; every eigenvector ≥ 0.99987.
+- So the misses were an iteration budget too short for a weakly excited mode with 528 parameters, not a limit of
+  identifiability. As in d3e, the pre-registered result stays a partial failure.
+
+**Reading.**
+- A variable coefficient breaks the sine basis (the best diagonal model is 15–27× the oracle). An orthogonal basis
+  change learned together with the poles recovers the Sturm–Liouville eigenvalues and eigenvectors of the excited
+  modes, given enough iterations (1800 more than pre-registered for the weakest claimed mode).
+- What was learned is the operator's eigen-decomposition, not D(x). Recovering D(x) from it is an inverse
+  Sturm–Liouville problem, not attempted here. Unlike d3–d3e, the poles here are free per mode, with no law in k.
