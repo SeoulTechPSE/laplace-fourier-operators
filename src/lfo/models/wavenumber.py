@@ -343,7 +343,7 @@ class WavenumberPoleConv1d(WavenumberPoleLayer1d):
         b[:, 0, :, :, 0] = torch.randn(n_poles, c_out, c_in, dtype=torch.float64) / math.sqrt(c_in * n_poles)
         self.beta = nn.Parameter(b)
         # initial-state path (D2): free response of an initial channel field, gamma matrices share the poles
-        self.gamma = nn.Parameter(b.clone()) if ic else None
+        self.gamma = nn.Parameter(b[:, :1].clone()) if ic else None          # constant in k (budget)
 
     def poles(self, k: torch.Tensor):
         """(mu (N, K), beta (N, c_out, c_in, K)) complex128."""
@@ -423,7 +423,7 @@ class WavenumberPoleConv2d(WavenumberPoleLayer2d):
         b[:, 0, :, :, 0] = torch.randn(n_poles, c_out, c_in, dtype=torch.float64) / math.sqrt(c_in * n_poles)
         self.beta = nn.Parameter(b)
         # initial-state path (D2): free response of an initial channel field, gamma matrices share the poles
-        self.gamma = nn.Parameter(b.clone()) if ic else None
+        self.gamma = nn.Parameter(b[:, :1].clone()) if ic else None          # constant in k (budget)
 
     def poles(self, kx: torch.Tensor, ky: torch.Tensor):
         """(mu (N, M), beta (N, c_out, c_in, M)) complex128 for 1D tensors kx, ky of length M."""
