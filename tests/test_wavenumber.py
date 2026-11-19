@@ -322,3 +322,17 @@ def test_initial_condition_path_gives_the_exact_solution_and_chains_windows():
         y2 = layer(torch.tensor(f[None, :, n_t - 1:]), y1[None, :, -1])[0]
     y = torch.cat([y1, y2[:, 1:]], 1).numpy()
     assert np.abs(y - ref).max() < 1e-9 * np.abs(ref).max()
+
+
+def test_deep_operator_initial_state_path_is_causal_and_used():
+    from lfo.models.wavenumber import WavenumberPoleOperator1d
+    torch.manual_seed(14)
+    t = np.linspace(0, 1, 40)
+    m = WavenumberPoleOperator1d(t, width=6, n_layers=2, n_poles=2, stable=True, modes=8, ic=True)
+    f = torch.randn(2, 16, 40, dtype=torch.float64)
+    u0 = torch.randn(2, 16, dtype=torch.float64)
+    g = f.clone()
+    g[..., 25:] += 1.0
+    with torch.no_grad():
+        a, b, c = m(f, u0), m(g, u0), m(f, 0 * u0)
+    assert (a - b)[..., :25].abs().max() < 1e-12 and (a - c).abs().max() > 1e-6

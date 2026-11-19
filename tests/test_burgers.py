@@ -39,3 +39,13 @@ def test_mean_is_driven_by_the_mean_forcing_only_and_converges_in_dt():
     u2 = burgers.solve(fk2, 0.005, nu, n_x, stride=2)
     assert np.abs(u1 - u2).max() < 1e-6 * np.abs(u2).max()
     assert np.abs(u1[:, 2:]).max() > 0 and math.isfinite(np.abs(u1).max())
+
+
+def test_initial_field_decays_as_diffusion_at_small_amplitude():
+    n_x, nu = 32, 0.1
+    fk = np.zeros((1, n_x // 2 + 1, 201), complex)
+    u0k = np.zeros((1, n_x // 2 + 1), complex)
+    u0k[0, 3] = 1e-6 * n_x / 2
+    uk = burgers.solve(fk, 0.01, nu, n_x, u0k=u0k)
+    t = np.arange(201) * 0.01
+    assert np.allclose(uk[0, 3], u0k[0, 3] * np.exp(-nu * 9 * t), rtol=1e-6, atol=0)

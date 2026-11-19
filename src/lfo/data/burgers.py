@@ -16,12 +16,13 @@ import numpy as np
 __all__ = ["solve"]
 
 
-def solve(fk: np.ndarray, dt: float, nu: float, n_x: int, stride: int = 1) -> np.ndarray:
+def solve(fk: np.ndarray, dt: float, nu: float, n_x: int, stride: int = 1, u0k: np.ndarray | None = None) -> np.ndarray:
     """Spectral solution of the forced Burgers equation from rest.
 
     fk     (B, K, n) complex: rfft (over n_x points, numpy normalisation) of the forcing at t_j = j dt, K = n_x // 2 + 1
     dt     solver step = forcing sample spacing
     stride return every `stride`-th time sample
+    u0k    optional (B, K) rfft of the initial field (default: rest)
 
     Returns uk (B, K, ceil(n / stride)) complex, the rfft of u at t_0, t_stride, ...
     """
@@ -38,7 +39,7 @@ def solve(fk: np.ndarray, dt: float, nu: float, n_x: int, stride: int = 1) -> np
         w = np.fft.irfft(u, n=n_x, axis=1)
         return ik2 * np.fft.rfft(w * w, axis=1) + f
 
-    u = np.zeros((B, K), complex)
+    u = np.zeros((B, K), complex) if u0k is None else np.array(u0k, dtype=complex)
     out = [u.copy()]
     for j in range(n - 1):
         f0, f1 = fk[..., j], fk[..., j + 1]

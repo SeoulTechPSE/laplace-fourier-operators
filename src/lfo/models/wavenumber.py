@@ -335,13 +335,15 @@ class WavenumberPoleConv1d(WavenumberPoleLayer1d):
     Input (batch, c_in, n_x, n_t), output (batch, c_out, n_x, n_t).
     """
 
-    def __init__(self, c_in: int, c_out: int, n_poles: int, t, beta_degree: int = 2, **kw):
+    def __init__(self, c_in: int, c_out: int, n_poles: int, t, beta_degree: int = 2, ic: bool = False, **kw):
         super().__init__(n_poles, t, beta_degree=1, **kw)
         del self.beta
         self.c_in, self.c_out = c_in, c_out
         b = torch.zeros(n_poles, beta_degree, c_out, c_in, 2, dtype=torch.float64)
         b[:, 0, :, :, 0] = torch.randn(n_poles, c_out, c_in, dtype=torch.float64) / math.sqrt(c_in * n_poles)
         self.beta = nn.Parameter(b)
+        # initial-state path (D2): free response of an initial channel field, gamma matrices share the poles
+        self.gamma = nn.Parameter(b.clone()) if ic else None
 
     def poles(self, k: torch.Tensor):
         """(mu (N, K), beta (N, c_out, c_in, K)) complex128."""
@@ -350,13 +352,21 @@ class WavenumberPoleConv1d(WavenumberPoleLayer1d):
                 for j in range(self.beta.shape[1]))
         return self.mu(k), b
 
-    def forward(self, f: torch.Tensor) -> torch.Tensor:
+    def forward(self, f: torch.Tensor, v0: torch.Tensor | None = None) -> torch.Tensor:
         b_, c_in, n_x, n_t = f.shape
         dt = float(self.t[1] - self.t[0])
         fk = torch.fft.rfft(f.to(torch.float64), dim=2)
         K = fk.shape[2] if self.modes is None else min(self.modes, fk.shape[2])
         fk = fk[:, :, :K]                                                     # (b, c_in, K, n_t)
         mu, beta = self.poles(self.wavenumbers(n_x)[:K])                      # (N, K), (N, c_out, c_in, K)
+        free = None
+        if v0 is not None:                                                    # free response of the initial field
+            k2 = (self.wavenumbers(n_x)[:K] / self.k_ref) ** 2
+            gam = sum(torch.complex(self.gamma[:, j, ..., 0, None], self.gamma[:, j, ..., 1, None]) * k2 ** j
+                      for j in range(self.gamma.shape[1]))                   # (N, c_out, c_in, K)
+            v0k = torch.fft.rfft(v0.to(torch.float64), dim=2)[:, :, :K]       # (b, c_in, K)
+            ej = torch.exp(mu[..., None] * dt * torch.arange(n_t, device=f.device, dtype=torch.float64))  # (N, K, n_t)
+            free = torch.einsum("noik,bik,nkt->bokt", gam, v0k, ej)
         g, c = foh_kernel(mu, n_t, dt)                                         # (N, K, n_t)
         # sum over poles first (the FOH response is linear in the kernel): one causal convolution per channel pair
         # in the frequency domain, H_oi(k, w) = sum_n beta_noi(k) G_n(k, w), instead of N x c_in convolutions
@@ -365,6 +375,8 @@ class WavenumberPoleConv1d(WavenumberPoleLayer1d):
         Fw = torch.fft.fft(fk, 2 * n_t)                                        # (b, c_in, K, 2 n_t)
         vk = torch.fft.ifft(torch.einsum("oikw,bikw->bokw", H, Fw))[..., :n_t]
         vk = vk - torch.einsum("oikt,bik->bokt", C, fk[..., 0])
+        if free is not None:
+            vk = vk + free
         return torch.fft.irfft(vk, n=n_x, dim=2).to(f.dtype)
 
 
@@ -376,18 +388,23 @@ class WavenumberPoleOperator1d(nn.Module):
     part is causal in time, so the operator is causal. Input / output (batch, n_x, n_t) real.
     """
 
-    def __init__(self, t, width: int = 16, n_layers: int = 4, n_poles: int = 4, hidden: int = 64, **layer_kw):
+    def __init__(self, t, width: int = 16, n_layers: int = 4, n_poles: int = 4, hidden: int = 64, ic: bool = False,
+                 **layer_kw):
         super().__init__()
         f64 = dict(dtype=torch.float64)
         self.lift = nn.Linear(1, width, **f64)
-        self.K = nn.ModuleList(WavenumberPoleConv1d(width, width, n_poles, t, **layer_kw) for _ in range(n_layers))
+        # initial field (D2): lifted pointwise and fed as the initial state of the first pole layer (shared poles)
+        self.lift0 = nn.Linear(1, width, bias=False, **f64) if ic else None
+        self.K = nn.ModuleList(WavenumberPoleConv1d(width, width, n_poles, t, ic=ic and i == 0, **layer_kw)
+                               for i in range(n_layers))
         self.W = nn.ModuleList(nn.Linear(width, width, **f64) for _ in range(n_layers))
         self.proj = nn.Sequential(nn.Linear(width, hidden, **f64), nn.GELU(), nn.Linear(hidden, 1, **f64))
 
-    def forward(self, f: torch.Tensor) -> torch.Tensor:
+    def forward(self, f: torch.Tensor, u0: torch.Tensor | None = None) -> torch.Tensor:
         v = self.lift(f.to(torch.float64)[..., None]).permute(0, 3, 1, 2)    # (b, width, n_x, n_t)
+        v0 = None if u0 is None else self.lift0(u0.to(torch.float64)[..., None]).permute(0, 2, 1)   # (b, width, n_x)
         for i, (K, W) in enumerate(zip(self.K, self.W)):
-            v = K(v) + W(v.permute(0, 2, 3, 1)).permute(0, 3, 1, 2)
+            v = (K(v, v0) if i == 0 and v0 is not None else K(v)) + W(v.permute(0, 2, 3, 1)).permute(0, 3, 1, 2)
             if i < len(self.K) - 1:
                 v = F.gelu(v)
         return self.proj(v.permute(0, 2, 3, 1))[..., 0].to(f.dtype)
@@ -398,13 +415,15 @@ class WavenumberPoleConv2d(WavenumberPoleLayer2d):
     all channel pairs, a residue matrix beta_n(k) per pole (polynomial in |k|^2, imaginary part with the half-plane
     sign). Input (batch, c_in, n_x, n_y, n_t), output (batch, c_out, n_x, n_y, n_t)."""
 
-    def __init__(self, c_in: int, c_out: int, n_poles: int, t, beta_degree: int = 2, **kw):
+    def __init__(self, c_in: int, c_out: int, n_poles: int, t, beta_degree: int = 2, ic: bool = False, **kw):
         super().__init__(n_poles, t, beta_degree=1, **kw)
         del self.beta
         self.c_in, self.c_out = c_in, c_out
         b = torch.zeros(n_poles, beta_degree, c_out, c_in, 2, dtype=torch.float64)
         b[:, 0, :, :, 0] = torch.randn(n_poles, c_out, c_in, dtype=torch.float64) / math.sqrt(c_in * n_poles)
         self.beta = nn.Parameter(b)
+        # initial-state path (D2): free response of an initial channel field, gamma matrices share the poles
+        self.gamma = nn.Parameter(b.clone()) if ic else None
 
     def poles(self, kx: torch.Tensor, ky: torch.Tensor):
         """(mu (N, M), beta (N, c_out, c_in, M)) complex128 for 1D tensors kx, ky of length M."""
