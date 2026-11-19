@@ -13,7 +13,7 @@ Each session appends one entry using the template at the bottom.
 | (A) Pole layer and linear validation | 5–10 | **started** (2026-11-18): wavenumber pole layer (FOH time axis, `lfo.models.wavenumber`); 1D diffusion, ADR, beam and 2D diffusion, ADR dispersion recovered in every seed (two-stage, or joint fit with a leaky cap); deep operator on Burgers, Cahn–Hilliard 1D / 2D; working paper draft | dispersion relations recovered (month 10) |
 | (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits, a bootstrap-calibrated order, certificate and order test; reduction-path unresolved rules fail, a location-calibrated split test flags the merge, a combined post-report rule leaves 1 false pole in 40 groups but does not carry over to new p6 E1 groups; an EIVML refit of the reports removes the EIV bias; EIVML through the whole pipeline helps only up to η_u = 0.05; an EIVML elimination of the calibrated report leaves 0 false poles up to p4 30 η_y and p6 E1 0.05, with EIV-bootstrap intervals covering 33/36 at p4 30 η_y), E3 deep first pass done; H1–H3 theory draft (`experiments/C/theory/H1_H2.md`), E5 passes 1–10 (`experiments/C/e5_probe/`; RQ4 rule v4, 0 false trusts over 375 runs) | — |
 | (A) Application 1: process dynamics | 11–16 | **started** (2026-11-19): delay layer; FOPDT / SOPDT identified | — |
-| (D) Initial conditions and rollout | 13–19 | not started | — |
+| (D) Initial conditions and rollout | 13–19 | **started** (2026-11-19): IC path in the wavenumber layer, exact window chaining (linear); Dirichlet boundaries as a channel | — |
 | (A) Application 2: Cahn–Hilliard | 17–22 | not started | recover k_c, k_max (month 20) |
 | Consolidation and code release | 23–24 | not started | — |
 
@@ -173,6 +173,27 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-19 — (D) D2 initial-condition path and chaining; time-varying Dirichlet boundaries
+
+- Done:
+  - `ic=True` option of `WavenumberPoleLayer1d` (7b70758, chaining test; pytest 62/62).
+  - `experiments/D/d2_initial_conditions/d2_ic_rollout.py` (predictions 1191c1c).
+  - `experiments/D/d3_boundary/d3_dirichlet.py` (predictions 97c9d30).
+- Results:
+  - D2 (periodic ADR): the IC layer is at the oracle with γ(k) within 1e-5 of 1. Without the IC path the error is
+    570–750× the oracle. A 4-window rollout equals the oracle's rollout (ratio 1.000–1.001).
+    Predictions 1 and 2 hold. 3 fails in one seed (1.73 against ≤ 1.5): it compared with the single-window error,
+    whereas the oracle rollout is the right reference.
+  - Dirichlet boundaries: sine modes plus a boundary channel c(k) = c₁k + c₃k³ that shares the poles. At the
+    oracle, D within 0.4 % and c₁ within 0.13 %. Without the channel, or with the periodic layer: 82–105× the
+    oracle. Both predictions hold.
+- Decisions:
+  - Initial fields enter as a free response that shares the poles.
+  - Boundary values enter as a forcing channel with a k-dependent coefficient, on the basis that diagonalises the
+    boundary conditions.
+- Next: D2 for deep nonlinear models (a state readout and the semigroup regulariser); Neumann / Robin and advective
+  boundaries.
 
 ### 2026-11-19 — (A) closed-loop CSTR and the ARX comparison
 
