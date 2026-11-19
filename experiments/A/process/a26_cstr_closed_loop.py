@@ -99,6 +99,12 @@ def make_regimes():
     return regimes, sigma
 
 
+def pole_err(mu):
+    """Relative error against the Jacobian pair, whichever root of the conjugate pair is reported."""
+    mu = complex(mu)
+    return min(abs(mu - C.MU_TRUE), abs(mu.conjugate() - C.MU_TRUE)) / abs(C.MU_TRUE)
+
+
 def arx_pole(data):
     u, y = (a.numpy() for a in data["train"])
     rows, tgt = [], []
@@ -115,7 +121,7 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     regimes, sigma = make_regimes()
     uf, dtf = C.probe_inputs()
-    err = lambda mu: abs(mu - C.MU_TRUE) / abs(C.MU_TRUE)
+    err = pole_err
     out = dict(sigma=sigma, runs=[])
     print(f"noise sigma {sigma:.4f}", flush=True)
     for name, data in regimes.items():
@@ -142,6 +148,14 @@ def main():
         out["runs"].append(dict(regime=name, model="arx", pole=[mu_a.real, mu_a.imag], err=err(mu_a)))
         print(name, f"linear pole {mu_l:.4f} err {err(mu_l):.2e} test {test_l:.3e}; arx pole {mu_a:.4f} err {err(mu_a):.2e}", flush=True)
         OUT.write_text(json.dumps(out, indent=1))
+    summarize(out, list(regimes))
+
+
+def summarize(out, regimes):
+    sigma = out["sigma"]
+    for r in out["runs"]:                                    # pole errors from the stored poles (conjugate-safe)
+        r["err"] = pole_err(complex(*r["pole"]))
+    OUT.write_text(json.dumps(out, indent=1))
     lines = ["# (A) CSTR from closed-loop data with measurement noise", "",
              f"Jacobian pair {C.MU_TRUE.real:.4f} ± {C.MU_TRUE.imag:.4f} i. PI Kc {KC}, Ki {KI}. Noise σ {sigma:.4f} (2 % of the median rms of y). "
              "Test: clean open-loop data.", "",
@@ -157,4 +171,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    if "--summarize" in sys.argv:                            # rewrite the table from the stored results
+        d = json.loads(OUT.read_text())
+        summarize(d, list(dict.fromkeys(r["regime"] for r in d["runs"])))
+    else:
+        main()

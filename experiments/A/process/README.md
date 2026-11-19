@@ -224,9 +224,9 @@ with noise σ equal to 2 % of the median rms of y. Every model is tested on clea
 
 **Predictions against results.**
 1. WPO probe within 2 % in every regime: **holds** (≤ 1.1 %).
-2. Output-error linear pole within 2 % in every regime: **holds** (0.4–1.4 %). The table file reports 1.6 for the
-   closed-loop rows because `err` compared the conjugate root with the +i Jacobian root. The poles themselves are
-   correct (to fix in the script).
+2. Output-error linear pole within 2 % in every regime: **holds** (0.5–1.1 %). The first table reported 1.6 for the
+   closed-loop rows because `err` compared the conjugate root with the +i Jacobian root. The script now compares
+   against both roots, and the table was regenerated from the stored poles (`--summarize`); no runs changed.
 3. ARX within 2 % without noise: **fails.** ARX(2, 2) is wrong in every regime, noise-free included. Equation-error
    ARX on this nonlinear plant with these orders does not give the linear poles; its noisy-closed-loop bias cannot
    be separated from that.
