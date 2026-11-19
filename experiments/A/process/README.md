@@ -80,3 +80,40 @@ added to the training and validation outputs; the test set is clean. Setup and f
 - ARX is fitted by equation error, so noisy past outputs bias it. On SOPDT it breaks down already at 1 % noise.
 - SOPDT's θ remains the least identifiable parameter (θ–τ₂ trade-off, as in a20). It scatters by about 3 % under
   noise while τ₁ and τ₂ hold to 1.3 %.
+
+## Lumped delay against distributed dispersion (2026-11-19)
+
+`a24_dispersion_reactor.py` → `results/a24_dispersion_reactor.md` (predictions 5c4d793).
+
+**Setup.**
+- A periodic analogue of a dispersion reactor: v = 0.5, D = 0.02, k_r = 0.1.
+- A Gaussian source, with sensors at distances L = 1, 2, 3 (transport times 2, 4, 6).
+- Lumped FOPDT and SOPDT delay layers are fitted to each sensor signal. The wavenumber layer is fitted to the
+  whole field.
+
+| L | L / v | t̄ (truth) | FOPDT θ / θ + τ | SOPDT θ / θ + τ₁ + τ₂ | lumped test error (FOPDT / SOPDT) |
+|---|---|---|---|---|---|
+| 1 | 2 | 2.230 | 1.28 / 2.30 | 1.01 / 2.20 | 0.10 / 0.056 |
+| 2 | 4 | 4.077 | 2.99 / 4.42 | 2.65 / 4.24 | 0.14 / 0.081 |
+| 3 | 6 | 6.044 | 4.68 / 6.73 | 4.30 / 6.33 | 0.17 / 0.10 |
+
+The wavenumber layer on the field gives v = 0.50001, D = 0.01999, k_r = 0.10000, at a test error of 1.0 % (the
+sampling floor).
+
+**Predictions against results.**
+
+1. SOPDT mean delay within 5 % of t̄ at every L, FOPDT within 10 %: **fails** for FOPDT at L = 3 (11 %). SOPDT holds
+   (1.3, 3.9, 4.7 %).
+2. Slope of the SOPDT mean delay against L within 5 % of t̄'s slope (1.907): **fails**. It is 2.063, 8 % above t̄'s
+   slope and 3 % above 1 / v. The lumped fit extrapolates the tail that the window truncates, so it lands
+   closer to the true transport. The wavenumber layer's v is within 0.002 %: **holds**.
+3. Lumped θ below L / v at every L, for both models: **holds**.
+
+**Reading.**
+- A lumped θ is not a physical constant. It is the dead time of an approximation: smaller than L / v, because
+  dispersion brings the first arrival forward, and growing faster than linearly in L.
+- The lumped models also leave 5–17 % of the sensor signal unexplained, and more the further the sensor is. One
+  dispersion relation, λ(k) = −ivk − Dk² − k_r, explains every sensor at once, with the transport speed as an
+  exact parameter.
+- This is the plan's Section 5.2 link: in a distributed system the delay *is* the imaginary part of λ(k), and the
+  wavenumber pole layer reads it directly.
