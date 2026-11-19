@@ -296,3 +296,29 @@ def test_mlp_pole_function_runs_and_is_causal():
         assert (layer(f) - layer(g))[..., :25].abs().max() < 1e-12
     (layer(f) ** 2).sum().backward()          # not .sum(): CPU MKL irfft backward rejects a zero-stride gradient
     assert layer.mlp[0].weight.grad.abs().sum() > 0
+
+
+def test_initial_condition_path_gives_the_exact_solution_and_chains_windows():
+    """u_t = D u_xx + f, u(0) = u0: one window, and two chained windows (end state as the next initial field)."""
+    n_x, n_t, D = 32, 101, 0.2
+    t = np.linspace(0, 1, n_t)
+    x = np.arange(n_x) * 2 * math.pi / n_x
+    rng = np.random.default_rng(13)
+    a = rng.normal(size=2 * n_t - 1)
+    u0 = 0.7 * np.cos(2 * x) + 0.3 * np.sin(5 * x)
+    layer = WavenumberPoleLayer1d(1, t, mu_degree=(2, 1), beta_degree=1, ic=True)
+    with torch.no_grad():
+        layer.mu_re.copy_(torch.tensor([[0.0, -D]], dtype=torch.float64)), layer.mu_im.zero_(), layer.beta.zero_()
+        layer.beta[0, 0, 0] = 1.0
+    full_t = np.linspace(0, 2, 2 * n_t - 1)
+    ref = np.zeros((n_x, full_t.size))
+    for k, amp, fn in ((2, 0.7, np.cos), (5, 0.3, np.sin)):
+        free = amp * np.exp(-D * k * k * full_t)
+        forced = lti.response(full_t, a, np.array([-D * k * k + 0j]), np.array([1 + 0j])) if k == 2 else 0
+        ref += fn(k * x)[:, None] * (free + forced)[None]
+    f = np.cos(2 * x)[:, None] * a[None]
+    with torch.no_grad():
+        y1 = layer(torch.tensor(f[None, :, :n_t]), torch.tensor(u0[None]))[0]
+        y2 = layer(torch.tensor(f[None, :, n_t - 1:]), y1[None, :, -1])[0]
+    y = torch.cat([y1, y2[:, 1:]], 1).numpy()
+    assert np.abs(y - ref).max() < 1e-9 * np.abs(ref).max()

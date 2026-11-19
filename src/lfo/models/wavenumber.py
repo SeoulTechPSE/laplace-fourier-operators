@@ -33,6 +33,8 @@ there stays trapped (`experiments/A/layer`, a7); `re_leak` > 0 keeps a slope re_
 evaluates the polynomials in k / k_ref, so that all coefficients have comparable scale for a first-order optimiser
 (with k up to 16, a k^4 coefficient otherwise moves Re mu by 6.5e4 per unit step).
 
+`ic=True` adds the initial-condition path of project (D2): `forward(f, u0)` adds the free response of the
+initial field, which shares the poles mu_n(k) with the forced response.
 `delay` adds one shared input delay theta >= 0, applied exactly (`lfo.models.delay.delay_shift`).
 `mu_mlp` (RQ4) replaces the pole polynomials by an MLP of k / k_ref (the residues stay polynomial; the
 polynomial coefficients are then unused).
@@ -138,8 +140,15 @@ class WavenumberPoleLayer1d(nn.Module):
     def __init__(self, n_poles: int, t, length: float = 2 * math.pi, mu_degree=(3, 2), beta_degree: int = 2,
                  stable: bool = False, init_scale: float = 0.1, modes: int | None = None, re_max: float | None = None,
                  re_tau: float = 0.05, k_ref: float = 1.0, im_powers: tuple | None = None, re_leak: float = 0.0,
-                 mu_mlp: int | None = None, delay: float | None = None):
+                 mu_mlp: int | None = None, delay: float | None = None, ic: bool = False):
         super().__init__()
+        # initial-condition path (project D2): homogeneous term u0_hat(k) sum_n gamma_n(k) e^{mu_n(k) t}, gamma_n a
+        # polynomial in k^2 like beta_n; it shares the poles with the forced response
+        self.gamma = None
+        if ic:
+            self.gamma = nn.Parameter(torch.zeros(n_poles, beta_degree, 2, dtype=torch.float64))
+            with torch.no_grad():
+                self.gamma[:, 0, 0] = 1.0 / n_poles
         self.modes, self.re_max, self.re_tau, self.k_ref = modes, re_max, re_tau, float(k_ref)
         # optional shared input delay theta = softplus(raw) >= 0 (process dynamics; `delay` is its initial value)
         self.theta_raw = None if delay is None else nn.Parameter(
@@ -194,7 +203,21 @@ class WavenumberPoleLayer1d(nn.Module):
                 for j in range(self.beta.shape[1]))
         return self.mu(k), b
 
-    def forward(self, f: torch.Tensor) -> torch.Tensor:
+    def homogeneous(self, u0: torch.Tensor, n_t: int) -> torch.Tensor:
+        """Free response from the initial field u0 (b, n_x): sum_n gamma_n(k) u0_hat(k) e^{mu_n(k) t_j}, (b, K, n_t)."""
+        n_x = u0.shape[1]
+        u0k = torch.fft.rfft(u0.to(torch.float64), dim=1)
+        K = u0k.shape[1] if self.modes is None else min(self.modes, u0k.shape[1])
+        k = self.wavenumbers(n_x)[:K]
+        mu = self.mu(k)                                                       # (N, K)
+        k2 = (k / self.k_ref) ** 2
+        gam = sum(torch.complex(self.gamma[:, j, 0, None], self.gamma[:, j, 1, None]) * k2 ** j
+                  for j in range(self.gamma.shape[1]))
+        dt = float(self.t[1] - self.t[0])
+        tj = dt * torch.arange(n_t, device=u0.device, dtype=torch.float64)
+        return (gam[..., None] * torch.exp(mu[..., None] * tj)).sum(0)[None] * u0k[:, :K, None]
+
+    def forward(self, f: torch.Tensor, u0: torch.Tensor | None = None) -> torch.Tensor:
         b_, n_x, n_t = f.shape
         dt = float(self.t[1] - self.t[0])
         fk = torch.fft.rfft(f.to(torch.float64), dim=1)                       # (b, K, n_t)
@@ -207,9 +230,13 @@ class WavenumberPoleLayer1d(nn.Module):
             x = foh_response(g[:, None], c[:, None], fk[None])                # (N, b, K, n_t)
             x = delay_shift(x, fk[None], mu[:, None, :], F.softplus(self.theta_raw), dt)
             vk = (beta[:, None, :, None] * x).sum(0)
-            return torch.fft.irfft(vk, n=n_x, dim=1).to(f.dtype)
-        g, c = (beta[..., None] * g).sum(0), (beta[..., None] * c).sum(0)     # (K, n_t): sum_n beta_n (.)
-        vk = foh_response(g[None], c[None], fk)                               # (b, K, n_t)
+        else:
+            g, c = (beta[..., None] * g).sum(0), (beta[..., None] * c).sum(0) # (K, n_t): sum_n beta_n (.)
+            vk = foh_response(g[None], c[None], fk)                           # (b, K, n_t)
+        if u0 is not None:
+            if self.gamma is None:
+                raise ValueError("pass ic=True to use an initial condition")
+            vk = vk + self.homogeneous(u0, n_t)
         return torch.fft.irfft(vk, n=n_x, dim=1).to(f.dtype)
 
 
