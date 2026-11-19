@@ -844,3 +844,40 @@ v3-gated sets without ρ = 10). It gives 13 / 43 for `lnots` where the twelfth p
 **Next.** A trust rule for few-pole models needs a check that is independent of the model's own consistency, for
 example a pole fitted directly to low-amplitude data (the v3 gate's equivalent linear pole) compared with the
 stored pole.
+
+## Fourteenth pass (2026-11-20): rule v5, the Jacobian pole against the data's low-amplitude pole
+
+Pre-registered in `results/e5_v5_prereg.md` (8eb9851). `e5_v5.py` → `results/e5_v5.md`. Rule v5 = v4 ∧
+|μ_J − μ_low| / |μ_low| < 0.1, with μ_low the v3 gate's equivalent linear pole of the lowest-amplitude fifth of the
+training data. Design data: the 645 runs of passes 1–13 (post hoc by construction). Prospective: the shared-pole
+LNO with **2** shared poles (`lnots2_stable_plr10`), 18 sets × 5 seeds, probed and judged as in the thirteenth pass.
+
+| runs | n | v4 trusted / false | v5 trusted / false | v4-correct kept by v5 |
+|---|---|---|---|---|
+| design (passes 1–13) | 645 | 176 / 2 | 175 / 1 | 174 / 174 |
+| prospective (`lnots2`) | 90 | 43 / 0 | 43 / 0 | 43 / 43 |
+
+| prediction | result |
+|---|---|
+| 1. (design) v5 drops the 25 % false trust and keeps ≥ 157 of 174 correct trusts | **holds** (dropped at 0.239; 174 / 174 kept) |
+| 2. (`lnots2`) v5 makes no false trust | 0 false, **uninformative** (see 3) |
+| 3. (`lnots2`) v4 makes at least one false trust | **fails** (0 false in 43 trusted) |
+
+**Reading.**
+
+- **v5 costs nothing on the design data** and removes the gross false trust (25 %). It keeps the borderline one
+  (`lz_small` seed 4, J pole 10.4 % off the reference, 9.2 % off μ_low), because the two 10 % lines sit on either side of it.
+- **The prospective test did not test v5.** With 2 shared poles, v4 already rejects every bad run. The 42 runs with
+  J pole error ≥ 10 % (seed 3 diverges on every set: errors 3–42) all fail the probe-agreement or centred-error
+  check. The trusted runs are correct but some by a small margin: 5 of the 43 have J pole errors of 7–9.7 %
+  (`lz_r10_small` seed 0 at 9.7 %). The 2-pole model was less, not more, prone to being consistently wrong than
+  the 4-pole one, against the motivation in the pre-registration.
+- **What v5 adds, and its limit.** On every set where the v3 data gate passes, μ_low is within 3 % of the reference
+  pole: |err − data agreement| ≤ 0.03 (≤ 0.06 on `moderate`). So v5 is, in effect, the trust criterion itself
+  ("J pole within 10 %") measured against a data proxy for the reference. It catches errors of the size of the
+  25 % case. It cannot settle errors within a few % of the 10 % line, and it is only as good as the gate. Where
+  the gate fails (`mixed`, `lz_orig`, `lz_r10_orig`: gap up to 0.28) v3 / v4 already withhold trust.
+- Totals over 735 runs (passes 1–14): v4 219 trusted, 2 false; **v5 218 trusted, 1 false** (10.4 %, at the line).
+
+**Next.** None planned for E5. v5 is recorded as the rule for few-pole models, its prospective test as
+uninformative. A model class that v4 trusts falsely and often would be needed to test it properly.

@@ -45,7 +45,8 @@ followed. The tests cover five systems (damped and undamped Duffing, a driven pe
 10), 18 data sets and 375 trained models.
 
 The final rule makes no false trust in any of them. On the system it had not seen it trusts 8 of 75 models, all
-within 4 %. On 270 later models it trusts 124 with 2 false trusts (10 % and 25 % off), both in a few-pole variant.
+within 4 %. On 360 later models it trusts 167 with 2 false trusts (10 % and 25 % off), both in a few-pole variant.
+Adding a check of the Jacobian pole against a pole fitted to the low-amplitude data removes the 25 % one at no cost.
 It requires:
 
 - a causal, shift-invariant small-signal Jacobian whose pole matches a stored pole;
@@ -235,8 +236,9 @@ A trusted run is **correct** if $|\mu_J-\mu_\star|/|\mu_\star| < 0.1$, where $\m
 | v2 | v1 and data gate: linear fit of all training data leaves $<0.1$ | pass 5 | `mixed`: 2 trusted runs 43 % and 86 % off; they are the data's equivalent pole |
 | v3 | v1 and data gate: lowest fifth by amplitude linear ($<0.1$), equivalent-pole shift all vs. low $<0.1$ | pass 7 | v2 abstains on the pendulum although every candidate is correct (softening spring: large residual, small pole shift) |
 | v4 | v3 gate, $J$ valid, $d<0.1$, probe agreement $|\mu_\text{LTI}-\mu_J|/|\mu_J|<0.1$, centred fit error $<0.5$ | pass 10 | Lorenz $\rho=5$: a slow Jacobian pole matched by an unmoved stored pole (96 % off) |
+| v5 | v4 and $|\mu_J-\mu_\text{low}|/|\mu_\text{low}|<0.1$, $\mu_\text{low}$ the gate's low-amplitude equivalent pole | pass 14 | 4 shared poles: probes consistent with each other but 25 % off |
 
-: The four versions. Pass numbers refer to `experiments/C/e5_probe/README.md`. The v3 threshold was first 0.05 and
+: The five versions. Pass numbers refer to `experiments/C/e5_probe/README.md`. The v3 threshold was first 0.05 and
 was set to 0.1 before the pass-7 test. {#tbl-rules tbl-colwidths="[6,40,10,44]"}
 
 v1 was defined after a first look at 20 runs, so those runs are development data. Every later version was written
@@ -334,6 +336,13 @@ cannot detect a bad fit when the output has a large mean: on Lorenz even the mea
     LNO on only 12 of 18 sets; 9.6× worse on `pend_orig`) and 2 false trusts: Jacobian poles 10 % and 25 % off,
     which v4's probe agreement and data gate did not catch. Three of the four predictions held; the one that
     required no false trust failed.
+  - **Rule v5** adds one check that does not depend on the model: the Jacobian pole must be within 10 % of
+    $\mu_\text{low}$, the equivalent linear pole of the lowest-amplitude fifth of the training data (the gate's own
+    quantity). On all 645 runs it drops the 25 % false trust and keeps all 174 correct trusts. The 10.4 % one stays,
+    at 9.2 % from $\mu_\text{low}$. This was designed after seeing the failures. Its pre-registered test on 2 shared
+    poles (90 runs) was uninformative: v4 already made no false trust there (43 trusted, 5 of them 7–9.7 % off).
+    Where the gate passes, $\mu_\text{low}$ is within 3 % of the reference ($\le 6$ % on `moderate`). So v5
+    catches gross errors but cannot settle errors near the 10 % line.
 - **No model stores the fast real Lorenz pole** ($-11.8$ and $-12.5$), as with the fast real poles of @sec-fastreal.
 - **Output offsets need care.** On Lorenz the output is $x(t)$ about $C_+ \approx 3.3$ or $4.9$. A learned offset
   with coupled weight decay is pulled towards zero at almost the full learning rate, because its own gradient
@@ -386,7 +395,8 @@ keeps real slots real. Learned output offsets should be excluded from weight dec
 - **The rule was refined after failures.** Each version is the answer to a failure of the previous one. The
   prospective record is therefore small for the latest version: v4 was tested on 75 models of one system and
   trusted 8. Its zero false trusts on the earlier sets are partly fit to those sets. On the few-pole LNO it made 2
-  false trusts in 55, so its record depends on the model class.
+  false trusts in 55, so its record depends on the model class. v5 removes the larger one, but it has no
+  informative prospective test yet.
 - **One pair.** The probes read one complex pair, the dominant small-signal pole. Higher-order or real poles are
   not certified; the fast Lorenz pole was never learned.
 - **Cost.** The rule abstains on undamped poles at moderate amplitude (`c0_medium`). It also needs

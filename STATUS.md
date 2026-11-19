@@ -11,9 +11,9 @@ Each session appends one entry using the template at the bottom.
 | (C) Pole audit of existing models | 3–5 | **in progress**: E1 done, draft report (`E1_report.md`, updated with E2); paper decisions made (2026-11-18); E1 + E5 merged into one working paper (`experiments/C/paper/c_paper.qmd`, 2026-11-18); submission postponed | — |
 | (D) Non-periodic input representation | 4–8 | **started** (2026-11-18): oracle comparison of input representations (`experiments/D/d1_inputs/`) | differs from padded FNO? (month 8) |
 | (A) Pole layer and linear validation | 5–10 | **started** (2026-11-18): wavenumber pole layer (FOH time axis, `lfo.models.wavenumber`); 1D diffusion, ADR, beam and 2D diffusion, ADR dispersion recovered in every seed (two-stage, or joint fit with a leaky cap); deep operator on Burgers, Cahn–Hilliard 1D / 2D; working paper draft | dispersion relations recovered (month 10) |
-| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits, a bootstrap-calibrated order, certificate and order test; reduction-path unresolved rules fail, a location-calibrated split test flags the merge, a combined post-report rule leaves 1 false pole in 40 groups but does not carry over to new p6 E1 groups; an EIVML refit of the reports removes the EIV bias; EIVML through the whole pipeline helps only up to η_u = 0.05; an EIVML elimination of the calibrated report leaves 0 false poles up to p4 30 η_y and p6 E1 0.05, with EIV-bootstrap intervals covering 33/36 at p4 30 η_y), E3 deep first pass done; H1–H3 theory draft (`experiments/C/theory/H1_H2.md`), E5 passes 1–13 (`experiments/C/e5_probe/`; RQ4 rule v4: 0 false trusts over the first 375 runs, 2 over 645 (few-pole LNO); four shared poles store the true decay rates) | — |
+| (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits, a bootstrap-calibrated order, certificate and order test; reduction-path unresolved rules fail, a location-calibrated split test flags the merge, a combined post-report rule leaves 1 false pole in 40 groups but does not carry over to new p6 E1 groups; an EIVML refit of the reports removes the EIV bias; EIVML through the whole pipeline helps only up to η_u = 0.05; an EIVML elimination of the calibrated report leaves 0 false poles up to p4 30 η_y and p6 E1 0.05, with EIV-bootstrap intervals covering 33/36 at p4 30 η_y), E3 deep first pass done; H1–H3 theory draft (`experiments/C/theory/H1_H2.md`), E5 passes 1–14 (`experiments/C/e5_probe/`; RQ4 rule v4: 0 false trusts over the first 375 runs, 2 over 735 (few-pole LNO); four shared poles store the true decay rates; v5 adds a data-pole check: 1 false trust over 735, at the 10 % line) | — |
 | (A) Application 1: process dynamics | 11–16 | **started** (2026-11-19): delay layer; FOPDT / SOPDT identified | — |
-| (D) Initial conditions and rollout | 13–19 | **started** (2026-11-19): IC path in the wavenumber layer, exact window chaining (linear); deep Burgers rollout (pushforward / semigroup did not help); Dirichlet, Neumann, mixed and advective boundaries as channels | — |
+| (D) Initial conditions and rollout | 13–19 | **started** (2026-11-19): IC path in the wavenumber layer, exact window chaining (linear); deep Burgers rollout (pushforward / semigroup did not help; developed start states and window count each −15 %); Dirichlet, Neumann, mixed, advective and Robin boundaries as channels (Robin coefficient by a profile) | — |
 | (A) Application 2: Cahn–Hilliard | 17–22 | not started | recover k_c, k_max (month 20) |
 | Consolidation and code release | 23–24 | not started | — |
 
@@ -173,6 +173,41 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-20 — (C) E5 fourteenth pass: rule v5
+
+- Done: `e5_v5.py` (pre-registered 8eb9851); variant `lnots2_stable_plr10` (2 shared poles), 90 runs, probed;
+  v4, v5 and stored-pole clusters; README section; C paper (rule table, results, abstract, limitation).
+- Results:
+  - Design data (645 runs, post hoc): v4 176 / 2 false → v5 175 / 1; all 174 correct trusts kept; the 25 % false
+    trust dropped, the 10.4 % one kept (9.2 % from μ_low). Prediction 1 holds.
+  - Prospective (`lnots2`): v4 and v5 both 43 trusted, 0 false. Prediction 3 (v4 makes a false trust) fails, so
+    prediction 2 is uninformative. 5 trusted runs are 7–9.7 % off; seed 3 diverges on every set and is rejected.
+  - Where the gate passes, μ_low is within 3 % of the reference (6 % on `moderate`): v5 catches gross errors, not
+    errors near the 10 % line.
+- Decisions: v5 is the rule for few-pole models; no informative prospective test yet.
+- Next: none planned for E5.
+
+### 2026-11-20 — (D) start states against window count; Robin boundaries
+
+- Done:
+  - `experiments/D/d2_initial_conditions/d2d_start_states.py` (predictions 450deaa): 2 × 2 of fresh / developed
+    start states and 200 / 400 windows, 3 seeds.
+  - `experiments/D/d3_boundary/d3d_robin.py` (predictions ff9596d; fixes before results e966be8, 8a9ac59): Robin
+    basis from a learned β = H/D. `d3e_robin_profile.py` (predictions 8a9ac59): β by a grid profile, then
+    released. Post hoc: seeds 1 and 3 refitted with more iterations (scratch).
+  - READMEs and the D paper updated.
+- Results:
+  - d2d: rollout fresh200 0.060, fresh400 0.050, dev200 0.050, dev400 0.042. Each factor −15 %, additive.
+    Developed starts raise the fresh-window error by 14 % but cut rollout / window from ~2.5 to ~1.9. Prediction 1
+    (dev200 < fresh400) fails narrowly; 2 and 3 hold.
+  - d3d: the joint fit collapses β to ≈ 0 in every seed (6–8× the oracle); β given: oracle, D within 0.8 %, laws
+    within 1.2 %; `dn` 6–8×. Prediction 1 fails, 2 and 3 hold.
+  - d3e: the profile minimum is at 2.4 in every seed (prediction 2 holds); β̂ within 0.5 %, ≤ 1.11× the oracle, but
+    D and laws miss 1 % / 2 % in seeds 1 and 3 (prediction 1 fails in 2 of 5). Post hoc, 300 more L-BFGS
+    iterations bring both to 1.003–1.004×, D within 0.7 %, laws within 0.6 %.
+- Decisions: parameters that set the basis are found by an outer search (profile), not jointly.
+- Next: variable coefficients; a second nonlinear rollout system.
 
 ### 2026-11-19 — (C) E5 thirteenth pass: four shared poles
 
