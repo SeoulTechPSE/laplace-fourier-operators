@@ -32,6 +32,8 @@ finer time grid. T = 5, n_t = 201, splits 200 / 50 / 100, data seeds 0-4. Fit: t
 **Fix before any result** (first launch crashed in seed 0 `robin` on a singular basis). beta is now
 parameterised as softplus(rho) > 0, the physical range (H > 0): for -1 < beta < 0 the first root leaves the bracket
 ((1/2) pi, pi). A start whose basis is singular is skipped.
+The second launch completed `robin` and `fixed`, but every `dn` start failed: at beta = 0 the root is the bracket's
+left end, which the bisection missed (a bug in the control, fixed afterwards; `dn` rerun alone).
 
 **Predictions** (written before running).
 
@@ -68,6 +70,8 @@ OUT = HERE / "results" / "d3d_robin.json"
 def roots_np(beta):
     """k_m, m = 1..N, roots of k cos k + beta sin k in ((m - 1/2) pi, m pi) (beta > -1/2 keeps one root there)."""
     m = np.arange(1, N + 1)
+    if beta == 0:                                   # the root is the bracket's left end; bisection misses it
+        return (m - 0.5) * np.pi
     lo, hi = (m - 0.5) * np.pi, m * np.pi - 1e-12
     f = lambda k: k * np.cos(k) + beta * np.sin(k)
     for _ in range(200):
