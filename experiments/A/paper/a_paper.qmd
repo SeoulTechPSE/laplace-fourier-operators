@@ -256,6 +256,21 @@ sample time (a20).
 - **Under 5 % output noise (a21):** the delay layer, fitted by output error, keeps FOPDT exact to 0.2 % and SOPDT's
   θ within 3.3 %. Equation-error ARX is biased by the noise, with τ off by 52–86 %.
 
+### Delay against dispersion, and a nonlinear CSTR
+
+- **Dispersion reactor** (a24). Sensors at distances L = 1–3 downstream of a source.
+  - Lumped FOPDT / SOPDT fits give a dead time θ below L/v, growing faster than L, and leave 5–17 % of the signal
+    unexplained.
+  - The wavenumber layer on the field reads v = 0.50001, D = 0.01999, k_r = 0.10000.
+  - Transport inside the domain is the −ivk of λ(k), not a dead time.
+- **Delay and dispersion together** (a25). ADR with an input delay of 0.73. The wavenumber layer with one shared delay
+  recovers θ and λ(k) within 0.04 %. Without it, the error is 14–44× the oracle.
+- **CSTR** (a23). Exothermic CSTR at its upper steady state, Jacobian pair −0.769 ± 0.960i.
+  - The time-only WPO's probe is within 0.1–0.6 % of the pair, at 2.2× lower test error than an FNO of the same
+    size.
+  - The FNO's probe and the best linear fit are also within 1 %. At a stable focus, every reading of the
+    linearisation agrees.
+
 ## Discussion
 
 - **What is identifiable.**

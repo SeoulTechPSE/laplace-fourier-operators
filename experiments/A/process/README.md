@@ -137,3 +137,34 @@ input delay, applied exactly per mode with `delay_shift`. System: a1's ADR with 
 
 **Reading.** Delay and dispersion are different structures. Transport inside the domain is −ivk in λ(k) (a24). An
 input or measurement dead time is a factor e^{−θs} common to all modes. One layer with both reads both exactly.
+
+## Nonlinear CSTR: probe poles at a steady state (2026-11-19)
+
+`a23_cstr.py` → `results/a23_cstr.md` (predictions f224ba0).
+
+**Setup.**
+- Exothermic CSTR (Da 0.072, B 8, β 0.3, γ 20) at its upper steady state. The Jacobian pair is −0.7694 ± 0.9597 i.
+- Input: coolant-temperature deviations; output: reactor temperature.
+- 7 % of the median sample is not linear, and up to 86 % of the largest ones, where extinction events occur.
+- Models:
+  - WPO on time only (n_x = 1, 18.7 k parameters);
+  - FNO-1D (17.7 k);
+  - the best linear model (one complex pair).
+- The probe is a small-amplitude odd response; the solver's own probe is within 0.3 %.
+
+| model | test | probe pole | probe error | probe residual |
+|---|---|---|---|---|
+| WPO | **0.016–0.029** | −0.763 to −0.775 ± 0.956–0.961 i | **0.1–0.6 %** | **1–2e-3** |
+| FNO | 0.041–0.056 | −0.770 to −0.781 ± 0.964–0.966 i | 0.4–1.0 % | 6–8e-3 |
+| best linear model | 0.15 | −0.764 ± 0.964 i | 0.5 % | – |
+
+**Predictions against results.**
+1. WPO probe within 5 % in ≥ 2 of 3 seeds: **holds** (3 of 3, within 0.6 %).
+2. The best linear model's pole more than 10 % off: **fails**. It is within 0.5 %. Most samples are near-linear and
+   the nonlinearity is not symmetric, so it raises the linear model's error (0.15) without biasing its pole. On
+   Burgers, by contrast, the nonlinearity added uniform damping (a12b).
+3. WPO mean test error ≤ FNO's: **holds** (0.021 against 0.046).
+
+**Reading.** At a steady state with a stable focus, every reading of the linearisation agrees within 1 %: WPO probe,
+FNO probe and the best linear fit. That matches Burgers in band. What separates the models is accuracy on the
+nonlinear samples (WPO 2.2× lower error) and how LTI the small-signal response is (residual 4× lower).

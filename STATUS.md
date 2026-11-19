@@ -174,6 +174,26 @@ Things to know:
 
 ## Log
 
+### 2026-11-19 — (A) Application 1: CSTR probe, dispersion reactor, delay + wavenumber layer
+
+- Done:
+  - `lfo.models.delay.delay_shift` (any shape) and the `delay=` option of `WavenumberPoleLayer1d` (756e41b, tests;
+    pytest 61/61).
+  - `experiments/A/process/a23_cstr.py` (f224ba0), `a24_dispersion_reactor.py` (5c4d793), `a25_wpo_delay.py`
+    (45eddc5).
+- Results (`experiments/A/process/README.md`):
+  - CSTR at its upper steady state: WPO probe pole within 0.1–0.6 % of the Jacobian pair; test 0.021 against FNO
+    0.046. The best linear model's pole is also within 0.5 %. Predictions 1, 3 hold; 2 fails.
+  - Dispersion reactor: lumped θ lies below L / v and grows faster than L; lumped models leave 5–17 % unexplained.
+    The wavenumber layer reads v = 0.50001, D = 0.01999, k_r = 0.10000. Prediction 3 holds; 1 fails (FOPDT at
+    L = 3, 11 %); 2 fails (slope 8 % above t̄'s, 3 % above 1 / v).
+  - Delayed ADR: the wavenumber layer with a delay recovers θ, D, v, k_r within 0.04 % at the oracle. Without a
+    delay: 14–44× the oracle. Both predictions hold.
+- Decisions: delays are modelled as e^{−θs} on the layer when they are dead times, and as −ivk in λ(k) when they are
+  transport inside the domain.
+- Next: noise and closed-loop data for the CSTR; a reactor with true inlet/outlet boundaries (non-periodic, the D2
+  topic).
+
 ### 2026-11-19 — (A) RQ4 on fractional diffusion: the MLP wins when λ(k) is not polynomial
 
 - Done: `experiments/A/layer/a22_fractional.py` (predictions 3f100d0), λ = −0.15 |k|^1.5.
