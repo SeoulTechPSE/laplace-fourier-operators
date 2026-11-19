@@ -117,3 +117,23 @@ sampling floor).
   exact parameter.
 - This is the plan's Section 5.2 link: in a distributed system the delay *is* the imaginary part of λ(k), and the
   wavenumber pole layer reads it directly.
+
+## Delay and dispersion together: the wavenumber pole layer with an input delay (2026-11-19)
+
+`a25_wpo_delay.py` → `results/a25_wpo_delay.md` (predictions 45eddc5). Layer option `delay=` (756e41b): one shared
+input delay, applied exactly per mode with `delay_shift`. System: a1's ADR with a delayed input f(x, t − 0.73).
+5 data seeds; 10 starts each.
+
+| model | test / oracle | θ̂ (0.73) | D̂ (0.05) | v̂ (0.5) | k̂_r (0.2) |
+|---|---|---|---|---|---|
+| WPO + delay (N = 1) | **1.00** | **0.7298–0.7301** | **0.0500** | **0.4999–0.5001** | **0.1998–0.2001** |
+| WPO, N = 1, no delay | 38–44 | – | – | – | – |
+| WPO, N = 3, no delay | 14–21 | – | – | – | – |
+
+**Predictions against results: both hold.**
+1. The delayed layer is at the oracle with θ, D, v within 0.04 % (k_r within 0.0002), in every seed.
+2. Without a delay, the error is 14–44× the oracle in every seed. Two extra poles per mode do not replace the
+   delay at this precision.
+
+**Reading.** Delay and dispersion are different structures. Transport inside the domain is −ivk in λ(k) (a24). An
+input or measurement dead time is a factor e^{−θs} common to all modes. One layer with both reads both exactly.
