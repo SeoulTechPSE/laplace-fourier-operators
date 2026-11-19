@@ -26,7 +26,7 @@ import torch.nn.functional as F
 
 from .wavenumber import foh_kernel, foh_response
 
-__all__ = ["partial_step", "delayed_foh", "PoleResidueDelay"]
+__all__ = ["partial_step", "delay_shift", "delayed_foh", "PoleResidueDelay"]
 
 
 def _series(z, n_terms=6):
@@ -47,6 +47,28 @@ def partial_step(mu: torch.Tensor, r: torch.Tensor):
     I0 = torch.where(small, r * a_s, (E - 1) / zs * r)
     I1 = torch.where(small, r ** 2 * b_s, (E - 1 - zs) / zs ** 2 * r ** 2)
     return E, I0, I1
+
+
+def delay_shift(x: torch.Tensor, u: torch.Tensor, mu: torch.Tensor, theta: torch.Tensor, dt: float) -> torch.Tensor:
+    """Delay an undelayed FOH state by theta (scalar >= 0), exactly (module docstring).
+
+    x: (..., n_t) undelayed states of 1 / (s - mu) driven by u; u: input broadcastable to x; mu: broadcastable to
+    x[..., 0]. Returns the delayed state, same shape as x."""
+    n_t = x.shape[-1]
+    q = theta / dt
+    shift = int(torch.floor(q).detach())
+    r = (1 - (q - shift)) * dt
+    E, I0, I1 = partial_step(mu, r)
+    E, I0, I1 = E[..., None], I0[..., None], I1[..., None]
+    uc = u.to(torch.complex128)
+    out = torch.zeros_like(x)
+    lo = shift + 1                                   # first output index with m = j - shift - 1 >= 0
+    if lo < n_t:
+        m = slice(0, n_t - lo)
+        mp = slice(1, n_t - lo + 1)
+        um, up = uc[..., m], uc[..., mp]
+        out[..., lo:] = E * x[..., m] + I0 * um + I1 * (up - um) / dt
+    return out
 
 
 def delayed_foh(mu: torch.Tensor, theta: torch.Tensor, u: torch.Tensor, dt: float) -> torch.Tensor:

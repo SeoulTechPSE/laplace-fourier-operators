@@ -33,6 +33,7 @@ there stays trapped (`experiments/A/layer`, a7); `re_leak` > 0 keeps a slope re_
 evaluates the polynomials in k / k_ref, so that all coefficients have comparable scale for a first-order optimiser
 (with k up to 16, a k^4 coefficient otherwise moves Re mu by 6.5e4 per unit step).
 
+`delay` adds one shared input delay theta >= 0, applied exactly (`lfo.models.delay.delay_shift`).
 `mu_mlp` (RQ4) replaces the pole polynomials by an MLP of k / k_ref (the residues stay polynomial; the
 polynomial coefficients are then unused).
 
@@ -137,9 +138,12 @@ class WavenumberPoleLayer1d(nn.Module):
     def __init__(self, n_poles: int, t, length: float = 2 * math.pi, mu_degree=(3, 2), beta_degree: int = 2,
                  stable: bool = False, init_scale: float = 0.1, modes: int | None = None, re_max: float | None = None,
                  re_tau: float = 0.05, k_ref: float = 1.0, im_powers: tuple | None = None, re_leak: float = 0.0,
-                 mu_mlp: int | None = None):
+                 mu_mlp: int | None = None, delay: float | None = None):
         super().__init__()
         self.modes, self.re_max, self.re_tau, self.k_ref = modes, re_max, re_tau, float(k_ref)
+        # optional shared input delay theta = softplus(raw) >= 0 (process dynamics; `delay` is its initial value)
+        self.theta_raw = None if delay is None else nn.Parameter(
+            torch.log(torch.expm1(torch.tensor(float(delay), dtype=torch.float64))))
         self.re_leak = float(re_leak)
         # RQ4 option: mu_n(k) from an MLP of k / k_ref (hidden width mu_mlp) instead of the polynomial
         self.mlp = None if mu_mlp is None else nn.Sequential(
@@ -198,6 +202,12 @@ class WavenumberPoleLayer1d(nn.Module):
         fk = fk[:, :K]                                                        # modes beyond K are set to zero
         mu, beta = self.poles(self.wavenumbers(n_x)[:K])                      # (N, K)
         g, c = foh_kernel(mu, n_t, dt)                                         # (N, K, n_t) each
+        if self.theta_raw is not None:                                        # delayed: per pole, then shift exactly
+            from .delay import delay_shift
+            x = foh_response(g[:, None], c[:, None], fk[None])                # (N, b, K, n_t)
+            x = delay_shift(x, fk[None], mu[:, None, :], F.softplus(self.theta_raw), dt)
+            vk = (beta[:, None, :, None] * x).sum(0)
+            return torch.fft.irfft(vk, n=n_x, dim=1).to(f.dtype)
         g, c = (beta[..., None] * g).sum(0), (beta[..., None] * c).sum(0)     # (K, n_t): sum_n beta_n (.)
         vk = foh_response(g[None], c[None], fk)                               # (b, K, n_t)
         return torch.fft.irfft(vk, n=n_x, dim=1).to(f.dtype)
