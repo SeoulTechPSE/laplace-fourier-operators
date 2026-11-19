@@ -315,3 +315,35 @@ WPO uses the a11 configuration and the TFNO the a13 one; 12000 steps, 3 seeds, a
 **Reading.** The WPO's advantage is a data-efficiency advantage. It halves the TFNO's error at 50 samples, and the
 margin shrinks to 9 % at 400. That is what an inductive bias gives: the wavenumber-pole structure substitutes for
 data. Both models still have a train–test gap at N = 400 (WPO 0.012 against 0.021).
+
+## 2D deep operator (2026-11-19): forced 2D Cahn–Hilliard
+
+`a17_ch2d.py` → `results/a17_ch2d.md` (predictions c380ece). Shared code: `WavenumberPoleConv2d`,
+`WavenumberPoleOperator2d`, `cahn_hilliard.solve2d` (7a1fb79, tests).
+
+**Setup.** 32² grid, T = 5, M = 0.1, κ = 0.04, so k_c = 5. Each sample is forced at 4 wavevectors with |k_x|,
+k_y ≤ 6; s is log-uniform over [0.009, 0.3]. Models: WPO-2D (width 16, 4 layers, 4 poles, isotropic Re μ in |k|²,
+18.7 k parameters) and a 3D Tucker FNO (n_modes 16 × 16 × 64, 15.0 k, the closest rank; 20 % fewer). 6000 steps,
+batch 10, a11 / a13 learning rates, 3 seeds. The probe uses wavevectors (k, 0) and (k, k), k = 1..6. Solver
+probe: k_c = 5.003.
+
+| model | train | test | probe k_c | per-mode error, kept modes (median / max) |
+|---|---|---|---|---|
+| WPO-2D | 0.023–0.029 | **0.030–0.036** | **4.98–5.09** | ~0.5 % / 14 % (the (5, 5) mode in seed 1) |
+| TFNO | 0.055–0.076 | 0.100–0.125 | 4.49–4.96 | 2–19 % (in-band (3, 0): 0.45–0.49 against 0.576) |
+
+**Predictions against results.**
+
+1. WPO-2D: k_c within 5 % and every kept sign right in ≥ 2 of 3 seeds: **holds** (3 of 3, within 1.9 %).
+2. WPO-2D mean test error ≤ TFNO's: **holds** (0.032 against 0.116).
+3. TFNO's k_c within 10 % in at most 1 of 3 seeds: **fails.** Two seeds are within 10 % (4.64, 4.96). The probe here
+   uses only k ≤ 6 along two directions, so no out-of-band modes enter the fit, and the TFNO's in-band errors
+   (up to 19 %) partly cancel in k_c.
+
+**Reading.**
+
+- The 1D findings carry over to 2D. The WPO's probe is right to a fraction of a percent mode by mode, including
+  the isotropy: (k, 0) and (k, k) fall on the same λ(|k|). Its k_c is within 2 %.
+- The TFNO underfits at this budget (train 0.055–0.076, against 0.023–0.029). It had 20 % fewer parameters and no
+  learning-rate sweep, so the 3.6× accuracy gap overstates what a tuned TFNO would show. The probe comparison (WPO
+  per-mode exact, TFNO 2–19 % off in-band) is less sensitive to that.

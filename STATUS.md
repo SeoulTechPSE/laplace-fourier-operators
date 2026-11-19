@@ -10,7 +10,7 @@ Each session appends one entry using the template at the bottom.
 | Shared foundation | 1–4 | nearly done: LNO v1/v2 reproduced (gate met), ALNO/LFNO 1D re-implemented; LTI/PDE/process generators partly | reproduce original LNO results (month 4) — **met** |
 | (C) Pole audit of existing models | 3–5 | **in progress**: E1 done, draft report (`E1_report.md`, updated with E2); paper decisions made (2026-11-18); E1 + E5 merged into one working paper (`experiments/C/paper/c_paper.qmd`, 2026-11-18); submission postponed | — |
 | (D) Non-periodic input representation | 4–8 | **started** (2026-11-18): oracle comparison of input representations (`experiments/D/d1_inputs/`) | differs from padded FNO? (month 8) |
-| (A) Pole layer and linear validation | 5–10 | **started** (2026-11-18): wavenumber pole layer (FOH time axis, `lfo.models.wavenumber`); 1D diffusion, ADR, beam and 2D diffusion, ADR dispersion recovered in every seed (two-stage, or joint fit with a leaky cap); deep operator on Burgers started | dispersion relations recovered (month 10) |
+| (A) Pole layer and linear validation | 5–10 | **started** (2026-11-18): wavenumber pole layer (FOH time axis, `lfo.models.wavenumber`); 1D diffusion, ADR, beam and 2D diffusion, ADR dispersion recovered in every seed (two-stage, or joint fit with a leaky cap); deep operator on Burgers, Cahn–Hilliard 1D / 2D; working paper draft | dispersion relations recovered (month 10) |
 | (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits, a bootstrap-calibrated order, certificate and order test; reduction-path unresolved rules fail, a location-calibrated split test flags the merge, a combined post-report rule leaves 1 false pole in 40 groups but does not carry over to new p6 E1 groups; an EIVML refit of the reports removes the EIV bias; EIVML through the whole pipeline helps only up to η_u = 0.05; an EIVML elimination of the calibrated report leaves 0 false poles up to p4 30 η_y and p6 E1 0.05, with EIV-bootstrap intervals covering 33/36 at p4 30 η_y), E3 deep first pass done; H1–H3 theory draft (`experiments/C/theory/H1_H2.md`), E5 passes 1–10 (`experiments/C/e5_probe/`; RQ4 rule v4, 0 false trusts over 375 runs) | — |
 | (A) Application 1: process dynamics | 11–16 | not started | — |
 | (D) Initial conditions and rollout | 13–19 | not started | — |
@@ -173,6 +173,23 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-19 — (A) 2D deep operator on forced 2D Cahn–Hilliard; working paper draft
+
+- Done:
+  - `WavenumberPoleConv2d`, `WavenumberPoleOperator2d` and `cahn_hilliard.solve2d` (7a1fb79, tests; pytest 55/55).
+  - `experiments/A/deep/a17_ch2d.py` (predictions c380ece).
+  - Working paper `experiments/A/paper/a_paper.qmd` (a1–a17, three figures, `figures.py`).
+- Results (`experiments/A/deep/results/a17_ch2d.md`):
+  - WPO-2D: test 0.030–0.036; probe k_c = 4.98–5.09 (solver 5.003); per-mode Re μ̂ within ~0.5 % in the band;
+    isotropic.
+  - TFNO: test 0.100–0.125 (underfits, 20 % fewer parameters, no sweep); k_c = 4.49–4.96; in-band errors up to
+    19 %.
+  - Predictions 1 and 2 hold; 3 fails (the TFNO's k_c lands within 10 % in 2 seeds).
+- Decisions: the (A) deep results (Burgers, Cahn–Hilliard 1D and 2D) are summarised in the working paper. Not for
+  submission yet.
+- Next (proposals): a tuned 2D baseline (budget-matched rank and sweep) before any 2D accuracy claim; the plan's
+  process-dynamics application (A, months 11–16); an MLP μ(k) against the polynomial (RQ4).
 
 ### 2026-11-19 — (A) deep operator: data efficiency and resolution transfer on Burgers
 

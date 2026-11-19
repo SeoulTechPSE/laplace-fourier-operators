@@ -18,7 +18,7 @@ csl: ../../C/paper/ieee.csl
 ---
 
 <!-- Project A working paper, 2026-11-19. Not for submission yet. Every number comes from
-experiments/A/layer/README.md (validations a1–a8) and experiments/A/deep/README.md (a9–a17), whose predictions
+experiments/A/layer/README.md (validations a1–a8) and experiments/A/deep/README.md (a9–a17, complete), whose predictions
 were committed before each run (hashes there). Figures: experiments/A/paper/figures.py. -->
 
 ## Abstract {.unnumbered}
@@ -204,7 +204,23 @@ as (C)'s trust rule for poles.
 
 ## 2D deep operator {#sec-2d}
 
-*Pending: forced 2D Cahn–Hilliard on 32², WPO-2D against a matched 3D-Tucker FNO (a17, running).*
+The 2D layer and operator carry the same structure: Re μ is isotropic in |k|², with an advection vector and the
+half-plane sign. On forced 2D Cahn–Hilliard (32², $k_c$ = 5) we compare WPO-2D (18.7 k parameters) with a 3D
+Tucker FNO (15.0 k, the closest rank) over 3 seeds and 6000 steps (a17).
+
+| model | test | probe $k_c$ (solver 5.003) | in-band per-mode error |
+|---|---|---|---|
+| WPO-2D | **0.030–0.036** | **4.98–5.09** | ~0.5 % median |
+| TFNO (3D Tucker) | 0.100–0.125 | 4.49–4.96 | 2–19 % |
+
+: Forced 2D Cahn–Hilliard, 3 seeds. {#tbl-ch2d}
+
+- The probe of WPO-2D is right mode by mode, along both (k, 0) and (k, k), so the learned dispersion relation is
+  isotropic as the truth is.
+- The TFNO underfits (train error 0.055–0.076). With fewer parameters and no learning-rate sweep, the 3.6×
+  accuracy gap is an upper bound.
+- The pre-registered prediction that the TFNO's $k_c$ would miss by more than 10 % in most seeds failed: 2 of 3
+  seeds land within 10 %.
 
 ## Discussion
 
@@ -225,7 +241,7 @@ as (C)'s trust rule for poles.
 
 ## Limitations {.unnumbered}
 
-- 1D deep experiments only, so far; the 2D deep operator is pending (@sec-2d).
+- One 2D deep experiment, with an untuned, slightly smaller baseline (@sec-2d).
 - Two nonlinear systems, both with a known linearisation at rest.
 - One parameter budget (59 k); FNO-type baselines from neuraloperator with a learning-rate sweep but no
   architecture search.
