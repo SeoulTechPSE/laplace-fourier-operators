@@ -126,3 +126,36 @@ changes that were confounded in d2c's `base` (same model, 6000 steps, batch 25, 
   initial-state distribution the window test measures.
 - For the paper: report rollout error, not window error, when choosing training data for chained windows; include
   developed start states.
+
+## Sixth pass (2026-11-20): a damped beam with initial displacement and velocity
+
+`d2f_beam_ic.py` → `results/d2f_beam_ic.md` (predictions 19ce7dc). u_tt = −c²u_xxxx + η u_xxt + f (c = 0.04,
+η = 0.002), observed through its displacement u, with random initial displacement u₀ and velocity v₀. Per mode, the
+forcing residues and the coefficient of v₀ are ±1/(μ₁ − μ₂) ∝ 1/k²: not polynomial in k, but fixed by the poles
+(a₁ = (v₀ − μ₂u₀)/(μ₁ − μ₂), a₂ = (μ₁u₀ − v₀)/(μ₁ − μ₂)). Poles from sum and product laws in k². 5 data seeds,
+L-BFGS from 8 starts. Rollout: 4 windows, each model passing (u, u_t), with u_t = μ₁x₁ + μ₂x₂ from its own modal
+states, since only u is observed.
+
+| model | reals | test / oracle | ĉ (0.04) | η̂ (0.002) | rollout / oracle rollout |
+|---|---|---|---|---|---|
+| struct: residues and IC coefficients from the poles | 8 | **1.000–1.001** | **0.040000** | **0.00200** (≤ 0.007 %) | **0.997–1.001** |
+| poly: free polynomial residue and IC laws | 30 | 51–88 | 0.0414–0.0415 | 0.022–0.023 | 120–187 |
+| struct_u0: v₀ withheld | 8 | 94–168 | 0.0399–0.0400 | 0.0017–0.0022 | 64–120 |
+
+Oracle test error 2.1–3.6e-3; oracle rollout error 0.6–1.1e-2.
+
+**Predictions against results.**
+1. `struct` at ≤ 1.2× the oracle with c and η within 1 % and rollout ≤ 1.05× the oracle's, in every seed:
+   **holds** (c and η within 0.007 %).
+2. `poly` ≥ 3× the oracle: **holds** (51–88×).
+3. `struct_u0` ≥ 5× the oracle: **holds** (94–168×).
+
+**Reading.**
+- For a second-order system, the initial-state coefficients are a known function of the poles: the inverse of the
+  2 × 2 Vandermonde matrix of each mode. Writing them that way adds no parameters and is exact. The layer then
+  identifies c and η to 1e-4 relative, and chained windows reproduce the oracle's rollout.
+- The constraint matters. With free polynomial laws in their place (30 reals), the fit is 50–90× worse and η is
+  biased tenfold: the 1/k² coefficients cannot be expressed, and the poles absorb the misfit.
+- Both initial fields are needed (v₀ withheld: ~100×). Only u is observed, but the model's own modal states give
+  the velocity at the window end, so chaining needs no velocity measurement: the latent-state option of the plan
+  (Section 5, "Defining the output state") is exact here.
