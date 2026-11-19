@@ -280,3 +280,19 @@ def test_2d_channel_mixing_layer_reduces_to_the_scalar_2d_layer_and_operator_is_
     with torch.no_grad():
         yf, yg = m(f), m(g)
     assert yf.shape == f.shape and (yf - yg)[..., :20].abs().max() < 1e-12 * yf.abs().max()
+
+
+def test_mlp_pole_function_runs_and_is_causal():
+    torch.manual_seed(12)
+    t = np.linspace(0, 1, 40)
+    layer = WavenumberPoleLayer1d(2, t, mu_mlp=8, stable=True, k_ref=8.0)
+    k = layer.wavenumbers(16)
+    mu = layer.mu(k)
+    assert mu.shape == (2, k.numel()) and (mu.real <= 0).all()
+    f = torch.randn(2, 16, 40, dtype=torch.float64)
+    g = f.clone()
+    g[..., 25:] += 1.0
+    with torch.no_grad():
+        assert (layer(f) - layer(g))[..., :25].abs().max() < 1e-12
+    (layer(f) ** 2).sum().backward()          # not .sum(): CPU MKL irfft backward rejects a zero-stride gradient
+    assert layer.mlp[0].weight.grad.abs().sum() > 0

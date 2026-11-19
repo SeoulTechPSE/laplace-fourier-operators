@@ -33,6 +33,9 @@ there stays trapped (`experiments/A/layer`, a7); `re_leak` > 0 keeps a slope re_
 evaluates the polynomials in k / k_ref, so that all coefficients have comparable scale for a first-order optimiser
 (with k up to 16, a k^4 coefficient otherwise moves Re mu by 6.5e4 per unit step).
 
+`mu_mlp` (RQ4) replaces the pole polynomials by an MLP of k / k_ref (the residues stay polynomial; the
+polynomial coefficients are then unused).
+
 Input / output: (batch, n_x, n_t) real fields on a uniform periodic x grid of length `length` and a uniform t grid.
 
 **2D** (`WavenumberPoleLayer2d`, input (batch, n_x, n_y, n_t)). The real part is isotropic, a polynomial in |k|^2;
@@ -133,10 +136,15 @@ class WavenumberPoleLayer1d(nn.Module):
 
     def __init__(self, n_poles: int, t, length: float = 2 * math.pi, mu_degree=(3, 2), beta_degree: int = 2,
                  stable: bool = False, init_scale: float = 0.1, modes: int | None = None, re_max: float | None = None,
-                 re_tau: float = 0.05, k_ref: float = 1.0, im_powers: tuple | None = None, re_leak: float = 0.0):
+                 re_tau: float = 0.05, k_ref: float = 1.0, im_powers: tuple | None = None, re_leak: float = 0.0,
+                 mu_mlp: int | None = None):
         super().__init__()
         self.modes, self.re_max, self.re_tau, self.k_ref = modes, re_max, re_tau, float(k_ref)
         self.re_leak = float(re_leak)
+        # RQ4 option: mu_n(k) from an MLP of k / k_ref (hidden width mu_mlp) instead of the polynomial
+        self.mlp = None if mu_mlp is None else nn.Sequential(
+            nn.Linear(1, mu_mlp, dtype=torch.float64), nn.Tanh(), nn.Linear(mu_mlp, mu_mlp, dtype=torch.float64),
+            nn.Tanh(), nn.Linear(mu_mlp, 2 * n_poles, dtype=torch.float64))
         t = torch.as_tensor(t, dtype=torch.float64).reshape(-1)
         self.register_buffer("t", t)
         self.length, self.stable = float(length), stable
@@ -155,9 +163,18 @@ class WavenumberPoleLayer1d(nn.Module):
         return 2 * math.pi * torch.fft.rfftfreq(n_x, self.length / n_x, device=self.t.device, dtype=torch.float64)
 
     def mu(self, k: torch.Tensor) -> torch.Tensor:
-        """Poles mu_n(k), (N, len(k)) complex128. The polynomials are in k / k_ref."""
+        """Poles mu_n(k), (N, len(k)) complex128. The polynomials (or the MLP) are in k / k_ref."""
         k = k / self.k_ref
         k2 = k ** 2
+        if self.mlp is not None:
+            o = self.mlp(k[:, None].to(torch.float64)).T                        # (2N, K)
+            n = o.shape[0] // 2
+            re, im = o[:n], o[n:]
+            if self.stable:
+                re = -F.softplus(re)
+            elif self.re_max is not None:
+                re = _cap(re, self.re_max, self.re_tau, self.re_leak)
+            return torch.complex(re, im)
         re = sum(self.mu_re[:, j, None] * k2 ** j for j in range(self.mu_re.shape[1]))
         if self.stable:
             re = -F.softplus(re)
