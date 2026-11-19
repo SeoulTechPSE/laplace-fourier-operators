@@ -63,3 +63,37 @@ are constant in k, and the width is 23, to keep the budget.
   rollout error, but only by about 10 %. That is a modest structural gain, not the exactness of the linear case.
 - Next steps from the plan: the semigroup regulariser ‖G(t+s)[u₀] − G(s)[G(t)[u₀]]‖ during training, and training
   on predicted initial fields (pushforward).
+
+## Third pass (2026-11-19): training for rollout (pushforward, semigroup regulariser)
+
+`d2c_rollout_training.py` → `results/d2c_rollout_training.md` (predictions 2776b70). The d2b IC-path WPO (width 23,
+a11 settings, 3 seeds, 6000 steps), trained three ways on the same 200 two-window trajectories ([0, 10]):
+
+- `base`: both windows as independent samples from their true initial fields (400 windows);
+- `push`: window 2 starts from the model's own (detached) prediction at t = 5;
+- `semi`: `base` plus the semigroup penalty ‖G_full[T/2:] − G(f[T/2:], G(f[:T/2], u₀)[end])‖ / ‖G_full[T/2:]‖, weight 1.
+
+| training | window test (mean, per seed) | rollout over [0, 20] (mean, per seed) | rollout / test |
+|---|---|---|---|
+| base | 0.0221 (0.0227, 0.0213, 0.0222) | **0.0424** (0.0411, 0.0451, 0.0411) | 1.81–2.12 |
+| push | 0.0232 (0.0236, 0.0235, 0.0225) | 0.0482 (0.0535, 0.0478, 0.0432) | 1.92–2.27 |
+| semi | 0.0251 (0.0220, 0.0282, 0.0252) | 0.0450 (0.0396, 0.0483, 0.0470) | 1.71–1.86 |
+
+**Predictions against results.**
+1. `push` and `semi` each lower the mean rollout error below `base`: **fails** for both (0.048 and 0.045 against
+   0.042).
+2. `push` has rollout / test ≤ 1.7 in every seed: **fails** (1.92–2.27).
+3. Neither remedy raises the mean window test error by more than 10 %: **holds for `push`** (+5 %), **fails for
+   `semi`** (+14 %; its ratio is lowest because its window error is higher, not its rollout error lower).
+
+**Reading.**
+- Neither remedy helps. The cheapest change helped most: `base` here reaches 0.042 against 0.054 in d2b (−22 %),
+  with the same architecture. It differs from d2b in its training windows: half of them start from developed
+  Burgers fields (the state at t = 5 of a trajectory), which is what windows 2–4 of a rollout start from, and there
+  are twice as many (400 against 200). The two effects are confounded here (post hoc).
+- Once the training set covers the states a rollout visits, starting window 2 from the model's own prediction
+  (`push`) adds only the model's own error as noise, and the semigroup penalty trades window accuracy for
+  self-consistency. The rollout error still roughly doubles over 4 windows; what remains is the accumulation of
+  per-window errors, not a distribution shift.
+- For the paper: train on windows that start from developed states; the plan's two remedies are recorded as
+  negative results at this budget.

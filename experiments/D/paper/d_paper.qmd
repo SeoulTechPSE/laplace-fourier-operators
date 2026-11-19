@@ -108,7 +108,12 @@ Rollout chains 4 windows over [0, 20].
 - **Deep nonlinear rollout** (forced Burgers, 4 chained windows). The deep WPO's initial-state path shares the first
   layer's poles. It gives the lowest rollout error: 0.054, against 0.060 with u₀ as an input channel and 0.061 for
   a TFNO at the same budget. Every model about doubles its error over the 4 windows, so the structural gain is
-  real but modest (about 10 %). The plan's semigroup regulariser and pushforward training are the next steps.
+  real but modest (about 10 %).
+- **Training for rollout.** Neither of the plan's remedies helped. Pushforward training (window 2 starts from the
+  model's own prediction) raised the mean rollout error from 0.042 to 0.048. The semigroup penalty raised it to 0.045
+  and the window error by 14 %. What did help was training on windows that start from developed fields (the state at
+  t = 5 of a trajectory), as rollout windows do. This lowered the rollout error from 0.054 to 0.042 with the same
+  model, confounded with a doubled number of training windows.
 
 ## Boundaries in space {#sec-bc}
 
@@ -136,6 +141,11 @@ poles.
   data excite (m ≤ 8), each learned law is right within about 1 % and has the physical form: ∝ k for a boundary
   value, constant for a boundary flux. Over all 32 modes it is not (up to 60 %), because high modes leave almost no
   trace. The law is identified where it is excited, as for dispersion relations in project A.
+- **Advection.** With u_t = −v u_x + D u_xx, the weight w = e^{−αx}u, α = v/(2D), makes the sine modes diagonal
+  again. One learned α recovers 2.00 to 0.4 % in every seed. The error is 1.1× the oracle in 4 of 5 seeds (1.4 in
+  one), against 15–17× without the weight. D̂ and the offset v²/(4D) are biased by up to 10 %. Refitting on a truth
+  without the 1 % time-axis representation floor cuts the in-band pole error from 7–10 % to 0.4–2 %. Recovered
+  constants are therefore only as good as the representation floor allows.
 - **Where it stops:** project A's Danckwerts reactor (a27) is a convective problem with an inlet and an outlet,
   observed only at the outlet. There the modal poles were not identifiable, and a dead time plus lags described the
   data best. Boundaries work as a channel when the basis diagonalises the operator and the field is observed.
@@ -153,8 +163,10 @@ an exact, causal time axis that does not assume periodicity (D1).
 
 ## Limitations {.unnumbered}
 
-- Deep rollout: one system (Burgers), without the semigroup regulariser or pushforward training.
-- Boundaries: diffusion only (Dirichlet, Neumann, mixed); Robin and advective boundaries remain.
+- Deep rollout: one system (Burgers); the semigroup regulariser and pushforward training did not help at this
+  budget, and the effect of developed-state training windows is confounded with their number.
+- Boundaries: diffusion (Dirichlet, Neumann, mixed) and constant-coefficient advection with Dirichlet values;
+  Robin boundaries and variable coefficients remain.
 - Every test error is limited by the sampling floor of steps and PRBS (about 1 %).
 
 ## References {.unnumbered}

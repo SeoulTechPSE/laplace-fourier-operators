@@ -13,7 +13,7 @@ Each session appends one entry using the template at the bottom.
 | (A) Pole layer and linear validation | 5–10 | **started** (2026-11-18): wavenumber pole layer (FOH time axis, `lfo.models.wavenumber`); 1D diffusion, ADR, beam and 2D diffusion, ADR dispersion recovered in every seed (two-stage, or joint fit with a leaky cap); deep operator on Burgers, Cahn–Hilliard 1D / 2D; working paper draft | dispersion relations recovered (month 10) |
 | (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits, a bootstrap-calibrated order, certificate and order test; reduction-path unresolved rules fail, a location-calibrated split test flags the merge, a combined post-report rule leaves 1 false pole in 40 groups but does not carry over to new p6 E1 groups; an EIVML refit of the reports removes the EIV bias; EIVML through the whole pipeline helps only up to η_u = 0.05; an EIVML elimination of the calibrated report leaves 0 false poles up to p4 30 η_y and p6 E1 0.05, with EIV-bootstrap intervals covering 33/36 at p4 30 η_y), E3 deep first pass done; H1–H3 theory draft (`experiments/C/theory/H1_H2.md`), E5 passes 1–10 (`experiments/C/e5_probe/`; RQ4 rule v4, 0 false trusts over 375 runs) | — |
 | (A) Application 1: process dynamics | 11–16 | **started** (2026-11-19): delay layer; FOPDT / SOPDT identified | — |
-| (D) Initial conditions and rollout | 13–19 | **started** (2026-11-19): IC path in the wavenumber layer, exact window chaining (linear); Dirichlet boundaries as a channel | — |
+| (D) Initial conditions and rollout | 13–19 | **started** (2026-11-19): IC path in the wavenumber layer, exact window chaining (linear); deep Burgers rollout (pushforward / semigroup did not help); Dirichlet, Neumann, mixed and advective boundaries as channels | — |
 | (A) Application 2: Cahn–Hilliard | 17–22 | not started | recover k_c, k_max (month 20) |
 | Consolidation and code release | 23–24 | not started | — |
 
@@ -173,6 +173,27 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-19 — (D) training for rollout (pushforward, semigroup); advective Dirichlet boundaries
+
+- Done:
+  - `experiments/D/d2_initial_conditions/d2c_rollout_training.py` (predictions 2776b70): IC-path WPO trained as
+    `base`, `push` (pushforward) and `semi` (semigroup penalty), 3 seeds.
+  - `experiments/D/d3_boundary/d3c_advective.py` (predictions 2c19dcc): advection–diffusion with Dirichlet values,
+    one learned weight e^{αx}, 5 data seeds; post hoc refits of seeds 0 and 4 and a no-mismatch refit of seed 0.
+  - READMEs and the D paper updated.
+- Results:
+  - Rollout: neither remedy helps. Mean rollout error `base` 0.042, `push` 0.048, `semi` 0.045; `semi` raises the
+    window error by 14 %. Predictions 1 and 2 fail; 3 holds for `push` only. Post hoc: `base` (half its windows start
+    from developed fields, 400 windows) is 22 % below d2b's 0.054 with the same model; confounded with the doubled
+    window count.
+  - Advection: α̂ = 1.992–2.002 (true 2) in every seed; 1.06–1.39× the oracle (4 of 5 seeds ≤ 1.2); without the
+    weight 15–17×. D̂ and v̂²/(4D̂) biased by up to 8–15 %. Prediction 1 fails, 2 holds. The bias comes mostly from
+    the 1 % time-axis representation floor: on a truth without it the in-band pole error drops from 7–10 % to
+    0.4–2 %.
+- Decisions: none.
+- Next: separate the two d2c `base` effects (developed-state windows vs window count); Robin boundaries; the (C)
+  E5 thirteenth pass is running.
 
 ### 2026-11-19 — (D) deep rollout with initial fields; boundary types as channel laws
 
