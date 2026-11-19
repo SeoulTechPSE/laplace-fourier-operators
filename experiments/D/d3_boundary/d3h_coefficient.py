@@ -17,6 +17,16 @@ layer at the true d (`cos`) reproduces the oracle to 1e-16. At the best cosine a
 **Fit.** 4 starts (d_0 log-uniform in [0.01, 0.04], the rest 0), each run to convergence with the d3g rule
 (L-BFGS chunks of 300 until the training loss drops by less than a relative 1e-4; cap 6000), pick by validation.
 
+**Fix after the first launch** (cos seeds 0-2 finished, then a crash). In seeds 0 and 2 an L-BFGS line search
+stepped to a D(x) with negative values, so A(d) had positive eigenvalues; the response overflowed and eigh failed.
+The failure was caught as a chunk without progress, so the fit stopped after 600 iterations at 9-10x the oracle
+(seed 1, which never left the valid region: 1.0005x, D(x) within 2.5e-4). The crash came from the same failure
+outside the guarded step. Fix, with the model and predictions unchanged:
+(i) d = 0.02 theta, so the first L-BFGS step is on the scale of d;
+(ii) where min D(x) < 1e-4 on a 201-point grid, the loss is a penalty sloping back into the valid region instead of
+the eigen-solve.
+All seeds are rerun.
+
 **Predictions** (written before running).
 
 1. `cos`, every seed: test error <= 1.2x the oracle, D(x) within 1 % (relative L2 on [0, 1]), lambda_1..8 within
@@ -45,7 +55,7 @@ import d3f_variable as V  # noqa: E402
 import d3g_converged as G  # noqa: E402
 
 A = V.A
-N, J = V.N, 6
+N, J, D_SCALE = V.N, 6, 0.02
 OUT = HERE / "results" / "d3h_coefficient.json"
 XQ, WQ = np.polynomial.legendre.leggauss(2000)
 XQ, WQ = (XQ + 1) / 2, WQ / 2
@@ -96,8 +106,12 @@ class CoefLayer(V.VarLayer):
     def __init__(self, t):
         super().__init__(t, "diag")
         self.register_buffer("Aj", torch.tensor(stiffness_basis()))
-        self.d = nn.Parameter(torch.zeros(J, dtype=torch.float64))
+        self.theta = nn.Parameter(torch.zeros(J, dtype=torch.float64))          # d = D_SCALE * theta
         del self.rho
+
+    @property
+    def d(self):
+        return D_SCALE * self.theta
 
     def eig(self):
         lam, Q = torch.linalg.eigh(torch.einsum("j,jmn->mn", self.d, self.Aj))
@@ -117,6 +131,19 @@ class CoefLayer(V.VarLayer):
         return torch.einsum("im,mk,bkt->bit", self.phi, Q, z)
 
 
+CGRID = torch.tensor(np.cos(np.outer(np.linspace(0, 1, 201), np.arange(J)) * math.pi))
+D_MIN = 1e-4
+
+
+def loss_fn(m, d):
+    """Relative L2; where min D(x) < D_MIN the eigenproblem is not solved and a penalty that slopes back towards
+    D_MIN is returned instead, so the line search backtracks (fix after the first launch, see the docstring)."""
+    dmin = (CGRID.to(m.d.device) @ m.d).min()
+    if dmin < D_MIN:
+        return 10.0 + 1e3 * (D_MIN - dmin) / D_SCALE
+    return A.rel(m(d[0]), d[1])
+
+
 def fit(data, t, device):
     tr, va = ([z.to(device) for z in data[s]] for s in ("train", "vali"))
     best = None
@@ -124,8 +151,8 @@ def fit(data, t, device):
         g = np.random.default_rng(st)
         m = CoefLayer(t).to(device)
         with torch.no_grad():
-            m.d[0] = math.exp(g.uniform(math.log(0.01), math.log(0.04)))
-        iters, capped = G.converge(m, lambda: A.rel(m(tr[0]), tr[1]), [m.d])
+            m.theta[0] = math.exp(g.uniform(math.log(0.01), math.log(0.04))) / D_SCALE
+        iters, capped = G.converge(m, lambda: loss_fn(m, tr), [m.theta])
         v = V.val(m, va)
         if best is None or v < best[0]:
             best = (v, m, iters, capped)
@@ -152,7 +179,7 @@ def main():
             m, iters, capped = fit(data, t, device)
             with torch.no_grad():
                 lh = m.lam().cpu().numpy()
-                d = m.d.cpu().numpy()
+                d = m.d.detach().cpu().numpy()
             lh = lh[np.argsort(-lh)]
             Dt, Dh = CASES[case](XQ), C @ d
             r = dict(case=case, seed=seed, oracle=floor, ratio=V.val(m, te) / floor, d=d.tolist(),
