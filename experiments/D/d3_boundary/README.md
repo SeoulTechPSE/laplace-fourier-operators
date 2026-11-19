@@ -105,3 +105,66 @@ time grid. 5 data seeds.
   against the residues and laws. This is the same mechanism as the (C) E2 finding that a model-class mismatch biases
   the tied estimate. Claims about recovered physical constants need the representation floor well below the fit
   error, as in d3/d3b (oracle ≈ 1e-3 relative to the fit).
+
+## Fourth pass (2026-11-20): Robin boundaries, the basis from a learned coefficient
+
+`d3d_robin.py` → `results/d3d_robin.md` (predictions ff9596d; fixes before any result e966be8, 8a9ac59). A Robin
+boundary D u_x(1) + H u(1) = F1(t) has the basis sin(k_m x) with k_m the roots of k cos k + β sin k = 0, β = H / D,
+so the wavenumbers themselves are unknown. The model builds its basis from a learned β (bisection plus the implicit
+function theorem for the gradient). The laws are claimed as before: the value channel ∝ D k_m / N_m and the flux
+channel ∝ sin k_m / N_m. D = 0.02, β = 2, 32 modes, 5 data seeds, the a7 joint fit with 8 starts.
+
+| model | test / oracle | β̂ | D̂ | value-law error m ≤ 8 | flux-law error m ≤ 8 |
+|---|---|---|---|---|---|
+| robin (β learned, β0 ~ U[0.25, 1]) | 6.37–8.35 | 0.0000–0.0006 | 0.0142–0.0251 | 0.15–0.34 | 0.13–0.34 |
+| fixed (β = 2 given) | **1.00–1.01** | 2 | **0.0199–0.0202** | 3e-4–1.2e-2 | 6e-4–7.8e-3 |
+| dn (β = 0, the Dirichlet–Neumann basis) | 5.86–7.64 | 0 | 0.0133–0.0140 | 0.06–0.15 | 0.25–0.30 |
+
+**Predictions against results.**
+1. `robin` at ≤ 1.2× the oracle with β within 2 %, D within 1 % and the laws within 2 % on m ≤ 8, in every seed:
+   **fails** in every seed. β collapses to the Neumann end (β̂ ≤ 6e-4), and the fit lands near `dn`.
+2. `fixed`, the same criteria: **holds** (laws ≤ 1.2 %, D ≤ 0.8 %).
+3. `dn` ≥ 3× the oracle: **holds** (5.9–7.6×).
+
+**Reading.** With the basis given, the layer is exact for Robin boundaries. What fails is finding β jointly with
+everything else: from random poles and laws the early gradient pushes β to 0, where softplus flattens it, and the fit
+settles in the Neumann basin.
+
+## Fifth pass (2026-11-20): Robin coefficient by a profile, then released
+
+`d3e_robin_profile.py` → `results/d3e_robin_profile.md` (predictions 8a9ac59). The rest is fitted with β fixed at
+each point of the grid {0.3, 0.6, 1.2, 2.4, 4.8, 9.6} (which excludes the truth; 2 starts each). β is then
+released from the best grid fit and L-BFGS runs on (300 iterations). Same data, oracle and seeds as d3d.
+
+| seed | test / oracle | grid pick | β̂ | D̂ | law errors m ≤ 8 (value, flux) |
+|---|---|---|---|---|---|
+| 0 | 1.00 | 2.4 | 1.9978 | 0.02004 | 1.7e-3, 1.2e-3 |
+| 1 | 1.07 | 2.4 | 1.9951 | 0.02052 | 3.7e-2, 2.2e-2 |
+| 2 | 1.01 | 2.4 | 1.9908 | 0.01989 | 3.8e-3, 1.5e-3 |
+| 3 | 1.11 | 2.4 | 1.9996 | 0.01863 | 5.2e-2, 3.3e-2 |
+| 4 | 1.01 | 2.4 | 1.9992 | 0.02013 | 6.4e-3, 4.6e-3 |
+
+Profile validation errors (seed 0, by grid β): 3.0e-2, 2.5e-2, 1.4e-2, **7.8e-3**, 3.5e-2, 7.0e-2. The profile is
+unimodal with its minimum at 2.4 in every seed.
+
+**Predictions against results.**
+1. In every seed: β within 2 %, D within 1 %, ≤ 1.2× the oracle and the laws within 2 % on m ≤ 8: **fails in 2 of 5
+   seeds.** β (≤ 0.5 %) and the error ratio (≤ 1.11) hold in every seed. D and the laws hold in seeds 0, 2 and 4.
+   Seed 1 is off by 2.6 % in D and 3.7 % in the laws, seed 3 by 6.9 % and 5.2 %.
+2. The profile minimum is at the grid point 2.4 in every seed: **holds.**
+
+**Diagnosis (post hoc; seeds 1 and 3 refitted, which reproduces the table exactly; scratch script, not committed).**
+Continuing L-BFGS with β free for 300 more iterations brings both seeds onto every criterion. Seed 1: 1.003×, β̂
+1.9965, D̂ 0.02000, laws 2.5e-3 and 1.6e-3. Seed 3: 1.004×, β̂ 1.9954, D̂ 0.02014, laws 5.6e-3 and 4.6e-3. A further
+900 iterations change nothing. The misses were an iteration budget too short after the release, not a bias.
+
+**Reading.**
+- An unknown boundary coefficient that sets the basis is identifiable, but not by the joint fit. Fitting the rest at
+  fixed β gives a profile that is unimodal and sharply peaked (its minimum is 2× lower than the next grid point), and
+  releasing β from its minimum converges to the truth (β within 0.5 % in every seed).
+- The profile is cheap here (one scalar, 6 points). The general lesson for the paper: parameters that change the
+  basis, rather than the coefficients in it, should be found by an outer search, not by gradient descent jointly
+  with the poles. α in d3c is the exception so far: it was found jointly (to 0.4 %), because the weight
+  e^{αx} changes the basis smoothly and does not flatten at a boundary of its range as softplus(ρ) does at β → 0.
+- The pre-registered budget (300 iterations after release) was too short in 2 of 5 seeds. The recorded result
+  stays a partial failure. With 600 iterations, all criteria hold in the two seeds checked.
