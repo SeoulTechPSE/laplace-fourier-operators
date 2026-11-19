@@ -67,7 +67,7 @@ the samples.
 : Median relative L2 error of the representation alone (systems p2, p4, p6 of project C). {#tbl-d1}
 
 - The Fourier path's error on non-periodic inputs is 10–100× its error on the periodic control. It is spread over
-  the whole window rather than concentrated at the ends, and it falls only as n^{−1}.
+  the whole window rather than concentrated at the ends, and it falls only as $n^{-1}$.
 - On steps and PRBS every path is limited by the sampling: a jump between samples cannot be located.
 - A global Chebyshev fit is the best representation on smooth inputs. It is numerically unusable at high degree
   (errors up to 1e7 at degree 256) and poor at discontinuities.
