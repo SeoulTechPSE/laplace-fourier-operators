@@ -174,6 +174,17 @@ Things to know:
 
 ## Log
 
+### 2026-11-19 — (A) Danckwerts reactor: in open-boundary convective systems the outlet does not identify eigenvalues
+
+- Done: `experiments/A/process/a27_danckwerts.py` (predictions 0bcea43): inlet → outlet of a Danckwerts dispersion
+  reactor (Pe 20), comparing FOPDT, SOPDT, 6 free poles and a modal model λ_n = −(a₀ + a₁ n²).
+- Results: SOPDT best (test 0.020; mean delay 0.97 against a residence time of 1.0). Modal model 0.032 with a
+  compressed spectrum (−4.7 … −9.1 against −5.8 … −31.5). Free poles 0.042 (slowest −1.2 against −5.85). All three
+  predictions fail.
+- Decisions: the pole readout is physical for translation-invariant problems (Fourier modes). In open-boundary
+  convective systems, use a delay plus dispersion; non-periodic boundaries belong to project (D).
+- Next: a26 (closed-loop CSTR) is running.
+
 ### 2026-11-19 — (A) Application 1: CSTR probe, dispersion reactor, delay + wavenumber layer
 
 - Done:

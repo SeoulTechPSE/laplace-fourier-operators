@@ -168,3 +168,44 @@ input or measurement dead time is a factor e^{−θs} common to all modes. One l
 **Reading.** At a steady state with a stable focus, every reading of the linearisation agrees within 1 %: WPO probe,
 FNO probe and the best linear fit. That matches Burgers in band. What separates the models is accuracy on the
 nonlinear samples (WPO 2.2× lower error) and how LTI the small-signal response is (residual 4× lower).
+
+## A reactor with real inlet / outlet boundaries (Danckwerts), inlet → outlet (2026-11-19)
+
+`a27_danckwerts.py` → `results/a27_danckwerts.md` (predictions 0bcea43).
+
+**Setup.**
+- v = 1, D = 0.05 (Péclet 20), k_r = 0.5, with Danckwerts boundaries. The output is the outlet concentration.
+- Truth: finite differences on 400 cells with Crank–Nicolson. Reference eigenvalues: −5.85, −6.91, −8.75, −11.45, …
+  (all real).
+- Models, all fitted by output error with 10 starts:
+  - FOPDT and SOPDT;
+  - 6 free real poles;
+  - a modal model, λ_n = −(a₀ + a₁ n²) over n = 1..8 with free residues.
+
+| model | test | slowest poles | other |
+|---|---|---|---|
+| FOPDT | 0.042 | −2.82 | θ 0.64 |
+| **SOPDT** | **0.020** | −4.40, −4.68 | θ 0.53 |
+| 6 free poles | 0.042 | −1.23, −1.65, −1.86 | – |
+| modal, 8 modes | 0.032 | −4.71, −4.92, −5.27 | a₀ 4.64, a₁ 0.070 |
+
+**Predictions against results: all three fail.**
+1. Modal model best, lumped ≥ 3× worse: **fails.** SOPDT with a delay is best (0.020); the modal model is at 0.032.
+2. Modal λ₁..λ₃ within 8 / 5 / 5 %: **fails.** The fit compresses the spectrum (a₁ = 0.07 against ~0.4) to
+   −4.7 … −9.1, against −5.8 … −31.5.
+3. The slowest free pole within 5 % of λ₁: **fails** (−1.23 against −5.85).
+
+**Reading.**
+- At Péclet 20 the inlet → outlet response is a dispersed front arriving after about one residence time.
+  - A truncated sum of the true modes represents a front poorly: the residues alternate in sign and converge
+    slowly.
+  - Output-error fits therefore use the poles to approximate a delay (as the pole-only model did in a20), not to
+    report the eigenvalues.
+- The convection–dispersion operator with these boundaries is strongly non-normal. Its eigenvalues describe the
+  long-time decay, but the input → output dynamics within the window are dominated by transport. Eigenvalues are
+  not what the outlet signal identifies.
+- What it does identify efficiently is a dead time plus a few lags (SOPDT θ = 0.53, mean delay 0.53 + 0.23 + 0.21
+  = 0.97, against the residence time 1.0).
+- For (A) this marks a boundary. The pole readout is the physical one when the modes are Fourier modes of a
+  translation-invariant problem (a24, periodic): there λ(k), including −ivk, is identified exactly. In open-boundary
+  convective systems, the useful structures are a delay plus dispersion, or the boundary handling of project (D).
