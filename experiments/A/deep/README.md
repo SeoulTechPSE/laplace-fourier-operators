@@ -347,3 +347,25 @@ probe: k_c = 5.003.
 - The TFNO underfits at this budget (train 0.055–0.076, against 0.023–0.029). It had 20 % fewer parameters and no
   learning-rate sweep, so the 3.6× accuracy gap overstates what a tuned TFNO would show. The probe comparison (WPO
   per-mode exact, TFNO 2–19 % off in-band) is less sensitive to that.
+
+## 2D Cahn–Hilliard with a tuned, budget-matched TFNO (2026-11-19)
+
+`a18_ch2d_tuned.py` → `results/a18_ch2d_tuned.md` (predictions 9d0cfa7).
+
+**Setup.** Two Tucker configurations within 10 % of the WPO-2D's budget: width 12 with rank 0.003 (20.4 k), and
+width 20 with rank 0.001 (20.5 k). Each is swept over lr ∈ {1e-3, 3e-3, 1e-2} for 2000 steps. The selected
+setting, width 12 with lr 3e-3, is trained for 6000 steps over 3 seeds. Width 20 with rank 0.001 did not train at
+any learning rate (validation error 1.0).
+
+| model | params | test | probe k_c | median in-band per-mode error |
+|---|---|---|---|---|
+| WPO-2D (a17) | 18.7 k | **0.030–0.036** | **4.98–5.09** | **0.2–0.6 %** |
+| TFNO tuned | 20.4 k | 0.071–0.089 | 3.76, 4.98, 5.06 | 3.9–8.3 % |
+| TFNO a17 (untuned, 15.0 k) | 15.0 k | 0.100–0.125 | 4.49–4.96 | 3–16 % |
+
+**Predictions against results: both hold.**
+1. The tuned TFNO's test error is below a17's TFNO (0.082 against 0.116) and above the WPO-2D's (0.032).
+2. Its k_c is within 10 % in 2 of 3 seeds (seed 1: 3.76), and its median per-mode error stays above the WPO-2D's.
+
+**Reading.** Tuning closes about a third of the gap. At a matched budget the WPO-2D keeps a 2.6× lower test error,
+and its per-mode linearisation is an order of magnitude more accurate.

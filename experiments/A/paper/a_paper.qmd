@@ -208,19 +208,43 @@ The 2D layer and operator carry the same structure: Re μ is isotropic in |k|²,
 half-plane sign. On forced 2D Cahn–Hilliard (32², $k_c$ = 5) we compare WPO-2D (18.7 k parameters) with a 3D
 Tucker FNO (15.0 k, the closest rank) over 3 seeds and 6000 steps (a17).
 
-| model | test | probe $k_c$ (solver 5.003) | in-band per-mode error |
-|---|---|---|---|
-| WPO-2D | **0.030–0.036** | **4.98–5.09** | ~0.5 % median |
-| TFNO (3D Tucker) | 0.100–0.125 | 4.49–4.96 | 2–19 % |
+| model | params | test | probe $k_c$ (solver 5.003) | median in-band per-mode error |
+|---|---|---|---|---|
+| WPO-2D | 18.7 k | **0.030–0.036** | **4.98–5.09** | **0.2–0.6 %** |
+| TFNO, tuned (a18) | 20.4 k | 0.071–0.089 | 3.76–5.06 | 3.9–8.3 % |
+| TFNO, untuned (a17) | 15.0 k | 0.100–0.125 | 4.49–4.96 | 3–16 % |
 
 : Forced 2D Cahn–Hilliard, 3 seeds. {#tbl-ch2d}
 
 - The probe of WPO-2D is right mode by mode, along both (k, 0) and (k, k), so the learned dispersion relation is
   isotropic as the truth is.
-- The TFNO underfits (train error 0.055–0.076). With fewer parameters and no learning-rate sweep, the 3.6×
-  accuracy gap is an upper bound.
-- The pre-registered prediction that the TFNO's $k_c$ would miss by more than 10 % in most seeds failed: 2 of 3
-  seeds land within 10 %.
+- A budget-matched TFNO with a learning-rate sweep (a18) closes about a third of the gap. The WPO-2D keeps a 2.6×
+  lower test error and a per-mode linearisation an order of magnitude more accurate.
+- One pre-registered prediction failed: that the untuned TFNO's $k_c$ would miss by more than 10 % in most seeds.
+  2 of 3 seeds landed within 10 %.
+
+## Polynomial or MLP pole functions (RQ4) {#sec-rq4}
+
+The plan offers an MLP μ(k) as the flexible alternative. To compare the two, we train only on data forced at k ≤ 8
+and test at k = 9–16 (a19; diffusion, ADR, beam; 5 seeds; same joint fit).
+
+- In band, both reach the oracle (MLP ≤ 1.05×).
+- Out of band, the polynomial stays at 1.00–1.08× the oracle with a dispersion error ≤ 0.5 %. The MLP is at 4.6–44×
+  with 13–55 %.
+
+When the form is right, the polynomial wins on both accuracy and interpretability. The MLP is for systems whose
+λ(k) is not polynomial, which none of these is.
+
+## Delay: a first process-dynamics step {#sec-delay}
+
+Delay is not rational, so pole-only kernels must approximate it. A pole–residue–delay layer, K(s) = Σ β e^{−θs}/(s − μ),
+with an exact delayed first-order hold, is evaluated on FOPDT and SOPDT data whose delays are not multiples of the
+sample time (a20).
+
+- **FOPDT:** θ, K and τ recovered to 1e-4.
+- **SOPDT:** θ within 1.1 %, K and τ within 0.08 %.
+- **Pole-only layer (4 complex poles):** fits to 1.06–1.95× the oracle, but has no delay to read.
+- **ARX:** resolves θ only to the sample.
 
 ## Discussion
 

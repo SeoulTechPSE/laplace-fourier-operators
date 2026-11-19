@@ -174,6 +174,14 @@ Things to know:
 
 ## Log
 
+### 2026-11-19 — (A) 2D Cahn–Hilliard: a tuned, budget-matched TFNO stays 2.6x behind
+
+- Done: `experiments/A/deep/a18_ch2d_tuned.py` (predictions 9d0cfa7): two Tucker configurations within 10 % of the
+  budget, an lr sweep, 3 seeds.
+- Results: tuned TFNO test 0.071–0.089 (a17: 0.100–0.125) against WPO-2D 0.030–0.036; k_c within 10 % in 2 of 3;
+  per-mode error 3.9–8.3 % against 0.2–0.6 %. Both predictions hold.
+- Decisions: the 2D accuracy claim stands at a matched, tuned budget (2.6×).
+
 ### 2026-11-19 — (A) RQ4: the polynomial pole function extrapolates beyond the forced band; the MLP does not
 
 - Done: `mu_mlp` option (29cf0ef, test; pytest 56/56 at the time). `experiments/A/layer/a19_mlp_band.py` (predictions
