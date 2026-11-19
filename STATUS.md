@@ -174,6 +174,26 @@ Things to know:
 
 ## Log
 
+### 2026-11-19 — (D) deep rollout with initial fields; boundary types as channel laws
+
+- Done:
+  - Initial field in `lfo.data.burgers.solve`; initial-state path of the deep `WavenumberPoleOperator1d` (4b67655,
+    γ constant in k as of 42bc898; tests, pytest 64/64).
+  - `experiments/D/d2_initial_conditions/d2b_burgers_rollout.py` (42bc898).
+  - `experiments/D/d3_boundary/d3b_bc_types.py` (07a570a).
+  - (D) working paper `experiments/D/paper/d_paper.qmd` (D1, D2, boundaries).
+- Results:
+  - Deep Burgers rollout over 4 windows: the shared-pole IC path gives the lowest rollout error (0.054, against 0.060
+    for the channel WPO and 0.061 for the TFNO). Every model about doubles its error over the 4 windows.
+    Prediction 3 holds; 1 fails narrowly (TFNO window error 0.0250 against 0.0254); 2 fails (ratio 2.05–2.18
+    against ≤ 2).
+  - Boundary types (DD, NN, DN): with the channels, all at the oracle, with D within 1.2 %. Without them, 79–283×.
+    The learned laws are right on the excited modes (m ≤ 8: 0.06–1.3 %, one seed 4 %; Dirichlet ∝ k, Neumann
+    constant) but not over all 32 modes (1.5–60 %). Prediction 1 fails; 2 holds.
+- Decisions: boundary laws, like dispersion relations, are claimed only on the band the data excite.
+- Next: semigroup regulariser and pushforward training for deep rollout; advective boundaries.
+- Push: blocked by the auto-mode classifier; the user pushes manually.
+
 ### 2026-11-19 — (D) D2 initial-condition path and chaining; time-varying Dirichlet boundaries
 
 - Done:

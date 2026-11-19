@@ -105,8 +105,10 @@ Rollout chains 4 windows over [0, 20].
 - One pre-registered prediction failed: rollout error ≤ 1.5× the single-window test error, which reached 1.73 in
   one seed. The right reference is the oracle's own rollout, which the model matches exactly; the ratio to the
   single-window error reflects the different sample sets through the sampling floor.
-- **Open:** deep nonlinear models need a state readout and the plan's semigroup regulariser before windows can be
-  chained.
+- **Deep nonlinear rollout** (forced Burgers, 4 chained windows). The deep WPO's initial-state path shares the first
+  layer's poles. It gives the lowest rollout error: 0.054, against 0.060 with u₀ as an input channel and 0.061 for
+  a TFNO at the same budget. Every model about doubles its error over the 4 windows, so the structural gain is
+  real but modest (about 10 %). The plan's semigroup regulariser and pushforward training are the next steps.
 
 ## Boundaries in space {#sec-bc}
 
@@ -129,6 +131,11 @@ poles.
 - The truth is the 63-mode sine-Galerkin solution. A finite-difference truth was dropped before any fit: its
   discrete eigenvalues are not polynomial over all modes, so a D-recovery test would have tested the
   discretisation.
+- **Other boundary types.** With a free cubic law per channel, the layer reproduces Dirichlet, Neumann and mixed
+  boundaries at the oracle, with D within 1.2 %. Without the channels the error is 79–283× larger. On the modes the
+  data excite (m ≤ 8), each learned law is right within about 1 % and has the physical form: ∝ k for a boundary
+  value, constant for a boundary flux. Over all 32 modes it is not (up to 60 %), because high modes leave almost no
+  trace. The law is identified where it is excited, as for dispersion relations in project A.
 - **Where it stops:** project A's Danckwerts reactor (a27) is a convective problem with an inlet and an outlet,
   observed only at the outlet. There the modal poles were not identifiable, and a dead time plus lags described the
   data best. Boundaries work as a channel when the basis diagonalises the operator and the field is observed.
@@ -146,8 +153,8 @@ an exact, causal time axis that does not assume periodicity (D1).
 
 ## Limitations {.unnumbered}
 
-- D2 is linear so far; a deep nonlinear rollout has not been tested.
-- Boundaries: Dirichlet diffusion only; Neumann, Robin and advective boundaries remain.
+- Deep rollout: one system (Burgers), without the semigroup regulariser or pushforward training.
+- Boundaries: diffusion only (Dirichlet, Neumann, mixed); Robin and advective boundaries remain.
 - Every test error is limited by the sampling floor of steps and PRBS (about 1 %).
 
 ## References {.unnumbered}
