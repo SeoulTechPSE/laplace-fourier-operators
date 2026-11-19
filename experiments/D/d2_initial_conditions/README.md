@@ -32,3 +32,34 @@ reproduce the exact solution to 1e-9.
 **Reading.** Sharing the poles between the free and forced responses makes chaining exact for a linear system. The
 learned layer is at the oracle over 4 windows. For deep nonlinear models the IC path and chaining need a state
 readout and the semigroup regulariser of the plan; that is the next step.
+
+## Second pass (2026-11-19): deep rollout on forced Burgers
+
+`d2b_burgers_rollout.py` → `results/d2b_burgers_rollout.md` (predictions 42bc898). Shared code (4b67655): an
+initial field in `lfo.data.burgers.solve`, and the initial-state path of the deep `WavenumberPoleOperator1d`. With
+`ic=True`, the lifted initial field enters the first pole layer as a free response with its poles. Its γ matrices
+are constant in k, and the width is 23, to keep the budget.
+
+**Setup.** Forced Burgers (ν = 0.1) with a random initial field per window (modes 1–8, scale log-uniform over
+[0.03, 1]), T = 5, 3 seeds, 6000 steps. Rollout: 4 chained windows over [0, 20] on 50 trajectories.
+
+| model | params | window test (mean) | rollout over [0, 20] (mean) | rollout / test |
+|---|---|---|---|---|
+| WPO, IC path sharing the poles | 61.1 k | 0.0254 | **0.0541** | 2.05–2.18 |
+| WPO, u₀ as an input channel | 59.6 k | 0.0273 | 0.0603 | 2.02–2.35 |
+| TFNO, u₀ as an input channel | 59.1 k | 0.0250 | 0.0611 | 2.34–2.51 |
+
+**Predictions against results.**
+1. The IC-path WPO's window error is at or below both others: **fails narrowly.** It beats the channel WPO
+   (0.0254 against 0.0273) but not the TFNO (0.0250).
+2. Rollout / window ≤ 2 for the IC-path WPO in every seed, and > 2 for the TFNO: **fails.** The IC-path WPO is at
+   2.05–2.18; the TFNO is above 2, as predicted.
+3. The IC-path WPO has the lowest rollout error: **holds** (0.054 against 0.060 and 0.061, about 10 % lower).
+
+**Reading.**
+- In a nonlinear system, every model roughly doubles its error over 4 chained windows. Each window starts from
+  a predicted rather than a true field.
+- Sharing the poles between the initial state and the forced response gives the smallest growth and the lowest
+  rollout error, but only by about 10 %. That is a modest structural gain, not the exactness of the linear case.
+- Next steps from the plan: the semigroup regulariser ‖G(t+s)[u₀] − G(s)[G(t)[u₀]]‖ during training, and training
+  on predicted initial fields (pushforward).
