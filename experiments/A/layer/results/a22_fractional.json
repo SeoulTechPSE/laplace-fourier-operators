@@ -1,0 +1,302 @@
+[
+ {
+  "regime": "full",
+  "seed": 0,
+  "kind": "poly",
+  "ratio": {
+   "test_in": 8.535083036860089
+  },
+  "disp_in": 0.20035106172367723,
+  "disp_out": null,
+  "oracle": {
+   "test_in": 0.005733063304338545
+  },
+  "seconds": 6.6
+ },
+ {
+  "regime": "full",
+  "seed": 0,
+  "kind": "mlp",
+  "ratio": {
+   "test_in": 1.0310265113663104
+  },
+  "disp_in": 0.0055207896499965495,
+  "disp_out": null,
+  "oracle": {
+   "test_in": 0.005733063304338545
+  },
+  "seconds": 31.8
+ },
+ {
+  "regime": "full",
+  "seed": 1,
+  "kind": "poly",
+  "ratio": {
+   "test_in": 7.187284795919212
+  },
+  "disp_in": 0.1910735195649553,
+  "disp_out": null,
+  "oracle": {
+   "test_in": 0.007400940258995441
+  },
+  "seconds": 10.2
+ },
+ {
+  "regime": "full",
+  "seed": 1,
+  "kind": "mlp",
+  "ratio": {
+   "test_in": 1.037956402364049
+  },
+  "disp_in": 0.007374702371442564,
+  "disp_out": null,
+  "oracle": {
+   "test_in": 0.007400940258995441
+  },
+  "seconds": 48.1
+ },
+ {
+  "regime": "full",
+  "seed": 2,
+  "kind": "poly",
+  "ratio": {
+   "test_in": 6.739645319827989
+  },
+  "disp_in": 0.28799188367513007,
+  "disp_out": null,
+  "oracle": {
+   "test_in": 0.007158755776533864
+  },
+  "seconds": 11.1
+ },
+ {
+  "regime": "full",
+  "seed": 2,
+  "kind": "mlp",
+  "ratio": {
+   "test_in": 1.020662136971742
+  },
+  "disp_in": 0.006250330328885385,
+  "disp_out": null,
+  "oracle": {
+   "test_in": 0.007158755776533864
+  },
+  "seconds": 47.5
+ },
+ {
+  "regime": "full",
+  "seed": 3,
+  "kind": "poly",
+  "ratio": {
+   "test_in": 5.4291246467793055
+  },
+  "disp_in": 0.29777626768100296,
+  "disp_out": null,
+  "oracle": {
+   "test_in": 0.008972894164873665
+  },
+  "seconds": 12.0
+ },
+ {
+  "regime": "full",
+  "seed": 3,
+  "kind": "mlp",
+  "ratio": {
+   "test_in": 1.0232520538963845
+  },
+  "disp_in": 0.01368880589589579,
+  "disp_out": null,
+  "oracle": {
+   "test_in": 0.008972894164873665
+  },
+  "seconds": 48.6
+ },
+ {
+  "regime": "full",
+  "seed": 4,
+  "kind": "poly",
+  "ratio": {
+   "test_in": 7.211566934976383
+  },
+  "disp_in": 0.3531905236706424,
+  "disp_out": null,
+  "oracle": {
+   "test_in": 0.007611231381365038
+  },
+  "seconds": 10.2
+ },
+ {
+  "regime": "full",
+  "seed": 4,
+  "kind": "mlp",
+  "ratio": {
+   "test_in": 1.0229376898173705
+  },
+  "disp_in": 0.007059218662182576,
+  "disp_out": null,
+  "oracle": {
+   "test_in": 0.007611231381365038
+  },
+  "seconds": 23.0
+ },
+ {
+  "regime": "band",
+  "seed": 0,
+  "kind": "poly",
+  "ratio": {
+   "test_in": 4.7690515211554185,
+   "test_out": 5331.871752740613
+  },
+  "disp_in": 0.05848597012002277,
+  "disp_out": 0.9757318874252507,
+  "oracle": {
+   "test_in": 0.005367061635787721,
+   "test_out": 0.009938057170385836
+  },
+  "seconds": 6.2
+ },
+ {
+  "regime": "band",
+  "seed": 0,
+  "kind": "mlp",
+  "ratio": {
+   "test_in": 1.0096294736186846,
+   "test_out": 17.52094293589504
+  },
+  "disp_in": 0.001432859326082064,
+  "disp_out": 0.26618892561988056,
+  "oracle": {
+   "test_in": 0.005367061635787721,
+   "test_out": 0.009938057170385836
+  },
+  "seconds": 23.0
+ },
+ {
+  "regime": "band",
+  "seed": 1,
+  "kind": "poly",
+  "ratio": {
+   "test_in": 3.7961887182624214,
+   "test_out": 3511.6169046863183
+  },
+  "disp_in": 0.053471022978608555,
+  "disp_out": 0.9681984003656573,
+  "oracle": {
+   "test_in": 0.007044202627981655,
+   "test_out": 0.013041221433310452
+  },
+  "seconds": 6.4
+ },
+ {
+  "regime": "band",
+  "seed": 1,
+  "kind": "mlp",
+  "ratio": {
+   "test_in": 1.008205731623393,
+   "test_out": 12.844958045362288
+  },
+  "disp_in": 0.001731886966322559,
+  "disp_out": 0.24903829880754738,
+  "oracle": {
+   "test_in": 0.007044202627981655,
+   "test_out": 0.013041221433310452
+  },
+  "seconds": 23.3
+ },
+ {
+  "regime": "band",
+  "seed": 2,
+  "kind": "poly",
+  "ratio": {
+   "test_in": 3.9389686366041254,
+   "test_out": 4363.182766217311
+  },
+  "disp_in": 0.05364704309622069,
+  "disp_out": 0.9663785079153142,
+  "oracle": {
+   "test_in": 0.006369294601193132,
+   "test_out": 0.012061023547800746
+  },
+  "seconds": 6.4
+ },
+ {
+  "regime": "band",
+  "seed": 2,
+  "kind": "mlp",
+  "ratio": {
+   "test_in": 1.0107160256064933,
+   "test_out": 15.060012880944676
+  },
+  "disp_in": 0.0006677637136086998,
+  "disp_out": 0.2498893427630527,
+  "oracle": {
+   "test_in": 0.006369294601193132,
+   "test_out": 0.012061023547800746
+  },
+  "seconds": 23.2
+ },
+ {
+  "regime": "band",
+  "seed": 3,
+  "kind": "poly",
+  "ratio": {
+   "test_in": 3.276456646103317,
+   "test_out": 3947.956508493897
+  },
+  "disp_in": 0.05585121639029565,
+  "disp_out": 0.9588784124605796,
+  "oracle": {
+   "test_in": 0.007805497076691985,
+   "test_out": 0.012691232210405981
+  },
+  "seconds": 6.1
+ },
+ {
+  "regime": "band",
+  "seed": 3,
+  "kind": "mlp",
+  "ratio": {
+   "test_in": 1.0100954933379958,
+   "test_out": 12.775865958632009
+  },
+  "disp_in": 0.002719035873911776,
+  "disp_out": 0.25095729533133776,
+  "oracle": {
+   "test_in": 0.007805497076691985,
+   "test_out": 0.012691232210405981
+  },
+  "seconds": 22.6
+ },
+ {
+  "regime": "band",
+  "seed": 4,
+  "kind": "poly",
+  "ratio": {
+   "test_in": 3.5855706224288784,
+   "test_out": 4757.511668815029
+  },
+  "disp_in": 0.05804222320783977,
+  "disp_out": 0.958952311859787,
+  "oracle": {
+   "test_in": 0.007124207683835817,
+   "test_out": 0.012130665069474987
+  },
+  "seconds": 6.3
+ },
+ {
+  "regime": "band",
+  "seed": 4,
+  "kind": "mlp",
+  "ratio": {
+   "test_in": 1.0108747902926387,
+   "test_out": 12.215309462643534
+  },
+  "disp_in": 0.0010689941662802285,
+  "disp_out": 0.22827305296253786,
+  "oracle": {
+   "test_in": 0.007124207683835817,
+   "test_out": 0.012130665069474987
+  },
+  "seconds": 22.9
+ }
+]

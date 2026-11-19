@@ -174,6 +174,15 @@ Things to know:
 
 ## Log
 
+### 2026-11-19 — (A) RQ4 on fractional diffusion: the MLP wins when λ(k) is not polynomial
+
+- Done: `experiments/A/layer/a22_fractional.py` (predictions 3f100d0), λ = −0.15 |k|^1.5.
+- Results: trained on k ≤ 16, the MLP is at 1.02–1.04× the oracle (dispersion error 0.6–1.4 %) and the polynomial at
+  5.4–8.5× (19–35 %). Out of band (trained on k ≤ 8), both fail: polynomial 3500–5300×, MLP 12–18×. Both
+  predictions hold.
+- Decisions: RQ4 answer. Use the polynomial when its in-band error matches the MLP's (the form is then supported and
+  extrapolation is trusted); otherwise use the MLP and do not extrapolate.
+
 ### 2026-11-19 — (A) delay identification under output noise: the delay layer holds, ARX breaks
 
 - Done: `experiments/A/process/a21_noise.py` (predictions 9ab74fe).

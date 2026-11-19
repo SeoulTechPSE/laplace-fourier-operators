@@ -232,8 +232,16 @@ and test at k = 9–16 (a19; diffusion, ADR, beam; 5 seeds; same joint fit).
 - Out of band, the polynomial stays at 1.00–1.08× the oracle with a dispersion error ≤ 0.5 %. The MLP is at 4.6–44×
   with 13–55 %.
 
-When the form is right, the polynomial wins on both accuracy and interpretability. The MLP is for systems whose
-λ(k) is not polynomial, which none of these is.
+When the form is right, the polynomial wins on both accuracy and interpretability.
+
+With a dispersion relation that is not polynomial, fractional diffusion λ = −0.15|k|^1.5 (a22), the order reverses:
+
+- Trained on k ≤ 16, the MLP is at 1.02–1.04× the oracle and the polynomial at 5.4–8.5×.
+- Out of band, neither extrapolates. The wrong polynomial is catastrophic there (3500×, driven by its k⁴ term); the
+  MLP degrades to 12–18×.
+
+This gives a practical check: fit both. If the polynomial matches the MLP in band, its form is supported and its
+extrapolation can be trusted. If not, use the MLP and do not extrapolate.
 
 ## Delay: a first process-dynamics step {#sec-delay}
 
@@ -245,6 +253,8 @@ sample time (a20).
 - **SOPDT:** θ within 1.1 %, K and τ within 0.08 %.
 - **Pole-only layer (4 complex poles):** fits to 1.06–1.95× the oracle, but has no delay to read.
 - **ARX:** resolves θ only to the sample.
+- **Under 5 % output noise (a21):** the delay layer, fitted by output error, keeps FOPDT exact to 0.2 % and SOPDT's
+  θ within 3.3 %. Equation-error ARX is biased by the noise, with τ off by 52–86 %.
 
 ## Discussion
 

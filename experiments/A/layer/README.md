@@ -399,3 +399,32 @@ physics, because its structure is the physics. The trade-off is not accuracy aga
 band: the polynomial wins both whenever its form is right. What the MLP buys is freedom from a wrong form, which
 none of these systems needed. A system whose λ(k) is not polynomial (nonlocal, fractional) is the test that would
 favour the MLP.
+
+## RQ4, second test (2026-11-19): a non-polynomial dispersion relation
+
+`a22_fractional.py` → `results/a22_fractional.md` (predictions 3f100d0). Fractional diffusion,
+λ(k) = −0.15 |k|^1.5. Before training, the best least-squares fit of {1, k², k⁴} is 2.3 % off over k = 1..16; fitted
+on k ≤ 8 it is 71 % off over k = 9..16. a19 protocol, 5 data seeds. The oracle uses the exact λ(k).
+
+| regime | μ(k) | in-band test / oracle | out-of-band test / oracle | dispersion error, in band | k = 9..16 |
+|---|---|---|---|---|---|
+| full (train k ≤ 16) | polynomial | 5.4–8.5 | – | 19–35 % | – |
+| full | MLP | **1.02–1.04** | – | **0.55–1.4 %** | – |
+| band (train k ≤ 8) | polynomial | 3.3–4.8 | 3500–5300 | 5.3–5.8 % | 96–98 % |
+| band | MLP | **1.01** | **12–18** | **0.07–0.27 %** | 23–27 % |
+
+**Predictions against results: both hold.**
+1. `full`: the MLP reaches ≤ 1.2× the oracle with a dispersion error ≤ 1 % in 4 of 5 seeds (seed 3: 1.4 %). The
+   polynomial is ≥ 1.5 % off and has a higher test error in every seed.
+2. `band`: both are > 10 % off out of band in every seed.
+
+**Reading (RQ4, with a19).**
+
+- With the right form (a19), the polynomial wins in band and is the only one that extrapolates. With the wrong form
+  (here), the MLP wins in band by 5–8×. Neither extrapolates.
+- When the polynomial's form is wrong, its extrapolation is catastrophic: the k⁴ term drives the error to 3500×.
+  The MLP degrades gracefully (12–18×).
+- **A practical check.** Fit both. If the polynomial's in-band error matches the MLP's, its form is supported and
+  its extrapolation can be trusted. If it is clearly worse (5–8× here, against 1.00 in a19), the form is wrong.
+- The polynomial's learned dispersion error (19–35 %) is far above its least-squares floor (2.3 %). The joint fit
+  does not reach the best polynomial when no polynomial is right. Not analysed further.
