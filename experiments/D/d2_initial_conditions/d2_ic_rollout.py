@@ -31,7 +31,7 @@ its forcing is that window's segment.
 2. `noic`: test error >= 5x the oracle in every seed.
 3. The 4-window rollout error of `ic` over [0, 20] is <= 1.5x its single-window test error, in every seed.
 
-    python experiments/D/d2_ic/d2_ic_rollout.py      # results/d2_ic_rollout.md / .json
+    python experiments/D/d2_initial_conditions/d2_ic_rollout.py      # results/d2_ic_rollout.md / .json
 """
 from __future__ import annotations
 
