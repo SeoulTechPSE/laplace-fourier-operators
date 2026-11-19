@@ -208,3 +208,40 @@ Oracle test error 5.4–9.5e-3.
   modes, given enough iterations (1800 more than pre-registered for the weakest claimed mode).
 - What was learned is the operator's eigen-decomposition, not D(x). Recovering D(x) from it is an inverse
   Sturm–Liouville problem, not attempted here. Unlike d3–d3e, the poles here are free per mode, with no law in k.
+
+## Eighth pass (2026-11-20): the variable coefficient learned as a function D(x)
+
+`d3h_coefficient.py` → `results/d3h_coefficient.md` (predictions 3ea4944; fix after the first launch 54fc498). The
+parameter is D(x) = Σ_{j<6} d_j cos(jπx) itself (6 reals). The layer's basis and poles are the eigen-decomposition
+of the Galerkin operator A(d) = Σ d_j A_j, which is linear in d (`torch.linalg.eigh`). Same system, data and
+seeds as d3f (`cos`, in the span), plus `exp`: D(x) = 0.01·3^x, not in the span (best 6-cosine approximation
+1.06 % off). 4 starts, each run to convergence with the d3g rule.
+
+| case | test / oracle | D(x) error (relative L2) | eigenvalue error m ≤ 8 | iterations |
+|---|---|---|---|---|
+| cos | **1.0000–1.0006** | **0.96–2.5e-4** | ≤ 1.8e-4 | 600 |
+| exp | 1.08–1.13 | 1.07–1.08 % (floor 1.06 %) | ≤ 1.9e-3 | 600 |
+
+**Fix after the first launch** (recorded in the docstring). In `cos` seeds 0 and 2, an L-BFGS line search stepped
+to a D(x) with negative values. The poles turned positive, the response overflowed and eigh failed. The failure was
+caught as a chunk without progress, which stopped the fit at 9–10× the oracle; seed 3 then crashed. Seed 1 stayed
+in the valid region and was at the oracle. Fix, with model and predictions unchanged: d = 0.02 θ, and a penalty in
+place of the eigen-solve where min D(x) < 1e-4. All seeds were rerun.
+
+**Predictions against results.**
+1. `cos`: ≤ 1.2× the oracle, D(x) within 1 %, λ₁..₈ within 1 %, every seed: **holds** (D(x) within 2.5e-4).
+2. `exp`: ≤ 1.2× and D(x) within 2 %, every seed: **holds.** The error is the truncation floor: the fit lands on the
+   best 6-cosine approximation (1.07–1.08 % against 1.06 %). The 1.08–1.13× is that approximation's own error
+   (1.12× at the best approximation, measured before the fit).
+3. Median iterations below d3f `mix`'s 2400 + 1800: **holds** (600, the minimum of two chunks).
+
+**Reading.**
+- Parameterising the coefficient instead of the basis turns a 528-parameter fit that needed thousands of
+  iterations into a 6-parameter fit that converges in 600, and recovers the physical coefficient to 1e-4.
+- Outside the span, the fit finds the best approximation in the span. The error then reflects the expansion, not
+  the identification.
+- With d3e, this is the second case where a parameter that sets the basis is best learned as the physical parameter
+  (β, D(x)), with the basis computed from it. Free basis entries (d3f `mix`) also converge, but slowly and without
+  giving the coefficient.
+- The positivity guard was needed because a line search can leave the physical region. With D(x) > 0, the operator
+  stays negative definite and the eigen-solve well conditioned.
