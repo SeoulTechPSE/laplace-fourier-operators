@@ -11,3 +11,5 @@ Plan: `docs/proposal_D_nonperiodic_initial_conditions.qmd`
 Input families (step, ramp, PRBS, non-periodic smooth signals) are in
 `lfo.data.lti`. Hand-offs: D1 decides the time-axis computation for (A) by month 6;
 D2 delivers the initial-condition encoder to (A) application 2 by month 17.
+
+Working paper: `paper/d_paper.qmd` (D1, D2 first pass, boundaries; 2026-11-19).

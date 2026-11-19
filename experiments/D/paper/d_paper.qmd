@@ -1,0 +1,153 @@
+---
+title: "Non-Periodic Inputs, Initial Conditions and Boundaries for Pole-Based Neural Operators"
+author: "Kee-Youn Yoo"
+date: 2026-11-19
+format:
+  pdf:
+    papersize: a4
+    geometry: margin=22mm
+    mainfont: DejaVu Serif
+    fontsize: 10pt
+    number-sections: true
+    tbl-colwidths: false
+  html:
+    embed-resources: true
+    number-sections: true
+bibliography: ../../C/paper/references.bib
+csl: ../../C/paper/ieee.csl
+---
+
+<!-- Project D working paper, 2026-11-19. Not for submission. Every number comes from
+experiments/D/d1_inputs/README.md (D1), experiments/D/d2_initial_conditions/README.md (D2) and
+experiments/D/d3_boundary/README.md (boundaries); every prediction was committed before its run (hashes there). -->
+
+## Abstract {.unnumbered}
+
+Laplace-type neural operators compute the time axis with a Fourier series, which assumes periodic inputs. They
+handle initial conditions only implicitly, and they cannot represent spatial boundaries. We address all three
+within one pole-based layer.
+
+1. **Time axis (D1).** On non-periodic inputs the Fourier path costs 1e-4 to 1e-3 relative error from periodicity
+   alone, about 100× more than an exact first-order-hold (FOH) recursion on ramps and smooth signals. The FOH
+   recursion is causal, O(n) and window-independent, and became the default time axis of project A.
+2. **Initial conditions (D2).** A free-response term that shares the poles with the forced response adds only
+   one coefficient function γ(k). The trained layer recovers γ ≡ 1 to 1e-5, and four chained windows reproduce the
+   oracle's rollout exactly.
+3. **Boundaries.** Time-varying Dirichlet values enter the sine modes as a forcing channel whose coefficient
+   c(k) = 2Dk/L is itself a law in k. Sharing the poles, the layer recovers D and c(k) at the oracle floor; without
+   the channel, the error is 80–100× larger.
+
+## Introduction
+
+The Laplace neural operator [@cao2024lno] and its variants [@ha2026lfno] write a system's response as poles and
+residues, with the time axis computed by an FFT over the window. Three things that physical data carry fall
+outside that setup:
+
+- inputs that do not repeat at the ends of the window (steps, ramps, PRBS);
+- non-zero initial states;
+- boundaries in space.
+
+Project D asks how to handle each without losing the pole structure that projects A and C rely on. Every
+experiment below was pre-registered, and failed predictions are reported as such.
+
+## The time axis (D1) {#sec-d1}
+
+**Oracle comparison.** We computed, without any training, the response of the true pole–residue systems to 100
+inputs per family with each time-axis representation. The inputs are defined on a 32× finer grid and seen only at
+the samples.
+
+| input family | Fourier (LNO) | Fourier, 2× padding | FOH recursion | Chebyshev, degree 64 |
+|---|---|---|---|---|
+| step | 1.7–2.8e-3 | 1.6–2.7e-3 | 1.6–2.7e-3 | 7.3e-3–1.1e-2 |
+| ramp | 0.7–1.8e-3 | 1.8–2.9e-4 | **1.2–2.8e-6** | 1.0–1.6e-4 |
+| PRBS | 0.9–1.0e-2 | 0.9–1.0e-2 | 0.9–1.0e-2 | 2.9–4.5e-2 |
+| smooth, mismatched ends | 4.1–6.7e-4 | 3.0–4.9e-4 | 5.9–7.5e-6 | **1.7–2.2e-8** |
+| periodic (control) | 2.9–4.5e-6 | 2.9–4.4e-4 | 1.8–4.0e-5 | **0.5–1.2e-7** |
+
+: Median relative L2 error of the representation alone (systems p2, p4, p6 of project C). {#tbl-d1}
+
+- The Fourier path's error on non-periodic inputs is 10–100× its error on the periodic control. It is spread over
+  the whole window rather than concentrated at the ends, and it falls only as n^{−1}.
+- On steps and PRBS every path is limited by the sampling: a jump between samples cannot be located.
+- A global Chebyshev fit is the best representation on smooth inputs. It is numerically unusable at high degree
+  (errors up to 1e7 at degree 256) and poor at discontinuities.
+- **Trained layers** (E2 recipe, fine-grid truth): the Fourier and FOH layers reach the same test error, the
+  sampling floor (3.7e-3 against 3.4e-3). They recover the complex poles in every run and the fast real pole −2 in
+  6 of 8 and 4 of 8 runs. The FOH layer's large advantage in (C) E4 came from a model-class match with data that
+  had a first-order hold.
+
+**Decision** (user, 2026-11-18): the FOH exponential-integrator recursion is the default time axis, with piecewise
+Chebyshev as an option for smooth inputs. It is never worse than Fourier except on periodic inputs, and it is causal,
+O(n), and independent of the window length. Project A's time extrapolation and Δt transfer rest on that
+independence.
+
+## Initial conditions and rollout (D2) {#sec-d2}
+
+For a pole-based layer, a non-zero initial field u₀ adds the free response
+
+$$\hat u(k,t) \mathrel{+}= \hat u_0(k)\sum_n \gamma_n(k)\, e^{\mu_n(k)\,t},$$
+
+which shares the poles $\mu_n(k)$ with the forced response. Only $\gamma_n(k)$, a polynomial in k² like the
+residues, is new. Semigroup consistency is then structural: the last field of one window is the next window's
+initial field. A unit test checks that two chained windows reproduce the exact solution to 1e-9.
+
+**Periodic ADR.** Each window has a random initial field (modes 1–16), the forcing is at half amplitude, and
+T = 5. We compare the layer with the initial-condition path (`ic`) and a layer that sees only the forcing (`noic`).
+Rollout chains 4 windows over [0, 20].
+
+| model | test / oracle | recovered D, v, k_r | max abs(γ − 1) | rollout / oracle rollout |
+|---|---|---|---|---|
+| with IC path | **1.00** | 0.0500, 0.5000, 0.2000 | **≤ 1.1e-5** | **1.000–1.001** |
+| without IC path | 570–750 | – | – | – |
+
+: Initial-condition path on periodic ADR, 5 data seeds. {#tbl-d2}
+
+- One pre-registered prediction failed: rollout error ≤ 1.5× the single-window test error, which reached 1.73 in
+  one seed. The right reference is the oracle's own rollout, which the model matches exactly; the ratio to the
+  single-window error reflects the different sample sets through the sampling floor.
+- **Open:** deep nonlinear models need a state readout and the plan's semigroup regulariser before windows can be
+  chained.
+
+## Boundaries in space {#sec-bc}
+
+A periodic layer cannot represent boundaries. On [0, L] with Dirichlet values a(t), b(t), the sine transform
+diagonalises diffusion, and the boundary values enter mode m as a forcing:
+
+$$\frac{d\hat u_m}{dt} = \lambda(k_m)\,\hat u_m + \hat f_m(t) + c(k_m)\,\big(a(t) - (-1)^m b(t)\big),\qquad c(k) = \frac{2Dk}{L}.$$
+
+The model is the wavenumber pole layer on sine modes plus a boundary channel $c(k) = c_1k + c_3k^3$ that shares the
+poles.
+
+| model | test / oracle | D̂ (0.02) | ĉ₁ (0.04) |
+|---|---|---|---|
+| sine modes + boundary channel | **1.00–1.04** | **0.01992–0.02007** | **0.03995–0.04001** |
+| sine modes, no boundary channel | 82–104 | – | – |
+| periodic layer | 84–105 | – | – |
+
+: Diffusion on [0, 1] with time-varying Dirichlet values, 63 interior points, 5 data seeds. {#tbl-bc}
+
+- The truth is the 63-mode sine-Galerkin solution. A finite-difference truth was dropped before any fit: its
+  discrete eigenvalues are not polynomial over all modes, so a D-recovery test would have tested the
+  discretisation.
+- **Where it stops:** project A's Danckwerts reactor (a27) is a convective problem with an inlet and an outlet,
+  observed only at the outlet. There the modal poles were not identifiable, and a dead time plus lags described the
+  data best. Boundaries work as a channel when the basis diagonalises the operator and the field is observed.
+
+## Discussion
+
+The three pieces share one structure: every input enters through the same poles.
+
+- The forcing enters through the residues β(k).
+- The initial field enters through γ(k).
+- The boundary values enter through c(k).
+
+Each coefficient is a low-order law in k, and each was identified at the oracle floor. What makes this possible is
+an exact, causal time axis that does not assume periodicity (D1).
+
+## Limitations {.unnumbered}
+
+- D2 is linear so far; a deep nonlinear rollout has not been tested.
+- Boundaries: Dirichlet diffusion only; Neumann, Robin and advective boundaries remain.
+- Every test error is limited by the sampling floor of steps and PRBS (about 1 %).
+
+## References {.unnumbered}
