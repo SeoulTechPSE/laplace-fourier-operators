@@ -50,3 +50,33 @@ the FOPDT step response at a fractional delay, and the gradient against finite d
 - The sampling floor (~1 %) hides the pole-only model's structural error here. With smooth inputs only, or noise
   added, the comparison would change. Next steps: noise, then the CSTR (linear-probe poles) and the
   axial-dispersion reactor (delay as −i v k).
+
+## Output noise (2026-11-19)
+
+`a21_noise.py` → `results/a21_noise.md` (predictions 9ab74fe). White noise (1 % or 5 % of each signal's rms) is
+added to the training and validation outputs; the test set is clean. Setup and fits are a20's.
+
+| system | noise | model | test / oracle | θ error (max) | K error | τ error (max) |
+|---|---|---|---|---|---|---|
+| FOPDT | 1 % | delay layer | 1.01 | 0.06 % | 0.03 % | 0.13 % |
+| FOPDT | 1 % | ARX | 1.46–1.90 | 2.2 % | 0.9 % | 5.5 % |
+| FOPDT | 5 % | delay layer | 1.03–1.05 | 0.08 % | 0.10 % | 0.19 % |
+| FOPDT | 5 % | ARX | 15–22 | 17 % | 9.5 % | 64 % |
+| SOPDT | 1 % | delay layer | 1.01–1.03 | 3.1 % | 0.07 % | 0.64 % |
+| SOPDT | 1 % | ARX | 7.5–11 | 33 % | 10 % | 87 % |
+| SOPDT | 5 % | delay layer | 1.03–1.08 | 3.3 % | 0.19 % | 1.3 % |
+| SOPDT | 5 % | ARX | 6.8–11 | 57 % | 5.5 % | 86 % |
+
+**Predictions against results.**
+
+1. Delay layer within 2 % at 1 % noise and within 5 % at 5 % noise: **fails narrowly.** SOPDT's θ is off by 3.1 %
+   at 1 % noise; everything else is within bounds, and FOPDT is within 0.2 % even at 5 % noise.
+2. ARX: some τ more than 5 % off at 5 % noise in ≥ 4 of 5 seeds: **holds** (52–86 % in every seed).
+
+**Reading.**
+
+- The delay layer is fitted by output error, simulating the model against the data, so noise only adds variance.
+  At 5 % noise it stays at the oracle (≤ 1.08×).
+- ARX is fitted by equation error, so noisy past outputs bias it. On SOPDT it breaks down already at 1 % noise.
+- SOPDT's θ remains the least identifiable parameter (θ–τ₂ trade-off, as in a20). It scatters by about 3 % under
+  noise while τ₁ and τ₂ hold to 1.3 %.

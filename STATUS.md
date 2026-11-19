@@ -174,6 +174,14 @@ Things to know:
 
 ## Log
 
+### 2026-11-19 — (A) delay identification under output noise: the delay layer holds, ARX breaks
+
+- Done: `experiments/A/process/a21_noise.py` (predictions 9ab74fe).
+- Results: at 5 % output noise, the delay layer is at ≤ 1.08× the oracle, with FOPDT θ, K, τ within 0.2 % and SOPDT
+  θ within 3.3 % (τ within 1.3 %). ARX (equation error) has τ off by 52–86 % and a test error 7–22× the oracle.
+  Prediction 1 fails narrowly (SOPDT θ 3.1 % at 1 % noise, against a 2 % bound); 2 holds.
+- Next: CSTR (linear probe at a steady state); axial-dispersion reactor (lumped θ against λ(k) = −ivk − Dk² − k_r).
+
 ### 2026-11-19 — (A) 2D Cahn–Hilliard: a tuned, budget-matched TFNO stays 2.6x behind
 
 - Done: `experiments/A/deep/a18_ch2d_tuned.py` (predictions 9d0cfa7): two Tucker configurations within 10 % of the
