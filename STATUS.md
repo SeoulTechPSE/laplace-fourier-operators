@@ -174,6 +174,16 @@ Things to know:
 
 ## Log
 
+### 2026-11-19 — (A) RQ4: the polynomial pole function extrapolates beyond the forced band; the MLP does not
+
+- Done: `mu_mlp` option (29cf0ef, test; pytest 56/56 at the time). `experiments/A/layer/a19_mlp_band.py` (predictions
+  a06eab9): training forced at k ≤ 8, testing at k = 9–16; diff, adr, beam; 5 data seeds.
+- Results: in-band both at the oracle (MLP ≤ 1.05×). Out of band, the polynomial is at 1.00–1.08× with a dispersion
+  error ≤ 0.46 %; the MLP is at 4.6–44× with 13–55 %. All three predictions hold.
+- Decisions: the polynomial is the default μ(k). The MLP is reserved for systems whose λ(k) is not polynomial.
+- Next: a non-polynomial λ(k) (e.g. fractional diffusion −|k|^α, or a nonlocal kernel) to test where the MLP pays
+  off.
+
 ### 2026-11-19 — (A) Application 1 started: exact delayed FOH layer; FOPDT / SOPDT
 
 - Done: `lfo.models.PoleResidueDelay` (5814b1b, 3 tests; pytest 59/59); `experiments/A/process/a20_fopdt.py`

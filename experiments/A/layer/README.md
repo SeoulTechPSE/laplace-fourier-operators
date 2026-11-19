@@ -369,3 +369,33 @@ loss. `a7_joint.fit` now treats that like a non-finite loss, and the run resumed
   0, 3, 5, 7, 8 still fail, by the other mechanisms seen in a7 (dipole pairs, over-damping).
 - Default for later work: `re_leak = 0.05` whenever `re_max` is used. Every deep model in `experiments/A/deep`
   uses it.
+
+## RQ4 (2026-11-19): polynomial against MLP pole functions
+
+`a19_mlp_band.py` → `results/a19_mlp_band.md` (predictions a06eab9). Layer option `mu_mlp` (29cf0ef): μ_n(k) from
+an MLP of k / k_ref (two tanh layers of 32), with residues still polynomial.
+
+**Setup.** Training and validation data are forced at k ≤ 8 only. One test set is forced in-band (k ≤ 8), the other
+out of band (k = 9–16). Systems: diff, adr, beam; 5 data seeds. Both models use the a8 joint fit (8 starts, L-BFGS,
+leaky cap).
+
+| system | μ(k) | in-band test / oracle | out-of-band test / oracle | dispersion error, k ≤ 8 | k = 9–16 |
+|---|---|---|---|---|---|
+| diff | polynomial | 1.00 | **1.00** | 1e-4 – 5e-4 | **3e-4 – 2e-3** |
+| diff | MLP | 1.01–1.05 | 28–44 | 1e-3 – 9e-3 | 0.47–0.55 |
+| adr | polynomial | 1.00 | **1.00–1.01** | 3e-4 – 9e-4 | **1e-3 – 5e-3** |
+| adr | MLP | 1.00–1.03 | 4.6–19 | 5e-4 – 4e-3 | 0.13–0.33 |
+| beam | polynomial | 1.00–1.01 | **1.00–1.08** | 7e-5 – 2e-4 | **2e-4 – 1e-3** |
+| beam | MLP | 1.03–1.05 | 29–41 | 6e-3 – 7e-3 | 0.27–0.38 |
+
+**Predictions against results: all hold.**
+1. Both fit in-band (≤ 1.2× the oracle).
+2. Out-of-band dispersion error: polynomial ≤ 5 % (max 0.46 %); MLP > 10 % (13–55 %), in every seed.
+3. Out-of-band test: polynomial ≤ 1.5× (max 1.08); MLP > 3× (4.6–44), in every seed.
+
+**Reading (RQ4).** Inside the band the data excite, the MLP is almost as accurate as the polynomial: its test error
+is within 5 %, though its dispersion error is 5–30× larger. Outside the band, only the polynomial carries the
+physics, because its structure is the physics. The trade-off is not accuracy against interpretability inside the
+band: the polynomial wins both whenever its form is right. What the MLP buys is freedom from a wrong form, which
+none of these systems needed. A system whose λ(k) is not polynomial (nonlocal, fractional) is the test that would
+favour the MLP.
