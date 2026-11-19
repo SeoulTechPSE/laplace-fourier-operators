@@ -56,7 +56,10 @@ VARIANTS = {"base": ("lno", "original", 1.0),
             "lnotb_stable_plr10": ("lnotb", "stable", 10.0),
             # twelfth pass: textbook wiring with one set of poles shared by all channel pairs (modes poles, not
             # width^2 x modes); residues stay per channel pair
-            "lnots_stable_plr10": ("lnots", "stable", 10.0)}
+            "lnots_stable_plr10": ("lnots", "stable", 10.0),
+            # thirteenth pass: shared poles, but only N_FEW of them (about one per small-signal mode)
+            "lnots4_stable_plr10": ("lnots4", "stable", 10.0)}
+N_FEW = 4
 CKPT = ROOT / "runs" / "C" / "e5"
 RESULTS = HERE / "results" / "e5_train"
 
@@ -130,12 +133,13 @@ def build(variant, grids, seed, data_tag="orig"):
     torch.manual_seed(seed)
     t = torch.as_tensor(np.asarray(grids["t"], float).ravel(), dtype=torch.float32)
     gen = torch.Generator().manual_seed(1000 + seed)
-    if kind in ("lno", "lnotb", "lnots"):
+    if kind in ("lno", "lnotb", "lnots", "lnots4"):
         model, _ = RL.build("lno", RL.CASES[case_of(data_tag)], grids)
-        if kind in ("lnotb", "lnots"):
+        if kind in ("lnotb", "lnots", "lnots4"):
             c = model.conv0
             w, _, k = c.weights_pole.shape
-            model.conv0 = PoleResidueTS1d(w, w, k, t) if kind == "lnotb" else SharedPoleTS1d(w, k, t)
+            model.conv0 = (PoleResidueTS1d(w, w, k, t) if kind == "lnotb" else
+                           SharedPoleTS1d(w, N_FEW if kind == "lnots4" else k, t))
         if init == "stable":
             stable_init(pole_param(model.conv0), t, gen)
     else:
@@ -187,7 +191,7 @@ def run(variant, seed, device, data_tag="orig"):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--variant", nargs="+", default=[v for v in VARIANTS if v not in (
-        "tied4o_stable_plr10", "lnotb_stable_plr10", "lnots_stable_plr10")])
+        "tied4o_stable_plr10", "lnotb_stable_plr10", "lnots_stable_plr10", "lnots4_stable_plr10")])
     ap.add_argument("--seeds", nargs="+", type=int, default=[0, 1, 2, 3, 4])
     ap.add_argument("--data", default="orig", choices=["orig", "small", "mixed", "medium", "moderate", "pend_orig", "pend_medium", "pend_large", "wide", "pend_wide", "c0_orig", "c0_small", "c0_medium", "lz_orig", "lz_small", "lz_wide", "lz_r10_orig", "lz_r10_small", "lz_r10_wide"])
     a = ap.parse_args()
