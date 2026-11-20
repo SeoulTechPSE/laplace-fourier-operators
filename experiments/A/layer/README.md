@@ -428,3 +428,40 @@ on k ≤ 8 it is 71 % off over k = 9..16. a19 protocol, 5 data seeds. The oracle
   its extrapolation can be trusted. If it is clearly worse (5–8× here, against 1.00 in a19), the form is wrong.
 - The polynomial's learned dispersion error (19–35 %) is far above its least-squares floor (2.3 %). The joint fit
   does not reach the best polynomial when no polynomial is right. Not analysed further.
+
+## Application 2, stage 1 (2026-11-20): the spinodal linear regime across mean compositions
+
+`a29_spinodal.py` → `results/a29_spinodal.md` (predictions d8b5e58; solver extension 954e509). Unforced 1D
+Cahn–Hilliard (M = 0.1, κ = 0.04), started from a uniform composition φ₀ plus a small perturbation (per-mode
+amplitude 1e-4 to 1e-3), T = 5. Linearised: λ(k; φ₀) = Mk²(1 − 3φ₀²) − Mκk⁴, spinodal |φ₀| < 1/√3. The layer
+is the D2 initial-condition path alone: û(k, t) = γ(k) û₀(k) e^{μ(k, φ₀) t}, with φ₀ read from the mean of u₀.
+- `joint`: μ on {q, qφ₀², q², q²φ₀²}, q = (k/16)²; 6 reals.
+- `stable`: the same through −softplus(−μ) ≤ 0, the LNO's stability constraint.
+- `nophi`: no φ₀ dependence.
+Training compositions 0–0.7; held-out compositions 0.15, 0.35, 0.55 (only k = 1 unstable), 0.65, and 0.8 (outside
+the spinodal and beyond the training range). 5 data seeds, fits run to convergence.
+
+| model | test / oracle on held-out φ₀ (0.15 … 0.8) | φ̂_s (0.57735) | k̂_c at φ₀ = 0, 0.3, 0.5 (5, 4.272, 2.5) |
+|---|---|---|---|
+| joint | **0.995–1.006** | **0.57733–0.57736** | **5.0000, 4.2719, 2.4997–2.5000** |
+| stable | 130–1710 | 0.782–0.784 | 4.65, 4.31, 3.60 |
+| nophi | 106–1118 | – (no band) | – |
+
+The oracle floor is the nonlinear residual (5e-4 to 3.6e-3).
+
+**Predictions against results.**
+1. `joint`: ≤ 1.2× the oracle on held-out compositions, φ_s within 1 % and k_c within 1 % at φ₀ = 0, 0.3, 0.5,
+   in every seed: **holds** (φ_s within 3e-5, k_c within 1e-4).
+2. `stable` ≥ 10× inside the spinodal: **holds** (130–286×).
+3. `nophi` ≥ 10× on the held-out set: **holds** (106–1118×).
+
+**Reading.**
+- From early-time data at eight compositions, the layer recovers the whole stability diagram of the linear regime:
+  the band k_c(φ₀), k_max = k_c/√2, and the spinodal composition to 5 digits. It extrapolates to φ₀ = 0.8, outside
+  the training range and the spinodal, at the oracle. The model class contains the truth here; the result shows the
+  data identify it, not that the class was discovered.
+- The stability constraint is not a small bias. It forces Re μ ≤ 0 in the band, and the fit then distorts the
+  stable modes too (a₁₀ 140× too large, a spurious φ̂_s = 0.78), so it is 600–1700× off even outside the spinodal.
+- Composition enters only through the pole law. Without it, no single μ(k) fits both sides of the spinodal.
+- Next (plan stages 2–3): 2D, the nonlinear coarsening regime (structure-factor peak, L(t) ~ t^{1/3}), and M, κ as
+  inputs.

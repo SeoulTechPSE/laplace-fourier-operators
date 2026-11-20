@@ -202,6 +202,26 @@ Within a finite window, then, the probe of the whole operator does not identify 
 only when probe and layer structure agree: Re μ > 0 allowed, used, and located in the band. This is the same rule
 as (C)'s trust rule for poles.
 
+### Spinodal decomposition across compositions (application 2, stage 1) {#sec-spinodal}
+
+Around a uniform composition φ₀ the linearisation is λ(k; φ₀) = Mk²(1 − 3φ₀²) − Mκk⁴, unstable for
+k < k_c(φ₀) inside the spinodal |φ₀| < 1/√3. We trained the initial-condition path of project D alone,
+û(k, t) = γ(k) û₀(k) e^{μ(k, φ₀)t}, with φ₀ read from the mean of the initial field and μ a law in k² and φ₀² (6 reals).
+Training used early-time, unforced data at eight compositions (0 to 0.7); evaluation used five held-out ones.
+
+| model | test / oracle, held-out φ₀ | φ̂_s (0.57735) | k̂_c(0), k̂_c(0.3), k̂_c(0.5) |
+|---|---|---|---|
+| law in k² and φ₀² | **0.995–1.006** | **0.57733–0.57736** | **5.0000, 4.2719, 2.500** |
+| same, Re μ ≤ 0 (LNO constraint) | 130–1710 | 0.78 | 4.65, 4.31, 3.60 |
+| no φ₀ dependence | 106–1118 | – | – |
+
+: 1D Cahn–Hilliard, linear regime, 5 data seeds; the oracle floor is the nonlinear residual (≤ 3.6e-3). {#tbl-spinodal}
+
+- The layer recovers the stability diagram of the linear regime: k_c(φ₀) to 1e-4 and the spinodal to 3e-5. It
+  extrapolates to φ₀ = 0.8, beyond the training range and outside the spinodal.
+- The model class contains the truth, so this shows identifiability from early-time data, not discovery of the form.
+- The stability constraint is not a small bias. It distorts the stable modes as well and is off by up to 1700×.
+
 ## 2D deep operator {#sec-2d}
 
 The 2D layer and operator carry the same structure: Re μ is isotropic in |k|², with an advection vector and the
@@ -304,8 +324,8 @@ sample time (a20).
 - Two nonlinear systems, both with a known linearisation at rest.
 - One parameter budget (59 k); FNO-type baselines from neuraloperator with a learning-rate sweep but no
   architecture search.
-- The probe is a small-amplitude linearisation at u = 0; it says nothing about the linearisation around other
-  states.
+- The probe is a small-amplitude linearisation at u = 0. Linearisations about other uniform states were learned
+  only in the linear regime of one system (@sec-spinodal), not probed from a deep model.
 - The oracle floor of the data (steps and PRBS between samples) limits every test error to about 1 %.
 
 ## References {.unnumbered}
