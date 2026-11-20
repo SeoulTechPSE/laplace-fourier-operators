@@ -13,7 +13,7 @@ Each session appends one entry using the template at the bottom.
 | (A) Pole layer and linear validation | 5–10 | **started** (2026-11-18): wavenumber pole layer (FOH time axis, `lfo.models.wavenumber`); 1D diffusion, ADR, beam and 2D diffusion, ADR dispersion recovered in every seed (two-stage, or joint fit with a leaky cap); deep operator on Burgers, Cahn–Hilliard 1D / 2D; working paper draft | dispersion relations recovered (month 10) |
 | (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits, a bootstrap-calibrated order, certificate and order test; reduction-path unresolved rules fail, a location-calibrated split test flags the merge, a combined post-report rule leaves 1 false pole in 40 groups but does not carry over to new p6 E1 groups; an EIVML refit of the reports removes the EIV bias; EIVML through the whole pipeline helps only up to η_u = 0.05; an EIVML elimination of the calibrated report leaves 0 false poles up to p4 30 η_y and p6 E1 0.05, with EIV-bootstrap intervals covering 33/36 at p4 30 η_y), E3 deep first pass done; H1–H3 theory draft (`experiments/C/theory/H1_H2.md`), E5 passes 1–14 (`experiments/C/e5_probe/`; RQ4 rule v4: 0 false trusts over the first 375 runs, 2 over 735 (few-pole LNO); four shared poles store the true decay rates; v5 adds a data-pole check: 1 false trust over 735, at the 10 % line) | — |
 | (A) Application 1: process dynamics | 11–16 | **started** (2026-11-19): delay layer; FOPDT / SOPDT identified | — |
-| (D) Initial conditions and rollout | 13–19 | **started** (2026-11-19): IC path in the wavenumber layer, exact window chaining (linear); deep Burgers rollout (pushforward / semigroup did not help; developed start states and window count each −15 %); Dirichlet, Neumann, mixed, advective and Robin boundaries as channels (Robin coefficient by a profile); out-of-range initial fields and 10-window rollout; beam with two initial fields; variable coefficient by a learned basis | — |
+| (D) Initial conditions and rollout | 13–19 | **started** (2026-11-19): IC path in the wavenumber layer, exact window chaining (linear); deep Burgers rollout (pushforward / semigroup did not help; developed start states and window count each −15 %); Dirichlet, Neumann, mixed, advective and Robin boundaries as channels (Robin coefficient by a profile); out-of-range initial fields and 10-window rollout; beam with two initial fields; variable coefficient by a learned basis or as D(x) through an eigenproblem; fits run to convergence; D paper consolidated | — |
 | (A) Application 2: Cahn–Hilliard | 17–22 | not started | recover k_c, k_max (month 20) |
 | Consolidation and code release | 23–24 | not started | — |
 
@@ -173,6 +173,25 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-20 — (D) fits run to convergence; D(x) learned as a function; D paper consolidated
+
+- Done:
+  - `experiments/D/d3_boundary/d3g_converged.py` (predictions 3ea4944): d3e and d3f rerun with a pre-registered
+    convergence rule (L-BFGS chunks of 300 until the relative drop < 1e-4; cap 6000).
+  - `d3h_coefficient.py` (predictions 3ea4944; fix 54fc498): D(x) on 6 cosines, basis and poles from eigh of
+    the Galerkin operator; `cos` (in span) and `exp` (outside).
+  - D paper consolidated: new abstract, D2 / D3 subsections, a basis table, discussion and limitations rewritten.
+- Results:
+  - d3g: Robin and the learned basis meet their criteria in every seed (Robin β within 0.27 %, D 0.7 %, ≤ 1.011×;
+    basis λ₁..₈ within 0.16 %, overlaps ≥ 0.99987, ≤ 1.002×). Predictions 1 and 2 hold; 3 fails (one run capped
+    at 6000, already within criteria).
+  - d3h: first launch stalled (line search to D < 0, positive poles, eigh failure) and crashed; fixed by scaling
+    and a positivity penalty, all seeds rerun. `cos`: 1.0000–1.0006×, D(x) within 2.5e-4; `exp`: 1.08–1.13×,
+    D(x) 1.07–1.08 % (best-approximation floor 1.06 %); 600 iterations. All three predictions hold.
+- Decisions: none.
+- Next: (D) a second nonlinear rollout system; D(x) in 2D or with boundary-only observation. (C) / (A) per the
+  integrated schedule.
 
 ### 2026-11-20 — (D) initial fields out of range and 10-window rollout; a beam with two initial fields; a variable coefficient
 

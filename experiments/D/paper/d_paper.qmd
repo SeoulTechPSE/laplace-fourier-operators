@@ -1,7 +1,7 @@
 ---
 title: "Non-Periodic Inputs, Initial Conditions and Boundaries for Pole-Based Neural Operators"
 author: "Kee-Youn Yoo"
-date: 2026-11-19
+date: 2026-11-20
 format:
   pdf:
     papersize: a4
@@ -17,7 +17,7 @@ bibliography: ../../C/paper/references.bib
 csl: ../../C/paper/ieee.csl
 ---
 
-<!-- Project D working paper, 2026-11-19. Not for submission. Every number comes from
+<!-- Project D working paper, 2026-11-20. Not for submission. Every number comes from
 experiments/D/d1_inputs/README.md (D1), experiments/D/d2_initial_conditions/README.md (D2) and
 experiments/D/d3_boundary/README.md (boundaries); every prediction was committed before its run (hashes there). -->
 
@@ -30,12 +30,25 @@ within one pole-based layer.
 1. **Time axis (D1).** On non-periodic inputs the Fourier path costs 1e-4 to 1e-3 relative error from periodicity
    alone, about 100× more than an exact first-order-hold (FOH) recursion on ramps and smooth signals. The FOH
    recursion is causal, O(n) and window-independent, and became the default time axis of project A.
-2. **Initial conditions (D2).** A free-response term that shares the poles with the forced response adds only
-   one coefficient function γ(k). The trained layer recovers γ ≡ 1 to 1e-5, and four chained windows reproduce the
-   oracle's rollout exactly.
-3. **Boundaries.** Time-varying Dirichlet values enter the sine modes as a forcing channel whose coefficient
-   c(k) = 2Dk/L is itself a law in k. Sharing the poles, the layer recovers D and c(k) at the oracle floor; without
-   the channel, the error is 80–100× larger.
+2. **Initial conditions (D2).**
+   - Linear systems: a free-response term that shares the poles with the forced response adds one coefficient
+     function γ(k). It is recovered to 1e-5, and chained windows reproduce the oracle's rollout exactly.
+   - Second-order modes with two initial fields: the free-response coefficients are fixed by the poles. A damped
+     beam is identified from its displacement alone (c and η within 1e-4), where free polynomial laws are 50–90×
+     worse.
+   - Deep nonlinear rollout (Burgers): the structural gain is modest. Training windows that start from developed
+     states (−15 %, −30 % together with twice the windows) matter more than pushforward training or a semigroup
+     penalty, which did not help. Pole-based
+     models tolerate initial fields on unseen modes (a TFNO's error triples) but have no edge at larger amplitudes
+     or over 10 windows.
+3. **Boundaries (D3).**
+   - Boundary values and fluxes enter the modes as forcing channels whose coefficients are laws in k (∝ k for a
+     value, constant for a flux). These are recovered at the oracle floor for Dirichlet, Neumann, mixed and
+     advective cases.
+   - Where an unknown parameter sets the basis itself, it is identifiable when learned as the physical parameter
+     and the basis is computed from it. A Robin coefficient is found by a profile, then released (within 0.3 %). A
+     variable diffusion coefficient D(x) is recovered to 1e-4 through a differentiable eigenproblem. Learned freely
+     with everything else, such parameters collapse or converge slowly.
 
 ## Introduction
 
@@ -91,6 +104,8 @@ which shares the poles $\mu_n(k)$ with the forced response. Only $\gamma_n(k)$, 
 residues, is new. Semigroup consistency is then structural: the last field of one window is the next window's
 initial field. A unit test checks that two chained windows reproduce the exact solution to 1e-9.
 
+### Linear systems: exact chaining
+
 **Periodic ADR.** Each window has a random initial field (modes 1–16), the forcing is at half amplitude, and
 T = 5. We compare the layer with the initial-condition path (`ic`) and a layer that sees only the forcing (`noic`).
 Rollout chains 4 windows over [0, 20].
@@ -105,7 +120,9 @@ Rollout chains 4 windows over [0, 20].
 - One pre-registered prediction failed: rollout error ≤ 1.5× the single-window test error, which reached 1.73 in
   one seed. The right reference is the oracle's own rollout, which the model matches exactly; the ratio to the
   single-window error reflects the different sample sets through the sampling floor.
-- **Deep nonlinear rollout** (forced Burgers, 4 chained windows). The deep WPO's initial-state path shares the first
+### Deep nonlinear rollout
+
+- **Forced Burgers, 4 chained windows.** The deep WPO's initial-state path shares the first
   layer's poles. It gives the lowest rollout error: 0.054, against 0.060 with u₀ as an input channel and 0.061 for
   a TFNO at the same budget. Every model about doubles its error over the 4 windows, so the structural gain is
   real but modest (about 10 %).
@@ -127,7 +144,9 @@ Rollout chains 4 windows over [0, 20].
   - Over 10 windows no model blows up, and per-window errors saturate after window 3. The TFNO has the lowest
     10-window error (0.049 against 0.055), and the IC path's 4-window lead shrinks to 4 %. With good training
     data, the structural rollout advantage is small.
-- **Two initial fields: a damped beam.** u_tt = −c²u_xxxx + η u_xxt + f, observed through its displacement, with
+### Two initial fields
+
+- **A damped beam.** u_tt = −c²u_xxxx + η u_xxt + f, observed through its displacement, with
   random initial displacement and velocity. For a second-order mode, the free-response coefficients are fixed by
   the poles: (v₀ − μ₂u₀)/(μ₁ − μ₂) and (μ₁u₀ − v₀)/(μ₁ − μ₂), with no free γ. They and the forcing residues
   scale as 1/k², which a polynomial cannot express.
@@ -167,42 +186,76 @@ poles.
   one), against 15–17× without the weight. D̂ and the offset v²/(4D) are biased by up to 10 %. Refitting on a truth
   without the 1 % time-axis representation floor cuts the in-band pole error from 7–10 % to 0.4–2 %. Recovered
   constants are therefore only as good as the representation floor allows.
+### Parameters that set the basis
+
 - **Robin boundaries.** With D u_x + H u = F at one end, the basis is sin(k_m x) with k_m the roots of
   k cos k + h sin k = 0 (h = H/D; h, not β, which here names the residues), so the basis itself is unknown. Built from the true h, the layer is at the
   oracle with D within 0.8 % and the laws within 1.2 %. Learning h jointly with everything else fails in every
   seed: h collapses to the Neumann end and the error is 6–8× the oracle. A profile works instead. Fit the rest at
   each h on a coarse log grid that excludes the truth, then release h from the best point. This recovers
-  h within 0.5 % in every seed, at 1.00–1.11× the oracle. Two of the five seeds needed more iterations after the
-  release than were pre-registered (post hoc: 600 iterations reach the oracle and D within 0.7 %). Parameters that
-  set the basis, rather than the coefficients in it, are best found by an outer search.
+  h within 0.5 % in every seed, at 1.00–1.11× the oracle. Two of the five seeds missed the D and law criteria with
+  the pre-registered 300 iterations after the release. Rerun to convergence (a pre-registered stopping rule), every
+  seed meets them: h within 0.3 %, D within 0.7 %, laws within 0.7 %, ≤ 1.011× the oracle.
 - **A variable coefficient.** For u_t = (D(x)u_x)_x with D varying threefold, the eigenfunctions are not sines.
-  The best diagonal sine model is 15–27× the oracle. A learned orthogonal basis change Q = exp(S − Sᵀ), fitted
-  with one pole per mode, reaches 1.09–1.21× and recovers the eigenvalues of modes 1–6 within 0.6 %. The weakly
-  excited modes 7–8 missed the pre-registered 1 % in 2 of 5 seeds. Post hoc, 1800 more iterations bring one such
-  seed to 1.001×, with eigenvalues within 0.06 % and every eigenvector overlap ≥ 0.9998. The learned object is the
-  eigen-decomposition; recovering D(x) from it is left open.
-- **Where it stops:** project A's Danckwerts reactor (a27) is a convective problem with an inlet and an outlet,
+  Two ways to learn the basis were compared (@tbl-basis).
+  - A free orthogonal basis change Q = exp(S − Sᵀ) with one pole per mode (528 reals) needs thousands of
+    iterations. With 600 it missed the pre-registered criteria on the weakly excited modes 7–8; run to
+    convergence it meets them in every seed. It gives the eigen-decomposition, not D(x).
+  - D(x) on six cosines, with the basis and poles from the eigen-decomposition of the Galerkin operator A(d),
+    which is linear in d (6 reals), converges in 600 iterations and recovers D(x) to 1e-4. For a D(x) outside the
+    span (0.01·3^x), it lands on the best six-cosine approximation (1.07 % against a floor of 1.06 %).
+    A line search can step to D(x) < 0, where the poles turn positive. A penalty keeps the fit in the physical
+    region (a fix after the first launch, recorded with the results).
+
+| model | reals | test / oracle | recovered | iterations |
+|---|---|---|---|---|
+| sine basis, free poles | 32 | 15–27 | – | 600 |
+| free orthogonal basis, free poles | 528 | 1.0005–1.0018 | λ₁..₈ within 0.16 %, eigenvectors ≥ 0.99987 | 3300–6600 |
+| D(x) on 6 cosines, basis from eigh | 6 | **1.0000–1.0006** | **D(x) within 2.5e-4**, λ₁..₈ within 1.8e-4 | 600 |
+| same, D(x) = 0.01·3^x (outside the span) | 6 | 1.08–1.13 | D(x) within 1.08 % (floor 1.06 %) | 600 |
+
+: Variable coefficient D(x) = 0.02 (1 + 0.5 cos πx), Dirichlet, 5 data seeds; the last row is a second system.
+The free basis is reported after running to convergence. {#tbl-basis}
+
+- **The pattern.** Parameters that set the basis, rather than the coefficients in it, are best learned as physical
+  parameters with the basis computed from them. Where the loss landscape has a flat edge (the Robin coefficient at
+  the Neumann end), add an outer search. As free basis entries they either collapse or converge slowly.
+### Where it stops
+
+Project A's Danckwerts reactor (a27) is a convective problem with an inlet and an outlet,
   observed only at the outlet. There the modal poles were not identifiable, and a dead time plus lags described the
-  data best. Boundaries work as a channel when the basis diagonalises the operator and the field is observed.
+data best. Boundaries work as a channel when the basis diagonalises the operator and the field is observed.
 
 ## Discussion
 
-The three pieces share one structure: every input enters through the same poles.
+**One structure.** Every input enters through the same poles:
+- the forcing through the residues β(k);
+- the initial state through γ(k), or, for second-order modes, through coefficients the poles fix;
+- the boundary values through c(k).
 
-- The forcing enters through the residues β(k).
-- The initial field enters through γ(k).
-- The boundary values enter through c(k).
+The coefficients are either low-order laws in k, identified where the data excite them, or determined by the poles
+and a few physical parameters. In every linear case the layer reached the oracle floor once the right structure was
+in place. What makes this possible is an exact, causal time axis that does not assume periodicity (D1).
 
-Each coefficient is a low-order law in k, and each was identified at the oracle floor. What makes this possible is
-an exact, causal time axis that does not assume periodicity (D1).
+**What the structure does not buy.** For deep nonlinear rollout the pole structure gives a modest gain (about 10 %
+over 4 windows with fresh-start training, 4 % with developed-start training) and none over 10 windows. The
+choice of training windows matters more. The robust structural benefit is extrapolation in the mode content of the
+initial field.
+
+**Practice.** Two lessons on fitting came out of failed predictions.
+- Fixed iteration budgets under-fit the weakly excited modes. Claims about those modes need a fit run to
+  convergence, with the stopping rule stated in advance.
+- Parameters must be kept in their physical range (β > 0, D(x) > 0). Otherwise a single line-search step can make
+  the operator unstable and end the fit.
 
 ## Limitations {.unnumbered}
 
-- Deep rollout: one system (Burgers); the semigroup regulariser and pushforward training did not help at this
-  budget.
-- Boundaries: diffusion (Dirichlet, Neumann, mixed) and constant-coefficient advection with Dirichlet values;
-  Robin boundaries with one unknown coefficient found by a profile; one variable coefficient, as an
-  eigen-decomposition (D(x) itself not recovered).
+- Deep rollout: one nonlinear system (Burgers), 3 seeds; pushforward training and the semigroup penalty did not
+  help at this budget.
+- Boundaries: 1D diffusion with Dirichlet, Neumann, mixed and Robin boundaries, constant-coefficient advection, and
+  one variable coefficient in 1D, with truth and model in the same 32-mode space. Variable coefficients in 2D, and
+  inverse problems with observation only at the boundary, are not covered (see the Danckwerts case).
+- The convergence rule (relative drop < 1e-4 per 300 iterations) reached its cap in 1 of the 20 reported runs.
 - Every test error is limited by the sampling floor of steps and PRBS (about 1 %).
 
 ## References {.unnumbered}
