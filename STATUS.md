@@ -14,7 +14,7 @@ Each session appends one entry using the template at the bottom.
 | (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits, a bootstrap-calibrated order, certificate and order test; reduction-path unresolved rules fail, a location-calibrated split test flags the merge, a combined post-report rule leaves 1 false pole in 40 groups but does not carry over to new p6 E1 groups; an EIVML refit of the reports removes the EIV bias; EIVML through the whole pipeline helps only up to η_u = 0.05; an EIVML elimination of the calibrated report leaves 0 false poles up to p4 30 η_y and p6 E1 0.05, with EIV-bootstrap intervals covering 33/36 at p4 30 η_y), E3 deep first pass done; H1–H3 theory draft (`experiments/C/theory/H1_H2.md`), E5 passes 1–14 (`experiments/C/e5_probe/`; RQ4 rule v4: 0 false trusts over the first 375 runs, 2 over 735 (few-pole LNO); four shared poles store the true decay rates; v5 adds a data-pole check: 1 false trust over 735, at the 10 % line) | — |
 | (A) Application 1: process dynamics | 11–16 | **started** (2026-11-19): delay layer; FOPDT / SOPDT identified | — |
 | (D) Initial conditions and rollout | 13–19 | **started** (2026-11-19): IC path in the wavenumber layer, exact window chaining (linear); deep Burgers rollout (pushforward / semigroup did not help; developed start states and window count each −15 %); Dirichlet, Neumann, mixed, advective and Robin boundaries as channels (Robin coefficient by a profile); out-of-range initial fields and 10-window rollout; beam with two initial fields; variable coefficient by a learned basis or as D(x) through an eigenproblem; fits run to convergence; D paper consolidated | — |
-| (A) Application 2: Cahn–Hilliard | 17–22 | **started** (2026-11-20): stages 1 and 3 in the 1D linear regime: spinodal and k_c(φ₀) recovered from early-time data (`a29_spinodal.py`); M, κ as inputs, extrapolation with the physical form only (`a30_parametric.py`) | recover k_c, k_max (month 20) |
+| (A) Application 2: Cahn–Hilliard | 17–22 | **started** (2026-11-20): stages 1 and 3 in the 1D linear regime: spinodal and k_c(φ₀) recovered from early-time data (`a29_spinodal.py`); M, κ as inputs, extrapolation with the physical form only (`a30_parametric.py`); stage 2, 2D coarsening rollouts: L(t) reproduced by all models, TFNO best pointwise, one WPO seed diverges (`a31_coarsening.py`) | recover k_c, k_max (month 20) |
 | Consolidation and code release | 23–24 | not started | — |
 
 ## Open decisions
@@ -173,6 +173,24 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-21 — (A) application 2 stage 2: rollout into 2D coarsening
+
+- Done:
+  - `src/lfo/data/cahn_hilliard.py`: `solve2d` with an initial field and an unforced mode (71961b0);
+    `solve2d_free_torch` (GPU) and a real-field projection per step in both 2D solvers (1a7deee). Without the
+    projection, round-off in the non-Hermitian part of the k_y = 0 column grows in the unstable band and long
+    unforced runs diverge (t ~ 5 at M = 1, κ = 0.02). Forced short runs (a17, a18) change only at round-off.
+    Tests: 69 pass.
+  - `experiments/A/deep/a31_coarsening.py` (predictions b1b5cdc): 128² truth (checked against 256²), 64² models,
+    20-window rollouts from t = 1 to 21; WPO-2D, TFNO (x, y, t), autoregressive FNO-2D. Deep README, A paper.
+- Results: predictions 1–4 hold, 5 fails. All stable runs give L(21) within 3.5 % and n within 0.025 of the truth
+  (0.271). The TFNO is 2× better pointwise (one window 0.018, window 20 0.37). One WPO-2D seed diverges in
+  rollout (poles at the growth cap; post hoc diagnosis in the README).
+- Decisions: none.
+- Next: (A) a growth cap that suits both the spinodal and the coarsening regime (state- or stage-dependent), or
+  WPO-2D with Re μ ≤ 0 on coarsening only; a larger box for a cleaner t^{1/3}. (D) why the TFNO rolls out better
+  on Cahn–Hilliard with initial fields.
 
 ### 2026-11-20 — (D) d2g budget check; (A) application 2 stage 3 in the linear regime
 

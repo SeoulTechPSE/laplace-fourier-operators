@@ -369,3 +369,48 @@ any learning rate (validation error 1.0).
 
 **Reading.** Tuning closes about a third of the gap. At a matched budget the WPO-2D keeps a 2.6× lower test error,
 and its per-mode linearisation is an order of magnitude more accurate.
+
+## Application 2, stage 2 (2026-11-21): rollout into 2D coarsening (a31)
+
+`a31_coarsening.py` → `results/a31_coarsening.md` (predictions b1b5cdc; solver extensions 71961b0, 1a7deee).
+Unforced 2D Cahn–Hilliard, M = 1, κ = 0.02, critical quench from white noise; truth on 128² (checked against
+256²: 4e-5), models on 64². A window maps the state at t0 to [t0, t0 + 1]; training windows start at t0 = 1..20
+(coarsening regime); rollout of 20 windows from the true state at t = 1. Truth: L from 1.51 to 3.52, exponent
+n = 0.271 on t = 2..21 (t^{1/3} with early-time and box corrections). 3 seeds, 6000 steps.
+- `wpo`: WPO-2D (a17's settings, modes 12), state broadcast over the window; 18.7 k.
+- `tfno`: Tucker FNO on (x, y, t); 15.5 k.
+- `fno2d`: FNO on (x, y), state to state at t0 + 1 (the usual autoregressive surrogate); 21.3 k.
+
+| model | window-end error | rollout error, window 1 / 5 / 20 | L(21) / truth | n (truth 0.271) | S(k, 21) error | max abs u(21) |
+|---|---|---|---|---|---|---|
+| wpo | 0.033–0.035 | 0.22 / 0.45 / diverges (seed 0) | 0.51; 0.975–0.991 | −0.10; 0.261–0.268 | 8e8; 0.16–0.18 | 4e5; 1.05–1.65 |
+| tfno | **0.015–0.022** | **0.13 / 0.22 / 0.37** | 0.967–0.974 | 0.255–0.257 | 0.15–0.18 | 1.04–1.07 |
+| fno2d | 0.035–0.043 | 0.23 / 0.52 / 0.88 | **0.968–1.015** | **0.247–0.267** | **0.03–0.16** | 1.03–1.04 |
+
+For `wpo`, seed 0 first, then seeds 1–2. References: persistence 0.192 per window; a rollout frozen at t = 1 has
+L(21) / truth 0.43.
+
+**Predictions against results.**
+1. Every model beats persistence on the window-end error: **holds** (≤ 0.043 against 0.192).
+2. `tfno` ≤ `wpo` in mean window-end error: **holds** (0.018 against 0.034).
+3. `wpo`: L(21) within 10 % and n within ±0.05, in ≥ 2 of 3 seeds: **holds** (seeds 1, 2); seed 0 diverges.
+4. `fno2d`: the same, ≥ 2 of 3 seeds: **holds** (all three).
+5. S(k, 21) error ≤ 0.25 for every model and seed: **fails** (`wpo` seed 0). Every other run: 0.03–0.18.
+
+**Diagnosis of the divergence** (post hoc; seed 0 retrained and reproduced exactly). In seed 0, layers 2–4 have
+poles at the growth cap (max Re μ 1.10, 1.01, 1.01; seed 1: 0.85, 0.50, 0.80). In rollout the amplitude grows
+(max |u| 2.0, 15, 2e3, 4e5 at windows 5, 10, 15, 20) without a pile-up at high k (energy beyond |k| = 12 stays
+~2e-3). Within one window the pointwise nonlinearities hold the growth back on training states; off them,
+compounding over windows, nothing does. Seed 2 (max |u| 1.65) shows the start of the same drift.
+
+**Reading.**
+- Coarsening statistics are easy to get roughly right. All stable runs give L(21) within 3.5 % and n within 0.025
+  of the truth, against 0.43 for a frozen field. They are a weak test of the operator; the per-window errors
+  separate the models more.
+- The TFNO is the best pointwise model (2× lower one-window and rollout error), as on 1D Cahn–Hilliard with initial
+  fields (D2, d2g/d2h). The plain autoregressive FNO-2D has the worst pointwise rollout but the best statistics.
+- The pole structure gives no advantage here and costs robustness. Re μ > 0 is needed for the spinodal band
+  (a16, a17, a29), but about the separated phases ±1 the linearisation is stable
+  (λ = −Mk²(2 + κk²)). A WPO allowed to grow can drift out of the data in rollout. A state-dependent or
+  stage-dependent cap would be needed; not tried.
+

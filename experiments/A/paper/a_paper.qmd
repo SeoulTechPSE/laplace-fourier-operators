@@ -249,6 +249,25 @@ Tucker FNO (15.0 k, the closest rank) over 3 seeds and 6000 steps (a17).
 - One pre-registered prediction failed: that the untuned TFNO's $k_c$ would miss by more than 10 % in most seeds.
   2 of 3 seeds landed within 10 %.
 
+### Rollout into coarsening (application 2, stage 2) {#sec-coarsening}
+
+Unforced 2D Cahn–Hilliard after a critical quench (128² truth, 64² models): from the true state at t = 1, 20
+chained windows of one time unit, in which L(t) grows from 1.5 to 3.5 (exponent 0.271 on this range).
+
+| model | params | one-window error | rollout error, window 20 | L(21) / truth | n (0.271) |
+|---|---|---|---|---|---|
+| WPO-2D | 18.7 k | 0.033–0.035 | 0.67–0.74 (2 seeds); 1 seed diverges | 0.975–0.991 | 0.261–0.268 |
+| TFNO (x, y, t) | 15.5 k | **0.015–0.022** | **0.34–0.39** | 0.967–0.974 | 0.255–0.257 |
+| FNO-2D, autoregressive | 21.3 k | 0.035–0.043 | 0.81–0.91 | 0.968–1.015 | 0.247–0.267 |
+
+: 2D coarsening, 3 seeds (a31). {#tbl-coarsening}
+
+- Every stable run reproduces the coarsening law (L within 3.5 %, n within 0.025). A frozen field gives 0.43, so
+  the statistic is reached but is a weak discriminator.
+- The TFNO is 2× better pointwise. The pole structure gives no advantage in this nonlinear regime.
+- One WPO-2D seed diverges in rollout. Its poles sit at the growth cap, which the spinodal band requires, while
+  the dynamics about the separated phases is stable. A growth cap that suits both regimes is an open problem.
+
 ## Polynomial or MLP pole functions (RQ4) {#sec-rq4}
 
 The plan offers an MLP μ(k) as the flexible alternative. To compare the two, we train only on data forced at k ≤ 8
@@ -326,7 +345,8 @@ sample time (a20).
 
 ## Limitations {.unnumbered}
 
-- One 2D deep experiment, with an untuned, slightly smaller baseline (@sec-2d).
+- Two 2D deep experiments: forced (@sec-2d, an untuned, slightly smaller baseline) and coarsening
+  (@sec-coarsening, one box size, statistics only to L = 0.56 of the box).
 - Two nonlinear systems, both with a known linearisation at rest.
 - One parameter budget (59 k); FNO-type baselines from neuraloperator with a learning-rate sweep but no
   architecture search.
