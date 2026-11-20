@@ -209,6 +209,28 @@ Oracle test error 5.4–9.5e-3.
 - What was learned is the operator's eigen-decomposition, not D(x). Recovering D(x) from it is an inverse
   Sturm–Liouville problem, not attempted here. Unlike d3–d3e, the poles here are free per mode, with no law in k.
 
+## Seventh pass (2026-11-20): d3e and d3f again, with the fit stopped by convergence
+
+`d3g_converged.py` → `results/d3g_converged.md` (predictions 3ea4944). Each script's own fit is unchanged. The
+selected model then continues with L-BFGS in chunks of 300 iterations until a chunk lowers the training loss by
+less than a relative 1e-4, with a cap of 6000. All seeds are rerun.
+
+| case | test / oracle | estimates (all seeds) | iterations after the original fit |
+|---|---|---|---|
+| Robin | 1.0004–1.011 | β̂ 1.9945–1.9992 (≤ 0.27 %), D̂ within 0.7 %, laws ≤ 0.64 % | 300–600 |
+| variable coefficient | 1.0005–1.0018 | λ₁..₈ within 0.16 %, overlaps ≥ 0.99987 | 2700–3900; 6000 (cap) in seed 3 |
+
+**Predictions against results.**
+1. Robin, every seed, on the d3e criteria: **holds** (it failed in 2 of 5 seeds with the fixed budget).
+2. Variable coefficient, every seed, on the d3f criteria: **holds** (it failed in 4 of 5).
+3. Every run stops by the convergence test: **fails** in one run. Variable seed 3 reached the cap, although it was
+   already within all criteria (λ within 0.16 %).
+
+**Reading.** Both earlier failures were fit budgets, now shown on every seed rather than on post hoc refits. The
+Robin release needs 300–600 iterations beyond d3e's 300. The 528-parameter learned basis needs 2700–6000, and
+the relative-drop rule does not always fire there (slow, steady progress along the weakly excited modes). Fits
+whose claims include weakly excited modes should be run to convergence, with the stopping rule reported.
+
 ## Eighth pass (2026-11-20): the variable coefficient learned as a function D(x)
 
 `d3h_coefficient.py` → `results/d3h_coefficient.md` (predictions 3ea4944; fix after the first launch 54fc498). The
