@@ -148,9 +148,10 @@ Rollout chains 4 windows over [0, 20].
 - **A second system: Cahn–Hilliard** (unstable band, saturation at ±1), same protocol.
   - The tolerance of unseen initial modes carries over: TFNO 10.5× its in-distribution error, IC-path WPO 2.4×.
     The IC-path WPO is also lower in absolute error.
-  - The rollout finding does not. The TFNO is 2× better in-distribution and over 4 and 10 windows. In project A's
-    zero-initial-state setting at twice the training steps the two were at parity, so the gap may partly be
-    training budget.
+  - The rollout finding does not. The TFNO is 2× better in-distribution and over 4 and 10 windows. It is not
+    the training budget: at 12000 steps (project A's budget, where the zero-initial-state models were at parity)
+    both models improve by 15–30 % and the ratio stays (0.46 against 0.48 over 4 windows); the TFNO's unseen-mode
+    ratio grows (13.5 against 2.3).
   - Errors keep growing slowly over 10 windows (1.6–2.1× from window 3 to 10) rather than saturating, as small
     errors in the unstable band grow within each window.
 ### Two initial fields
@@ -260,8 +261,8 @@ initial field.
 
 ## Limitations {.unnumbered}
 
-- Deep rollout: two nonlinear systems in 1D (Burgers, Cahn–Hilliard), 3 seeds, one training budget (6000 steps,
-  untuned for Cahn–Hilliard); pushforward training and the semigroup penalty did not help (Burgers).
+- Deep rollout: two nonlinear systems in 1D (Burgers, Cahn–Hilliard), 3 seeds, two training budgets (6000 and,
+  on Cahn–Hilliard, 12000 steps), no other tuning; pushforward training and the semigroup penalty did not help (Burgers).
 - Boundaries: 1D diffusion with Dirichlet, Neumann, mixed and Robin boundaries, constant-coefficient advection, and
   one variable coefficient in 1D, with truth and model in the same 32-mode space. Variable coefficients in 2D, and
   inverse problems with observation only at the boundary, are not covered (see the Danckwerts case).

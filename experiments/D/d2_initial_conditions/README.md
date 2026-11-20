@@ -234,8 +234,32 @@ Cahn–Hilliard (M = 0.1, κ = 0.04, the a16 forcing), which has an unstable ban
   Larger amplitudes cost every model.
 - **What does not.** On this system the TFNO is the better model in-distribution and in rollout, by 2×. In a16
   (zero initial state, 12000 steps) the WPO and the TFNO were at parity (0.026 against 0.029). This pass used the
-  D2 protocol (6000 steps) and no Cahn–Hilliard tuning, so the gap may partly be training budget (not checked).
+  D2 protocol (6000 steps) and no Cahn–Hilliard tuning, so the gap may partly be training budget (checked in the
+  eighth pass: it is not).
   Whatever its cause, the pole structure gives no rollout advantage here, and the IC path's edge over the channel
   WPO (0.050 against 0.058 over 4 windows) is the only structural gain in rollout.
 - **Error growth.** Errors keep growing over 10 windows in every model (1.6–2.1× from window 3 to 10). In Burgers
   they saturated. In the unstable band, small state errors grow within each window.
+
+## Eighth pass (2026-11-20): d2g at 12000 steps (is the TFNO edge the budget?)
+
+`d2h_ch_budget.py` → `results/d2h_ch_budget.md` (predictions 7cafdb2). d2g with only the step count changed
+(12000, a16's budget); `wpo_ic` and `tfno_chan`, 3 seeds.
+
+| model | id 6k → 12k | high / id 6k → 12k | roll4 6k → 12k | roll10 12k |
+|---|---|---|---|---|
+| wpo_ic | 0.0255 → 0.0185 | 2.35 → 2.29 (1.96–2.51) | 0.0498 → 0.0446 | 0.0486 |
+| tfno_chan | 0.0126 → **0.0097** | 10.5 → 13.5 (10.6–15.5) | 0.0240 → **0.0207** | **0.0303** |
+
+**Predictions against results.**
+1. Both models improve in distribution: **holds** (−27 % and −23 %).
+2. The budget explains part of the gap, roll4 ratio TFNO / `wpo_ic` in (0.48, 0.9): **fails.** It is 0.46: the
+   gap does not narrow.
+3. The TFNO's high / id at least 2× `wpo_ic`'s: **holds** (13.5 against 2.29, 5.9×).
+
+**Reading.** The budget is not the cause: twice the steps lowers both models' errors by about a quarter in
+distribution and by 10–15 % in rollout, and the TFNO stays 2× better. The parity of a16 does not transfer to
+training with initial fields on this system. Both structural observations stand: the IC path barely degrades on
+unseen modes (2.3×) while the TFNO degrades more with longer training (13.5×), so the TFNO's extra accuracy is
+specific to the training distribution.
+
