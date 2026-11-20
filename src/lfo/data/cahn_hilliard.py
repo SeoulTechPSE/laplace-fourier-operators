@@ -23,12 +23,18 @@ from u^3), so the solution lives on k <= n_x / 4 once the forcing does.
 
 `solve2d` also takes an initial field, and runs unforced (fk = None with n_steps) for free evolution such as
 coarsening (application 2, stage 2), without holding a forcing array of length n_t.
+
+**Real-field projection** (2D). The ky = 0 and ky = n / 2 columns of an rfft2 array can hold a non-Hermitian part
+that no real field has. The cubic term never sees it (irfft2 drops it), so inside the unstable band it grows at
+the linear rate from round-off and, over long unforced runs (lambda_max t ~ 40), swamps the state. Each step
+therefore projects u onto real fields (rfft2 of irfft2); this changes forced short runs only at round-off. `solve2d_free_torch` is
+the same unforced scheme in torch (GPU), for the long, finely stepped runs that coarsening needs.
 """
 from __future__ import annotations
 
 import numpy as np
 
-__all__ = ["solve", "solve2d", "growth_rate"]
+__all__ = ["solve", "solve2d", "solve2d_free_torch", "growth_rate"]
 
 
 def growth_rate(k, M: float, kappa: float, phi0: float = 0.0):
@@ -114,6 +120,43 @@ def solve2d(fk: np.ndarray | None, dt: float, M: float, kappa: float, n: int, st
         u3 = E2 * u + dt * E * c
         d = N(u3, f1)
         u = E2 * u + dt / 6 * (E2 * a + 2 * E * (b + c) + d)
+        u = np.fft.rfft2(np.fft.irfft2(u, s=(n, n), axes=(1, 2)), axes=(1, 2))   # keep u the rfft2 of a real field
         if (j + 1) % stride == 0:
             out.append(u.copy())
     return np.stack(out, axis=-1)
+
+
+def solve2d_free_torch(u0k, dt: float, M: float, kappa: float, n: int, n_steps: int, stride: int = 1,
+                       device=None):
+    """Unforced `solve2d` in torch (same scheme: integrating-factor RK4, 1/2-rule dealiasing of the cubic term).
+
+    u0k (B, n, n // 2 + 1) complex (numpy or torch). Returns a complex128 torch tensor (B, n, n // 2 + 1, m) on
+    `device` with the states at steps 0, stride, 2 stride, ... (m = n_steps // stride + 1)."""
+    import torch
+
+    u = torch.as_tensor(u0k, dtype=torch.complex128, device=device).clone()
+    if u.shape[1:] != (n, n // 2 + 1):
+        raise ValueError("u0k must hold the rfft2 of an n x n grid")
+    kx = torch.fft.fftfreq(n, 1 / n, dtype=torch.float64, device=u.device)[:, None]
+    ky = torch.fft.rfftfreq(n, 1 / n, dtype=torch.float64, device=u.device)[None, :]
+    k2 = kx ** 2 + ky ** 2
+    L = M * k2 * (1 - kappa * k2)
+    E, E2 = torch.exp(L * dt / 2), torch.exp(L * dt)
+    nk = -M * k2 * ((kx.abs() <= n / 4) & (ky <= n / 4))
+
+    def N(v):
+        w = torch.fft.irfft2(v, s=(n, n))
+        return nk * torch.fft.rfft2(w ** 3)
+
+    out = [u.clone()]
+    for j in range(n_steps):
+        a = N(u)
+        b = N(E * (u + 0.5 * dt * a))
+        c = N(E * u + 0.5 * dt * b)
+        d = N(E2 * u + dt * E * c)
+        u = E2 * u + dt / 6 * (E2 * a + 2 * E * (b + c) + d)
+        u = torch.fft.rfft2(torch.fft.irfft2(u, s=(n, n)))
+        if (j + 1) % stride == 0:
+            out.append(u.clone())
+    return torch.stack(out, dim=-1)
+

@@ -87,3 +87,24 @@ def test_2d_unforced_initial_field_matches_forced_zero_and_linear_rate():
         lam = M * k2 * (1 - 3 * phi0 ** 2 - kappa * k2)
         assert np.allclose(free[b, i, j], u0k[b, i, j] * np.exp(lam * t), rtol=1e-5, atol=0)
     assert np.allclose(free[:, 0, 0], phi0 * n * n)          # mean conserved
+
+
+def test_2d_free_torch_matches_numpy_in_the_nonlinear_regime():
+    n, steps, M, kappa = 16, 200, 0.1, 0.04
+    rng = np.random.default_rng(0)
+    u0k = np.fft.rfft2(0.5 * rng.normal(size=(2, n, n)), axes=(1, 2))
+    ref = ch.solve2d(None, 0.01, M, kappa, n, stride=50, u0k=u0k, n_steps=steps)
+    got = ch.solve2d_free_torch(u0k, 0.01, M, kappa, n, steps, stride=50).numpy()
+    assert got.shape == ref.shape
+    assert np.abs(got - ref).max() < 1e-10 * np.abs(ref).max()
+
+
+def test_2d_long_unstable_run_stays_a_real_field():
+    n, M, kappa, dt, steps = 16, 1.0, 0.1, 0.01, 2500           # k_c = 3.2 < n / 4; lambda_max t = 62
+    rng = np.random.default_rng(1)
+    u0k = np.fft.rfft2(0.05 * rng.normal(size=(1, n, n)), axes=(1, 2))
+    uk = ch.solve2d_free_torch(u0k, dt, M, kappa, n, steps, stride=steps).numpy()[..., -1]
+    proj = np.fft.rfft2(np.fft.irfft2(uk, s=(n, n), axes=(1, 2)), axes=(1, 2))
+    assert np.isfinite(uk).all()
+    assert np.abs(uk - proj).max() < 1e-8 * np.abs(uk).max()
+    assert np.abs(np.fft.irfft2(uk, s=(n, n), axes=(1, 2))).max() < 1.2      # phase separated, bounded
