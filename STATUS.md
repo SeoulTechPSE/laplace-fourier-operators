@@ -14,7 +14,7 @@ Each session appends one entry using the template at the bottom.
 | (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits, a bootstrap-calibrated order, certificate and order test; reduction-path unresolved rules fail, a location-calibrated split test flags the merge, a combined post-report rule leaves 1 false pole in 40 groups but does not carry over to new p6 E1 groups; an EIVML refit of the reports removes the EIV bias; EIVML through the whole pipeline helps only up to η_u = 0.05; an EIVML elimination of the calibrated report leaves 0 false poles up to p4 30 η_y and p6 E1 0.05, with EIV-bootstrap intervals covering 33/36 at p4 30 η_y), E3 deep first pass done; H1–H3 theory draft (`experiments/C/theory/H1_H2.md`), E5 passes 1–14 (`experiments/C/e5_probe/`; RQ4 rule v4: 0 false trusts over the first 375 runs, 2 over 735 (few-pole LNO); four shared poles store the true decay rates; v5 adds a data-pole check: 1 false trust over 735, at the 10 % line) | — |
 | (A) Application 1: process dynamics | 11–16 | **started** (2026-11-19): delay layer; FOPDT / SOPDT identified | — |
 | (D) Initial conditions and rollout | 13–19 | **started** (2026-11-19): IC path in the wavenumber layer, exact window chaining (linear); deep Burgers rollout (pushforward / semigroup did not help; developed start states and window count each −15 %); Dirichlet, Neumann, mixed, advective and Robin boundaries as channels (Robin coefficient by a profile); out-of-range initial fields and 10-window rollout; beam with two initial fields; variable coefficient by a learned basis or as D(x) through an eigenproblem; fits run to convergence; D paper consolidated | — |
-| (A) Application 2: Cahn–Hilliard | 17–22 | **started** (2026-11-20): stage 1 in 1D, spinodal and k_c(φ₀) recovered from early-time data (`a29_spinodal.py`) | recover k_c, k_max (month 20) |
+| (A) Application 2: Cahn–Hilliard | 17–22 | **started** (2026-11-20): stages 1 and 3 in the 1D linear regime: spinodal and k_c(φ₀) recovered from early-time data (`a29_spinodal.py`); M, κ as inputs, extrapolation with the physical form only (`a30_parametric.py`) | recover k_c, k_max (month 20) |
 | Consolidation and code release | 23–24 | not started | — |
 
 ## Open decisions
@@ -173,6 +173,25 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-20 — (D) d2g budget check; (A) application 2 stage 3 in the linear regime
+
+- Done:
+  - `experiments/D/d2_initial_conditions/d2h_ch_budget.py` (predictions 7cafdb2): d2g at 12000 steps
+    (`wpo_ic`, `tfno_chan`). D2 README and D paper.
+  - `experiments/A/layer/a30_parametric.py` (predictions a4ac287): IC-path layer with M, κ, φ₀ as inputs, trained on a
+    2 × 2 (M, κ) grid, tested inside and outside it; laws `phys` (form of the linearisation), `bilin` (16 terms,
+    contains the truth), `mlp`, `fixed`. Start rule changed before any fit (documented). A README and A paper.
+- Results:
+  - d2h: both models improve by about a quarter in distribution; the TFNO stays 2× better in rollout (roll4 ratio
+    0.46 against 0.48 at 6000 steps): the budget is not the cause (prediction 2 fails; 1 and 3 hold). The TFNO's
+    unseen-mode ratio grows to 13.5 (IC path 2.3).
+  - a30: `phys` ≤ 1.01× the oracle everywhere, k_c within 1.5e-4 (1 holds); `bilin` 1–17× off the grid by seed
+    (2 fails); `mlp` 10⁴× even inside the grid (3 fails); `fixed` 257–826× (4 holds). In the unstable band the law's
+    error is exponential in the output, so extrapolation needs the physical form.
+- Decisions: none.
+- Next: (A) application 2 stage 2 (2D, coarsening: structure-factor peak, L(t) ~ t^{1/3}); (D) why the TFNO rolls
+  out better on Cahn–Hilliard with initial fields (state-error growth per window, or IC-path capacity at width 23).
 
 ### 2026-11-20 — (A) application 2 stage 1: the spinodal linear regime; (D) Cahn–Hilliard as a second rollout system
 

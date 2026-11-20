@@ -222,6 +222,12 @@ Training used early-time, unforced data at eight compositions (0 to 0.7); evalua
 - The model class contains the truth, so this shows identifiability from early-time data, not discovery of the form.
 - The stability constraint is not a small bias. It distorts the stable modes as well and is off by up to 1700×.
 
+**Mobility and gradient energy as inputs** (stage 3, linear regime). With M and κ varied on a 2 × 2 grid and fed to
+the layer, the law in the form of the linearisation, μ = M(ak² + bk²φ₀²) + Mκ·dk⁴ (3 reals), reaches the oracle
+(≤ 1.01×) at M twice and κ half the grid's range, with k_c within 1.5e-4. A 16-term law that contains the truth but
+not its form is 1–17× the oracle off the grid, depending on the seed; an MLP law is 10⁴× off even between grid
+points. The response is e^{μt}, so in the unstable band an error in the law becomes exponential in the output.
+
 ## 2D deep operator {#sec-2d}
 
 The 2D layer and operator carry the same structure: Re μ is isotropic in |k|², with an advection vector and the
@@ -325,7 +331,8 @@ sample time (a20).
 - One parameter budget (59 k); FNO-type baselines from neuraloperator with a learning-rate sweep but no
   architecture search.
 - The probe is a small-amplitude linearisation at u = 0. Linearisations about other uniform states were learned
-  only in the linear regime of one system (@sec-spinodal), not probed from a deep model.
+  only in the linear regime of one system (@sec-spinodal), not probed from a deep model. Extrapolation in M and κ
+  was shown for a law with the right form; no form was discovered.
 - The oracle floor of the data (steps and PRBS between samples) limits every test error to about 1 %.
 
 ## References {.unnumbered}

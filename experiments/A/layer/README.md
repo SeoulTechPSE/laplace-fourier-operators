@@ -465,3 +465,46 @@ The oracle floor is the nonlinear residual (5e-4 to 3.6e-3).
 - Composition enters only through the pole law. Without it, no single μ(k) fits both sides of the spinodal.
 - Next (plan stages 2–3): 2D, the nonlinear coarsening regime (structure-factor peak, L(t) ~ t^{1/3}), and M, κ as
   inputs.
+
+## Application 2, stage 3 in the linear regime (2026-11-20): M, κ and φ₀ as inputs
+
+`a30_parametric.py` → `results/a30_parametric.md` (predictions a4ac287). a29's setting with the mobility M and
+the gradient energy κ varied and fed to the layer (m = M/0.1, c = κ/0.04). Training grid M ∈ {0.05, 0.1},
+κ ∈ {0.03, 0.06}, φ₀ ∈ {0, 0.2, 0.4, 0.6}. Test points (M, κ): `interp` (0.075, 0.045) inside the grid; `hiM`
+(0.2, 0.08), `lowk` (0.025, 0.015) and `hiMk` (0.15, 0.045) outside it; each at φ₀ = 0.15, 0.45, 0.7.
+- `phys`: μ = m(aq + bqφ₀²) + mc·dq², the form of the linearisation; 3 reals.
+- `bilin`: a29's 4-term law with each coefficient bilinear in (m, c); 16 reals, contains the truth.
+- `mlp`: μ = MLP(q, φ₀², m, c), 1249 reals, no form.
+- `fixed`: a29's law, ignoring M and κ.
+Start rule changed before any fit (a29's starts left 3 of 4 `phys` starts in a zero-prediction basin).
+
+| model | interp | hiM | lowk | hiMk | worst (point, φ₀) |
+|---|---|---|---|---|---|
+| phys | **1.00** | **1.00** | **1.00** | **1.00** | 1.01 |
+| bilin | 1.00–1.49 | 1.16–5.42 | 1.25–8.98 | 1.01–2.10 | 17.4 |
+| mlp | 3e4–5e5 | 895–1124 | 479–2e14 | 580–720 | 4e14 |
+| fixed | 150–185 | 577–826 | 341–437 | 257–324 | 1875 |
+
+Test error / oracle, mean over φ₀; range over 5 data seeds. k̂_c(0) of `phys` within 1.5e-4 at every point.
+
+**Predictions against results.**
+1. `phys` ≤ 1.2× everywhere, k_c(0) within 1 %: **holds** (≤ 1.01×, 1.5e-4).
+2. `bilin` ≤ 1.2× on `interp`, ≤ 2× elsewhere: **fails** in 3 of 5 seeds (seed 1: 1.6× on `interp`, 17× at
+   (`lowk`, 0.7)). Seeds 0, 3, 4 at most 1.6×, 2.1×, 3.2× at the worst cell.
+3. `mlp` ≤ 3× on `interp`, ≥ 5× at some extrapolation point: **fails** (the first half: 3e4× and worse even inside the
+   grid).
+4. `fixed` ≥ 10× at every extrapolation point: **holds** (257–826×).
+
+**Reading.**
+- With the parameters entering in the form of the linearisation, three numbers learned on a 2 × 2 grid give the
+  oracle at M twice and κ half the grid's range, and the band edge k_c to 1.5e-4.
+- A richer law that contains the truth (`bilin`) does not recover it reliably. The 16 coefficients are fitted
+  well at the grid (training loss ~ the oracle's), but the small nonlinear residual is absorbed by spurious terms
+  that grow away from the grid, worst at φ₀ = 0.7 and small κ. Extrapolation needs the form, not just the span.
+- A free law (`mlp`) fails even between grid points. Checked post hoc on seed 0: at the grid its μ(k) matches the
+  truth on the slow modes (k = 1, 4: 0.09, −0.04 against 0.09, −0.04), but at `interp` it gives 1.49 at k = 4
+  against 0.26. The response is e^{μT}, so an error of 1.2 in μ over T = 5 is a factor e^6. Growing modes make
+  the law's error exponential in the output; only a law that is right between and beyond the training
+  parameters is usable.
+- Next: plan stage 2 (2D, the coarsening regime).
+
