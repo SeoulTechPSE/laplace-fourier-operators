@@ -9,6 +9,14 @@ Linearised at u = 0, every mode has the pole
 positive for 0 < k < k_c = 1 / sqrt(kappa) (spinodal band), largest at k_max = k_c / sqrt(2). The cubic term
 saturates the growth (phase separation towards u = +-1).
 
+**Initial state and mean composition** (project D2 / A application 2). `solve(..., u0k=...)` starts from a given
+field instead of rest. Its mean (mode 0, rfft normalisation: n_x * phi0) is conserved. Linearised about a uniform
+phi0, the cubic term adds 3 phi0^2 to f'' = -1, so each mode has
+
+    lambda(k; phi0) = M k^2 (1 - 3 phi0^2 - kappa k^2)      (`growth_rate(k, M, kappa, phi0)`),
+
+unstable for 0 < k < k_c(phi0) = sqrt((1 - 3 phi0^2) / kappa) inside the spinodal |phi0| < 1 / sqrt(3).
+
 Numerics as `lfo.data.burgers`: pseudo-spectral in x, integrating-factor RK4 in t (the linear part, including the
 stiff kappa k^4 term, is exact). The cubic term is dealiased by the 1/2 rule (modes with k > n_x / 4 are dropped
 from u^3), so the solution lives on k <= n_x / 4 once the forcing does.
@@ -20,14 +28,16 @@ import numpy as np
 __all__ = ["solve", "solve2d", "growth_rate"]
 
 
-def growth_rate(k, M: float, kappa: float):
+def growth_rate(k, M: float, kappa: float, phi0: float = 0.0):
     k = np.asarray(k, dtype=float)
-    return M * k ** 2 * (1 - kappa * k ** 2)
+    return M * k ** 2 * (1 - 3 * phi0 ** 2 - kappa * k ** 2)
 
 
-def solve(fk: np.ndarray, dt: float, M: float, kappa: float, n_x: int, stride: int = 1) -> np.ndarray:
-    """Spectral solution from rest. fk (B, K, n): rfft of the forcing at t_j = j dt (linear between samples),
-    K = n_x // 2 + 1. Returns uk (B, K, ceil(n / stride)) at t_0, t_stride, ..."""
+def solve(fk: np.ndarray, dt: float, M: float, kappa: float, n_x: int, stride: int = 1,
+          u0k: np.ndarray | None = None) -> np.ndarray:
+    """Spectral solution. fk (B, K, n): rfft of the forcing at t_j = j dt (linear between samples),
+    K = n_x // 2 + 1; u0k: optional (B, K) rfft of the initial field (default: rest).
+    Returns uk (B, K, ceil(n / stride)) at t_0, t_stride, ..."""
     B, K, n = fk.shape
     if K != n_x // 2 + 1:
         raise ValueError("fk must hold the rfft of an n_x-point grid")
@@ -41,7 +51,7 @@ def solve(fk: np.ndarray, dt: float, M: float, kappa: float, n_x: int, stride: i
         w = np.fft.irfft(u, n=n_x, axis=1)
         return nk * np.fft.rfft(w ** 3, axis=1) + f
 
-    u = np.zeros((B, K), complex)
+    u = np.zeros((B, K), complex) if u0k is None else np.array(u0k, dtype=complex)
     out = [u.copy()]
     for j in range(n - 1):
         f0, f1 = fk[..., j], fk[..., j + 1]
