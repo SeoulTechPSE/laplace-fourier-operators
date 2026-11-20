@@ -20,6 +20,9 @@ unstable for 0 < k < k_c(phi0) = sqrt((1 - 3 phi0^2) / kappa) inside the spinoda
 Numerics as `lfo.data.burgers`: pseudo-spectral in x, integrating-factor RK4 in t (the linear part, including the
 stiff kappa k^4 term, is exact). The cubic term is dealiased by the 1/2 rule (modes with k > n_x / 4 are dropped
 from u^3), so the solution lives on k <= n_x / 4 once the forcing does.
+
+`solve2d` also takes an initial field, and runs unforced (fk = None with n_steps) for free evolution such as
+coarsening (application 2, stage 2), without holding a forcing array of length n_t.
 """
 from __future__ import annotations
 
@@ -69,11 +72,21 @@ def solve(fk: np.ndarray, dt: float, M: float, kappa: float, n_x: int, stride: i
     return np.stack(out, axis=-1)
 
 
-def solve2d(fk: np.ndarray, dt: float, M: float, kappa: float, n: int, stride: int = 1) -> np.ndarray:
-    """2D version of `solve`. fk (B, n, n // 2 + 1, n_t): rfft2 of the forcing. Returns uk (B, n, n // 2 + 1, .)."""
-    B, nx, nyh, nt = fk.shape
+def solve2d(fk: np.ndarray | None, dt: float, M: float, kappa: float, n: int, stride: int = 1,
+            u0k: np.ndarray | None = None, n_steps: int | None = None) -> np.ndarray:
+    """2D version of `solve`. fk (B, n, n // 2 + 1, n_t): rfft2 of the forcing. Returns uk (B, n, n // 2 + 1, .).
+
+    u0k: optional (B, n, n // 2 + 1) rfft2 of the initial field (default: rest). Unforced runs (free evolution,
+    e.g. coarsening) pass fk = None with u0k and n_steps, so no forcing array of length n_t is held in memory."""
+    if fk is None:
+        if u0k is None or n_steps is None:
+            raise ValueError("fk = None needs u0k and n_steps")
+        B, nx, nyh = u0k.shape
+        nt = n_steps + 1
+    else:
+        B, nx, nyh, nt = fk.shape
     if (nx, nyh) != (n, n // 2 + 1):
-        raise ValueError("fk must hold the rfft2 of an n x n grid")
+        raise ValueError("fk / u0k must hold the rfft2 of an n x n grid")
     kx = np.fft.fftfreq(n, 1 / n)[:, None]
     ky = np.fft.rfftfreq(n, 1 / n)[None, :]
     k2 = kx ** 2 + ky ** 2
@@ -83,13 +96,16 @@ def solve2d(fk: np.ndarray, dt: float, M: float, kappa: float, n: int, stride: i
 
     def N(u, f):
         w = np.fft.irfft2(u, s=(n, n), axes=(1, 2))
-        return nk * np.fft.rfft2(w ** 3, axes=(1, 2)) + f
+        r = nk * np.fft.rfft2(w ** 3, axes=(1, 2))
+        return r if f is None else r + f
 
-    u = np.zeros((B, n, n // 2 + 1), complex)
+    zero = lambda j: None
+    F = zero if fk is None else (lambda j: fk[..., j])
+    u = np.zeros((B, n, n // 2 + 1), complex) if u0k is None else np.array(u0k, dtype=complex)
     out = [u.copy()]
     for j in range(nt - 1):
-        f0, f1 = fk[..., j], fk[..., j + 1]
-        fm = 0.5 * (f0 + f1)
+        f0, f1 = F(j), F(j + 1)
+        fm = None if f0 is None else 0.5 * (f0 + f1)
         a = N(u, f0)
         u1 = E * (u + 0.5 * dt * a)
         b = N(u1, fm)

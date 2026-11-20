@@ -71,3 +71,19 @@ def test_default_rest_is_unchanged():
     fk[0, 3] = 0.1 * n_x / 2 * rng.normal(size=n)
     assert np.array_equal(ch.solve(fk, 0.01, 0.1, 0.04, n_x),
                           ch.solve(fk, 0.01, 0.1, 0.04, n_x, u0k=np.zeros((1, n_x // 2 + 1), complex)))
+
+
+def test_2d_unforced_initial_field_matches_forced_zero_and_linear_rate():
+    n, steps, M, kappa, phi0 = 16, 100, 0.1, 0.04, 0.3
+    u0k = np.zeros((2, n, n // 2 + 1), complex)
+    u0k[:, 0, 0] = phi0 * n * n
+    u0k[0, 2, 1] = 1e-7 * n * n / 2                          # |k|^2 = 5: grows
+    u0k[1, 0, 4] = 1e-7 * n * n / 2                          # |k|^2 = 16: decays
+    free = ch.solve2d(None, 0.01, M, kappa, n, u0k=u0k, n_steps=steps)
+    zero = ch.solve2d(np.zeros((2, n, n // 2 + 1, steps + 1), complex), 0.01, M, kappa, n, u0k=u0k)
+    assert np.allclose(free, zero, rtol=0, atol=1e-12 * n * n)
+    t = np.arange(steps + 1) * 0.01
+    for b, (i, j), k2 in ((0, (2, 1), 5), (1, (0, 4), 16)):
+        lam = M * k2 * (1 - 3 * phi0 ** 2 - kappa * k2)
+        assert np.allclose(free[b, i, j], u0k[b, i, j] * np.exp(lam * t), rtol=1e-5, atol=0)
+    assert np.allclose(free[:, 0, 0], phi0 * n * n)          # mean conserved
