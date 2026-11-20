@@ -489,8 +489,8 @@ Test error / oracle, mean over φ₀; range over 5 data seeds. k̂_c(0) of `phys
 
 **Predictions against results.**
 1. `phys` ≤ 1.2× everywhere, k_c(0) within 1 %: **holds** (≤ 1.01×, 1.5e-4).
-2. `bilin` ≤ 1.2× on `interp`, ≤ 2× elsewhere: **fails** in 3 of 5 seeds (seed 1: 1.6× on `interp`, 17× at
-   (`lowk`, 0.7)). Seeds 0, 3, 4 at most 1.6×, 2.1×, 3.2× at the worst cell.
+2. `bilin` ≤ 1.2× on `interp`, ≤ 2× at every other cell: **fails** in 4 of 5 seeds; only seed 0 passes (worst cell
+   1.6×). Worst cells: seed 1 17× (`lowk`, 0.7), seed 2 6.8× (`hiM`, 0.7), seed 3 2.1×, seed 4 3.2×.
 3. `mlp` ≤ 3× on `interp`, ≥ 5× at some extrapolation point: **fails** (the first half: 3e4× and worse even inside the
    grid).
 4. `fixed` ≥ 10× at every extrapolation point: **holds** (257–826×).
