@@ -14,7 +14,7 @@ Each session appends one entry using the template at the bottom.
 | (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits, a bootstrap-calibrated order, certificate and order test; reduction-path unresolved rules fail, a location-calibrated split test flags the merge, a combined post-report rule leaves 1 false pole in 40 groups but does not carry over to new p6 E1 groups; an EIVML refit of the reports removes the EIV bias; EIVML through the whole pipeline helps only up to η_u = 0.05; an EIVML elimination of the calibrated report leaves 0 false poles up to p4 30 η_y and p6 E1 0.05, with EIV-bootstrap intervals covering 33/36 at p4 30 η_y), E3 deep first pass done; H1–H3 theory draft (`experiments/C/theory/H1_H2.md`), E5 passes 1–14 (`experiments/C/e5_probe/`; RQ4 rule v4: 0 false trusts over the first 375 runs, 2 over 735 (few-pole LNO); four shared poles store the true decay rates; v5 adds a data-pole check: 1 false trust over 735, at the 10 % line) | — |
 | (A) Application 1: process dynamics | 11–16 | **started** (2026-11-19): delay layer; FOPDT / SOPDT identified | — |
 | (D) Initial conditions and rollout | 13–19 | **started** (2026-11-19): IC path in the wavenumber layer, exact window chaining (linear); deep Burgers rollout (pushforward / semigroup did not help; developed start states and window count each −15 %); Dirichlet, Neumann, mixed, advective and Robin boundaries as channels (Robin coefficient by a profile); out-of-range initial fields and 10-window rollout; beam with two initial fields; variable coefficient by a learned basis or as D(x) through an eigenproblem; fits run to convergence; D paper consolidated | — |
-| (A) Application 2: Cahn–Hilliard | 17–22 | not started | recover k_c, k_max (month 20) |
+| (A) Application 2: Cahn–Hilliard | 17–22 | **started** (2026-11-20): stage 1 in 1D, spinodal and k_c(φ₀) recovered from early-time data (`a29_spinodal.py`) | recover k_c, k_max (month 20) |
 | Consolidation and code release | 23–24 | not started | — |
 
 ## Open decisions
@@ -173,6 +173,25 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-20 — (A) application 2 stage 1: the spinodal linear regime; (D) Cahn–Hilliard as a second rollout system
+
+- Done:
+  - `src/lfo/data/cahn_hilliard.py`: initial field `u0k` (mean = composition) and `growth_rate(..., phi0)`; tests
+    (954e509).
+  - `experiments/A/layer/a29_spinodal.py` (predictions d8b5e58): IC-path layer with μ(k, φ₀), early-time unforced
+    data at 8 compositions, 5 held out; controls `stable` (Re μ ≤ 0) and `nophi`. A README and A paper.
+  - `experiments/D/d2_initial_conditions/d2g_ch_rollout.py` (predictions 81b756f): the d2e protocol on forced
+    Cahn–Hilliard. D README and D paper.
+- Results:
+  - a29: 0.995–1.006× the oracle on held-out compositions; φ̂_s within 3e-5, k̂_c within 1e-4; `stable` 130–1710×,
+    `nophi` 106–1118×. All three predictions hold.
+  - d2g: unseen initial modes: TFNO 10.5× its id error, IC-path WPO 2.4× (prediction 1 holds); amplitudes 4–6× (2
+    holds). The TFNO is 2× better in-distribution and in rollout (4 fails). Its errors grow 2.1× from window 3 to
+    10 (3 fails; WPOs 1.6×).
+- Decisions: none.
+- Next: (A) application 2 stages 2–3 (2D, coarsening regime, M and κ as inputs); (D) whether the d2g gap is the
+  training budget (12000 steps as in a16).
 
 ### 2026-11-20 — (D) fits run to convergence; D(x) learned as a function; D paper consolidated
 

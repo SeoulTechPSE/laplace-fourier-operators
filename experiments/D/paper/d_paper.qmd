@@ -36,7 +36,8 @@ within one pole-based layer.
    - Second-order modes with two initial fields: the free-response coefficients are fixed by the poles. A damped
      beam is identified from its displacement alone (c and η within 1e-4), where free polynomial laws are 50–90×
      worse.
-   - Deep nonlinear rollout (Burgers): the structural gain is modest. Training windows that start from developed
+   - Deep nonlinear rollout (Burgers, Cahn–Hilliard): the structural gain is modest, and on Cahn–Hilliard a TFNO
+     rolls out 2× better. Training windows that start from developed
      states (−15 %, −30 % together with twice the windows) matter more than pushforward training or a semigroup
      penalty, which did not help. Pole-based
      models tolerate initial fields on unseen modes (a TFNO's error triples) but have no edge at larger amplitudes
@@ -144,6 +145,14 @@ Rollout chains 4 windows over [0, 20].
   - Over 10 windows no model blows up, and per-window errors saturate after window 3. The TFNO has the lowest
     10-window error (0.049 against 0.055), and the IC path's 4-window lead shrinks to 4 %. With good training
     data, the structural rollout advantage is small.
+- **A second system: Cahn–Hilliard** (unstable band, saturation at ±1), same protocol.
+  - The tolerance of unseen initial modes carries over: TFNO 10.5× its in-distribution error, IC-path WPO 2.4×.
+    The IC-path WPO is also lower in absolute error.
+  - The rollout finding does not. The TFNO is 2× better in-distribution and over 4 and 10 windows. In project A's
+    zero-initial-state setting at twice the training steps the two were at parity, so the gap may partly be
+    training budget.
+  - Errors keep growing slowly over 10 windows (1.6–2.1× from window 3 to 10) rather than saturating, as small
+    errors in the unstable band grow within each window.
 ### Two initial fields
 
 - **A damped beam.** u_tt = −c²u_xxxx + η u_xxt + f, observed through its displacement, with
@@ -237,8 +246,9 @@ The coefficients are either low-order laws in k, identified where the data excit
 and a few physical parameters. In every linear case the layer reached the oracle floor once the right structure was
 in place. What makes this possible is an exact, causal time axis that does not assume periodicity (D1).
 
-**What the structure does not buy.** For deep nonlinear rollout the pole structure gives a modest gain (about 10 %
-over 4 windows with fresh-start training, 4 % with developed-start training) and none over 10 windows. The
+**What the structure does not buy.** For deep nonlinear rollout the pole structure gives a modest gain on Burgers
+(about 10 % over 4 windows with fresh-start training, 4 % with developed-start training) and none over 10 windows.
+On Cahn–Hilliard a TFNO rolls out 2× better. The
 choice of training windows matters more. The robust structural benefit is extrapolation in the mode content of the
 initial field.
 
@@ -250,8 +260,8 @@ initial field.
 
 ## Limitations {.unnumbered}
 
-- Deep rollout: one nonlinear system (Burgers), 3 seeds; pushforward training and the semigroup penalty did not
-  help at this budget.
+- Deep rollout: two nonlinear systems in 1D (Burgers, Cahn–Hilliard), 3 seeds, one training budget (6000 steps,
+  untuned for Cahn–Hilliard); pushforward training and the semigroup penalty did not help (Burgers).
 - Boundaries: 1D diffusion with Dirichlet, Neumann, mixed and Robin boundaries, constant-coefficient advection, and
   one variable coefficient in 1D, with truth and model in the same 32-mode space. Variable coefficients in 2D, and
   inverse problems with observation only at the boundary, are not covered (see the Danckwerts case).

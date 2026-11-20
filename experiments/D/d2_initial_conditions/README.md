@@ -204,3 +204,38 @@ Oracle test error 2.1–3.6e-3; oracle rollout error 0.6–1.1e-2.
 - Both initial fields are needed (v₀ withheld: ~100×). Only u is observed, but the model's own modal states give
   the velocity at the window end, so chaining needs no velocity measurement: the latent-state option of the plan
   (Section 5, "Defining the output state") is exact here.
+
+## Seventh pass (2026-11-20): Cahn–Hilliard as a second rollout system
+
+`d2g_ch_rollout.py` → `results/d2g_ch_rollout.md` (predictions 81b756f). The d2e protocol on forced 1D
+Cahn–Hilliard (M = 0.1, κ = 0.04, the a16 forcing), which has an unstable band k < 5 and saturates at ±1.
+- WPOs allow Re μ > 0.
+- Developed-start training: 400 windows, 6000 steps, 3 seeds.
+- `amp` uses s0 in [1, 2]: the solver diverged on [1, 3], found before any fit.
+
+| model | id | amp (ratio) | high (ratio) | roll4 | roll10 | window 10 / window 3 |
+|---|---|---|---|---|---|---|
+| wpo_ic | 0.0255 | 0.110 (4.0–4.6) | **0.060** (2.2–2.5) | 0.0498 | 0.0604 | 1.60 |
+| wpo_chan | 0.0259 | 0.137 (5.0–5.7) | 0.089 (3.3–3.6) | 0.0575 | 0.0622 | 1.65 |
+| tfno_chan | **0.0126** | **0.067** (4.6–5.8) | 0.131 (9.4–11.8) | **0.0240** | **0.0373** | 2.11 |
+
+**Predictions against results.**
+1. Unseen initial modes: the TFNO's ratio high / id ≥ 2× `wpo_ic`'s: **holds** (10.5 against 2.35, 4.5×). Here
+   the IC-path WPO is also lower in absolute error (0.060 against 0.131).
+2. Larger amplitudes: every ratio ≥ 2 in every seed: **holds** (4.0–5.8).
+3. Saturation, window 10 ≤ 2× window 3 for every model: **fails** for the TFNO (2.11). The WPOs reach 1.60 and 1.65.
+   Errors keep growing slowly in all three models, unlike Burgers.
+4. `wpo_ic`'s `roll4` within ±10 % of the TFNO's: **fails.** The TFNO is 2× better (0.024 against 0.050), and also
+   2× better in-distribution (0.013 against 0.026).
+
+**Reading.**
+- **What carries over from Burgers.** The robust structural result: pole-based models tolerate initial fields on
+  unseen modes far better (ratio 2.4 against 10.5), and the IC path beats the channel input (2.4 against 3.5).
+  Larger amplitudes cost every model.
+- **What does not.** On this system the TFNO is the better model in-distribution and in rollout, by 2×. In a16
+  (zero initial state, 12000 steps) the WPO and the TFNO were at parity (0.026 against 0.029). This pass used the
+  D2 protocol (6000 steps) and no Cahn–Hilliard tuning, so the gap may partly be training budget (not checked).
+  Whatever its cause, the pole structure gives no rollout advantage here, and the IC path's edge over the channel
+  WPO (0.050 against 0.058 over 4 windows) is the only structural gain in rollout.
+- **Error growth.** Errors keep growing over 10 windows in every model (1.6–2.1× from window 3 to 10). In Burgers
+  they saturated. In the unstable band, small state errors grow within each window.
