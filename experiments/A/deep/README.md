@@ -412,5 +412,55 @@ compounding over windows, nothing does. Seed 2 (max |u| 1.65) shows the start of
 - The pole structure gives no advantage here and costs robustness. Re μ > 0 is needed for the spinodal band
   (a16, a17, a29), but about the separated phases ±1 the linearisation is stable
   (λ = −Mk²(2 + κk²)). A WPO allowed to grow can drift out of the data in rollout. A state-dependent or
-  stage-dependent cap would be needed; not tried.
+  stage-dependent cap would be needed; not tried. (a32 below: the cap is not the cause.)
+
+## Application 2, stage 2b (2026-11-21): the WPO-2D growth cap on coarsening (a32, a32b)
+
+`a32_growth_cap.py` → `results/a32_growth_cap.md` (predictions 53b2cac). a31's setup with the WPO-2D pole constraint
+changed (same 18,737 parameters, 3 seeds): `wpo_stable` (Re μ = −softplus < 0 in every layer), `wpo_cap03`
+(re_max 0.3, no leak), `wpo_cap1` (re_max 1.0, no leak). a31's `wpo` (cap 1.0, leak 0.05) and `tfno` are the
+references.
+
+| model | window-end error | diverged seeds (max \|u(21)\| > 2) | stable seeds: window-20 error, L(21) / truth, n | max Re μ |
+|---|---|---|---|---|
+| a31 wpo | 0.033–0.035 | 1 of 3 (4e5) | 0.67–0.74, 0.975–0.991, 0.261–0.268 | at the cap in seed 0 |
+| a31 tfno | **0.015–0.022** | 0 | **0.34–0.39**, 0.967–0.974, 0.255–0.257 | — |
+| wpo_stable | 0.037–0.040 | **2 of 3** (268, 171) | 0.76, 1.002, 0.271 (seed 1) | < 0 (−0.02 to −1.6) |
+| wpo_cap03 | 0.037–0.048 | **3 of 3** (9e6–1e14) | — | 0.30 in every layer and seed |
+| wpo_cap1 | 0.035–0.038 | **2 of 3** (22, 2e4) | 0.77, 0.987, 0.266 (seed 1) | 1.00 in 2–3 layers per seed |
+
+**Predictions against results.**
+1. `wpo_stable` never diverges and gets L, n right in every seed: **fails** (2 of 3 diverge).
+2. `wpo_stable` window-end error ≤ 0.043: **holds** (0.039).
+3. `wpo_cap03` never diverges: **fails** (all 3 diverge, the most violently).
+4. `wpo_cap1` reaches max Re μ ≥ 0.95 in some layer in ≥ 1 seed: **holds** (all 3).
+5. Every variant's window-20 error above the TFNO's 0.37: **holds** (the stable seeds give 0.76–0.77).
+
+**Post-hoc diagnosis** (`a32b_amplitude.py` → `results/a32b_amplitude.md`, no predictions; runs retrained with the
+same seeds). True test states at t0 = 5, 10, 15 are scaled by a, and the gain is max |M(a s)| / max |a s| at the
+window end. The truth's gain is from the solver on 128² (64² agrees to 0.3 %).
+
+| run | gain at a = 1 / 1.1 / 1.25 / 1.5 / 2 | max \|u\| after window 5 / 10 / 15 / 20 |
+|---|---|---|
+| truth | 1.00 / 0.91 / 0.80 / 0.67 / 0.50 | — |
+| tfno s0 | 1.00 / 0.94 / 0.89 / 0.82 / 0.76 | 1.05 / 1.03 / 1.04 / 1.06 |
+| wpo s0 (diverges) | 1.02 / 1.02 / 1.21 / 1.65 / 2.35 | 2.0 / 15 / 2e3 / 4e5 |
+| wpo s1 | 1.02 / 0.94 / 1.13 / 1.60 / 1.63 | 1.9 / 1.3 / 1.1 / 1.05 |
+| wpo_stable s0 (diverges) | 1.02 / 0.98 / 1.15 / 1.35 / 1.51 | 1.3 / 1.9 / 6.4 / 268 |
+| wpo_stable s1 | 1.02 / 1.05 / 1.56 / 2.95 / 4.84 | 1.1 / 1.2 / 1.3 / 1.2 |
+
+**Reading.**
+- The growth cap is not the cause of a31's divergence. Removing growth entirely (stable poles) does not help (2 of
+  3 seeds diverge), and a tight cap of 0.3 is worse (3 of 3). The poles are not where the instability lives.
+- What is missing is saturation. The true window map pulls an overshoot back towards ±1 (gain 1/a), and the TFNO
+  does so too, more weakly (0.76 at a = 2). Every WPO-2D run, with stable poles or not, amplifies a scaled state
+  (gain 1.5–4.8 at a = 2), so it has no restoring force outside the amplitudes it was trained on (|u| ≲ 1.05). An
+  overshoot past ±1 is then kept or amplified. Whether a seed diverges within 20 windows depends on whether its
+  rollout reaches such states (wpo s1 reaches 1.9 by window 5 and recovers; wpo_stable s1 has the largest gain
+  but stays below 1.3), so the gain explains the failure mode but does not predict which seed fails.
+- Why the cap of 0.3 is worst is open; with every layer pinned at the cap the one-window fit is also the worst
+  (up to 0.048).
+- Candidates (not tried): training on amplitude-perturbed starts (a·s mapped to the truth from a·s); a saturating
+  output map; rollout (pushforward) training on this system. These address the missing restoring force, not
+  the poles.
 

@@ -265,8 +265,14 @@ chained windows of one time unit, in which L(t) grows from 1.5 to 3.5 (exponent 
 - Every stable run reproduces the coarsening law (L within 3.5 %, n within 0.025). A frozen field gives 0.43, so
   the statistic is reached but is a weak discriminator.
 - The TFNO is 2× better pointwise. The pole structure gives no advantage in this nonlinear regime.
-- One WPO-2D seed diverges in rollout. Its poles sit at the growth cap, which the spinodal band requires, while
-  the dynamics about the separated phases is stable. A growth cap that suits both regimes is an open problem.
+- One WPO-2D seed diverges in rollout, with its poles at the growth cap. The cap is not the cause (a32). With
+  stable poles (Re μ < 0 in every layer), with a cap of 0.3, or with a cap of 1 without the leak, 2, 3 and 2 of
+  3 seeds diverge (one-window error 0.037–0.048 against 0.034). Instead the WPO-2D window map has no restoring
+  force on the amplitude (a32b, post hoc). Scale a true state by a = 2 and the truth brings max |u| back to
+  0.50 × the scaled maximum; the TFNO gives 0.76; every WPO-2D run, stable poles included, gives 1.5–4.8.
+  An overshoot past ±1 is therefore kept or amplified, and whether a seed diverges within 20 windows depends on
+  whether its rollout reaches such states. Saturation at ±1 is what the coarsening rollout needs from the
+  model, and the pole parametrisation does not supply it.
 
 ## Polynomial or MLP pole functions (RQ4) {#sec-rq4}
 

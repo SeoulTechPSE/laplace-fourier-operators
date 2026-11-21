@@ -13,8 +13,8 @@ Each session appends one entry using the template at the bottom.
 | (A) Pole layer and linear validation | 5–10 | **started** (2026-11-18): wavenumber pole layer (FOH time axis, `lfo.models.wavenumber`); 1D diffusion, ADR, beam and 2D diffusion, ADR dispersion recovered in every seed (two-stage, or joint fit with a leaky cap); deep operator on Burgers, Cahn–Hilliard 1D / 2D; working paper draft | dispersion relations recovered (month 10) |
 | (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits, a bootstrap-calibrated order, certificate and order test; reduction-path unresolved rules fail, a location-calibrated split test flags the merge, a combined post-report rule leaves 1 false pole in 40 groups but does not carry over to new p6 E1 groups; an EIVML refit of the reports removes the EIV bias; EIVML through the whole pipeline helps only up to η_u = 0.05; an EIVML elimination of the calibrated report leaves 0 false poles up to p4 30 η_y and p6 E1 0.05, with EIV-bootstrap intervals covering 33/36 at p4 30 η_y), E3 deep first pass done; H1–H3 theory draft (`experiments/C/theory/H1_H2.md`), E5 passes 1–14 (`experiments/C/e5_probe/`; RQ4 rule v4: 0 false trusts over the first 375 runs, 2 over 735 (few-pole LNO); four shared poles store the true decay rates; v5 adds a data-pole check: 1 false trust over 735, at the 10 % line) | — |
 | (A) Application 1: process dynamics | 11–16 | **started** (2026-11-19): delay layer; FOPDT / SOPDT identified | — |
-| (D) Initial conditions and rollout | 13–19 | **started** (2026-11-19): IC path in the wavenumber layer, exact window chaining (linear); deep Burgers rollout (pushforward / semigroup did not help; developed start states and window count each −15 %); Dirichlet, Neumann, mixed, advective and Robin boundaries as channels (Robin coefficient by a profile); out-of-range initial fields and 10-window rollout; beam with two initial fields; variable coefficient by a learned basis or as D(x) through an eigenproblem; fits run to convergence; D paper consolidated | — |
-| (A) Application 2: Cahn–Hilliard | 17–22 | **started** (2026-11-20): stages 1 and 3 in the 1D linear regime: spinodal and k_c(φ₀) recovered from early-time data (`a29_spinodal.py`); M, κ as inputs, extrapolation with the physical form only (`a30_parametric.py`); stage 2, 2D coarsening rollouts: L(t) reproduced by all models, TFNO best pointwise, one WPO seed diverges (`a31_coarsening.py`) | recover k_c, k_max (month 20) |
+| (D) Initial conditions and rollout | 13–19 | **started** (2026-11-19): IC path in the wavenumber layer, exact window chaining (linear); deep Burgers rollout (pushforward / semigroup did not help; developed start states and window count each −15 %); Dirichlet, Neumann, mixed, advective and Robin boundaries as channels (Robin coefficient by a profile); out-of-range initial fields and 10-window rollout; beam with two initial fields; variable coefficient by a learned basis or as D(x) through an eigenproblem; fits run to convergence; D paper consolidated; the TFNO's Cahn–Hilliard rollout edge is its one-window edge (d2i) | — |
+| (A) Application 2: Cahn–Hilliard | 17–22 | **started** (2026-11-20): stages 1 and 3 in the 1D linear regime: spinodal and k_c(φ₀) recovered from early-time data (`a29_spinodal.py`); M, κ as inputs, extrapolation with the physical form only (`a30_parametric.py`); stage 2, 2D coarsening rollouts: L(t) reproduced by all models, TFNO best pointwise, one WPO seed diverges (`a31_coarsening.py`); the growth cap is not the cause, the WPO-2D window map lacks amplitude saturation (`a32_growth_cap.py`, `a32b_amplitude.py`) | recover k_c, k_max (month 20) |
 | Consolidation and code release | 23–24 | not started | — |
 
 ## Open decisions
@@ -173,6 +173,27 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-21 — (A) application 2 stage 2b: the WPO-2D growth cap; (D) d2i rollout error decomposition
+
+- Done:
+  - `experiments/A/deep/a32_growth_cap.py` (predictions 53b2cac): a31 with stable poles, cap 0.3, cap 1 without
+    leak (3 seeds each). Post hoc `a32b_amplitude.py`: amplitude gain of the window map on scaled true states.
+    Deep README, A paper (`#sec-coarsening`).
+  - `experiments/D/d2_initial_conditions/d2i_ch_diagnosis.py` (predictions 0e55aa7): d2g's rollout error split
+    into local and inherited parts with the true solver run from the models' own states. D2 README ninth pass,
+    D paper; an earlier D claim (errors amplified in the unstable band) corrected.
+- Results:
+  - a32: predictions 2, 4, 5 hold; 1 and 3 fail. Stable poles: 2 of 3 seeds diverge; cap 0.3: 3 of 3; cap 1
+    without leak: 2 of 3. The cap is not the cause. a32b: the truth's gain at a = 2 is 0.50, the TFNO's 0.76,
+    every WPO-2D run's 1.5–4.8 (stable poles included): the WPO-2D map has no restoring force on overshoots.
+  - d2i: all 4 predictions hold. Carried errors are contracted by the true dynamics (0.81–0.96 per window) and
+    both models reproduce that within 5 %; the TFNO's local error is 0.56× the IC path's in every window, in the
+    same bands. The rollout gap is the one-window gap.
+- Decisions: none.
+- Next: (A) a restoring force for WPO-2D on coarsening: amplitude-perturbed training starts, a saturating output
+  map, or pushforward training (pre-register one). (D) the one-window gap on Cahn–Hilliard: IC-path width / loss
+  weighting of fresh-start windows.
 
 ### 2026-11-21 — (A) application 2 stage 2: rollout into 2D coarsening
 

@@ -105,7 +105,7 @@ def main():
         mr = "; ".join("/".join(f"{v:.2f}" for v in r["max_re"]) for r in rs) if "max_re" in rs[0] else "—"
         lines.append(f"| {name} | {rg([r['win'] for r in rs], '.4f')} | {pw[0]:.3f} / {pw[4]:.3f} / {pw[-1]:.3g} | "
                      f"{rg([r['L21_ratio'] for r in rs], '.3f')} | {rg([r['n'] for r in rs], '.3f')} | "
-                     f"{rg([r['S21_err'] for r in rs], '.3f')} | {rg([r['maxabs21'] for r in rs], '.3g')} | {mr} |")
+                     f"{rg([r['S21_err'] for r in rs], '.3g')} | {rg([r['maxabs21'] for r in rs], '.3g')} | {mr} |")
     lines += ["", "Per seed (window-end error, window-20 error, max abs u(21)):", ""]
     for name, rs in rows:
         lines.append(f"- {name}: " + "; ".join(f"s{r['seed']} {r['win']:.4f}, {r['roll_per_window'][-1]:.3g}, "
