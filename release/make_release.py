@@ -7,7 +7,8 @@ foundation reproduction results, `experiments/C/e1_audit/E1_report.md` (internal
 and `experiments/C/theory/` (a follow-up study, unpublished).
 
 The follow-up study stays out of the release: the `C/theory` modules that released scripts import are added in the
-release commit only (no history, docstring replaced by a neutral line), and commit messages that mention the
+release commit only (no history, no comments, docstring replaced by a neutral line), file references to the
+follow-up are replaced by "a follow-up study" in every version (REPLACE_TEXT), and commit messages that mention the
 follow-up (E2–E4, H1–H3, propositions, CRB, certificates, EIV) are replaced by a neutral message.
 
     pip install git-filter-repo
@@ -34,6 +35,15 @@ EXCLUDE = ("experiments/C/e1_audit/E1_report.md",)
 LATE = "experiments/C/theory/"     # imported modules from here enter in the release commit only
 STUB = ('"""Helper module of a follow-up identification study (not part of this release); included because released '
         'scripts import it."""')
+# cross-references to the follow-up in released files, replaced in every historical version
+REPLACE_TEXT = """`experiments/C/theory/H1_H2.md`==>a follow-up study
+`experiments/C/theory/README.md`==>a follow-up study
+experiments/C/theory/README.md==>a follow-up study
+`H1_H2.md`==>a follow-up study
+Proposition 8's==>a follow-up result's
+Proposition 8==>a follow-up result
+Proposition 7==>a follow-up result
+"""
 MESSAGE_CALLBACK = r"""
 import re
 if re.search(rb"\b(E[234]|H[1-3]|[Pp]roposition|CRB|Cram|certificate|EIV|[Ii]nput noise|output noise)\b", message):
@@ -81,7 +91,13 @@ def release_paths() -> list[str]:
     return sorted(str(p) for p in keep)
 
 
-def stub_docstring(src: str) -> str:
+def neutral_module(src: str) -> str:
+    """Replace the module docstring by STUB and drop all comments (they record the follow-up's passes)."""
+    import io
+    import tokenize
+    toks = [t for t in tokenize.generate_tokens(io.StringIO(src).readline) if t.type != tokenize.COMMENT]
+    src = tokenize.untokenize(toks)
+    src = "\n".join(line.rstrip() for line in src.split("\n"))
     doc = ast.parse(src).body[0]
     lines = src.split("\n")
     return "\n".join(lines[:doc.lineno - 1] + [STUB] + lines[doc.end_lineno:])
@@ -103,10 +119,13 @@ def main():
     git("clone", "--no-local", "--quiet", str(ROOT), str(out))
     plist = out.parent / (out.name + ".paths")
     plist.write_text("\n".join(paths) + "\n")
+    rlist = out.parent / (out.name + ".replace")
+    rlist.write_text(REPLACE_TEXT)
     subprocess.run([sys.executable, "-m", "git_filter_repo", "--paths-from-file", str(plist), "--force", "--quiet",
-                    "--message-callback", MESSAGE_CALLBACK],
+                    "--message-callback", MESSAGE_CALLBACK, "--replace-text", str(rlist)],
                    cwd=out, check=True)
     plist.unlink()
+    rlist.unlink()
 
     # development hash -> release hash, for the commits that survive the filter
     rows = []
@@ -128,7 +147,7 @@ def main():
     shutil.copy(ROOT / "release" / "README.md", out / "README.md")
     for p in late:
         (out / p).parent.mkdir(parents=True, exist_ok=True)
-        (out / p).write_text(stub_docstring(git("show", f"HEAD:{p}")))
+        (out / p).write_text(neutral_module(git("show", f"HEAD:{p}")))
     subprocess.run([sys.executable, "experiments/make_index.py"], cwd=out, check=True)
     env = dict(os.environ, GIT_AUTHOR_NAME="Kee-Youn Yoo", GIT_COMMITTER_NAME="Kee-Youn Yoo")
     git("add", "-A", cwd=out)
