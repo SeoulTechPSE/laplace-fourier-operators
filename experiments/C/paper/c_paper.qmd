@@ -1,7 +1,7 @@
 ---
 title: "Do Laplace Neural Operators Learn Physical Poles? An Audit on Linear Systems and a Trust Rule for Nonlinear Ones"
 author: "Kee-Youn Yoo"
-date: 2026-11-18
+date: 2026-11-22
 format:
   pdf:
     papersize: a4
@@ -44,7 +44,7 @@ operator and a check on the training data agree. It took four versions, each pre
 followed. The tests cover five systems (damped and undamped Duffing, a driven pendulum, forced Lorenz at $\rho = 5$ and
 10), 18 data sets and 375 trained models.
 
-The final rule makes no false trust in any of them. On the system it had not seen it trusts 8 of 75 models, all
+The fourth version (v4) makes no false trust in any of them. On the system it had not seen it trusts 8 of 75 models, all
 within 4 %. On 360 later models it trusts 167 with 2 false trusts (10 % and 25 % off), both in a few-pole variant.
 Adding a check of the Jacobian pole against a pole fitted to the low-amplitude data removes the 25 % one at no cost.
 It requires:
@@ -310,8 +310,9 @@ cannot detect a bad fit when the output has a large mean: on Lorenz even the mea
     weights in the textbook wiring give 0.5–2.5 %.
   - Trained with the textbook wiring (90 further runs, pre-registered), the LNO has causal Jacobians in every run
     and a lower median test error on all 18 sets.
-  - v4 certifies 37 of these runs, with no false trust. Over all 645 runs, including the shared- and few-pole runs
-    below, v4 trusts 176 with 2 false trusts.
+  - v4 certifies 37 of these runs, with no false trust. Over the 645 runs up to and including the four-pole runs
+    below, v4 trusts 176 with 2 false trusts; with the 90 two-pole runs of the last test, 219 of 735 with the
+    same 2.
   - Where its Jacobian pole is right but no stored pole is within 10 % (12 runs, mostly Lorenz $\rho = 5$), the
     rule declines to read the stored poles, as it should. A decomposition of the small-signal response over the
     stored poles shows why. The modes that carry the oscillation decay at only 19–66 % of the true rate (median
@@ -342,7 +343,8 @@ cannot detect a bad fit when the output has a large mean: on Lorenz even the mea
     at 9.2 % from $\mu_\text{low}$. This was designed after seeing the failures. Its pre-registered test on 2 shared
     poles (90 runs) was uninformative: v4 already made no false trust there (43 trusted, 5 of them 7–9.7 % off).
     Where the gate passes, $\mu_\text{low}$ is within 3 % of the reference ($\le 6$ % on `moderate`). So v5
-    catches gross errors but cannot settle errors near the 10 % line.
+    catches gross errors but cannot settle errors near the 10 % line. Over all 735 runs v5 trusts 218,
+    with 1 false trust (the 10.4 % one).
 - **No model stores the fast real Lorenz pole** ($-11.8$ and $-12.5$), as with the fast real poles of @sec-fastreal.
 - **Output offsets need care.** On Lorenz the output is $x(t)$ about $C_+ \approx 3.3$ or $4.9$. A learned offset
   with coupled weight decay is pulled towards zero at almost the full learning rate, because its own gradient
