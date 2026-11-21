@@ -273,6 +273,13 @@ chained windows of one time unit, in which L(t) grows from 1.5 to 3.5 (exponent 
   An overshoot past ±1 is therefore kept or amplified, and whether a seed diverges within 20 windows depends on
   whether its rollout reaches such states. Saturation at ±1 is what the coarsening rollout needs from the
   model, and the pole parametrisation does not supply it.
+- Training data supplies it (a33). Give each training window one copy started from a·s (a ~ U[0.7, 1.6]),
+  with the true solution from a·s as the target. Every WPO-2D seed then restores overshoots (gain 0.58–0.66 at
+  a = 2) and none diverges. L(21) is within 4 % and n within 0.03 in all seeds. The one-window error barely
+  changes (0.037). Pointwise rollout does not improve (window 20: 0.81), and the TFNO trained the same way stays
+  2× better (0.41). The divergence was a gap in data coverage, not a pole problem. In this nonlinear regime the
+  TFNO is the better surrogate; the pole structure pays in the linear regime (spinodal band, k_c, extrapolation
+  in M and κ).
 
 ## Polynomial or MLP pole functions (RQ4) {#sec-rq4}
 

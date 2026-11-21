@@ -464,3 +464,40 @@ window end. The truth's gain is from the solver on 128² (64² agrees to 0.3 %).
   output map; rollout (pushforward) training on this system. These address the missing restoring force, not
   the poles.
 
+
+## Application 2, stage 2c (2026-11-21): training on amplitude-perturbed starts (a33)
+
+`a33_amplitude_aug.py` → `results/a33_amplitude_aug.md` (predictions 410fd88). a32b's diagnosis: the WPO-2D map
+has no restoring force on overshoots. Remedy: each of a31's 960 training windows gets one scaled copy, start a·s
+with a ~ U[0.7, 1.6], target the truth from a·s (128² solver, dt / 2; checked against dt / 4 to 5e-6). Training
+set 1920 windows, otherwise a31 (6000 steps, same models, seeds, parameters).
+
+| model | window-end error | diverged seeds | window 1 / 5 / 20 error | L(21) / truth | n | gain at a = 1.25 / 1.5 / 2 |
+|---|---|---|---|---|---|---|
+| a31 wpo | 0.033–0.035 | 1 of 3 | 0.22 / 0.45 / 0.67–0.74 (stable seeds) | 0.975–0.991 (stable) | 0.261–0.268 (stable) | 1.13–1.21 / 1.60–1.65 / 1.63–2.35 (a32b) |
+| wpo_aug | 0.035–0.039 | **0 of 3** | 0.22 / 0.47 / 0.81 | 0.961–0.990 | 0.244–0.262 | **0.82–0.83 / 0.70–0.72 / 0.58–0.66** |
+| a31 tfno | 0.015–0.022 | 0 | 0.13 / 0.22 / 0.37 | 0.967–0.974 | 0.255–0.257 | 0.89 / 0.82 / 0.76 (a32b, s0) |
+| tfno_aug | **0.018–0.020** | 0 | **0.14 / 0.24 / 0.41** | 0.974–0.976 | 0.255–0.257 | 0.80 / 0.67 / 0.51 |
+
+Truth's gain: 0.80 / 0.67 / 0.50.
+
+**Predictions against results.**
+1. `wpo_aug` never diverges: **holds** (max |u(21)| 1.04–1.08 in all 3 seeds).
+2. `wpo_aug` gain < 1 at a = 1.25 and 1.5 in every seed: **holds** (0.82–0.83, 0.70–0.72).
+3. `wpo_aug` window-end error ≤ 0.041: **holds** (mean 0.037).
+4. `wpo_aug` window-20 rollout error ≤ 0.74: **fails** (0.81; seeds 0.70, 0.85, 0.89).
+5. `tfno_aug` best pointwise: **holds** (0.41 against 0.81).
+
+**Reading.**
+- One cheap data change fixes the failure mode. With amplitude-perturbed starts, every WPO-2D seed restores
+  overshoots (gain close to the truth's, also at a = 2, outside the training range), and no seed diverges, where
+  a31 / a32 lost 1–3 of 3 seeds under every pole constraint. The divergence was a data-coverage problem (the
+  training starts never left |u| ≲ 1.05), not a pole problem.
+- The coarsening statistics are now right in every WPO-2D seed (L(21) within 4 %, n within 0.03).
+- It does not buy pointwise accuracy. The stable WPO-2D rollouts are slightly worse than a31's two surviving
+  seeds (0.81 against 0.71), at a slightly higher one-window error (0.037 against 0.034: half the training windows
+  are now off the trajectory distribution). The TFNO learns the restoring map almost exactly with the same data
+  (gain 0.51 at a = 2) and stays 2× better pointwise.
+- Net for application 2, stage 2: the pole operator reaches the coarsening statistics robustly once trained on
+  perturbed starts, but the TFNO is the better surrogate in this nonlinear regime. The pole structure's value in
+  Cahn–Hilliard stays in the linear regime (a29, a30: spinodal band, k_c, parametric extrapolation).
