@@ -321,3 +321,32 @@ forcing response is also worse than at a16's parity (zero initial states, 12000 
 A likely reading is shared capacity. The IC path reuses the poles and the width (23) of the forced path, and a
 nonlinear initial-field response (fields up to |u| ≈ 3 relaxing towards ±1) takes capacity from both. Candidates:
 a separate pole set or width for the IC path at a matched budget.
+
+## Eleventh pass (2026-11-21): IC-path capacity at a matched budget (d2k)
+
+`d2k_ic_capacity.py` → `results/d2k_ic_capacity.md` (predictions 66443e4). Two changes to how the initial field
+enters, at the same budget, d2g's setup (6000 steps, 3 seeds).
+- `wpo_ic_sep`: separate poles for the first layer's free response (61,160 parameters).
+- `wpo_ic_all`: a free response from its own input at t = 0 in every layer, width 20 (60,869).
+The wrapper with neither change reproduces `wpo_ic` to 4.8e-15.
+
+| model | id | high (ratio) | roll4 | force_only | ic_only |
+|---|---|---|---|---|---|
+| wpo_ic | 0.0255 | 0.060 (2.35) | 0.0498 | 0.0457 | 0.0209 |
+| wpo_ic_sep | 0.0259 | 0.065 (2.51) | 0.0481 | 0.0511 | 0.0207 |
+| wpo_ic_all | 0.0259 | 0.070 (2.69) | 0.0502 | 0.0506 | 0.0204 |
+| tfno_chan | **0.0126** | 0.131 (10.4) | **0.0240** | **0.0333** | **0.0087** |
+
+**Predictions against results.**
+1. `wpo_ic_sep` within ±10 % of `wpo_ic`: **holds** (0.0259).
+2. `wpo_ic_all` ≤ 0.0217: **fails** (0.0259).
+3. Neither closes half the gap (both > 0.019): **holds**.
+4. `wpo_ic_all` high / id ≤ 4: **holds** (2.69).
+
+**Reading.** How the initial field enters does not matter. Four ways of feeding it give the same one-window error
+within 2 %: the first-layer IC path, the input channel (d2g), separate IC poles, and the free response in every
+layer (0.0255–0.0259). Every row is a WPO with the same backbone. So d2j's capacity-sharing reading in this form is
+not supported. The gap to the TFNO is a property of the WPO backbone on this system, not of its IC path. The
+unseen-mode tolerance survives every change (2.4–2.7 against 10.4). Open: the backbone's pointwise expressivity or
+its optimisation (the TFNO also improves more with initial fields than the WPO does: 0.029 → 0.013 against
+0.026 → 0.026, a16 against d2g, different test sets). Further IC-path variants are not a promising lead.
