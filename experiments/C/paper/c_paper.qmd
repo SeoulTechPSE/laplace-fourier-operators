@@ -92,6 +92,29 @@ A stored pole of a nonlinear model can differ from the small-signal pole for thr
    a gate on the data. It is built in four pre-registered versions, every failure is kept in the record, and the
    final version is tested on a system it had not seen.
 
+## Related work
+
+**Pole and residue models in operator learning.** The LNO [@cao2024lno] learns poles and residues in a Laplace-domain
+layer; PILNO [@kim2026pilno] adds a physics-informed loss with a transient branch and an FNO-type steady branch, and
+LFNO [@ha2026lfno; @ha2025bestofboth] pairs the pole branch with a Fourier steady branch. All three read the
+learned poles as physical time scales; none tests that reading against known poles, which is what this paper does.
+Neural operators without poles, the FNO [@li2021fno] and DeepONet [@lu2021deeponet], make no such claim.
+
+**State-space and generator models.** Structured state-space models keep learned diagonal poles per channel
+[@gu2022s4; @gu2022s4d] and have been used as neural operators for dynamical systems [@hu2025ssmno]. Recent PDE
+operators learn a stable linear generator per Fourier mode, with an exponential-integrator update [@li2026sgno] or
+as a continuous-time Koopman generator whose damping is tied to the wavenumber [@jamil2026lgn]; the latter reads a
+dispersion relation from the generator. These works report accuracy or a qualitative spectrum; whether the learned
+poles are the system's, and when they may be trusted, is not examined. Dynamic mode decomposition
+[@schmid2010dmd] estimates linear modes from data directly, without an operator to audit.
+
+**System identification.** Identifiability of model parameters from input–output data is a classical question
+[@bellman1970structural; @ljung1999system]; profile likelihoods [@raue2009profile] separate structural from
+practical non-identifiability, and we use them in @sec-fastreal. Our probes extract poles with standard tools: an
+order-2 matrix pencil on impulse responses [@hua1990pencil] and a rational fit of the odd-part response, in the
+spirit of vector fitting [@gustavsen1999vf]. What is new here is applying them to trained operators, and combining
+a model-side probe with a data-side check into a rule for when a stored pole may be read as physical.
+
 ## Linear systems: setup {#sec-lin-setup}
 
 **Systems.** We use three systems:
@@ -215,7 +238,7 @@ On Lorenz the tied layer has a learned output offset $b(t)$, which does not depe
 
 - **Jacobian probe.** $J = \partial G/\partial f$ at $f = 0$ (2048 × 2048, by automatic differentiation). It is
   *valid* if it is causal (less than 10 % of $\lVert J\rVert$ above the diagonal) and shift-invariant (a Toeplitz
-  fit leaves less than 10 % of its causal part). Its pole $\mu_J$ comes from an order-2 matrix pencil on the mean
+  fit leaves less than 10 % of its causal part). Its pole $\mu_J$ comes from an order-2 matrix pencil [@hua1990pencil] on the mean
   subdiagonals. On the true Lorenz impulse responses this pencil is biased by 2.8 % ($\rho=5$) and 1.1 %
   ($\rho=10$).
 - **LTI probe.** The odd part $(G(\varepsilon u)-G(-\varepsilon u))/2\varepsilon$ on 16 smooth random inputs,

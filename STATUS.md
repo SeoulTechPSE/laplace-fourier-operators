@@ -28,7 +28,8 @@ Each session appends one entry using the template at the bottom.
   D2 standalone; the D paper still carries D1 (plan review 2026-11-22)
 - [ ] (A) paper split: the plan has two papers ("method + process", month 16; "Cahn–Hilliard", month 24); the draft
   is one paper
-- [ ] (C) paper venue and submission (E1 + E5 working paper; the planned month-5 workshop output is not submitted)
+- [ ] (C) paper venue and submission (E1 + E5 working paper; the planned month-5 workshop output is not submitted).
+  Options and checklist in `experiments/C/paper/SUBMISSION.md` (recommended: TMLR)
 - [ ] Staffing (affects schedule adjustments in `docs/integrated_schedule_ACD.qmd`, Section 4)
 - [x] Whether ALNO / LFNO code is public: **not public** (2026-11-12); both re-implemented in `lfo.models.hybrid`
 - [x] E1 paper: **decided** (2026-11-18): selected table in the main text, full grid in an appendix; deep "closest pooled pole" in the main text as an optimistic upper bound; budget rule waived for the layer setting only; workshop paper = E1 + an E2 paragraph, main (C) paper = E2–E5 + H1–H3 (`experiments/C/e1_audit/E1_report.md`, "Decisions for the paper")
