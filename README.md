@@ -64,6 +64,12 @@ y = model(f)                       # f: (batch, n_x, n_t) forcing on a periodic 
 set_domain(model, 4 * math.pi)     # the same model on a domain twice as long (inputs on 2 n_x points)
 ```
 
+## Public release
+
+`python release/make_release.py OUT_DIR --test` (needs `pip install git-filter-repo`) builds the public copy: MIT
+license, `src/lfo`, its tests and the paper scripts with their history; see the script's docstring for what is left
+out.
+
 ## Layout
 
 ```

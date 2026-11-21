@@ -35,6 +35,9 @@ pip install -e ".[dev]"
 pytest
 ```
 
+Nine tests in `tests/test_lno.py` compare the ported LNO with the original code bit for bit; they need that
+code in `runs/ref/LNO` and a CUDA GPU, and are skipped otherwise.
+
 ## Reproducing a result
 
 ```bash

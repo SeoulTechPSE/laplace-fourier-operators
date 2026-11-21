@@ -15,7 +15,7 @@ Each session appends one entry using the template at the bottom.
 | (A) Application 1: process dynamics | 11–16 | **started** (2026-11-19): delay layer; FOPDT / SOPDT identified | — |
 | (D) Initial conditions and rollout | 13–19 | **started** (2026-11-19): IC path in the wavenumber layer, exact window chaining (linear); deep Burgers rollout (pushforward / semigroup did not help; developed start states and window count each −15 %); Dirichlet, Neumann, mixed, advective and Robin boundaries as channels (Robin coefficient by a profile); out-of-range initial fields and 10-window rollout; beam with two initial fields; variable coefficient by a learned basis or as D(x) through an eigenproblem; fits run to convergence; D paper consolidated; the TFNO's Cahn–Hilliard rollout edge is its one-window edge (d2i), largest in the initial-field response (d2j), independent of how the initial field enters (d2k) and of poles or depth (d2l); the Cahn–Hilliard line is closed | — |
 | (A) Application 2: Cahn–Hilliard | 17–22 | **started** (2026-11-20): stages 1 and 3 in the 1D linear regime: spinodal and k_c(φ₀) recovered from early-time data (`a29_spinodal.py`); M, κ as inputs, extrapolation with the physical form only (`a30_parametric.py`); stage 2, 2D coarsening rollouts: L(t) reproduced by all models, TFNO best pointwise, one WPO seed diverges (`a31_coarsening.py`); the growth cap is not the cause, the WPO-2D window map lacks amplitude saturation (`a32_growth_cap.py`, `a32b_amplitude.py`); amplitude-perturbed training starts remove the divergence (`a33_amplitude_aug.py`); WPO-2D transfers to a 4π box without retraining, the TFNO does not (`a34_domain.py`); a TFNO trained on 4π with its band rescaled is 1.8× more accurate (`a35_tfno_4pi.py`) | recover k_c, k_max (month 20) |
-| Consolidation and code release | 23–24 | **started** (2026-11-21): A and D papers consolidated; experiment index (`experiments/INDEX.md`); README with reproduction steps; `lfo.models.set_domain`. Open: license and public release (user decision) | — |
+| Consolidation and code release | 23–24 | **started** (2026-11-21): A and D papers consolidated; experiment index (`experiments/INDEX.md`); README with reproduction steps; `lfo.models.set_domain`. C paper checked; A paper transfer figure. Release decided (2026-11-22): MIT, version 0.0.1, `src/lfo` and the paper scripts only; `release/make_release.py` builds the path-filtered copy. Open: creating and pushing the public repository | — |
 
 ## Open decisions
 
@@ -173,6 +173,23 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-22 — Code release: MIT license and a path-filtered public copy
+
+- Done:
+  - `LICENSE` (MIT, Kee-Youn Yoo); `pyproject.toml` declares it; version stays 0.0.1.
+  - `release/make_release.py OUT [--test]`: clones the repository and keeps, with `git filter-repo`, only `src/lfo`,
+    `tests`, `LICENSE`, `pyproject.toml`, the paper folders (A layer / deep / process / paper, C e1_audit /
+    e5_probe / paper, D) and the experiment modules their scripts import (7 `C/theory` modules, `H1_H2.md`,
+    `foundation/reproduce_lno.py` and its README). It writes `HASHES.md` (development → release hash for every
+    kept commit), swaps in `release/README.md`, regenerates the index with release hashes, and commits.
+  - First build (from this commit's parent): 2,041 files, 106 scripts, 227 of 252 commits; every script imports in
+    the release; pytest 61 passed, 9 skipped (the bit-for-bit LNO tests need the original code in `runs/ref/LNO`).
+    No excluded path occurs anywhere in the release history.
+- Decisions (user, 2026-11-22): MIT license, version 0.0.1, release scope `src/lfo` plus the paper reproduction
+  scripts. Not released: `docs/`, `STATUS.md`, `CLAUDE.md`, foundation results, the rest of `C/theory` (a separate
+  paper).
+- Next: create the public repository and push the built copy (user decision on name and timing).
 
 ### 2026-11-22 — Consolidation: C paper check, coarsening-transfer figure
 
