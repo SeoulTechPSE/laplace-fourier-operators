@@ -46,6 +46,15 @@ the IC path included); TFNO rank 0.015, 64,745 (+6 %; the next rank down is furt
 3. Resolution transfer: both models' 1024-point nRMSE is <= 1.3x their 256-point nRMSE in every seed.
 
     python experiments/A/deep/a37_pdebench_burgers.py      # results/a37_pdebench_burgers.md / .json
+    python experiments/A/deep/a37_pdebench_burgers.py --rerun-wpo   # post hoc, after the foh_kernel fix (below)
+
+**Post hoc (added after the run, 2026-11-22).** All three pre-registered WPO runs ended in nan. Diagnosis (seed 0,
+same configuration, logging every 250 steps): the loss fell normally (0.06 at step 6,000) while the fastest poles
+grew to Re mu ~ -14,000; at step 6,270 the gradient overflowed. Cause: a bug in `lfo.models.wavenumber.foh_kernel`,
+which evaluated exp(-mu dt) in a masked branch; for Re(mu) dt < -709 it is inf and the masked inf gives a nan
+gradient (fixed in 1cdc1b5, with a test). The model and its configuration are unchanged; `--rerun-wpo` repeats
+the three pre-registered WPO runs with the fixed kernel and stores them under "rerun". The nan runs stay in the
+record.
 """
 from __future__ import annotations
 
@@ -223,6 +232,8 @@ def checks(d):
 
 def main():
     device = torch.device("cuda")
+    if "--rerun-wpo" in sys.argv:
+        return rerun_wpo(device)
     d = load()
     t = d["t"].numpy()
     S = splits(d)
@@ -275,6 +286,35 @@ def main():
     summarize(out)
 
 
+def rerun_wpo(device):
+    d = load()
+    t = d["t"].numpy()
+    S = splits(d)
+    n_t = S["train"].shape[2]
+    out = json.loads(OUT.read_text())
+    out.setdefault("rerun", [])
+    best = min((r for r in out["sweep"] if r["model"] == "wpo"), key=lambda r: r["vali"])["cfg"]
+    full_test = d["full"][NTR:].to(torch.float64)
+    for seed in SEEDS:
+        if any(r["seed"] == seed for r in out["rerun"]):
+            continue
+        t1 = time.time()
+        m = build("wpo", seed, t, device)
+        train(m, S["train"], device, steps=FINAL_STEPS, **best)
+        m.eval()
+        r = dict(model="wpo", seed=seed, cfg=best, real_params=n_real_params(m),
+                 test=nrmse(predict(m, S["test"], device), S["test"]),
+                 test_1024=nrmse(predict(m, full_test, device), full_test),
+                 probe=model_probe(m, t, 256, n_t, device), seconds=round(time.time() - t1, 1))
+        out["rerun"].append(r)
+        print("rerun wpo", seed, f"test {r['test']:.4f} 1024 {r['test_1024']:.4f}",
+              f"nu' {r['probe']['nu_hat']:.4f} disp {r['probe']['disp_err']:.3f}", f"{r['seconds']} s", flush=True)
+        OUT.write_text(json.dumps(out, indent=1, default=float))
+        del m
+        torch.cuda.empty_cache()
+    summarize(out)
+
+
 def summarize(out):
     c = out["checks"]
     rg = lambda xs, f: f"{np.mean(xs):{f}} ({min(xs):{f}}–{max(xs):{f}})"
@@ -284,8 +324,13 @@ def summarize(out):
              f"Budget (real): {out['budget']}. Means over 3 seeds (range).", "",
              "| model | real params | nRMSE 256 | nRMSE 1024 | 1024 / 256 | probe ν' | dispersion error |",
              "|---|---|---|---|---|---|---|"]
-    for kind in SWEEP:
-        rs = [r for r in out["final"] if r["model"] == kind]
+    groups = [(k, [r for r in out["final"] if r["model"] == k]) for k in SWEEP]
+    if out.get("rerun"):
+        groups.insert(1, ("wpo, rerun after the kernel fix (post hoc)", out["rerun"]))
+    for kind, rs in groups:
+        rs = [r for r in rs if np.isfinite(r["test"])]
+        if not rs:
+            lines.append(f"| {kind} | – | diverged (nan) in every seed | | | | |")
         if rs:
             lines.append(f"| {kind} | {rs[0]['real_params']} | {rg([r['test'] for r in rs], '.4f')} | "
                          f"{rg([r['test_1024'] for r in rs], '.4f')} | {rg([r['test_1024'] / r['test'] for r in rs], '.2f')} | "
