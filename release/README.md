@@ -53,7 +53,7 @@ python experiments/A/deep/a34_domain.py      # writes experiments/A/deep/results
   ([qianyingcao/Laplace-Neural-Operator](https://github.com/qianyingcao/Laplace-Neural-Operator)); place it in
   `runs/data/lno_drive` (see `experiments/foundation/README.md` and `lfo.data.lno_bench`).
 - `experiments/C/theory/` holds only the modules that the released scripts import. The identification study they
-  come from (the E2 paragraph of the (C) paper) is a separate paper and not part of this release.
+  come from is a separate paper and not part of this release.
 
 ## Using the layers
 

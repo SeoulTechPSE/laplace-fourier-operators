@@ -3,7 +3,12 @@
 The release is a path-filtered clone of this repository. History is kept for the released paths (original dates),
 so each pre-registration commit still precedes its results; hashes change, and `HASHES.md` maps the development
 hashes quoted in the READMEs to the new ones. Not released: `docs/` (plans), `STATUS.md`, `CLAUDE.md`, the
-foundation reproduction results, and `experiments/C/theory/` apart from the modules the released scripts import.
+foundation reproduction results, `experiments/C/e1_audit/E1_report.md` (internal report with the follow-up plan),
+and `experiments/C/theory/` (a follow-up study, unpublished).
+
+The follow-up study stays out of the release: the `C/theory` modules that released scripts import are added in the
+release commit only (no history, docstring replaced by a neutral line), and commit messages that mention the
+follow-up (E2–E4, H1–H3, propositions, CRB, certificates, EIV) are replaced by a neutral message.
 
     pip install git-filter-repo
     python release/make_release.py OUT_DIR [--test]      # OUT_DIR must not exist
@@ -24,8 +29,18 @@ ROOT = Path(__file__).resolve().parents[1]
 FOLDERS = ("src/lfo", "tests", "experiments/A/layer", "experiments/A/deep", "experiments/A/process",
            "experiments/A/paper", "experiments/C/e1_audit", "experiments/C/e5_probe", "experiments/C/paper",
            "experiments/D")
-FILES = ("LICENSE", "pyproject.toml", ".gitignore", "experiments/make_index.py",
-         "experiments/foundation/README.md", "experiments/C/theory/H1_H2.md")
+FILES = ("LICENSE", "pyproject.toml", ".gitignore", "experiments/make_index.py", "experiments/foundation/README.md")
+EXCLUDE = ("experiments/C/e1_audit/E1_report.md",)
+LATE = "experiments/C/theory/"     # imported modules from here enter in the release commit only
+STUB = ('"""Helper module of a follow-up identification study (not part of this release); included because released '
+        'scripts import it."""')
+MESSAGE_CALLBACK = r"""
+import re
+if re.search(rb"\b(E[234]|H[1-3]|[Pp]roposition|CRB|Cram|certificate|EIV|[Ii]nput noise|output noise)\b", message):
+    scope = message.split(b":", 1)[0] if b":" in message.split(b"\n", 1)[0] else b"C"
+    message = scope + b": update (message withheld: it concerns an unpublished follow-up study)\n"
+return message
+"""
 
 
 def git(*args, cwd=ROOT, env=None):
@@ -40,6 +55,7 @@ def release_paths() -> list[str]:
     """The released folders and files, plus every experiment module their scripts import (transitively)."""
     files = tracked()
     keep = {f for f in files if any(str(f).startswith(d + "/") for d in FOLDERS)} | {Path(f) for f in FILES}
+    keep -= {Path(f) for f in EXCLUDE}
     modules = {}
     for f in files:
         if f.suffix == ".py" and str(f).startswith("experiments/"):
@@ -65,6 +81,12 @@ def release_paths() -> list[str]:
     return sorted(str(p) for p in keep)
 
 
+def stub_docstring(src: str) -> str:
+    doc = ast.parse(src).body[0]
+    lines = src.split("\n")
+    return "\n".join(lines[:doc.lineno - 1] + [STUB] + lines[doc.end_lineno:])
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("out", type=Path)
@@ -76,10 +98,13 @@ def main():
     if git("status", "--porcelain").strip():
         sys.exit("working tree not clean: commit first (the release is built from HEAD)")
     paths = release_paths()
+    late = [p for p in paths if p.startswith(LATE)]
+    paths = [p for p in paths if not p.startswith(LATE)]
     git("clone", "--no-local", "--quiet", str(ROOT), str(out))
     plist = out.parent / (out.name + ".paths")
     plist.write_text("\n".join(paths) + "\n")
-    subprocess.run([sys.executable, "-m", "git_filter_repo", "--paths-from-file", str(plist), "--force", "--quiet"],
+    subprocess.run([sys.executable, "-m", "git_filter_repo", "--paths-from-file", str(plist), "--force", "--quiet",
+                    "--message-callback", MESSAGE_CALLBACK],
                    cwd=out, check=True)
     plist.unlink()
 
@@ -91,7 +116,7 @@ def main():
         old, new = line.split()
         if set(new) == {"0"}:
             continue
-        date, subject = git("log", "-1", "--format=%ad%x09%s", "--date=short", old).strip().split("\t", 1)
+        date, subject = git("log", "-1", "--format=%ad%x09%s", "--date=short", new, cwd=out).strip().split("\t", 1)
         rows.append((date, old[:7], new[:7], subject.replace("|", "/")))
     rows.sort()
     (out / "HASHES.md").write_text("\n".join(
@@ -101,12 +126,16 @@ def main():
          "| date | development | release | message |", "|---|---|---|---|"]
         + [f"| {d} | `{o}` | `{n}` | {s} |" for d, o, n, s in rows]) + "\n")
     shutil.copy(ROOT / "release" / "README.md", out / "README.md")
+    for p in late:
+        (out / p).parent.mkdir(parents=True, exist_ok=True)
+        (out / p).write_text(stub_docstring(git("show", f"HEAD:{p}")))
     subprocess.run([sys.executable, "experiments/make_index.py"], cwd=out, check=True)
     env = dict(os.environ, GIT_AUTHOR_NAME="Kee-Youn Yoo", GIT_COMMITTER_NAME="Kee-Youn Yoo")
     git("add", "-A", cwd=out)
     git("commit", "-q", "-m", "Release 0.0.1: README for the release, hash map, index with release hashes", cwd=out, env=env)
     n_py = sum(p.endswith(".py") for p in paths)
-    print(f"release at {out}: {len(paths)} files ({n_py} .py), {len(rows)} commits kept")
+    print(f"release at {out}: {len(paths)} files with history ({n_py} .py), {len(late)} late modules, "
+          f"{len(rows)} commits kept")
     if args.test:
         subprocess.run([sys.executable, "-m", "pytest", "-q"], cwd=out, check=True)
 
