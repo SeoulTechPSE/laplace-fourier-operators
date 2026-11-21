@@ -1,7 +1,7 @@
 ---
 title: "Wavenumber Pole Operators: Identifiable Dispersion Relations in Linear and Nonlinear Neural Operators"
 author: "Kee-Youn Yoo"
-date: 2026-11-21
+date: 2026-11-22
 format:
   pdf:
     papersize: a4
@@ -298,9 +298,13 @@ n = 0.261. {#tbl-coarsening}
     the new length and twice the mode count. The poles are functions of the physical wavenumber, so the
     one-window error is unchanged (1.02–1.03×) and the 4π rollouts keep the law (a34).
   - The TFNO's spectral weights belong to mode indices, which on 4π are other physical wavenumbers: 35× the
-    error, domains growing 2.2× too fast.
+    error, domains growing 2.2× too fast (@fig-transfer).
   - A TFNO trained on 4π with its mode count doubled is 1.8× more accurate than the transferred WPO-2D (a35). With
     the original mode count it is at 0.034, close to the WPO-2D's 0.038, which never saw the 4π box.
+
+![Rollout on the 4π box from the true state at t = 1. Left: length scale L(t); the WPO-2D trained on 2π follows the
+truth, the TFNO trained on 2π coarsens 2.2× too fast. Right: per-window rollout error; the TFNO trained on the 4π
+box itself is the accuracy reference (a34, a35).](fig_transfer.png){#fig-transfer width=100%}
 
 ## Polynomial or MLP pole functions (RQ4) {#sec-rq4}
 

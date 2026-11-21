@@ -109,7 +109,36 @@ def fig_probe():
     fig.savefig(HERE / "fig_probe.png", dpi=200)
 
 
+def fig_transfer():
+    a34 = load(DEEP / "a34_domain.json")
+    a35 = load(DEEP / "a35_tfno_4pi.json")
+    series = (([r for r in a34 if r["model"] == "wpo_aug"], "wpo", "-", "WPO-2D, trained on 2π"),
+              ([r for r in a34 if r["model"] == "tfno_aug"], "tfno", "-", "TFNO, trained on 2π"),
+              ([r for r in a35 if r["model"] == "tfno4_m32"], "tfno", "--", "TFNO, trained on 4π (modes × 2)"))
+    fig, ax = plt.subplots(1, 2, figsize=(7.2, 2.6))
+    t = np.arange(1, 22)
+    ax[0].plot(t, a34[0]["L_true"], color=C["truth"], lw=2.5, alpha=0.35, label="truth")
+    w = np.arange(1, 21)
+    for rs, key, ls, label in series:
+        L = np.array([r["L"] for r in rs])
+        e = np.array([r["roll_per_window"] for r in rs])
+        ax[0].plot(t, L.mean(0), ls, color=C[key], label=label)
+        ax[1].fill_between(w, e.min(0), e.max(0), color=C[key], alpha=0.15, lw=0)
+        ax[1].plot(w, e.mean(0), ls, color=C[key], label=label)
+    ax[0].set(xscale="log", yscale="log", xlabel="t", ylabel="L(t) = 2π / ⟨k⟩", title="4π box: length scale (mean of 3 seeds)")
+    ax[0].set_xticks([1, 2, 5, 10, 20], ["1", "2", "5", "10", "20"])
+    ax[0].set_yticks([1.5, 2, 3, 4, 6, 8], ["1.5", "2", "3", "4", "6", "8"])
+    for a in (ax[0].xaxis, ax[0].yaxis):
+        a.set_minor_formatter(matplotlib.ticker.NullFormatter())
+    ax[0].legend(fontsize=7, loc="upper left")
+    ax[1].set(xlabel="window", ylabel="relative L2", title="4π box: rollout error (range over seeds)", ylim=(0, 1.6),
+              xticks=[1, 5, 10, 15, 20])
+    fig.tight_layout()
+    fig.savefig(HERE / "fig_transfer.png", dpi=200)
+
+
 if __name__ == "__main__":
     fig_linear()
     fig_data_eff()
     fig_probe()
+    fig_transfer()

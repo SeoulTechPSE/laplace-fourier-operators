@@ -174,6 +174,20 @@ Things to know:
 
 ## Log
 
+### 2026-11-22 — Consolidation: C paper check, coarsening-transfer figure
+
+- Done:
+  - C paper checked against `e1_audit/README.md`, `E1_report.md`, `results/summary.md`, `theory/README.md` (E2
+    paragraph) and `e5_probe/README.md` / `results/e5_gate.md`. The main table, the travel / recovery / profile
+    numbers, the E2 follow-up (95 / 70 %, 4/4 groups, noise limits), the rule tables (v1–v4 totals recomputed from
+    the gate table) and the model findings match; the appendix grid is identical to `summary.md`. Two fixes: the
+    run totals now say 645 runs for passes 1–13 and 735 with the two-pole test (v4 219 trusted / 2 false, v5 218 / 1),
+    and the abstract names the rule with no false trust as v4.
+  - A paper: Figure 4 (`fig_transfer.png`, from `figures.py` and the committed a34 / a35 results): L(t) and the
+    per-window rollout error on the 4π box for the WPO-2D and TFNO trained on 2π and the TFNO trained on 4π.
+- Decisions: none.
+- Next: license, version and release scope (user decision).
+
 ### 2026-11-21 — Consolidation and code release: first pass
 
 - Done:
