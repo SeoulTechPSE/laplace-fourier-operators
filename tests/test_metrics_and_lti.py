@@ -67,3 +67,16 @@ def test_relative_l2_and_seed_spread():
     ref = np.array([-1.0, -2.0])
     spread = seed_spread([ref, ref[::-1], ref], ref)
     assert np.allclose(spread, 0.0)
+
+
+def test_n_real_params_counts_complex_twice():
+    import torch
+    import torch.nn as nn
+    from lfo.metrics import n_real_params
+
+    m = nn.Module()
+    m.a = nn.Parameter(torch.zeros(3, 4))
+    m.b = nn.Parameter(torch.zeros(5, dtype=torch.complex64))
+    m.c = nn.Parameter(torch.zeros(2), requires_grad=False)
+    assert n_real_params(m) == 12 + 10 + 2
+    assert n_real_params(m, trainable_only=True) == 22

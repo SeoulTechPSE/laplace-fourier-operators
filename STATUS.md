@@ -19,6 +19,10 @@ Each session appends one entry using the template at the bottom.
 
 ## Open decisions
 
+- [x] Parameter budgets: **real degrees of freedom** (complex weights count twice), `lfo.metrics.n_real_params`
+  (2026-11-22). Found while preparing a36: every TFNO / FNO budget in (A) and (D) was matched by `numel`, which
+  counts a complex weight once, so those baselines had about 1.9x the WPO's real parameters (a13's TFNO 110,569
+  real against 59,529). Earlier comparisons stand as run but must be read with that; key ones to be rerun.
 - [ ] D1 placement: its gate (month 8) is effectively not met (with the E2 recipe the Fourier and FOH time axes
   reach the same error; the FOH gain was a hold match). The plan's fallback folds D1 into an (A) appendix and keeps
   D2 standalone; the D paper still carries D1 (plan review 2026-11-22)
