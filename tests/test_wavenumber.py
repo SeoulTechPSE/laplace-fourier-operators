@@ -336,3 +336,32 @@ def test_deep_operator_initial_state_path_is_causal_and_used():
     with torch.no_grad():
         a, b, c = m(f, u0), m(g, u0), m(f, 0 * u0)
     assert (a - b)[..., :25].abs().max() < 1e-12 and (a - c).abs().max() > 1e-6
+
+
+def test_set_domain_tiled_field_gives_tiled_output():
+    """A field tiled 2x is a field on a domain twice as long with the same physical content; after set_domain the
+    operator must give the tiled output (1D with the initial-condition path, and 2D)."""
+    from lfo.models import WavenumberPoleOperator1d, WavenumberPoleOperator2d, set_domain
+    t = np.linspace(0, 1, 9)
+    torch.manual_seed(0)
+    m1 = WavenumberPoleOperator1d(t, width=6, n_layers=2, n_poles=2, modes=10, ic=True, re_max=1.0, k_ref=4.0).eval()
+    f, u0 = torch.randn(2, 32, 9, dtype=torch.float64), torch.randn(2, 32, dtype=torch.float64)
+    with torch.no_grad():
+        a = m1(f, u0)
+        set_domain(m1, 4 * math.pi)
+        b = m1(f.repeat(1, 2, 1), u0.repeat(1, 2))
+    assert all(K.modes == 20 for K in m1.K)
+    assert torch.allclose(b, a.repeat(1, 2, 1), atol=1e-12)
+    m2 = WavenumberPoleOperator2d(t, width=4, n_layers=2, n_poles=2, modes=6, re_max=1.0, k_ref=4.0).eval()
+    x = torch.randn(2, 16, 16, 9, dtype=torch.float64)
+    with torch.no_grad():
+        a = m2(x)
+        set_domain(m2, (4 * math.pi, 4 * math.pi))
+        b = m2(x.repeat(1, 2, 2, 1))
+    assert torch.allclose(b, a.repeat(1, 2, 2, 1), atol=1e-12)
+    try:
+        set_domain(m2, (8 * math.pi, 4 * math.pi))
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("unequal 2D factors must raise")

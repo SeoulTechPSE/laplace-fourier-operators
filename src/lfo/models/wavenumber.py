@@ -380,6 +380,33 @@ class WavenumberPoleConv1d(WavenumberPoleLayer1d):
         return torch.fft.irfft(vk, n=n_x, dim=2).to(f.dtype)
 
 
+def set_domain(model: nn.Module, length) -> nn.Module:
+    """Move every wavenumber pole layer in `model` to a periodic domain of another size, at the same grid spacing.
+
+    The poles and residues are functions of the physical wavenumber, so a model trained on one domain is evaluated
+    on another by changing the layers' `length` and scaling their mode count by the same factor (the same physical
+    band). The caller gives inputs on the new grid (n_x scaled by the same factor). `length` is a float (1D) or a
+    pair (2D, equal factors on both axes, because a 2D layer keeps one mode count). Returns `model`, changed in
+    place. Pointwise parts are unchanged; FNO-type spectral weights, indexed by mode number, have no counterpart
+    (`experiments/A/deep`, a34)."""
+    for m in model.modules():
+        if isinstance(m, WavenumberPoleLayer2d):
+            new = tuple(float(a) for a in length)
+            r = {n / o for n, o in zip(new, m.length)}
+            if len(r) != 1:
+                raise ValueError("a 2D layer needs the same scale factor on both axes")
+            r = r.pop()
+            m.length = new
+        elif isinstance(m, WavenumberPoleLayer1d):
+            r = float(length) / m.length
+            m.length = float(length)
+        else:
+            continue
+        if m.modes is not None:
+            m.modes = int(round(m.modes * r))
+    return model
+
+
 class WavenumberPoleOperator1d(nn.Module):
     """Deep wavenumber pole operator (proposal A, Section 4.4), 1D space x time.
 
