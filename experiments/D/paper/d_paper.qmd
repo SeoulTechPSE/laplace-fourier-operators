@@ -166,6 +166,9 @@ Rollout chains 4 windows over [0, 20].
     2 % at a matched budget (0.0255–0.0259): the first-layer IC path, an input channel, separate IC poles, and a
     free response in every layer. The gap is a property of the WPO backbone on this system, not of the IC path.
     Every variant keeps the unseen-mode tolerance (2.4–2.7 against the TFNO's 10.4).
+  - Nor is it the temporal expressivity or the depth of the backbone (d2l). Twelve poles at a narrower width are
+    worse (0.029). Depth helps with diminishing returns: 3, 4 and 6 layers give 0.032, 0.026 and 0.024. The best
+    WPO stays at 2× the TFNO's error; the gap is a property of the two architectures on this system.
 ### Two initial fields
 
 - **A damped beam.** u_tt = −c²u_xxxx + η u_xxt + f, observed through its displacement, with

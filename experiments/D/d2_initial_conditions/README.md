@@ -350,3 +350,34 @@ not supported. The gap to the TFNO is a property of the WPO backbone on this sys
 unseen-mode tolerance survives every change (2.4–2.7 against 10.4). Open: the backbone's pointwise expressivity or
 its optimisation (the TFNO also improves more with initial fields than the WPO does: 0.029 → 0.013 against
 0.026 → 0.026, a16 against d2g, different test sets). Further IC-path variants are not a promising lead.
+
+## Twelfth pass (2026-11-21): the WPO backbone, poles against depth (d2l)
+
+`d2l_backbone.py` → `results/d2l_backbone.md` (predictions 8a047e9). Three variants of `wpo_ic` at the closest
+budget, d2g's setup (3 seeds): `poles12` (12 poles, width 16, 57,825), `layers6` (width 19, 60,178), `layers3`
+(width 26, 60,851).
+
+| model | id | high (ratio) | roll4 | force_only | ic_only |
+|---|---|---|---|---|---|
+| layers3 | 0.0316 | 0.069 (2.17) | 0.0563 | 0.0664 | 0.0259 |
+| wpo_ic (4 layers) | 0.0255 | 0.060 (2.35) | 0.0498 | 0.0457 | 0.0209 |
+| layers6 | **0.0242** | 0.063 (2.59) | **0.0419** | 0.0452 | 0.0197 |
+| poles12 | 0.0290 | 0.068 (2.35) | 0.0535 | 0.0527 | 0.0226 |
+| tfno_chan | 0.0126 | 0.131 (10.4) | 0.0240 | 0.0333 | 0.0087 |
+
+**Predictions against results.**
+1. `poles12` ≤ 0.9× `wpo_ic` (≤ 0.0230): **fails** (0.0290, 14 % worse).
+2. `layers6` within ±10 %: **holds** (−5 %).
+3. `layers3` ≥ 1.1×: **holds** (1.24×).
+4. No variant closes half the gap (all > 0.019): **holds**.
+
+**Reading.**
+- Temporal expressivity is not the limit. Twice the poles at a narrower width is worse.
+- Depth helps, with diminishing returns: 3 → 4 → 6 layers give 0.0316 → 0.0255 → 0.0242 per window and 0.056 →
+  0.050 → 0.042 over 4 windows.
+- None of the backbone or IC-path changes at this budget closes much of the gap. Across d2k and d2l, the best WPO
+  is 0.024 against the TFNO's 0.013. The TFNO's edge on this system is not traced to one part of the WPO. It has to
+  be accepted as a property of the two architectures here.
+- The unseen-mode tolerance holds in every variant (2.2–2.7 against 10.4). This is the WPO's robust structural
+  advantage with initial fields.
+- D2's Cahn–Hilliard line closes here.

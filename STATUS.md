@@ -13,8 +13,8 @@ Each session appends one entry using the template at the bottom.
 | (A) Pole layer and linear validation | 5–10 | **started** (2026-11-18): wavenumber pole layer (FOH time axis, `lfo.models.wavenumber`); 1D diffusion, ADR, beam and 2D diffusion, ADR dispersion recovered in every seed (two-stage, or joint fit with a leaky cap); deep operator on Burgers, Cahn–Hilliard 1D / 2D; working paper draft | dispersion relations recovered (month 10) |
 | (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits, a bootstrap-calibrated order, certificate and order test; reduction-path unresolved rules fail, a location-calibrated split test flags the merge, a combined post-report rule leaves 1 false pole in 40 groups but does not carry over to new p6 E1 groups; an EIVML refit of the reports removes the EIV bias; EIVML through the whole pipeline helps only up to η_u = 0.05; an EIVML elimination of the calibrated report leaves 0 false poles up to p4 30 η_y and p6 E1 0.05, with EIV-bootstrap intervals covering 33/36 at p4 30 η_y), E3 deep first pass done; H1–H3 theory draft (`experiments/C/theory/H1_H2.md`), E5 passes 1–14 (`experiments/C/e5_probe/`; RQ4 rule v4: 0 false trusts over the first 375 runs, 2 over 735 (few-pole LNO); four shared poles store the true decay rates; v5 adds a data-pole check: 1 false trust over 735, at the 10 % line) | — |
 | (A) Application 1: process dynamics | 11–16 | **started** (2026-11-19): delay layer; FOPDT / SOPDT identified | — |
-| (D) Initial conditions and rollout | 13–19 | **started** (2026-11-19): IC path in the wavenumber layer, exact window chaining (linear); deep Burgers rollout (pushforward / semigroup did not help; developed start states and window count each −15 %); Dirichlet, Neumann, mixed, advective and Robin boundaries as channels (Robin coefficient by a profile); out-of-range initial fields and 10-window rollout; beam with two initial fields; variable coefficient by a learned basis or as D(x) through an eigenproblem; fits run to convergence; D paper consolidated; the TFNO's Cahn–Hilliard rollout edge is its one-window edge (d2i), largest in the initial-field response (d2j), independent of how the initial field enters (d2k) | — |
-| (A) Application 2: Cahn–Hilliard | 17–22 | **started** (2026-11-20): stages 1 and 3 in the 1D linear regime: spinodal and k_c(φ₀) recovered from early-time data (`a29_spinodal.py`); M, κ as inputs, extrapolation with the physical form only (`a30_parametric.py`); stage 2, 2D coarsening rollouts: L(t) reproduced by all models, TFNO best pointwise, one WPO seed diverges (`a31_coarsening.py`); the growth cap is not the cause, the WPO-2D window map lacks amplitude saturation (`a32_growth_cap.py`, `a32b_amplitude.py`); amplitude-perturbed training starts remove the divergence (`a33_amplitude_aug.py`); WPO-2D transfers to a 4π box without retraining, the TFNO does not (`a34_domain.py`) | recover k_c, k_max (month 20) |
+| (D) Initial conditions and rollout | 13–19 | **started** (2026-11-19): IC path in the wavenumber layer, exact window chaining (linear); deep Burgers rollout (pushforward / semigroup did not help; developed start states and window count each −15 %); Dirichlet, Neumann, mixed, advective and Robin boundaries as channels (Robin coefficient by a profile); out-of-range initial fields and 10-window rollout; beam with two initial fields; variable coefficient by a learned basis or as D(x) through an eigenproblem; fits run to convergence; D paper consolidated; the TFNO's Cahn–Hilliard rollout edge is its one-window edge (d2i), largest in the initial-field response (d2j), independent of how the initial field enters (d2k) and of poles or depth (d2l); the Cahn–Hilliard line is closed | — |
+| (A) Application 2: Cahn–Hilliard | 17–22 | **started** (2026-11-20): stages 1 and 3 in the 1D linear regime: spinodal and k_c(φ₀) recovered from early-time data (`a29_spinodal.py`); M, κ as inputs, extrapolation with the physical form only (`a30_parametric.py`); stage 2, 2D coarsening rollouts: L(t) reproduced by all models, TFNO best pointwise, one WPO seed diverges (`a31_coarsening.py`); the growth cap is not the cause, the WPO-2D window map lacks amplitude saturation (`a32_growth_cap.py`, `a32b_amplitude.py`); amplitude-perturbed training starts remove the divergence (`a33_amplitude_aug.py`); WPO-2D transfers to a 4π box without retraining, the TFNO does not (`a34_domain.py`); a TFNO trained on 4π with its band rescaled is 1.8× more accurate (`a35_tfno_4pi.py`) | recover k_c, k_max (month 20) |
 | Consolidation and code release | 23–24 | not started | — |
 
 ## Open decisions
@@ -173,6 +173,24 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-21 — (A) application 2 stage 2e: TFNO trained on 4π; (D) d2l WPO backbone variants
+
+- Done:
+  - `experiments/A/deep/a35_tfno_4pi.py` (predictions ca6f6e3): TFNOs trained on the 4π box (12 trajectories,
+    the same area as a31's 48, with a33's scaled copies); n_modes 16 and 32. Deep README, A paper.
+  - `experiments/D/d2_initial_conditions/d2l_backbone.py` (predictions 8a047e9): 12 poles, 6 layers and 3 layers at
+    a matched budget. D2 README twelfth pass, D paper.
+- Results:
+  - a35: all 4 predictions hold. The band-rescaled TFNO reaches 0.021 per window on 4π, against the transferred
+    WPO-2D's 0.038; with a31's mode count it reaches 0.034. The TFNO is the better surrogate on any box it is
+    trained on; the WPO moves between boxes without retraining.
+  - d2l: predictions 2–4 hold; 1 fails (12 poles worse, 0.029). Depth helps with diminishing returns (0.032 /
+    0.026 / 0.024). The best WPO stays 2× behind the TFNO; the D2 Cahn–Hilliard line closes.
+- Decisions: none.
+- Next: application 2 (A) and D2's Cahn–Hilliard line are both at a natural close. Candidates: consolidate the A
+  and D papers around the robust structural results (linear-regime identification, extrapolation in parameters,
+  domain transfer, unseen-mode tolerance), or start consolidation and code release (months 23–24).
 
 ### 2026-11-21 — (A) application 2 stage 2d: transfer to a 4π box; (D) d2k IC-path capacity
 
