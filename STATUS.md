@@ -15,7 +15,7 @@ Each session appends one entry using the template at the bottom.
 | (A) Application 1: process dynamics | 11–16 | **started** (2026-11-19): delay layer; FOPDT / SOPDT identified | — |
 | (D) Initial conditions and rollout | 13–19 | **started** (2026-11-19): IC path in the wavenumber layer, exact window chaining (linear); deep Burgers rollout (pushforward / semigroup did not help; developed start states and window count each −15 %); Dirichlet, Neumann, mixed, advective and Robin boundaries as channels (Robin coefficient by a profile); out-of-range initial fields and 10-window rollout; beam with two initial fields; variable coefficient by a learned basis or as D(x) through an eigenproblem; fits run to convergence; D paper consolidated; the TFNO's Cahn–Hilliard rollout edge is its one-window edge (d2i), largest in the initial-field response (d2j), independent of how the initial field enters (d2k) and of poles or depth (d2l); the Cahn–Hilliard line is closed | — |
 | (A) Application 2: Cahn–Hilliard | 17–22 | **started** (2026-11-20): stages 1 and 3 in the 1D linear regime: spinodal and k_c(φ₀) recovered from early-time data (`a29_spinodal.py`); M, κ as inputs, extrapolation with the physical form only (`a30_parametric.py`); stage 2, 2D coarsening rollouts: L(t) reproduced by all models, TFNO best pointwise, one WPO seed diverges (`a31_coarsening.py`); the growth cap is not the cause, the WPO-2D window map lacks amplitude saturation (`a32_growth_cap.py`, `a32b_amplitude.py`); amplitude-perturbed training starts remove the divergence (`a33_amplitude_aug.py`); WPO-2D transfers to a 4π box without retraining, the TFNO does not (`a34_domain.py`); a TFNO trained on 4π with its band rescaled is 1.8× more accurate (`a35_tfno_4pi.py`) | recover k_c, k_max (month 20) |
-| Consolidation and code release | 23–24 | **started** (2026-11-21): A and D papers consolidated; experiment index (`experiments/INDEX.md`); README with reproduction steps; `lfo.models.set_domain`. C paper checked; A paper transfer figure. Release decided (2026-11-22): MIT, version 0.0.1, `src/lfo` and the paper scripts only; `release/make_release.py` builds the path-filtered copy. Open: creating and pushing the public repository | — |
+| Consolidation and code release | 23–24 | **started** (2026-11-21): A and D papers consolidated; experiment index (`experiments/INDEX.md`); README with reproduction steps; `lfo.models.set_domain`. C paper checked; A paper transfer figure. Release decided (2026-11-22): MIT, version 0.0.1, `src/lfo` and the paper scripts only; `release/make_release.py` builds the path-filtered copy. Public: github.com/SeoulTechPSE/laplace-fourier-operators-release (2026-11-22) | — |
 
 ## Open decisions
 
@@ -173,6 +173,22 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-22 — Code release: public repository, follow-up kept out
+
+- Done:
+  - Public repository `SeoulTechPSE/laplace-fourier-operators-release` created and pushed from
+    `release/make_release.py` (built from 62f0e6c): 2,032 files with history plus 7 modules, 199 commits; pytest
+    61 passed, 9 skipped; every script imports.
+  - The unpublished follow-up (E2–E4, H1–H3) is kept out: no `C/theory` history, `H1_H2.md` and `E1_report.md`
+    not released; the 7 imported `C/theory` modules enter in the release commit without comments or docstrings;
+    file references to the follow-up are replaced by "a follow-up study" in every version; 8 commit messages
+    replaced by a neutral one. What remains: the modules' code (method and report-title strings) and short
+    "(C) E2 recipe / E4" cross-references in the D1 README, its pre-registration and the papers, whose results the
+    papers already publish.
+- Decisions (user): repository name `laplace-fourier-operators-release`, public; the follow-up's progress hidden.
+- Next: rebuild and push the release when the papers change (`make_release.py` into a fresh directory, then push
+  to the release remote).
 
 ### 2026-11-22 — Code release: MIT license and a path-filtered public copy
 
