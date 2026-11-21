@@ -7,7 +7,7 @@ foundation reproduction results, `experiments/C/e1_audit/E1_report.md` (internal
 and `experiments/C/theory/` (a follow-up study, unpublished).
 
 The follow-up study stays out of the release: the `C/theory` modules that released scripts import are added in the
-release commit only (no history, no comments, docstring replaced by a neutral line), file references to the
+release commit only (no history, no comments or inner docstrings, module docstring replaced by a neutral line), file references to the
 follow-up are replaced by "a follow-up study" in every version (REPLACE_TEXT), and commit messages that mention the
 follow-up (E2–E4, H1–H3, propositions, CRB, certificates, EIV) are replaced by a neutral message.
 
@@ -92,15 +92,33 @@ def release_paths() -> list[str]:
 
 
 def neutral_module(src: str) -> str:
-    """Replace the module docstring by STUB and drop all comments (they record the follow-up's passes)."""
+    """Replace the module docstring by STUB; drop function / class docstrings and comments (they record the follow-up)."""
     import io
     import tokenize
     toks = [t for t in tokenize.generate_tokens(io.StringIO(src).readline) if t.type != tokenize.COMMENT]
     src = tokenize.untokenize(toks)
     src = "\n".join(line.rstrip() for line in src.split("\n"))
-    doc = ast.parse(src).body[0]
     lines = src.split("\n")
-    return "\n".join(lines[:doc.lineno - 1] + [STUB] + lines[doc.end_lineno:])
+    tree = ast.parse(src)
+    cut = {}                     # first line -> (last line, replacement)
+    doc = tree.body[0]
+    cut[doc.lineno] = (doc.end_lineno, STUB)
+    for node in ast.walk(tree):  # function and class docstrings go too
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and ast.get_docstring(node):
+            d = node.body[0]
+            indent = lines[d.lineno - 1][:d.col_offset]
+            cut[d.lineno] = (d.end_lineno, indent + "pass" if len(node.body) == 1 else None)
+    out, i = [], 1
+    while i <= len(lines):
+        if i in cut:
+            end, rep = cut[i]
+            if rep is not None:
+                out.append(rep)
+            i = end + 1
+        else:
+            out.append(lines[i - 1])
+            i += 1
+    return "\n".join(out)
 
 
 def main():
