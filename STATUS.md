@@ -19,6 +19,12 @@ Each session appends one entry using the template at the bottom.
 
 ## Open decisions
 
+- [ ] D1 placement: its gate (month 8) is effectively not met (with the E2 recipe the Fourier and FOH time axes
+  reach the same error; the FOH gain was a hold match). The plan's fallback folds D1 into an (A) appendix and keeps
+  D2 standalone; the D paper still carries D1 (plan review 2026-11-22)
+- [ ] (A) paper split: the plan has two papers ("method + process", month 16; "Cahn–Hilliard", month 24); the draft
+  is one paper
+- [ ] (C) paper venue and submission (E1 + E5 working paper; the planned month-5 workshop output is not submitted)
 - [ ] Staffing (affects schedule adjustments in `docs/integrated_schedule_ACD.qmd`, Section 4)
 - [x] Whether ALNO / LFNO code is public: **not public** (2026-11-12); both re-implemented in `lfo.models.hybrid`
 - [x] E1 paper: **decided** (2026-11-18): selected table in the main text, full grid in an appendix; deep "closest pooled pole" in the main text as an optimistic upper bound; budget rule waived for the layer setting only; workshop paper = E1 + an E2 paragraph, main (C) paper = E2–E5 + H1–H3 (`experiments/C/e1_audit/E1_report.md`, "Decisions for the paper")
@@ -173,6 +179,27 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-22 — Plan review against the integrated schedule; next-level plan
+
+- Review (calendar month 1 of 24; all nine work packages started):
+  - Gates: LNO reproduction met; (C) audit "existing models recover poles" no (the planned (C) path); (D) D1
+    "differs from padded FNO" effectively not met (see Open decisions); (A) dispersion recovery met; (A)
+    k_c / k_max met in the 1D linear regime (5 digits), not tested in the nonlinear or 2D regime.
+  - Hand-offs not used: (C) → (A) steady-branch consistency (R_res bound); (D) → (A) semigroup regularisation
+    (no gain in d2c).
+  - Planned but missing: SSM-based baselines (S4D; the proposal's main novelty risk); LNO / ALNO / LFNO in the (A)
+    deep comparison (only FNO / TFNO); Brusselator / 2D reaction–diffusion; vector fitting (process); cost metrics
+    across models; the systematic literature re-check (A plan, Section 2).
+  - Outputs: three drafts (A, C, D), none submitted; (A) is one paper instead of two.
+- Next-level plan, in order:
+  1. Literature re-check and baselines: S4D-type SSM operator and LNO / ALNO / LFNO in the (A) deep comparison, at
+     matched budgets, on the tests where the pole structure pays (identification, domain transfer, unseen modes).
+  2. (C) paper: choose a venue, format and submit.
+  3. One public benchmark (PDEBench Burgers or 2D reaction–diffusion) to re-check the core (A) claims.
+  4. A hybrid (WPO linear propagation + flexible nonlinear block, ETD-style) against the 2x nonlinear gap.
+  - Also: ≥ 5 seeds with intervals for the headline claims, matched tuning budgets, one larger / longer case, a
+    domain-scaling statement for the WPO as a short theory result, Zenodo DOI and CI for the release.
 
 ### 2026-11-22 — Code release: public repository, follow-up kept out
 
