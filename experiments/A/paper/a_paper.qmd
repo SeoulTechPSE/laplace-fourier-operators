@@ -278,8 +278,14 @@ chained windows of one time unit, in which L(t) grows from 1.5 to 3.5 (exponent 
   a = 2) and none diverges. L(21) is within 4 % and n within 0.03 in all seeds. The one-window error barely
   changes (0.037). Pointwise rollout does not improve (window 20: 0.81), and the TFNO trained the same way stays
   2× better (0.41). The divergence was a gap in data coverage, not a pole problem. In this nonlinear regime the
-  TFNO is the better surrogate; the pole structure pays in the linear regime (spinodal band, k_c, extrapolation
-  in M and κ).
+  TFNO is the better surrogate on the training box. The pole structure pays in the linear regime (spinodal band,
+  k_c, extrapolation in M and κ) and in transfer across domain sizes, below.
+- Transfer to a larger box (a34). A WPO-2D trained on the 2π box runs on a 4π box at the same spacing without
+  retraining: each layer gets the new length and twice the mode count. The poles are functions of the physical
+  wavenumber, so the one-window error is unchanged (1.02–1.03×). 20-window rollouts on 4π reproduce the
+  coarsening law (L(21) within 8 %, n 0.272–0.286 against 0.261). The TFNO's spectral weights belong to mode
+  indices, which on the larger box are other physical wavenumbers. Its error rises 35× and its domains grow 2.2× too
+  fast. This tests transfer, not accuracy; a TFNO trained on the larger box is the fair accuracy comparison.
 
 ## Polynomial or MLP pole functions (RQ4) {#sec-rq4}
 

@@ -501,3 +501,40 @@ Truth's gain: 0.80 / 0.67 / 0.50.
 - Net for application 2, stage 2: the pole operator reaches the coarsening statistics robustly once trained on
   perturbed starts, but the TFNO is the better surrogate in this nonlinear regime. The pole structure's value in
   Cahn–Hilliard stays in the linear regime (a29, a30: spinodal band, k_c, parametric extrapolation).
+
+## Application 2, stage 2d (2026-11-21): transfer to a 4π box without retraining (a34)
+
+`a34_domain.py` → `results/a34_domain.md` (predictions a93e03f). a33's `wpo_aug` and `tfno_aug`, retrained with
+the same data and seeds and saved, evaluated on the 2π box and on a 4π box at the same grid spacing (128²).
+- Truth: 256² with M / 4 and κ / 4 on a 2π grid (an exact rescaling), the same physical initial noise, 16
+  trajectories.
+- WPO-2D: each layer gets length 4π and 24 modes, the same physical band.
+- TFNO: unchanged. Its weights are indexed by mode number, so on 4π they act on half the physical wavenumbers.
+
+Checks before any fit: on a 2π state tiled 2 × 2, the transferred WPO-2D reproduces the tiled 2π output to 3.9e-16.
+Truth on 4π: L(21) = 3.45, n = 0.261, against 3.52 and 0.271 on 2π. A fifth prediction (n on 4π above 0.271) was
+withdrawn before the commit because the truth had already been computed.
+
+| model | window-end error 2π | window-end error 4π | ratio | 4π rollout, window 1 / 5 / 20 | L(21) / truth | n (truth 0.261) | max \|u(21)\| |
+|---|---|---|---|---|---|---|---|
+| wpo_aug | 0.035–0.039 | **0.035–0.041** | **1.02–1.03** | **0.24 / 0.58 / 0.85** | **1.04–1.08** | **0.272–0.286** | 1.07–1.09 |
+| tfno_aug | 0.018–0.020 | 0.66–0.71 | 35–38 | 1.13 / 1.34 / 1.41 | 2.15–2.19 | 0.31–0.35 | 1.03 |
+
+**Predictions against results.**
+1. `wpo_aug` 4π error ≤ 1.3× its 2π error, every seed: **holds** (1.02–1.03).
+2. `tfno_aug` 4π error ≥ 2× its 2π error, every seed: **holds** (35–38×).
+3. On 4π, `wpo_aug` below `tfno_aug`: **holds** (0.038 against 0.69).
+4. `wpo_aug` on 4π: no divergence, L(21) within 10 %, n within ±0.05, every seed: **holds** (1.04–1.08, 0.272–0.286).
+
+**Reading.**
+- The pole operator transfers to a larger domain without retraining, because its poles are functions of the
+  physical wavenumber. The one-window error is unchanged (1.02–1.03×), and 20-window rollouts on 4π reproduce the
+  coarsening law (L within 8 %, n within 0.026).
+- The TFNO does not transfer. Its spectral weights belong to mode indices, which on the larger box are other
+  physical wavenumbers. The one-window error rises 35× and the domains grow 2.2× too fast. This tests transfer, not
+  accuracy: a TFNO trained on the 4π box (or on several box sizes) would be the fair accuracy comparison, and on the
+  training box it stays 2× better.
+- This is the first coarsening result where the pole structure carries a property the baseline lacks. It is the
+  nonlinear counterpart of the linear-regime results: the parametrisation in physical k is what transfers.
+- Truth: the 4π box gives the same law as 2π (n 0.261 against 0.271). The 2π box was not finite-size limited up
+  to t = 21; n below 1/3 is the early-time correction.
