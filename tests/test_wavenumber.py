@@ -365,3 +365,19 @@ def test_set_domain_tiled_field_gives_tiled_output():
         pass
     else:
         raise AssertionError("unequal 2D factors must raise")
+
+
+def test_foh_kernel_finite_gradient_for_very_fast_poles():
+    """Re(mu) dt < -709 used to overflow exp(-mu dt) in the masked j = 0 branch and give nan gradients (a37)."""
+    import torch
+    from lfo.models.wavenumber import foh_kernel, foh_recursion
+    dt = 0.05
+    mu = torch.tensor([-20000.0 + 300.0j, -1.0 + 2.0j], dtype=torch.complex128, requires_grad=True)
+    g, c = foh_kernel(mu, 41, dt)
+    (g.abs().sum() + c.abs().sum()).backward()
+    assert torch.isfinite(mu.grad).all()
+    # the kernel is unchanged where it was already finite: impulse response equals the recursion
+    u = torch.zeros(41, dtype=torch.float64)
+    u[3] = 1.0
+    x = foh_recursion(mu.detach()[1], u, dt)
+    assert torch.allclose(g.detach()[1, :38], x[3:], atol=1e-12)

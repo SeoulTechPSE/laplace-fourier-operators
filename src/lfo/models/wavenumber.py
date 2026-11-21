@@ -90,7 +90,9 @@ def foh_kernel(mu: torch.Tensor, n_t: int, dt: float):
     E, b0, b1 = foh_coefficients(mu, dt)
     j = torch.arange(n_t, device=mu.device, dtype=torch.float64)
     Ej = torch.exp(mu.to(torch.complex128)[..., None] * dt * j)                  # E^j
-    Ejm1 = torch.exp(mu.to(torch.complex128)[..., None] * dt * (j - 1))           # E^{j-1}
+    # E^{j-1}; at j = 0 the value is unused (masked below), so evaluate it at j = 0 instead of j = -1: exp(-mu dt)
+    # overflows for Re(mu) dt < -709 and its inf turns the masked branch's gradient into nan
+    Ejm1 = torch.exp(mu.to(torch.complex128)[..., None] * dt * (j - 1).clamp(min=0))
     g = torch.where(j == 0, b1[..., None], (E * b1 + b0)[..., None] * Ejm1)
     return g, b1[..., None] * Ej
 
