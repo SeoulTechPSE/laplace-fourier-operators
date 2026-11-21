@@ -1,7 +1,7 @@
 ---
 title: "Non-Periodic Inputs, Initial Conditions and Boundaries for Pole-Based Neural Operators"
 author: "Kee-Youn Yoo"
-date: 2026-11-20
+date: 2026-11-21
 format:
   pdf:
     papersize: a4
@@ -17,7 +17,7 @@ bibliography: ../../C/paper/references.bib
 csl: ../../C/paper/ieee.csl
 ---
 
-<!-- Project D working paper, 2026-11-20. Not for submission. Every number comes from
+<!-- Project D working paper, 2026-11-21. Not for submission. Every number comes from
 experiments/D/d1_inputs/README.md (D1), experiments/D/d2_initial_conditions/README.md (D2) and
 experiments/D/d3_boundary/README.md (boundaries); every prediction was committed before its run (hashes there). -->
 
@@ -36,12 +36,16 @@ within one pole-based layer.
    - Second-order modes with two initial fields: the free-response coefficients are fixed by the poles. A damped
      beam is identified from its displacement alone (c and η within 1e-4), where free polynomial laws are 50–90×
      worse.
-   - Deep nonlinear rollout (Burgers, Cahn–Hilliard): the structural gain is modest, and on Cahn–Hilliard a TFNO
-     rolls out 2× better. Training windows that start from developed
-     states (−15 %, −30 % together with twice the windows) matter more than pushforward training or a semigroup
-     penalty, which did not help. Pole-based
-     models tolerate initial fields on unseen modes (a TFNO's error triples) but have no edge at larger amplitudes
-     or over 10 windows.
+   - Deep nonlinear rollout (Burgers, Cahn–Hilliard): the structural gain is modest.
+     - Training windows that start from developed states matter more (−15 %; −30 % together with twice the
+       windows). Pushforward training and a semigroup penalty did not help.
+     - Pole-based models tolerate initial fields on unseen modes but have no edge at larger amplitudes or over 10
+       windows. On unseen modes the error is 0.7× the in-distribution error on Burgers (TFNO 3.3×) and 2.2–2.7×
+       on Cahn–Hilliard (TFNO 10×).
+     - On Cahn–Hilliard a TFNO rolls out 2× better. A decomposition with the true solver shows this is its
+       one-window accuracy carried forward: carried errors contract alike for both models. At a matched budget
+       the gap is not closed by changing how the initial field enters, the number of poles, or the depth (3 to 6
+       layers).
 3. **Boundaries (D3).**
    - Boundary values and fluxes enter the modes as forcing channels whose coefficients are laws in k (∝ k for a
      value, constant for a flux). These are recovered at the oracle floor for Dirichlet, Neumann, mixed and
@@ -264,9 +268,14 @@ in place. What makes this possible is an exact, causal time axis that does not a
 
 **What the structure does not buy.** For deep nonlinear rollout the pole structure gives a modest gain on Burgers
 (about 10 % over 4 windows with fresh-start training, 4 % with developed-start training) and none over 10 windows.
-On Cahn–Hilliard a TFNO rolls out 2× better. The
-choice of training windows matters more. The robust structural benefit is extrapolation in the mode content of the
-initial field.
+On Cahn–Hilliard a TFNO rolls out 2× better. That gap is set within one window, not by rollout instability:
+- the true dynamics contract a carried error (0.81–0.96 per window), and both models reproduce that contraction;
+- the gap survives four ways of feeding the initial field, twice the poles, and 3 to 6 layers (best WPO 0.024
+  against 0.013).
+
+The choice of training windows matters more than the architecture. The robust structural benefit is extrapolation
+in the mode content of the initial field, which every WPO variant kept (2.2–2.7× against the TFNO's 10.4×). In
+project A the same physical-k parametrisation also lets a 2D model move to a larger domain without retraining.
 
 **Practice.** Two lessons on fitting came out of failed predictions.
 - Fixed iteration budgets under-fit the weakly excited modes. Claims about those modes need a fit run to
@@ -277,7 +286,8 @@ initial field.
 ## Limitations {.unnumbered}
 
 - Deep rollout: two nonlinear systems in 1D (Burgers, Cahn–Hilliard), 3 seeds, two training budgets (6000 and,
-  on Cahn–Hilliard, 12000 steps), no other tuning; pushforward training and the semigroup penalty did not help (Burgers).
+  on Cahn–Hilliard, 12000 steps). Architecture variants at one budget (about 60 k parameters); pushforward
+  training and the semigroup penalty were tried on Burgers only.
 - Boundaries: 1D diffusion with Dirichlet, Neumann, mixed and Robin boundaries, constant-coefficient advection, and
   one variable coefficient in 1D, with truth and model in the same 32-mode space. Variable coefficients in 2D, and
   inverse problems with observation only at the boundary, are not covered (see the Danckwerts case).

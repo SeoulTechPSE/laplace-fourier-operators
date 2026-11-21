@@ -1,7 +1,7 @@
 ---
 title: "Wavenumber Pole Operators: Identifiable Dispersion Relations in Linear and Nonlinear Neural Operators"
 author: "Kee-Youn Yoo"
-date: 2026-11-19
+date: 2026-11-21
 format:
   pdf:
     papersize: a4
@@ -17,8 +17,8 @@ bibliography: ../../C/paper/references.bib
 csl: ../../C/paper/ieee.csl
 ---
 
-<!-- Project A working paper, 2026-11-19. Not for submission yet. Every number comes from
-experiments/A/layer/README.md (validations a1–a8) and experiments/A/deep/README.md (a9–a17, complete), whose predictions
+<!-- Project A working paper, 2026-11-21. Not for submission yet. Every number comes from
+experiments/A/layer/README.md (layer experiments) and experiments/A/deep/README.md (deep experiments, to a35), whose predictions
 were committed before each run (hashes there). Figures: experiments/A/paper/figures.py. -->
 
 ## Abstract {.unnumbered}
@@ -47,6 +47,15 @@ forced viscous Burgers and forced Cahn–Hilliard.
 - The FNO baselines are right inside the forced band but produce arbitrary poles outside it.
 - **Limit:** a deep stack whose layer poles are all stable reproduces the growing modes in the probe over the
   training window. An unstable pole is therefore claimed only when probe and layer structure agree.
+
+**Cahn–Hilliard application.**
+
+- In the linear (spinodal) regime the layer recovers $k_c(\phi_0)$ from early-time data. With the mobility and
+  gradient energy as inputs, it extrapolates beyond the training grid only with the physical form of the law.
+- In 2D coarsening every stable model reproduces $L(t) \sim t^n$, and the Tucker FNO is 2× better pointwise. A WPO
+  that diverged in rollout needed amplitude-scaled training starts, not a pole constraint.
+- Trained on one box, the pole operator runs on a box twice as large with an unchanged error and the right
+  coarsening law, without data or retraining. The FNO's mode-indexed weights do not transfer (35× the error).
 
 ## Introduction
 
@@ -252,43 +261,46 @@ Tucker FNO (15.0 k, the closest rank) over 3 seeds and 6000 steps (a17).
 ### Rollout into coarsening (application 2, stage 2) {#sec-coarsening}
 
 Unforced 2D Cahn–Hilliard after a critical quench (128² truth, 64² models): from the true state at t = 1, 20
-chained windows of one time unit, in which L(t) grows from 1.5 to 3.5 (exponent 0.271 on this range).
+chained windows of one time unit, in which L(t) grows from 1.5 to 3.5 (exponent 0.271 on this range; 0.261 on a
+4π box, so the 2π box is not size-limited).
 
-| model | params | one-window error | rollout error, window 20 | L(21) / truth | n (0.271) |
+| setting | model | one window | window 20 | L(21) / truth | n |
 |---|---|---|---|---|---|
-| WPO-2D | 18.7 k | 0.033–0.035 | 0.67–0.74 (2 seeds); 1 seed diverges | 0.975–0.991 | 0.261–0.268 |
-| TFNO (x, y, t) | 15.5 k | **0.015–0.022** | **0.34–0.39** | 0.967–0.974 | 0.255–0.257 |
-| FNO-2D, autoregressive | 21.3 k | 0.035–0.043 | 0.81–0.91 | 0.968–1.015 | 0.247–0.267 |
+| 2π (a31) | WPO-2D | 0.033–0.035 | 0.67–0.74 | 0.975–0.991 | 0.261–0.268 |
+| | TFNO | **0.015–0.022** | **0.34–0.39** | 0.967–0.974 | 0.255–0.257 |
+| | FNO-2D (AR) | 0.035–0.043 | 0.81–0.91 | 0.968–1.015 | 0.247–0.267 |
+| 2π, scaled starts (a33) | WPO-2D | 0.035–0.039 | 0.70–0.89 | 0.961–0.990 | 0.244–0.262 |
+| | TFNO | **0.018–0.020** | **0.39–0.43** | 0.974–0.976 | 0.255–0.257 |
+| 4π, trained on 2π (a34) | WPO-2D | **0.035–0.041** | **0.85** | 1.04–1.08 | 0.272–0.286 |
+| | TFNO | 0.66–0.71 | 1.41 | 2.15–2.19 | 0.31–0.35 |
+| 4π, trained on 4π (a35) | TFNO | 0.031–0.038 | 0.83 | 1.03–1.04 | 0.270–0.274 |
+| | TFNO, modes × 2 | **0.019–0.023** | **0.63** | 1.02–1.03 | 0.265–0.273 |
 
-: 2D coarsening, 3 seeds (a31). {#tbl-coarsening}
+: 2D coarsening, 3 seeds per row (ranges; window 20 is the mean when one number is given). In a31 one WPO-2D seed
+diverged; its row shows the two stable seeds. No other run diverged. The 2π truth has n = 0.271 and the 4π truth
+n = 0.261. {#tbl-coarsening}
 
-- Every stable run reproduces the coarsening law (L within 3.5 %, n within 0.025). A frozen field gives 0.43, so
-  the statistic is reached but is a weak discriminator.
-- The TFNO is 2× better pointwise. The pole structure gives no advantage in this nonlinear regime.
-- One WPO-2D seed diverges in rollout, with its poles at the growth cap. The cap is not the cause (a32). With
-  stable poles (Re μ < 0 in every layer), with a cap of 0.3, or with a cap of 1 without the leak, 2, 3 and 2 of
-  3 seeds diverge (one-window error 0.037–0.048 against 0.034). Instead the WPO-2D window map has no restoring
-  force on the amplitude (a32b, post hoc). Scale a true state by a = 2 and the truth brings max |u| back to
-  0.50 × the scaled maximum; the TFNO gives 0.76; every WPO-2D run, stable poles included, gives 1.5–4.8.
-  An overshoot past ±1 is therefore kept or amplified, and whether a seed diverges within 20 windows depends on
-  whether its rollout reaches such states. Saturation at ±1 is what the coarsening rollout needs from the
-  model, and the pole parametrisation does not supply it.
-- Training data supplies it (a33). Give each training window one copy started from a·s (a ~ U[0.7, 1.6]),
-  with the true solution from a·s as the target. Every WPO-2D seed then restores overshoots (gain 0.58–0.66 at
-  a = 2) and none diverges. L(21) is within 4 % and n within 0.03 in all seeds. The one-window error barely
-  changes (0.037). Pointwise rollout does not improve (window 20: 0.81), and the TFNO trained the same way stays
-  2× better (0.41). The divergence was a gap in data coverage, not a pole problem. In this nonlinear regime the
-  TFNO is the better surrogate on the training box. The pole structure pays in the linear regime (spinodal band,
-  k_c, extrapolation in M and κ) and in transfer across domain sizes, below.
-- Transfer to a larger box (a34). A WPO-2D trained on the 2π box runs on a 4π box at the same spacing without
-  retraining: each layer gets the new length and twice the mode count. The poles are functions of the physical
-  wavenumber, so the one-window error is unchanged (1.02–1.03×). 20-window rollouts on 4π reproduce the
-  coarsening law (L(21) within 8 %, n 0.272–0.286 against 0.261). The TFNO's spectral weights belong to mode
-  indices, which on the larger box are other physical wavenumbers. Its error rises 35× and its domains grow 2.2× too
-  fast. This tests transfer, not accuracy. A TFNO trained on the 4π box with its mode count doubled (the same
-  physical band) is 1.8× more accurate per window than the transferred WPO-2D (0.021 against 0.038, a35); with
-  the original mode count it is 0.034. So the TFNO is the better surrogate on any box it is trained on, and the
-  pole operator moves between boxes without data or retraining.
+- **The statistics are a weak test.** Every stable run reproduces the coarsening law (L within 8 %, n within
+  0.03). A field frozen at t = 1 gives L(21) / truth = 0.43. Per-window errors separate the models more.
+- **On the training box the TFNO is the better surrogate**, 2× more accurate per window and in rollout, with or
+  without scaled starts.
+- **The WPO-2D divergence is a gap in data coverage, not a pole problem.**
+  - In a31 one WPO-2D seed diverges, with its poles at the growth cap. Changing the cap does not help: with
+    stable poles, a cap of 0.3, or a cap of 1 without the leak, 2, 3 and 2 of 3 seeds diverge (a32).
+  - The window map lacks a restoring force (a32b, post hoc). Scale a true state by a = 2, and the truth returns
+    max |u| at 0.50 × the scaled maximum. The TFNO returns 0.76; every WPO-2D run returns 1.5–4.8, stable poles
+    included. An overshoot past ±1 then persists.
+  - The training starts never leave |u| < 1.05. One amplitude-scaled copy per training window
+    (a ~ U[0.7, 1.6], target from the solver) gives a gain of 0.58–0.66 at a = 2 and no divergence in any seed
+    (a33). Pointwise rollout does not improve.
+- **The pole operator transfers across box sizes; the TFNO does not.**
+  - A WPO-2D trained on 2π runs on a 4π box at the same spacing with no data and no retraining: each layer gets
+    the new length and twice the mode count. The poles are functions of the physical wavenumber, so the
+    one-window error is unchanged (1.02–1.03×) and the 4π rollouts keep the law (a34).
+  - The TFNO's spectral weights belong to mode indices, which on 4π are other physical wavenumbers: 35× the
+    error, domains growing 2.2× too fast.
+  - A TFNO trained on 4π with its mode count doubled is 1.8× more accurate than the transferred WPO-2D (a35). With
+    the original mode count it is at 0.034, close to the WPO-2D's 0.038, which never saw the 4π box.
 
 ## Polynomial or MLP pole functions (RQ4) {#sec-rq4}
 
@@ -359,6 +371,16 @@ sample time (a20).
     LTI-consistent linear response.
 - **Where the accuracy gain comes from.** Data efficiency (2× at 50 samples) and time extrapolation (7×). The
   in-window error at 400 samples is close to parity (9 %).
+- **Where the structure pays, and where it does not.** It pays in four places:
+  - identification: dispersion relations and the spinodal band, from data;
+  - continuation outside the forced band;
+  - extrapolation in physical parameters, when the law has the right form (@sec-spinodal);
+  - transfer across domain sizes without retraining (@sec-coarsening).
+
+  It does not pay in pointwise accuracy in the strongly nonlinear regime on the training domain. There the TFNO
+  is 2× better (2D coarsening; also project D's Cahn–Hilliard with initial fields).
+- **Rollout stability is a data question.** The WPO-2D coarsening divergence was cured by amplitude-scaled
+  training starts, not by any pole constraint.
 - **Training details decide the outcome**, as in (C):
   - scaling the polynomials;
   - a pole learning rate in deep models;
@@ -368,7 +390,8 @@ sample time (a20).
 ## Limitations {.unnumbered}
 
 - Two 2D deep experiments: forced (@sec-2d, an untuned, slightly smaller baseline) and coarsening
-  (@sec-coarsening, one box size, statistics only to L = 0.56 of the box).
+  (@sec-coarsening). Domain transfer was tested for one factor (2π to 4π), one time range (to t = 21), and a
+  WPO-2D trained on 2π only; a WPO-2D trained on 4π was not run.
 - Two nonlinear systems, both with a known linearisation at rest.
 - One parameter budget (59 k); FNO-type baselines from neuraloperator with a learning-rate sweep but no
   architecture search.
