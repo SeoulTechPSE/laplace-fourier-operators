@@ -152,8 +152,13 @@ Rollout chains 4 windows over [0, 20].
     the training budget: at 12000 steps (project A's budget, where the zero-initial-state models were at parity)
     both models improve by 15–30 % and the ratio stays (0.46 against 0.48 over 4 windows); the TFNO's unseen-mode
     ratio grows (13.5 against 2.3).
-  - Errors keep growing slowly over 10 windows (1.6–2.1× from window 3 to 10) rather than saturating, as small
-    errors in the unstable band grow within each window.
+  - Errors keep growing slowly over 10 windows (1.6–2.1× from window 3 to 10) rather than saturating. A
+    decomposition with the true solver run from the models' own states (d2i) shows why. The start error carried
+    over is not amplified: the true dynamics contract it to 0.81–0.96 per window, and both models reproduce that
+    contraction to within 5 %. Each window adds a local error, and the sum keeps creeping up. (An earlier reading
+    here, amplification in the unstable band, does not hold.)
+  - The TFNO's rollout edge is its one-window edge carried forward. Its local error is 0.56× the IC path's in every
+    window, in the same bands (three quarters at k ≤ 4). Neither model is more stable in rollout.
 ### Two initial fields
 
 - **A damped beam.** u_tt = −c²u_xxxx + η u_xxt + f, observed through its displacement, with

@@ -239,7 +239,7 @@ Cahn–Hilliard (M = 0.1, κ = 0.04, the a16 forcing), which has an unstable ban
   Whatever its cause, the pole structure gives no rollout advantage here, and the IC path's edge over the channel
   WPO (0.050 against 0.058 over 4 windows) is the only structural gain in rollout.
 - **Error growth.** Errors keep growing over 10 windows in every model (1.6–2.1× from window 3 to 10). In Burgers
-  they saturated. In the unstable band, small state errors grow within each window.
+  they saturated. (An earlier reading here, that small state errors grow within each window in the unstable band, is wrong: the ninth pass shows the true dynamics contract carried errors; the local errors accumulate.)
 
 ## Eighth pass (2026-11-20): d2g at 12000 steps (is the TFNO edge the budget?)
 
@@ -263,3 +263,35 @@ training with initial fields on this system. Both structural observations stand:
 unseen modes (2.3×) while the TFNO degrades more with longer training (13.5×), so the TFNO's extra accuracy is
 specific to the training distribution.
 
+
+## Ninth pass (2026-11-21): where the TFNO's rollout edge comes from (d2i)
+
+`d2i_ch_diagnosis.py` → `results/d2i_ch_diagnosis.md` (predictions 0e55aa7). d2g's setup (6000 steps, `wpo_ic`,
+`tfno_chan`, 3 seeds, `roll10`). Each rollout window is re-solved with the true solver from the model's own start
+state, which splits the window error e into `local_own` (model against the truth from the same start) and
+`inherited` (the start error carried by the true dynamics). Check: re-solving each window from the true start
+reproduces the truth to 2e-16.
+
+| model | window 1 / 5 / 10: e | local_own | inherited | local_true (mean, windows 1..10) | amp_model / amp_true |
+|---|---|---|---|---|---|
+| wpo_ic | 0.026 / 0.049 / 0.067 | 0.026 / 0.015 / 0.018 | 0 / 0.046 / 0.062 | 0.015 | 0.97 |
+| tfno_chan | 0.013 / 0.029 / 0.044 | 0.013 / 0.009 / 0.012 | 0 / 0.027 / 0.041 | 0.0085 | 0.95 |
+
+End-state error of the one-window `id` set by band: k ≤ 4 (the unstable band) 0.77, 5..8 0.21, 9..16 0.02, above
+0.003, for both models.
+
+**Predictions against results.**
+1. Window 10: `inherited` > `local_own` for both: **holds** (0.062 against 0.018; 0.041 against 0.012).
+2. TFNO / WPO ratio of `local_true` in [0.4, 0.7]: **holds** (0.56).
+3. `amp_model / amp_true` in [0.67, 1.5] for both: **holds** (0.97, 0.95).
+4. `wpo_ic`: ≥ 50 % of the `id` error at k ≤ 8: **holds** (97 %).
+
+**Reading.** The rollout gap is the one-window gap, carried forward. From window 2 on, most of the error is the
+start error propagated by the true dynamics, which contract it slightly (amp_true 0.81–0.96 per window); both
+models reproduce that contraction to within 5 %, so neither is less stable in rollout than the other. Each
+window adds a local error that is about half as large for the TFNO in every window (and about half as large again
+from developed starts as from the fresh initial fields of window 1, for both models). The errors sit in the same
+bands for both models (three quarters in the unstable band k ≤ 4). So the TFNO is not better at rollout as such:
+it fits the one-window map about 2× more accurately on this system, uniformly across wavenumbers, and the
+rollout inherits that. Since d2h ruled out the budget, the remaining candidates are capacity in the IC path
+(width 23) and the loss weighting of the fresh-start windows; a rollout-specific remedy will not close the gap.
