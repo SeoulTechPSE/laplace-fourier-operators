@@ -13,8 +13,8 @@ Each session appends one entry using the template at the bottom.
 | (A) Pole layer and linear validation | 5–10 | **started** (2026-11-18): wavenumber pole layer (FOH time axis, `lfo.models.wavenumber`); 1D diffusion, ADR, beam and 2D diffusion, ADR dispersion recovered in every seed (two-stage, or joint fit with a leaky cap); deep operator on Burgers, Cahn–Hilliard 1D / 2D; working paper draft | dispersion relations recovered (month 10) |
 | (C) Identifiability theory and remedies | 6–12 | **started**: E2 phases 1–2, controls, remedies, prior-free recipe (damping bound, polish, restarts, truth-free certificate) done; E3 layer (ALNO / LFNO, partial tie, two-stage release), E4 noise vs CRB (noise-aware restarts, certificate, minimal refit with profile intervals, first-order-hold refit and layer, noise-free certificate with a precision term and bootstrap intervals, E1 data identifiable without noise and up to the CRB limit under noise, input noise as errors-in-variables with a bootstrap interval, EIV-weighted refits, a bootstrap-calibrated order, certificate and order test; reduction-path unresolved rules fail, a location-calibrated split test flags the merge, a combined post-report rule leaves 1 false pole in 40 groups but does not carry over to new p6 E1 groups; an EIVML refit of the reports removes the EIV bias; EIVML through the whole pipeline helps only up to η_u = 0.05; an EIVML elimination of the calibrated report leaves 0 false poles up to p4 30 η_y and p6 E1 0.05, with EIV-bootstrap intervals covering 33/36 at p4 30 η_y), E3 deep first pass done; H1–H3 theory draft (`experiments/C/theory/H1_H2.md`), E5 passes 1–14 (`experiments/C/e5_probe/`; RQ4 rule v4: 0 false trusts over the first 375 runs, 2 over 735 (few-pole LNO); four shared poles store the true decay rates; v5 adds a data-pole check: 1 false trust over 735, at the 10 % line) | — |
 | (A) Application 1: process dynamics | 11–16 | **started** (2026-11-19): delay layer; FOPDT / SOPDT identified | — |
-| (D) Initial conditions and rollout | 13–19 | **started** (2026-11-19): IC path in the wavenumber layer, exact window chaining (linear); deep Burgers rollout (pushforward / semigroup did not help; developed start states and window count each −15 %); Dirichlet, Neumann, mixed, advective and Robin boundaries as channels (Robin coefficient by a profile); out-of-range initial fields and 10-window rollout; beam with two initial fields; variable coefficient by a learned basis or as D(x) through an eigenproblem; fits run to convergence; D paper consolidated; the TFNO's Cahn–Hilliard rollout edge is its one-window edge (d2i) | — |
-| (A) Application 2: Cahn–Hilliard | 17–22 | **started** (2026-11-20): stages 1 and 3 in the 1D linear regime: spinodal and k_c(φ₀) recovered from early-time data (`a29_spinodal.py`); M, κ as inputs, extrapolation with the physical form only (`a30_parametric.py`); stage 2, 2D coarsening rollouts: L(t) reproduced by all models, TFNO best pointwise, one WPO seed diverges (`a31_coarsening.py`); the growth cap is not the cause, the WPO-2D window map lacks amplitude saturation (`a32_growth_cap.py`, `a32b_amplitude.py`) | recover k_c, k_max (month 20) |
+| (D) Initial conditions and rollout | 13–19 | **started** (2026-11-19): IC path in the wavenumber layer, exact window chaining (linear); deep Burgers rollout (pushforward / semigroup did not help; developed start states and window count each −15 %); Dirichlet, Neumann, mixed, advective and Robin boundaries as channels (Robin coefficient by a profile); out-of-range initial fields and 10-window rollout; beam with two initial fields; variable coefficient by a learned basis or as D(x) through an eigenproblem; fits run to convergence; D paper consolidated; the TFNO's Cahn–Hilliard rollout edge is its one-window edge (d2i), largest in the initial-field response (d2j) | — |
+| (A) Application 2: Cahn–Hilliard | 17–22 | **started** (2026-11-20): stages 1 and 3 in the 1D linear regime: spinodal and k_c(φ₀) recovered from early-time data (`a29_spinodal.py`); M, κ as inputs, extrapolation with the physical form only (`a30_parametric.py`); stage 2, 2D coarsening rollouts: L(t) reproduced by all models, TFNO best pointwise, one WPO seed diverges (`a31_coarsening.py`); the growth cap is not the cause, the WPO-2D window map lacks amplitude saturation (`a32_growth_cap.py`, `a32b_amplitude.py`); amplitude-perturbed training starts remove the divergence (`a33_amplitude_aug.py`) | recover k_c, k_max (month 20) |
 | Consolidation and code release | 23–24 | not started | — |
 
 ## Open decisions
@@ -173,6 +173,24 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-21 — (A) application 2 stage 2c: amplitude-perturbed starts; (D) d2j one-window gap by input
+
+- Done:
+  - `experiments/A/deep/a33_amplitude_aug.py` (predictions 410fd88): a31's WPO-2D and TFNO trained with one
+    scaled copy per training window (start a·s, a ~ U[0.7, 1.6], target from the 128² solver). Deep README,
+    A paper.
+  - `experiments/D/d2_initial_conditions/d2j_ch_paths.py` (predictions ba5edd3): one-window error on sets where
+    the forcing or the initial field dominates. D2 README tenth pass, D paper.
+- Results:
+  - a33: predictions 1, 2, 3, 5 hold; 4 fails. No WPO-2D seed diverges (a31 / a32: 1–3 of 3). The gain at a = 2 is
+    0.58–0.66 (truth 0.50), and L, n are right in every seed. Window-20 error 0.81 (prediction ≤ 0.74 fails); the
+    TFNO stays 2× better (0.41). The divergence was data coverage, not the poles.
+  - d2j: predictions 2, 3 hold; 1 fails. TFNO / WPO ratio 0.50 (IC-dominated), 0.62 (forcing-dominated), 0.42 /
+    0.73 with the other input zero. The gap is mostly in the initial-field response but not only there.
+- Decisions: none.
+- Next: (A) application 2 closes with the linear-regime results as the pole operator's contribution. Stage 2
+  options left: a larger box for t^{1/3}. (D) a separate pole set or width for the IC path at a matched budget.
 
 ### 2026-11-21 — (A) application 2 stage 2b: the WPO-2D growth cap; (D) d2i rollout error decomposition
 

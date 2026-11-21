@@ -295,3 +295,29 @@ bands for both models (three quarters in the unstable band k ≤ 4). So the TFNO
 it fits the one-window map about 2× more accurately on this system, uniformly across wavenumbers, and the
 rollout inherits that. Since d2h ruled out the budget, the remaining candidates are capacity in the IC path
 (width 23) and the loss weighting of the fresh-start windows; a rollout-specific remedy will not close the gap.
+
+## Tenth pass (2026-11-21): which input carries the one-window gap (d2j)
+
+`d2j_ch_paths.py` → `results/d2j_ch_paths.md` (predictions ba5edd3). d2g's setup (6000 steps, 3 seeds); fresh
+one-window sets where one input dominates. `force_dom`: forcing s in [0.3, 1], initial field s0 in [0.03, 0.04].
+`ic_dom`: the reverse. Both are inside the training ranges. `force_only` / `ic_only`: the other input exactly zero.
+
+| set | wpo_ic | tfno_chan | TFNO / WPO |
+|---|---|---|---|
+| id | 0.0255 | 0.0126 | 0.49 |
+| force_dom | 0.0335 | 0.0209 | 0.62 |
+| ic_dom | 0.0269 | 0.0134 | 0.50 |
+| force_only | 0.0457 | 0.0333 | 0.73 |
+| ic_only | 0.0209 | 0.0087 | 0.42 |
+
+**Predictions against results.**
+1. `force_dom` ratio ≥ 0.8 (near a16's parity): **fails** (0.62).
+2. `ic_dom` ratio ≤ 0.6: **holds** (0.50).
+3. ratio(`force_only`) > ratio(`ic_only`): **holds** (0.73 against 0.42).
+
+**Reading.** The gap is largest in the response to the initial field (TFNO 2.0–2.4× better) and smaller in the
+response to the forcing (1.4–1.6×). It is not confined to the IC path: with training on initial fields, the
+forcing response is also worse than at a16's parity (zero initial states, 12000 steps; d2h ruled out the budget).
+A likely reading is shared capacity. The IC path reuses the poles and the width (23) of the forced path, and a
+nonlinear initial-field response (fields up to |u| ≈ 3 relaxing towards ±1) takes capacity from both. Candidates:
+a separate pole set or width for the IC path at a matched budget.

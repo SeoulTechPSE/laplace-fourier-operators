@@ -159,6 +159,9 @@ Rollout chains 4 windows over [0, 20].
     here, amplification in the unstable band, does not hold.)
   - The TFNO's rollout edge is its one-window edge carried forward. Its local error is 0.56× the IC path's in every
     window, in the same bands (three quarters at k ≤ 4). Neither model is more stable in rollout.
+  - The gap is largest in the response to the initial field. With one input dominant (d2j), the TFNO is 2.0–2.4×
+    better when the initial field dominates and 1.4–1.6× when the forcing does. The forcing response is also below
+    the zero-initial-state parity of project A, so the IC path's shared poles and width probably limit both.
 ### Two initial fields
 
 - **A damped beam.** u_tt = −c²u_xxxx + η u_xxt + f, observed through its displacement, with
