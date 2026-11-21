@@ -538,3 +538,30 @@ withdrawn before the commit because the truth had already been computed.
   nonlinear counterpart of the linear-regime results: the parametrisation in physical k is what transfers.
 - Truth: the 4π box gives the same law as 2π (n 0.261 against 0.271). The 2π box was not finite-size limited up
   to t = 21; n below 1/3 is the early-time correction.
+
+## Application 2, stage 2e (2026-11-21): a TFNO trained on the 4π box (a35)
+
+`a35_tfno_4pi.py` → `results/a35_tfno_4pi.md` (predictions ca6f6e3). The accuracy reference for a34. TFNOs trained
+on the 4π box itself.
+- Training data: 12 trajectories (the same total area as a31's 48 on 2π), with a33's amplitude-scaled copies.
+- `tfno4`: a31's TFNO unchanged (n_modes 16, physical |k| < 4 on 4π).
+- `tfno4_m32`: n_modes 32, the same physical band as on 2π, 19,109 parameters.
+
+| model | trained on | window-end error 4π | 4π rollout, window 1 / 5 / 20 | L(21) / truth | n (truth 0.261) |
+|---|---|---|---|---|---|
+| tfno4 | 4π | 0.031–0.038 | 0.24 / 0.56 / 0.83 | 1.031–1.042 | 0.270–0.274 |
+| tfno4_m32 | 4π | **0.019–0.023** | **0.15 / 0.38 / 0.63** | **1.020–1.034** | **0.265–0.273** |
+| wpo_aug (a34) | 2π only | 0.035–0.041 | 0.24 / 0.58 / 0.85 | 1.038–1.078 | 0.272–0.286 |
+
+**Predictions against results.**
+1. `tfno4_m32` ≤ 0.025: **holds** (0.021).
+2. `tfno4_m32` below the transferred WPO-2D (0.038): **holds**.
+3. `tfno4` ≥ 1.2× `tfno4_m32`: **holds** (0.034, 1.65×).
+4. `tfno4_m32` L within 10 % and n within ±0.05 in every seed: **holds**.
+
+**Reading.** Trained on the larger box, the TFNO is again the most accurate model: 1.8× better than the
+transferred WPO-2D per window, and 1.35× better at window 20. It needs its spectral band rescaled to the box: with
+a31's mode count it gives up most of that edge (0.034). The transferred WPO-2D, which never saw the 4π box, is
+within 10 % of a TFNO trained there with the wrong band (0.038 against 0.034). It is 1.8× behind the one with the
+right band. Application 2, stage 2 in one line: the TFNO is the better surrogate on any box it is trained on, and
+the pole operator is the one that moves between boxes without data or retraining.

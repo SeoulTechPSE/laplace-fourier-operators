@@ -285,7 +285,10 @@ chained windows of one time unit, in which L(t) grows from 1.5 to 3.5 (exponent 
   wavenumber, so the one-window error is unchanged (1.02–1.03×). 20-window rollouts on 4π reproduce the
   coarsening law (L(21) within 8 %, n 0.272–0.286 against 0.261). The TFNO's spectral weights belong to mode
   indices, which on the larger box are other physical wavenumbers. Its error rises 35× and its domains grow 2.2× too
-  fast. This tests transfer, not accuracy; a TFNO trained on the larger box is the fair accuracy comparison.
+  fast. This tests transfer, not accuracy. A TFNO trained on the 4π box with its mode count doubled (the same
+  physical band) is 1.8× more accurate per window than the transferred WPO-2D (0.021 against 0.038, a35); with
+  the original mode count it is 0.034. So the TFNO is the better surrogate on any box it is trained on, and the
+  pole operator moves between boxes without data or retraining.
 
 ## Polynomial or MLP pole functions (RQ4) {#sec-rq4}
 
