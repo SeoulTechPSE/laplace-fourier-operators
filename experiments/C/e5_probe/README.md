@@ -5,7 +5,7 @@ experiment set E5.
 
 **Question.** After training, how trustworthy is the pole interpretation of a nonlinear model?
 The plan: probe the trained operator with small perturbations, extract poles from the measured
-response, and compare them with the stored layer poles and with the poles of the linearisation.
+response, and compare them with the stored layer poles and with the poles of the linearization.
 
 ## Setup
 
@@ -13,13 +13,13 @@ response, and compare them with the stored layer poles and with the poles of the
 |---|---|
 | **system** | Damped Duffing from the LNO data (`1D_Duffing_c05`): x″ + 0.5 x′ + x + k₃x³ = f; T = 20.48, dt = 0.01, n = 2048 |
 | **training data** | the original split: 200 inputs A sin 5t with A = 0.05 … 10 (one waveform) |
-| **linearised poles (reference)** | estimated from the data alone: a first-order-hold fit of one complex pair to the 4 smallest-amplitude samples (A ≤ 0.2) gives **−0.2500 ± 0.9684i**; theory −c/2 ± i√(k − c²/4) = −0.25 ± 0.9682i |
+| **linearized poles (reference)** | estimated from the data alone: a first-order-hold fit of one complex pair to the 4 smallest-amplitude samples (A ≤ 0.2) gives **−0.2500 ± 0.9684i**; theory −c/2 ± i√(k − c²/4) = −0.25 ± 0.9682i |
 | **nonlinearity** | the response shape changes by 2 % at A = 1, 15 % at A = 3 and 82 % at A = 10, relative to A = 0.1 |
 | **model** | the original 1-layer LNO: lift to 4 channels, 4 × 4 × 16 = 256 poles, sin activation, 1,821 parameters; `experiments/foundation/reproduce_lno.py --case duffing_c05 --tag e5`, 5 seeds; test rel. L2 0.13 / 0.13 / 0.13 / 0.22 / 0.37 |
 
 **Probes.**
 
-1. **Layer poles.** All 256 stored μ: the one closest to the linearised pole, and how many lie
+1. **Layer poles.** All 256 stored μ: the one closest to the linearized pole, and how many lie
    within 10 %.
 2. **Causal LTI probe.** Take the odd part (G(εu) − G(−εu)) / 2ε on 16 smooth random inputs,
    at ε = 0.01 … 3. Fit one complex pair, then a pair plus a real pole, by FOH VarPro.
@@ -56,8 +56,8 @@ python experiments/C/e5_probe/e5_gate.py                                        
 **Findings.**
 
 1. **The stored poles carry no physics.** All 256 layer poles of every seed stay where they were
-   initialised: |μ| ≈ 0.1. The original code initialises Re μ and Im μ uniform in [0, 1/16), and
-   200–237 of the 256 poles are still in the right half-plane. None lies within 10 % of the linearised pole. This is E1's finding 1 (the
+   initialized: |μ| ≈ 0.1. The original code initializes Re μ and Im μ uniform in [0, 1/16), and
+   200–237 of the 256 poles are still in the right half-plane. None lies within 10 % of the linearized pole. This is E1's finding 1 (the
    learning-rate schedule bounds the pole travel) in a nonlinear model at its published
    configuration.
 2. **The trained operator is not a causal LTI map, even for small signals.**
@@ -69,7 +69,7 @@ python experiments/C/e5_probe/e5_gate.py                                        
    - The steady branch is periodic (circulant), and the lifting, the 1 × 1 channel mixing and
      the activation make the map time-varying.
 3. **Its average impulse response still carries the oscillation.** The order-2 pencil on the
-   mean subdiagonals of J gives −0.15 … −0.25 ± 0.76 … 1.07i, within 10 % of the linearised
+   mean subdiagonals of J gives −0.15 … −0.25 ± 0.76 … 1.07i, within 10 % of the linearized
    pole in 3 of 5 seeds (frequency within 11 % in 4 of 5; damping underestimated). The model
    represents the dynamics through its steady branch and channel mixing, not through its
    poles.
@@ -114,7 +114,7 @@ per-sample relative weights:
 
 The system is hardening, so the equivalent frequency rises with the amplitude.
 
-| variant | test rel. L2 | layer poles near the linearised pole (≤ 10 %) | J valid | d (probe ↔ layer) | probe pole → linearised |
+| variant | test rel. L2 | layer poles near the linearized pole (≤ 10 %) | J valid | d (probe ↔ layer) | probe pole → linearized |
 |---|---|---|---|---|---|
 | `base` | 0.13–0.37 | 0/5 runs (best 0.90–0.93) | 0/5 (non-causal 0.76–0.90) | 0.89–0.92 | 0.08–0.22 |
 | `lno_plr10` | 0.15–0.30 | 0/5 (best 0.32–0.68) | 0/5 (0.52–0.65) | 0.21–0.69 | 0.07–0.98 |
@@ -132,14 +132,14 @@ The system is hardening, so the equivalent frequency rises with the amplitude.
    - The tied layer's agreed pole, −0.27 + 1.09 … 1.11i, is 8–14 % from the small-signal pole.
      It lies between that pole and the training set's equivalent linear pole (−0.30 + 1.14i).
      A linear model trained over all amplitudes learns an amplitude-averaged pole, not the
-     linearisation at x = 0.
+     linearization at x = 0.
    - The two failed tied fits (test 0.90–0.93) also agree with their probes (d 0.03–0.18) while
      being far off. Agreement must be read together with the fit error.
 3. **A movable LNO can contain the physical pole, but nothing points to it.**
-   - With the stable init and pole lr × 10, the layer holds a pole within 5 % of the linearised
+   - With the stable init and pole lr × 10, the layer holds a pole within 5 % of the linearized
      one in 3/5 seeds (best 0.01).
    - Picking it out of 256 needs the truth: in all three of those seeds the invalid probe lands
-     elsewhere (0.40–1.49 from the linearised pole).
+     elsewhere (0.40–1.49 from the linearized pole).
    - The model is also less accurate (test 0.33–0.50 against 0.13–0.37).
 
 **Reading for RQ4.** A stored pole is trustworthy only if three conditions hold:
@@ -148,16 +148,16 @@ The system is hardening, so the equivalent frequency rises with the amplitude.
 - (ii) probe and layer agree;
 - (iii) the model fits well.
 
-Even then, it is the equivalent linearisation over the training amplitudes, not the
+Even then, it is the equivalent linearization over the training amplitudes, not the
 small-signal pole. Under this rule the 3 good tied fits are trusted, and they lie within 8–14 %
-of the linearised pole. No LNO run is trusted. No run is trusted wrongly, because the two
+of the linearized pole. No LNO run is trusted. No run is trusted wrongly, because the two
 failed tied fits are excluded by (iii).
 
 ## Third pass (2026-11-17): equivalent-linear (secant) poles along the amplitude
 
 `e5_oppoint.py` → `results/e5_oppoint.md`.
 
-**Why a secant probe.** At an operating point A sin 5t the Duffing linearisation is
+**Why a secant probe.** At an operating point A sin 5t the Duffing linearization is
 time-varying (stiffness k + 3k₃x₀(t)²), so it has no poles. The comparable quantity is the
 *equivalent pole*: the best linear pair (FOH VarPro) for one input–response pair at amplitude A.
 
@@ -193,7 +193,7 @@ Median relative error of the model's equivalent frequency against the data's:
    - The original LNO's equivalent pole follows the data's hardening drift (0.968 → 1.20 up to
      A = 7) within 0.1–1.5 % (median).
    - It does so on the out-of-sample test waveform too (0.6–1.2 %).
-   - Its 256 stored poles have not moved from the initialisation.
+   - Its 256 stored poles have not moved from the initialization.
    - The dynamics, including the amplitude dependence, are carried by the nonlinearity and the
      steady branch.
 2. **The linear tied layer cannot follow the drift.** Its equivalent pole is fixed at 1.116,
@@ -248,12 +248,12 @@ Median relative error of the model's equivalent frequency against the data's:
      with stable init and pole lr × 10.
    - Three more of those LNO runs have an impulse-response pole within 3–4 % but are not trusted,
      because their Jacobian is slightly non-causal (0.13–0.21).
-   - The original LNO (original init, poles at the initialisation) fits these data poorly
+   - The original LNO (original init, poles at the initialization) fits these data poorly
      (test 0.41–0.53) and is never trusted.
 2. **On strongly nonlinear data the rule fails as a small-signal statement.**
    - Two tied layers are trusted, with poles 43 % and 86 % from the small-signal pole.
    - They agree with the data's own equivalent linear pole (−0.89 + 1.75i for the whole set). So
-     the rule's reading, "a trusted pole is the equivalent linearisation", holds.
+     the rule's reading, "a trusted pole is the equivalent linearization", holds.
    - But the best linear fit of the data leaves 44 % of the output unexplained, and the tied
      layers' test error is 0.43. The fit criterion (test < 0.5) was too lax: at that error a
      linear model's pole is not a meaningful summary.
@@ -314,7 +314,7 @@ Same 4 variants × 5 seeds, 40 runs (`results/e5_probe_medium.md`, `results/e5_p
   4 on `moderate`).
 - The rule reads a stored pole as the system's equivalent linear pole over the training regime. That pole
   equals the small-signal pole only to the extent the data are linear, which is what the gate checks.
-- Limits: one system (Duffing, hardening), one gate threshold, and a bias that grows towards the threshold
+- Limits: one system (Duffing, hardening), one gate threshold, and a bias that grows toward the threshold
   (6 % at 0.095).
 
 ## Sixth pass (2026-11-18): rule v2 on the driven pendulum
@@ -511,10 +511,10 @@ Pre-registered in `results/e5_lorenz_prereg.md`, before any training. Rule v3 un
 **System and data.**
 
 - LNO Eq. 22: x′ = 10(y − x), y′ = x(5 − z) − y, z′ = xy − (8/3)z − f; output x. Unforced, the state settles to
-  C+ = (3.266, 3.266, 4). The linearisation at C+ has poles **−0.9287 ± 4.1476i** (reference) and −11.81.
+  C+ = (3.266, 3.266, 4). The linearization at C+ has poles **−0.9287 ± 4.1476i** (reference) and −11.81.
 - `lz_orig`: the LNO data `1D_Lorenz_rho5` (from x(0) = 1, inputs A sin 5t). `lz_small` (peak |f| 0.05–0.5) and
   `lz_wide` (0.5–5): `e5_data.py`, started at C+, E1 input families, data seed 5.
-- The gates fit centred data. The tied layer has a learned output offset b(t) (`e5_train.Offset`). The LNO uses the
+- The gates fit centered data. The tied layer has a learned output offset b(t) (`e5_train.Offset`). The LNO uses the
   Lorenz architecture (grid input, tanh, 16 modes). Same 4 variants × 5 seeds, 60 runs.
 
 | set | all: pole, resid | low fifth: pole, resid | shift | v2 | v3 | v1 trusted: correct / all (errors) |
@@ -581,7 +581,7 @@ Test rel. L2 by variant (5 seeds), and of a trivial predictor (the training-mean
   correct v1-trusted runs over the 15 sets. In the Lorenz false trust they differ by a factor of about 1900. The
   six Duffing false trusts (`mixed`, `moderate`) agree to 2–18 %, and the data gates catch them, so probe
   agreement complements the gates and does not replace them. A probe
-  agreement condition, a fit criterion on centred outputs, and an offset initialised at the training mean would
+  agreement condition, a fit criterion on centered outputs, and an offset initialized at the training mean would
   be a rule v4. It would have to be pre-registered and tested on new data.
 - **Missed physical poles.** The stable-init LNOs on `lz_wide` have J poles 5–8 % from the reference with good
   fits (0.010–0.014). They are not trusted because their Jacobians are non-causal (0.12–0.20). The cause is not
@@ -597,7 +597,7 @@ covers.
 - It keeps v1's valid Jacobian, d < 0.1 and the v3 data gate.
 - **Probe agreement:** a = |μ_LTI − μ_J| / |μ_J| < 0.1, with μ_LTI the odd-part LTI probe pole at ε = 0.01 and μ_J the
   Jacobian pole.
-- **Centred fit:** test error relative to (output − training-mean trajectory), e_c < 0.5. It replaces rel. L2 < 0.5.
+- **Centered fit:** test error relative to (output − training-mean trajectory), e_c < 0.5. It replaces rel. L2 < 0.5.
 - Retrospectively, on the 15 earlier sets (seen data, not a test), v4 trusts 44 runs with 0 false and 5 missed.
   It removes the ninth-pass false trust.
 
@@ -624,8 +624,8 @@ covers.
      matched by an unmoved stored pole. The agreement condition removes it (a ≈ 4800).
 2. `lz_r10_orig`: nothing trusted. **Holds.**
 3. With the offset started at the mean, the tied layers fit `lz_r10_small`. **Fails**: test 0.64–0.65, e_c ≈ 209
-   (centred error).
-   - Diagnosis (one run): the `common` weight decay (1e-4, coupled L2 in Adam) pulls the offset towards zero at
+   (centered error).
+   - Diagnosis (one run): the `common` weight decay (1e-4, coupled L2 in Adam) pulls the offset toward zero at
      nearly the full learning rate, because its own gradient is near zero. The offset falls from 4.90 to 1.7.
    - Without weight decay the loss is 0.0014 and the offset stays at 4.899.
    - The ninth-pass offset (stopped at 1.5) had the same cause. It was not the travel bound alone, as the
@@ -657,7 +657,7 @@ covers.
 | v1 (no gate) | 66 | 9 | 0 |
 | v2 (output-residual gate) | 28 | 0 | 29 |
 | v3 (pole-shift gate) | 55 | 3 | 5 (`c0_medium`) |
-| v4 (v3 gate + probe agreement + centred fit) | 52 | **0** | 5 (`c0_medium`) |
+| v4 (v3 gate + probe agreement + centered fit) | 52 | **0** | 5 (`c0_medium`) |
 
 **Reading for RQ4.**
 
@@ -668,7 +668,7 @@ covers.
     `moderate`);
   - probe agreement catches models whose Jacobian and stored poles agree on a pole that the model's own
     small-signal response does not have (slow at ρ = 5 and 10, fast in the addendum);
-  - the centred fit is needed for consistency (it never decided a case here).
+  - the centered fit is needed for consistency (it never decided a case here).
 - Its known cost is unchanged: undamped poles (`c0_medium`).
 - **The tied layer needs an offset without weight decay** to fit outputs about a nonzero operating point. With
   it, 7 of 10 runs on the gated ρ = 10 sets are trusted and correct (2–3 %).
@@ -684,7 +684,7 @@ Pre-registered: part A's predictions in the script `e5_causal.py` (4bd17c1), par
   response is y = y_periodic − C e^{μt}: a transient coefficient fixed by the whole input cancels the wrap-around
   of the periodic term. The original code contracts the residue's output channel again with the pole's input
   channel (quirk 1 in `lfo.models.lno`). Each coefficient therefore multiplies another pole's exponential, and
-  the wrap is not cancelled.
+  the wrap is not canceled.
 - **Predicted: the layer as coded is non-causal.** Its non-causal share is 0.12–0.82 in all 268 finite runs.
   **Holds.**
 - **Predicted: the textbook wiring is causal.** The same weights, wired as `PoleResidueTS1d`, give 0.005–0.025.
@@ -746,7 +746,7 @@ the prediction was committed with the script, 4d85fe5).
   response, and together ≥ 50 %; in the d < 0.1 runs a single stored pole within 10 % carries the most.
 - **Registered measure (ridge least squares of h on the stored exponentials): the prediction fails.** The fit
   leaves < 3.4 % of h, but the cluster carries at most 7 % of the energy. With 512 basis functions for 799
-  samples the fit spreads energy over many cancelling terms, so the measure is unsuitable. Recorded as failed.
+  samples the fit spreads energy over many canceling terms, so the measure is unsuitable. Recorded as failed.
 - **Post hoc measure (analytic residues).** Each stored pole's effective residue comes from the weights: lifting
   column × layer residue × time-averaged output gain. It reconstructs h to 0.1–3.4 %, so it describes the response.
   - The registered prediction holds in only 5 of the 12 d ≥ 0.1 runs: ≥ 2 large poles and a cluster share
@@ -831,8 +831,8 @@ v3-gated sets without ρ = 10). It gives 13 / 43 for `lnots` where the twelfth p
 - **v4 certifies 55 runs**, the most of any LNO variant, including 9 of 10 on the Lorenz ρ = 5 sets where the
   textbook LNO had none.
 - **Two false trusts.**
-  - `lz_small` seed 4: J pole 10.4 % off, just over the 10 % line; probe agreement 0.04, centred error 0.05.
-  - `lz_r10_small` seed 2: J pole 25 % off; agreement 0.07, centred error 0.17, d 0.07.
+  - `lz_small` seed 4: J pole 10.4 % off, just over the 10 % line; probe agreement 0.04, centered error 0.05.
+  - `lz_r10_small` seed 2: J pole 25 % off; agreement 0.07, centered error 0.17, d 0.07.
   - In both, the probes agree with the stored pole and with each other but not with the reference: with four
     poles the model's small-signal response is consistently wrong. v4 checks consistency, not truth, and a
     constrained model can be consistently wrong.
@@ -868,7 +868,7 @@ LNO with **2** shared poles (`lnots2_stable_plr10`), 18 sets × 5 seeds, probed 
 - **v5 costs nothing on the design data** and removes the gross false trust (25 %). It keeps the borderline one
   (`lz_small` seed 4, J pole 10.4 % off the reference, 9.2 % off μ_low), because the two 10 % lines sit on either side of it.
 - **The prospective test did not test v5.** With 2 shared poles, v4 already rejects every bad run. The 42 runs with
-  J pole error ≥ 10 % (seed 3 diverges on every set: errors 3–42) all fail the probe-agreement or centred-error
+  J pole error ≥ 10 % (seed 3 diverges on every set: errors 3–42) all fail the probe-agreement or centered-error
   check. The trusted runs are correct but some by a small margin: 5 of the 43 have J pole errors of 7–9.7 %
   (`lz_r10_small` seed 0 at 9.7 %). The 2-pole model was less, not more, prone to being consistently wrong than
   the 4-pole one, against the motivation in the pre-registration.

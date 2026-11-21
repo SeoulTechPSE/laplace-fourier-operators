@@ -32,14 +32,14 @@ Method check (the solver itself, measured before training): ν̂ = 0.10046, disp
 
 - **Both models underfit.** Train and test errors are similar (WPO 0.10 / 0.14, FNO 0.08 / 0.11). Errors are
   largest in the lowest-amplitude quartile (WPO 0.15, FNO 0.18), where the samples are near-linear.
-- **The WPO's poles barely moved from their initialisation.** In all four layers, Re μ_n(k) stays within ±0.5 and
+- **The WPO's poles barely moved from their initialization.** In all four layers, Re μ_n(k) stays within ±0.5 and
   is almost flat in k, and some poles have Re μ > 0 (up to 0.21). The truth needs a k² coefficient of
   −ν k_ref² = −25.6 in k / k_ref units. With Adam at lr 1e-3, a parameter moves by at most about 4 in 4000 steps,
   so it cannot get there. The positive poles grow as e^{0.2 t}, which explains the extrapolation blow-up.
 - This is the deep-model form of what (C) E2 and E5 found: the poles need their own, larger learning rate (the
   `plr10` variants there). The linear validations hid it, because L-BFGS rescales its steps.
 
-**Next.** Pre-register a pole learning rate (×30) for the WPO, with and without the stable parameterisation, at the
+**Next.** Pre-register a pole learning rate (×30) for the WPO, with and without the stable parameterization, at the
 same budget, then decide on longer training for both models.
 
 ## Second pass (2026-11-18): a separate pole learning rate
@@ -67,7 +67,7 @@ same budget, then decide on longer training for both models.
 **Reading.**
 
 - The pole learning rate was the bottleneck. With it, the WPO's error falls by 2.4–3.4× at the same budget, and the
-  extrapolation blow-up is gone (a9: errors of 3–8 over (5, 10]). The stable parameterisation helps further:
+  extrapolation blow-up is gone (a9: errors of 3–8 over (5, 10]). The stable parameterization helps further:
   lowest error, smallest growth, best probe.
 - **The probe is biased toward stronger damping.** ν̂ is 0.111–0.114 across stable seeds, so the bias is
   systematic, not seed noise. The relative loss weights every sample equally, so the near-linear samples are not
@@ -123,9 +123,9 @@ single pole layer, fitted to all samples and to each quartile of forcing amplitu
 
 **Reading.**
 
-- The deep model's linearisation is right to about 1 % for k ≤ 6. Over k = 7–8, the top of the forced band, it
+- The deep model's linearization is right to about 1 % for k ≤ 6. Over k = 7–8, the top of the forced band, it
   is 5–12 % too damped.
-- The "ν̂ bias" is an artefact of summarising that curve with {1, k²}. The fit absorbs the curvature into a
+- The "ν̂ bias" is an artifact of summarizing that curve with {1, k²}. The fit absorbs the curvature into a
   positive offset (+0.19 to +0.26) and a larger k² coefficient. The per-mode probe is the better readout; the
   polynomial summary needs a check of its residual.
 - The forcing amplitude falls as 1/k, so modes 7–8 are forced weakly. In the larger samples they are dominated
@@ -156,7 +156,7 @@ at k = 8).
 2. Extrapolation ratio ≤ 2.5 for the WPO and > 2.5 for the FNO in every seed: **holds.**
 3. The probe bias persists (ν̂ in [0.105, 0.13]): **fails.** It is gone (0.101–0.103). The a10 over-damping at
    k = 7–8 came from undertraining.
-4. Train error ≥ 0.8× test error for both: **fails.** Both models now show a generalisation gap (WPO 0.47×, FNO
+4. Train error ≥ 0.8× test error for both: **fails.** Both models now show a generalization gap (WPO 0.47×, FNO
    0.59×) with 200 training samples.
 
 **Flaw in the FNO configuration (found after the run).** In neuralop 2.0, `n_modes = (12, 12)` keeps 12 spatial
@@ -167,7 +167,7 @@ parameter budget, without checking the band. The accuracy comparison in a9–a11
 The WPO-only findings stand: the pole learning rate, the probe and extrapolation without blow-up.
 
 **Next.** A band-covering FNO. Full modes do not fit a 59 k budget (width 4 with 32 × 32 modes already has 135 k
-parameters). So the comparison uses the Tucker-factorised TFNO from neuraloperator, with n_modes covering the band,
+parameters). So the comparison uses the Tucker-factorized TFNO from neuraloperator, with n_modes covering the band,
 at the matched budget, plus a full-rank FNO at a larger budget as a reference. Both get the same learning-rate
 sweep.
 
@@ -195,8 +195,8 @@ frequencies. Same sweep and protocol as a11. The WPO is a11's.
 
 **Reading (post hoc, from the stored per-mode probes).**
 
-- **Inside the forced band (k ≤ 8), every model's linearisation is right to 1–2 %.** The FNO-type models learn the
-  physical linearisation there just as the WPO does. The registered dispersion error separates them only because
+- **Inside the forced band (k ≤ 8), every model's linearization is right to 1–2 %.** The FNO-type models learn the
+  physical linearization there just as the WPO does. The registered dispersion error separates them only because
   of the modes above the band.
 - **Above the band (k = 9–16), the models differ.** The WPO continues the dispersion relation: k = 9 gives −8.17
   to −8.45 against −8.1. The probe keeps only k ≤ 9 for the WPO, because higher modes decay faster than the
@@ -211,7 +211,7 @@ frequencies. Same sweep and protocol as a11. The WPO is a11's.
 
 **Status of the a9–a13 sequence.** On forced Burgers at a 59 k budget, the WPO (stable, separate pole learning rate)
 leads the band-covering TFNO by 23 % in-window and by 7× in time extrapolation. In-band, the probes of both are
-right. Out of band, only the WPO's is, together with an LTI-consistent linearisation.
+right. Out of band, only the WPO's is, together with an LTI-consistent linearization.
 
 ## Resolution transfer (2026-11-18), zero-shot
 
@@ -287,7 +287,7 @@ growth from emulated growth. It does not.
 - RQ3 holds for the WPO's probe: the unstable band (k_c, k_max, the sign of every mode) is recovered from a deep
   nonlinear model.
 - **Identifiability limit.** Within a finite window, a deep stack can emulate an unstable pole with stable
-  near-integrators. The probe of the whole operator cannot tell the two apart, and an unstable linearisation
+  near-integrators. The probe of the whole operator cannot tell the two apart, and an unstable linearization
   cannot be probed far beyond the window either, because it leaves the linear regime. So the claim "the model has
   an unstable pole" needs either the layer structure (Re μ > 0 allowed and used) or data over longer windows. The
   probe alone does not support it. This fits (C)'s finding that probe and layer readings must agree before a pole
@@ -368,7 +368,7 @@ any learning rate (validation error 1.0).
 2. Its k_c is within 10 % in 2 of 3 seeds (seed 1: 3.76), and its median per-mode error stays above the WPO-2D's.
 
 **Reading.** Tuning closes about a third of the gap. At a matched budget the WPO-2D keeps a 2.6× lower test error,
-and its per-mode linearisation is an order of magnitude more accurate.
+and its per-mode linearization is an order of magnitude more accurate.
 
 ## Application 2, stage 2 (2026-11-21): rollout into 2D coarsening (a31)
 
@@ -410,7 +410,7 @@ compounding over windows, nothing does. Seed 2 (max |u| 1.65) shows the start of
 - The TFNO is the best pointwise model (2× lower one-window and rollout error), as on 1D Cahn–Hilliard with initial
   fields (D2, d2g/d2h). The plain autoregressive FNO-2D has the worst pointwise rollout but the best statistics.
 - The pole structure gives no advantage here and costs robustness. Re μ > 0 is needed for the spinodal band
-  (a16, a17, a29), but about the separated phases ±1 the linearisation is stable
+  (a16, a17, a29), but about the separated phases ±1 the linearization is stable
   (λ = −Mk²(2 + κk²)). A WPO allowed to grow can drift out of the data in rollout. A state-dependent or
   stage-dependent cap would be needed; not tried. (a32 below: the cap is not the cause.)
 
@@ -452,7 +452,7 @@ window end. The truth's gain is from the solver on 128² (64² agrees to 0.3 %).
 **Reading.**
 - The growth cap is not the cause of a31's divergence. Removing growth entirely (stable poles) does not help (2 of
   3 seeds diverge), and a tight cap of 0.3 is worse (3 of 3). The poles are not where the instability lives.
-- What is missing is saturation. The true window map pulls an overshoot back towards ±1 (gain 1/a), and the TFNO
+- What is missing is saturation. The true window map pulls an overshoot back toward ±1 (gain 1/a), and the TFNO
   does so too, more weakly (0.76 at a = 2). Every WPO-2D run, with stable poles or not, amplifies a scaled state
   (gain 1.5–4.8 at a = 2), so it has no restoring force outside the amplitudes it was trained on (|u| ≲ 1.05). An
   overshoot past ±1 is then kept or amplified. Whether a seed diverges within 20 windows depends on whether its
@@ -535,7 +535,7 @@ withdrawn before the commit because the truth had already been computed.
   accuracy: a TFNO trained on the 4π box (or on several box sizes) would be the fair accuracy comparison, and on the
   training box it stays 2× better.
 - This is the first coarsening result where the pole structure carries a property the baseline lacks. It is the
-  nonlinear counterpart of the linear-regime results: the parametrisation in physical k is what transfers.
+  nonlinear counterpart of the linear-regime results: the parametrization in physical k is what transfers.
 - Truth: the 4π box gives the same law as 2π (n 0.261 against 0.271). The 2π box was not finite-size limited up
   to t = 21; n below 1/3 is the early-time correction.
 

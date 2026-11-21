@@ -95,7 +95,7 @@ def summarize(res):
              f"v2 gate: all-sample linear residual < {P.GATE:g}. v3 gate: lowest {LOW_FRAC:.0%} of samples by peak |f| "
              f"linear (residual < {LOW_RESID:g}) and equivalent-pole shift all vs low < {SHIFT:g}. A trusted run is "
              "correct if its Jacobian pole is within 10 % of the small-signal pole: −0.25 ± 0.9682i (damped Duffing, "
-             "pendulum), ± i (`c0_*`, undamped Duffing), −0.9287 ± 4.1476i (`lz_*`, Lorenz ρ = 5 at C+) or −0.5955 ± 6.1742i (`lz_r10_*`, ρ = 10 at C+); Lorenz from centred data.", "",
+             "pendulum), ± i (`c0_*`, undamped Duffing), −0.9287 ± 4.1476i (`lz_*`, Lorenz ρ = 5 at C+) or −0.5955 ± 6.1742i (`lz_r10_*`, ρ = 10 at C+); Lorenz from centered data.", "",
              "| set | all: pole, resid | low band (peak |f| ≤): pole, resid | shift | v2 | v3 | v1 trusted: correct / all "
              "(errors) | v2 false / missed | v3 false / missed |", "|---|---|---|---|---|---|---|---|---|"]
     tot = dict(v1f=0, v2f=0, v2m=0, v3f=0, v3m=0)

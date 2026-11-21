@@ -1,4 +1,4 @@
-# (D2) Training for rollout on forced Burgers: pushforward and semigroup regulariser (wpo_ic)
+# (D2) Training for rollout on forced Burgers: pushforward and semigroup regularizer (wpo_ic)
 
 | training | window test (mean) | rollout over [0, 20] (mean) | rollout / test (range) |
 |---|---|---|---|

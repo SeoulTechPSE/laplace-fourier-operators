@@ -1,8 +1,8 @@
 """(A) Deep operator: does the Burgers data itself carry an effective viscosity? Best linear fits by amplitude.
 
 a12 (`a12_probe_amp.py`) showed that the stable WPO's probe gives nu_hat = 0.111-0.114 at every probe amplitude
-from 0.003 to 0.03: the bias is in the model's linearisation, not an amplitude extrapolation. Remaining candidate:
-the best *linear* description of the data is itself more damped than the linearisation at u = 0, because in the
+from 0.003 to 0.03: the bias is in the model's linearization, not an amplitude extrapolation. Remaining candidate:
+the best *linear* description of the data is itself more damped than the linearization at u = 0, because in the
 larger samples the nonlinear term moves energy out of the forced modes (an effective viscosity), and a model fitted
 to all samples inherits it.
 

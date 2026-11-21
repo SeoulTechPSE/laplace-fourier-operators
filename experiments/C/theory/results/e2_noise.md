@@ -1,6 +1,6 @@
 # E4: pole error under output noise vs the Cramér–Rao bound
 
-Tied layer, prior-free `damp8_ms` + polish + restarts, seeds 10-29 (4 noise draws, one per group of 5). Per pole: RMS relative error of single runs / of the group consensus (truth-free, e2_floor.py; ∞ = pole missing from the consensus) / relative CRB (trace bound, unbiased estimators). Recovered = single runs with relative error < 0.1. η = 0: no noise (bias / optimisation only).
+Tied layer, prior-free `damp8_ms` + polish + restarts, seeds 10-29 (4 noise draws, one per group of 5). Per pole: RMS relative error of single runs / of the group consensus (truth-free, e2_floor.py; ∞ = pole missing from the consensus) / relative CRB (trace bound, unbiased estimators). Recovered = single runs with relative error < 0.1. η = 0: no noise (bias / optimization only).
 
 ## p4 (n_t = 1024), ratio rule
 

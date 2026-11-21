@@ -15,10 +15,10 @@ each polished run is given single-slot moves, without using the truth:
 Every run is treated the same, whether or not it is at the floor; only training loss is used.
 
 Noise-aware rule (``--rule noise``, E4): with output noise the training loss of every run sits at
-the noise level, and a 1 % fall is out of reach. The noise variance per normalised output sample,
+the noise level, and a 1 % fall is out of reach. The noise variance per normalized output sample,
 sigma^2, is then estimated from the training outputs alone (6th-order differences: the band-limited
 signal cancels, white noise does not; ``noise_var``), and the loss is measured as the sum of
-squared normalised residuals S. A run is in the noise regime when S <= 2 x the noise
+squared normalized residuals S. A run is in the noise regime when S <= 2 x the noise
 expectation n_s n_t sigma^2. There, the screen picks the candidate with the lowest S and accepts it
 if S falls by >= chi2_4(0.99) sigma^2 (a likelihood-ratio test for the 4 real parameters a move
 changes). Outside the noise regime the ratio rule above applies unchanged.
@@ -80,7 +80,7 @@ def train_loss(model, data, device):
 
 
 def noise_var(y):
-    """sigma^2: noise variance per element of the normalised outputs y_i / ||y_i||, estimated from
+    """sigma^2: noise variance per element of the normalized outputs y_i / ||y_i||, estimated from
     DIFF-th differences (white noise: variance x C(2 DIFF, DIFF); a smooth signal: ~ (omega dt)^(2 DIFF))."""
     y = y.double()
     d = torch.diff(y, n=DIFF, dim=1)
@@ -98,7 +98,7 @@ def sse(model, data, device):
 
 
 def set_slot(model, j, mu_new):
-    """Write pole mu_new into slot j through the raw parameter of its parametrisation; residue 0."""
+    """Write pole mu_new into slot j through the raw parameter of its parametrization; residue 0."""
     par = model.pr.parametrizations.mu[0]
     raw = model.pr.parametrizations.mu.original
     real = float(par.mask.flatten()[j]) == 0
@@ -128,7 +128,7 @@ def candidates(model, reset=False):
 
 
 def reset_residual(model):
-    """Partial tie: steady residual R_res to 0 (raw weight of its Bounded parametrisation)."""
+    """Partial tie: steady residual R_res to 0 (raw weight of its Bounded parametrization)."""
     with torch.no_grad():
         model.spec.parametrizations.weight.original.zero_()
 
@@ -171,7 +171,7 @@ def run(cond, variant, seed, device, rule="ratio", start="lbfgs"):
     n_s, n_t = data["train"][1].shape
     S = sse(model, data, device)
     noisy = rule == "noise" and S <= NOISE_REGIME * n_s * n_t * sig2
-    # criterion to minimise and the acceptance test of a move
+    # criterion to minimize and the acceptance test of a move
     crit = (lambda: sse(model, data, device)) if noisy else (lambda: train_loss(model, data, device))
     accept = (lambda new, old: old - new >= CHI2_MOVE * sig2) if noisy else (lambda new, old: new <= ACCEPT * old)
     loss0, S0, moves = loss, S, []
@@ -243,7 +243,7 @@ def summarize():
     table(T.R.RESULTS / "e2_rescue_na_rel", "e2_rescue_na_rel", "partial tie released from the noise-aware tied run, "
           f"then noise-aware restarts (accept if S falls ≥ {CHI2_MOVE} σ̂² in the noise regime)")
     table(OUT_NA, "e2_rescue_na", f"noise-aware rule: in the noise regime (S ≤ {NOISE_REGIME:g} n_s n_t σ̂²) "
-          f"minimise S and accept if S falls ≥ {CHI2_MOVE} σ̂², otherwise accept if training loss falls ≥ 1 %")
+          f"minimize S and accept if S falls ≥ {CHI2_MOVE} σ̂², otherwise accept if training loss falls ≥ 1 %")
 
 
 def table(src, stem, rule):

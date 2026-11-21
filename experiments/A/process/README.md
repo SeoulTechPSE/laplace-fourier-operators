@@ -165,7 +165,7 @@ input or measurement dead time is a factor e^{−θs} common to all modes. One l
    Burgers, by contrast, the nonlinearity added uniform damping (a12b).
 3. WPO mean test error ≤ FNO's: **holds** (0.021 against 0.046).
 
-**Reading.** At a steady state with a stable focus, every reading of the linearisation agrees within 1 %: WPO probe,
+**Reading.** At a steady state with a stable focus, every reading of the linearization agrees within 1 %: WPO probe,
 FNO probe and the best linear fit. That matches Burgers in band. What separates the models is accuracy on the
 nonlinear samples (WPO 2.2× lower error) and how LTI the small-signal response is (residual 4× lower).
 

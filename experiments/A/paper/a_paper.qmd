@@ -33,7 +33,7 @@ diffusion and anisotropic ADR, the layer recovers the dispersion relation at the
 seed. It does so either through a two-stage identification or through a joint fit from random starts. Three
 details decide success:
 
-- scaling the polynomials in $k/k_{\mathrm{ref}}$, with a second-order optimiser;
+- scaling the polynomials in $k/k_{\mathrm{ref}}$, with a second-order optimizer;
 - excluding modes that the window or the sampling cannot resolve;
 - a leaky cap on Re μ, because a hard cap traps starts.
 
@@ -105,7 +105,7 @@ oracle floor (the true λ in the layer) is 0.8–1.2 % and is set by jumps that 
 (too fast for Δt, or too slow for the window). Right: the beam's two poles per k; the cut modes k = 1–3 are where
 the first beam recipe failed.](fig_linear.png){#fig-linear width=100%}
 
-### A joint fit with Adam fails; the problem is optimisation, not representation
+### A joint fit with Adam fails; the problem is optimization, not representation
 
 The first validation fitted the polynomial jointly with Adam (a1).
 
@@ -149,14 +149,14 @@ reaches the oracle in all 25 data seeds (a7).
 ## Deep operators on nonlinear systems {#sec-deep}
 
 **Forced viscous Burgers** (ν = 0.1, 64 points, T = 5). The forcing scale is log-uniform over [0.03, 1], so up to
-91 % of a sample is not the linear response. Linearised at u = 0, λ(k) = −ν k².
+91 % of a sample is not the linear response. Linearized at u = 0, λ(k) = −ν k².
 
 **Probe.** Single-mode inputs at small amplitude; the odd part of the response; the stage-1 identification per
 mode; both cuts.
 
 ### The poles need their own learning rate
 
-At a shared Adam learning rate (1e-3), the poles stayed at their initialisation (a9). Re μ was flat in k, some
+At a shared Adam learning rate (1e-3), the poles stayed at their initialization (a9). Re μ was flat in k, some
 poles had Re μ > 0, and errors over (5, 10] blew up to 3–8. The k² coefficient of −ν k² is −25.6 in k / k_ref
 units, beyond reach in 4000 steps. A pole learning rate 30× larger cut the error 2.4–3.4× (a10), as (C) found for
 LNO.
@@ -190,7 +190,7 @@ continues −ν k². The FNO variants return arbitrary poles. Beyond the resolut
 biased for every model, the solver included. Right, Cahn–Hilliard: all three models, including the stable
 control, reproduce the growing modes.](fig_probe.png){#fig-probe width=100%}
 
-- **Burgers.** Every model's linearisation is right to 1–2 % inside the forced band (@fig-probe). Outside it, only
+- **Burgers.** Every model's linearization is right to 1–2 % inside the forced band (@fig-probe). Outside it, only
   the WPO continues the dispersion relation (k = 9 within 1–4 %), and only its small-amplitude response is
   LTI-consistent (residual 0.003).
 - **A bias that was not physics.** An earlier probe bias (ν̂ 11–14 % high, a10) was the polynomial summary
@@ -205,7 +205,7 @@ control, reproduce the growing modes.](fig_probe.png){#fig-probe width=100%}
 A stable control, with every layer pole at Re μ ≤ 0, fits Cahn–Hilliard as well as the WPO. Its probe reproduces
 the growing modes to three digits. Its layer poles sit just below zero: a cascade of near-integrators produces
 $t^n$ growth, indistinguishable from $e^{0.58t}$ on [0, 5]. A longer probe window does not separate the two either,
-because the linearisation leaves the linear regime (growth ×300 over T = 10).
+because the linearization leaves the linear regime (growth ×300 over T = 10).
 
 Within a finite window, then, the probe of the whole operator does not identify an unstable pole. We claim one
 only when probe and layer structure agree: Re μ > 0 allowed, used, and located in the band. This is the same rule
@@ -213,7 +213,7 @@ as (C)'s trust rule for poles.
 
 ### Spinodal decomposition across compositions (application 2, stage 1) {#sec-spinodal}
 
-Around a uniform composition φ₀ the linearisation is λ(k; φ₀) = Mk²(1 − 3φ₀²) − Mκk⁴, unstable for
+Around a uniform composition φ₀ the linearization is λ(k; φ₀) = Mk²(1 − 3φ₀²) − Mκk⁴, unstable for
 k < k_c(φ₀) inside the spinodal |φ₀| < 1/√3. We trained the initial-condition path of project D alone,
 û(k, t) = γ(k) û₀(k) e^{μ(k, φ₀)t}, with φ₀ read from the mean of the initial field and μ a law in k² and φ₀² (6 reals).
 Training used early-time, unforced data at eight compositions (0 to 0.7); evaluation used five held-out ones.
@@ -232,7 +232,7 @@ Training used early-time, unforced data at eight compositions (0 to 0.7); evalua
 - The stability constraint is not a small bias. It distorts the stable modes as well and is off by up to 1700×.
 
 **Mobility and gradient energy as inputs** (stage 3, linear regime). With M and κ varied on a 2 × 2 grid and fed to
-the layer, the law in the form of the linearisation, μ = M(ak² + bk²φ₀²) + Mκ·dk⁴ (3 reals), reaches the oracle
+the layer, the law in the form of the linearization, μ = M(ak² + bk²φ₀²) + Mκ·dk⁴ (3 reals), reaches the oracle
 (≤ 1.01×) at M twice and κ half the grid's range, with k_c within 1.5e-4. A 16-term law that contains the truth but
 not its form is 1–17× the oracle off the grid, depending on the seed; an MLP law is 10⁴× off even between grid
 points. The response is e^{μt}, so in the unstable band an error in the law becomes exponential in the output.
@@ -254,7 +254,7 @@ Tucker FNO (15.0 k, the closest rank) over 3 seeds and 6000 steps (a17).
 - The probe of WPO-2D is right mode by mode, along both (k, 0) and (k, k), so the learned dispersion relation is
   isotropic as the truth is.
 - A budget-matched TFNO with a learning-rate sweep (a18) closes about a third of the gap. The WPO-2D keeps a 2.6×
-  lower test error and a per-mode linearisation an order of magnitude more accurate.
+  lower test error and a per-mode linearization an order of magnitude more accurate.
 - One pre-registered prediction failed: that the untuned TFNO's $k_c$ would miss by more than 10 % in most seeds.
   2 of 3 seeds landed within 10 %.
 
@@ -352,7 +352,7 @@ sample time (a20).
   - The time-only WPO's probe is within 0.1–0.6 % of the pair, at 2.2× lower test error than an FNO of the same
     size.
   - The FNO's probe and the best linear fit are also within 1 %. At a stable focus, every reading of the
-    linearisation agrees.
+    linearization agrees.
 - **Closed loop with measurement noise** (a26, a28).
   - With a PI loop and 2 % noise, the output-error fits (WPO probe, linear pair) stay within 1.1 % of the Jacobian
     pair.
@@ -369,7 +369,7 @@ sample time (a20).
 - **What is identifiable.**
   - In linear problems, the full dispersion relation, from data alone, given scaled parameters and modes that the
     window and the sampling resolve.
-  - In deep nonlinear models, the linearisation at rest, through a probe, inside the forced band. That is true of
+  - In deep nonlinear models, the linearization at rest, through a probe, inside the forced band. That is true of
     FNO-type models as well.
   - What the pole structure adds: a dispersion relation that continues outside the forced band, and an
     LTI-consistent linear response.
@@ -396,10 +396,10 @@ sample time (a20).
 - Two 2D deep experiments: forced (@sec-2d, an untuned, slightly smaller baseline) and coarsening
   (@sec-coarsening). Domain transfer was tested for one factor (2π to 4π), one time range (to t = 21), and a
   WPO-2D trained on 2π only; a WPO-2D trained on 4π was not run.
-- Two nonlinear systems, both with a known linearisation at rest.
+- Two nonlinear systems, both with a known linearization at rest.
 - One parameter budget (59 k); FNO-type baselines from neuraloperator with a learning-rate sweep but no
   architecture search.
-- The probe is a small-amplitude linearisation at u = 0. Linearisations about other uniform states were learned
+- The probe is a small-amplitude linearization at u = 0. Linearizations about other uniform states were learned
   only in the linear regime of one system (@sec-spinodal), not probed from a deep model. Extrapolation in M and κ
   was shown for a law with the right form; no form was discovered.
 - The oracle floor of the data (steps and PRBS between samples) limits every test error to about 1 %.

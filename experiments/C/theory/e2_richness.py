@@ -8,10 +8,10 @@ swept over the data. For each configuration (system, input family, number of inp
 frequencies K, window T) it reports
 
   floor    e at the true parameters: the layer's own representation error (DFT
-           discretisation) on these inputs; e = RMS relative L2 over the samples
+           discretization) on these inputs; e = RMS relative L2 over the samples
   cond     condition number of the Gauss-Newton matrix F
   s_k      profiled error caused by a 10 % change of Re mu_k (other parameters
-           re-fitted, linearised), as in ``e1_audit/identifiability.py``
+           re-fitted, linearized), as in ``e1_audit/identifiability.py``
   ratio_k  s_k / floor; a pole counts as practically identifiable when ratio >= 10
            (its 10 % change is visible an order of magnitude above the floor)
 

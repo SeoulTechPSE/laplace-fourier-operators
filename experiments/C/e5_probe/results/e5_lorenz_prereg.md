@@ -3,11 +3,11 @@
 **System.** LNO paper Eq. 22: x′ = 10(y − x), y′ = x(5 − z) − y, z′ = xy − (8/3)z − f; output x. The LNO data
 `1D_Lorenz_rho5` follow it from x(0) = 1, y(0) = z(0) = 0, with inputs A sin 5t (checked: a simulation reproduces
 stored samples to 3.0e-4 … 7.8e-4). Unforced, the state settles to the stable equilibrium C+ = (3.266, 3.266, 4)
-within about 5 s. The linearisation at C+ from f to x is third order: **−0.9287 ± 4.1476i** (reference) and −11.81.
+within about 5 s. The linearization at C+ from f to x is third order: **−0.9287 ± 4.1476i** (reference) and −11.81.
 
 **What changes for a nonzero operating point** (all fixed here, before training):
 
-- Data side: the zero-input response is common to all samples, so the gates fit centred data (u − mean u to
+- Data side: the zero-input response is common to all samples, so the gates fit centered data (u − mean u to
   f − mean f, within each band). The fit model is still one complex pair.
 - Tied layer: a learned output offset b(t) (`e5_train.Offset`). It does not depend on the input, so the probes
   (odd part, Jacobian at f = 0) see only the layer.
@@ -37,7 +37,7 @@ Gate values on the actual sets:
 2. `lz_wide`: v3 passes where v2 fails, and every v1-trusted run is correct. The all-sample equivalent pole is
    5 % from the reference, so trusted poles that track it are still correct.
 3. `lz_orig`: v3 abstains. The operating point moves during the first ~5 s, so the Jacobian at f = 0 is a
-   linearisation about a time-varying trajectory. Expect the Toeplitz residual to be large, so the probes are
+   linearization about a time-varying trajectory. Expect the Toeplitz residual to be large, so the probes are
    invalid and v1 trusts few or no runs. Any run v1 trusts there is checked against the reference.
 4. Not predicted, reported: whether any model represents the fast pole −11.81, and how the offset affects the
    tied layer's fit.

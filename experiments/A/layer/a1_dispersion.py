@@ -20,7 +20,7 @@ month 10). Layer: `lfo.models.wavenumber.WavenumberPoleLayer1d` (FOH time axis, 
 **Model.**
 
 - One layer, N poles, mu_n(k) = a0 + a1 k^2 + a2 k^4 + i (c1 k + c3 k^3), beta_n(k) = b0 + b1 k^2.
-- Not stabilised; init scale 0.1; float64.
+- Not stabilized; init scale 0.1; float64.
 - Adam, lr 1e-2 with cosine decay, 3000 steps, full batch, relative L2 loss. N in {1, 2}, seeds 0-4.
 
 **Metrics.**

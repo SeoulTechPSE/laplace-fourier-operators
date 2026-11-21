@@ -2,7 +2,7 @@
 
 Plan: `docs/proposal_D_nonperiodic_initial_conditions.qmd`, Table 6.1, "Diffusion + time-varying boundary/source".
 The periodic layer cannot represent boundaries. On [0, L] with Dirichlet values a(t), b(t), the sine transform
-diagonalises the operator, and the boundary values enter mode m as a forcing c(k_m)(a − (−1)^m b) with
+diagonalizes the operator, and the boundary values enter mode m as a forcing c(k_m)(a − (−1)^m b) with
 c(k) = 2Dk/L, an odd function of k. The model is the wavenumber pole layer on sine modes plus a boundary channel
 c(k) = c₁k + c₃k³ that shares the poles μ(k).
 
@@ -15,7 +15,7 @@ c(k) = c₁k + c₃k³ that shares the poles μ(k).
 - Forcing on sine modes 1–16; boundary values from E1 profiles, starting at rest.
 - Truth: the 63-mode sine-Galerkin solution with an exact FOH on a 32× finer grid. A finite-difference truth was
   dropped before any fit: its discrete eigenvalues are not polynomial over all modes, so it would have tested the
-  discretisation rather than the model.
+  discretization rather than the model.
 
 | model | test / oracle | D̂ (0.02) | ĉ₁ (0.04) |
 |---|---|---|---|
@@ -74,7 +74,7 @@ c(k) = c₁k + c₃k³ that shares the poles μ(k).
 
 `d3c_advective.py` → `results/d3c_advective.md` (predictions 2c19dcc). u_t = −v u_x + D u_xx + f on [0, 1], v = 0.2,
 D = 0.05, Dirichlet values a(t), b(t). The weight w = e^{−αx}u with α = v/(2D) = 2 removes the advection, so the sine
-modes of w diagonalise the problem with λ(k) = −Dk² − v²/(4D). Model `adv`: the d3b DD layer on the weighted fields
+modes of w diagonalize the problem with λ(k) = −Dk² − v²/(4D). Model `adv`: the d3b DD layer on the weighted fields
 with one learned α. Control `noadv`: α = 0. Truth: 32-mode Galerkin solution of the weighted problem on a 32× finer
 time grid. 5 data seeds.
 
@@ -95,7 +95,7 @@ time grid. 5 data seeds.
 - The oracle itself has 0.9–1.1 % error, from the first-order hold on the coarse grid against the fine-grid truth.
   Refitting seed 0 on a truth computed on the model's own grid (oracle 2e-15) brings the in-band pole errors down to
   0.4–2 % (fit 3.6e-3). So most of the bias comes from the parameters absorbing the representation floor. The
-  rest is optimisation: the fit stops at 3.6e-3 rather than at the oracle.
+  rest is optimization: the fit stops at 3.6e-3 rather than at the oracle.
 
 **Reading.**
 - The one new parameter, the weight e^{αx} that removes the advection, is identified to 0.4 % in every seed. The
@@ -258,7 +258,7 @@ place of the eigen-solve where min D(x) < 1e-4. All seeds were rerun.
 3. Median iterations below d3f `mix`'s 2400 + 1800: **holds** (600, the minimum of two chunks).
 
 **Reading.**
-- Parameterising the coefficient instead of the basis turns a 528-parameter fit that needed thousands of
+- Parameterizing the coefficient instead of the basis turns a 528-parameter fit that needed thousands of
   iterations into a 6-parameter fit that converges in 600, and recovers the physical coefficient to 1e-4.
 - Outside the span, the fit finds the best approximation in the span. The error then reflects the expansion, not
   the identification.

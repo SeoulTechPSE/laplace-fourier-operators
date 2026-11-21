@@ -16,7 +16,7 @@ e = sqrt(mean_i ||r_i||^2) (RMS relative L2; close to the E1 test metric at smal
    sits at a flat point in those directions). For a relative change of 10 % in one
    parameter theta_k:
        fixed     e = 0.1 |theta_k| sqrt(F_kk)               (others held at the truth)
-       profiled  e = 0.1 |theta_k| / sqrt((F^-1)_kk)        (others re-fitted, linearised)
+       profiled  e = 0.1 |theta_k| / sqrt((F^-1)_kk)        (others re-fitted, linearized)
 2. Profile (nonlinear). Fix Re mu of one pole at c * Re mu* (c on a grid), re-fit all other
    parameters with L-BFGS from the truth (including the fixed pole's Im mu and residue,
    which are free in the real model), report the minimum e.
@@ -193,9 +193,9 @@ def main():
     lines = ["# E1 practical identifiability (tied layer, at the truth)", "",
              f"Float64 re-implementation vs `PoleResidueTS1d`: rel. diff {diff:.1e}. "
              "e = RMS relative L2 error over the 200 training inputs. "
-             "Compare with the oracle floor (≈ 1e-3, discretisation) and the E1 test errors.", "",
+             "Compare with the oracle floor (≈ 1e-3, discretization) and the E1 test errors.", "",
              "## Local: error caused by a 10 % change of one parameter", "",
-             "fixed: all other parameters at the truth; profiled: the others re-fitted (linearised). "
+             "fixed: all other parameters at the truth; profiled: the others re-fitted (linearized). "
              "Small profiled e = the other poles/residues compensate the change.", "",
              "| system | pole | parameter | fixed e | profiled e | cond(F) |", "|---|---|---|---|---|---|"]
     for r in local:

@@ -1,6 +1,6 @@
 # E5: linear-probe poles of Duffing models
 
-Damped Duffing (`1D_Duffing_c05`), original split, 5 seeds per variant. Linearised pole from the 4 smallest-amplitude training samples (|f| ≤ 0.20): **-0.2500 ± 0.9684i** (theory −0.25 ± 0.9682i). Errors in brackets: relative distance to it.
+Damped Duffing (`1D_Duffing_c05`), original split, 5 seeds per variant. Linearized pole from the 4 smallest-amplitude training samples (|f| ≤ 0.20): **-0.2500 ± 0.9684i** (theory −0.25 ± 0.9682i). Errors in brackets: relative distance to it.
 
 - **layer**: stored poles within 10 % / all, and the closest.
 - **LTI probe**: odd part (G(εu) − G(−εu)) / 2ε on 16 smooth random inputs, one complex pair fitted (first-order hold); pole at ε = 0.01, and the relative fit residual over all ε = 0.01, 0.1, 0.3, 1, 3 (how well a causal LTI model describes G).

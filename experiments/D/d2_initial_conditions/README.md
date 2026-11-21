@@ -31,7 +31,7 @@ reproduce the exact solution to 1e-9.
 
 **Reading.** Sharing the poles between the free and forced responses makes chaining exact for a linear system. The
 learned layer is at the oracle over 4 windows. For deep nonlinear models the IC path and chaining need a state
-readout and the semigroup regulariser of the plan; that is the next step.
+readout and the semigroup regularizer of the plan; that is the next step.
 
 ## Second pass (2026-11-19): deep rollout on forced Burgers
 
@@ -61,10 +61,10 @@ are constant in k, and the width is 23, to keep the budget.
   a predicted rather than a true field.
 - Sharing the poles between the initial state and the forced response gives the smallest growth and the lowest
   rollout error, but only by about 10 %. That is a modest structural gain, not the exactness of the linear case.
-- Next steps from the plan: the semigroup regulariser ‖G(t+s)[u₀] − G(s)[G(t)[u₀]]‖ during training, and training
+- Next steps from the plan: the semigroup regularizer ‖G(t+s)[u₀] − G(s)[G(t)[u₀]]‖ during training, and training
   on predicted initial fields (pushforward).
 
-## Third pass (2026-11-19): training for rollout (pushforward, semigroup regulariser)
+## Third pass (2026-11-19): training for rollout (pushforward, semigroup regularizer)
 
 `d2c_rollout_training.py` → `results/d2c_rollout_training.md` (predictions 2776b70). The d2b IC-path WPO (width 23,
 a11 settings, 3 seeds, 6000 steps), trained three ways on the same 200 two-window trajectories ([0, 10]):
@@ -319,7 +319,7 @@ one-window sets where one input dominates. `force_dom`: forcing s in [0.3, 1], i
 response to the forcing (1.4–1.6×). It is not confined to the IC path: with training on initial fields, the
 forcing response is also worse than at a16's parity (zero initial states, 12000 steps; d2h ruled out the budget).
 A likely reading is shared capacity. The IC path reuses the poles and the width (23) of the forced path, and a
-nonlinear initial-field response (fields up to |u| ≈ 3 relaxing towards ±1) takes capacity from both. Candidates:
+nonlinear initial-field response (fields up to |u| ≈ 3 relaxing toward ±1) takes capacity from both. Candidates:
 a separate pole set or width for the IC path at a matched budget.
 
 ## Eleventh pass (2026-11-21): IC-path capacity at a matched budget (d2k)
@@ -348,7 +348,7 @@ within 2 %: the first-layer IC path, the input channel (d2g), separate IC poles,
 layer (0.0255–0.0259). Every row is a WPO with the same backbone. So d2j's capacity-sharing reading in this form is
 not supported. The gap to the TFNO is a property of the WPO backbone on this system, not of its IC path. The
 unseen-mode tolerance survives every change (2.4–2.7 against 10.4). Open: the backbone's pointwise expressivity or
-its optimisation (the TFNO also improves more with initial fields than the WPO does: 0.029 → 0.013 against
+its optimization (the TFNO also improves more with initial fields than the WPO does: 0.029 → 0.013 against
 0.026 → 0.026, a16 against d2g, different test sets). Further IC-path variants are not a promising lead.
 
 ## Twelfth pass (2026-11-21): the WPO backbone, poles against depth (d2l)

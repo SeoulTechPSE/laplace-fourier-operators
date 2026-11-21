@@ -9,7 +9,7 @@ Predictions were committed with the script (4bd17c1) before it ran.
   of 270 runs (0.005–0.025). The other 2 runs overflow (NaN), from strongly unstable poles.
 - **Predicted: the layer as coded is non-causal.** Its share was above 0.1 in all 268 finite runs (0.12–0.82).
   The original code attaches each transient coefficient to another channel's pole, so the periodic wrap-around of
-  the steady term is not cancelled.
+  the steady term is not canceled.
 - **Predicted: the full model's share tracks the layer's.** Failed (Spearman 0.00). The pointwise path `w0` is
   causal, so the full share depends on how much a model uses the pole layer. Original-init models with unmoved
   poles show 0.002–0.05; stable-init models with pole lr × 10 show 0.11–0.32.
@@ -17,7 +17,7 @@ Predictions were committed with the script (4bd17c1) before it ran.
 ## Part B: train the LNO with its pole-residue layer in the textbook wiring
 
 **Variant** `lnotb_stable_plr10`. It is the original LNO for each benchmark, with `conv0` replaced by
-`PoleResidueTS1d` (same shapes, same residue initialisation distribution), stable pole initialisation and pole
+`PoleResidueTS1d` (same shapes, same residue initialization distribution), stable pole initialization and pole
 lr × 10. The `common` protocol is unchanged. 5 seeds × all 18 sets, 90 runs; probed with `e5_probe.py --only`.
 Rule v4 is unchanged. The comparison is `lno_stable_plr10`, the same variant in the original wiring.
 

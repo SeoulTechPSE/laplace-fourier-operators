@@ -43,7 +43,7 @@ def rates(cond):
 
 
 POLES = {"p4": ["-0.4+3i", "-1", "-0.2"], "p6": ["-0.5+1.5i", "-0.3+4i", "-1", "-2"]}
-# categorical slots in fixed order; a pole keeps its colour in both panels (-1)
+# categorical slots in fixed order; a pole keeps its color in both panels (-1)
 POLE_C = {"-0.4+3i": "#2a78d6", "-0.5+1.5i": "#2a78d6", "-0.3+4i": "#e87ba4", "-1": "#1baf7a",
           "-0.2": "#eb6834", "-2": "#eda100"}
 NUDGE = {("p4", "-1"): -7, ("p4", "-0.2"): 6}                # label offsets (points) where end values coincide

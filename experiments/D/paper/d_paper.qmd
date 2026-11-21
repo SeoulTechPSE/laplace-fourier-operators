@@ -141,7 +141,7 @@ Rollout chains 4 windows over [0, 20].
   They act differently. More windows lower the window error, and the rollout error follows at a ratio of about 2.5.
   Developed start states raise the error on fresh test windows by 14 % but cut the rollout-to-window ratio to
   about 1.9. Training data for chained windows should therefore be chosen by rollout error, not window error.
-- **Generalisation and long rollout.** All three models were retrained on developed-start windows.
+- **Generalization and long rollout.** All three models were retrained on developed-start windows.
   - Initial fields on modes never seen in training (9–16): the TFNO's error triples. The two pole-based models do
     not degrade, because their time axis is a pole response in every mode. The IC path is better than the channel
     input (0.72 against 1.08 of the in-distribution error).
@@ -187,7 +187,7 @@ Rollout chains 4 windows over [0, 20].
 ## Boundaries in space {#sec-bc}
 
 A periodic layer cannot represent boundaries. On [0, L] with Dirichlet values a(t), b(t), the sine transform
-diagonalises diffusion, and the boundary values enter mode m as a forcing:
+diagonalizes diffusion, and the boundary values enter mode m as a forcing:
 
 $$\frac{d\hat u_m}{dt} = \lambda(k_m)\,\hat u_m + \hat f_m(t) + c(k_m)\,\big(a(t) - (-1)^m b(t)\big),\qquad c(k) = \frac{2Dk}{L}.$$
 
@@ -204,7 +204,7 @@ poles.
 
 - The truth is the 63-mode sine-Galerkin solution. A finite-difference truth was dropped before any fit: its
   discrete eigenvalues are not polynomial over all modes, so a D-recovery test would have tested the
-  discretisation.
+  discretization.
 - **Other boundary types.** With a free cubic law per channel, the layer reproduces Dirichlet, Neumann and mixed
   boundaries at the oracle, with D within 1.2 %. Without the channels the error is 79–283× larger. On the modes the
   data excite (m ≤ 8), each learned law is right within about 1 % and has the physical form: ∝ k for a boundary
@@ -253,7 +253,7 @@ The free basis is reported after running to convergence. {#tbl-basis}
 
 Project A's Danckwerts reactor (a27) is a convective problem with an inlet and an outlet,
   observed only at the outlet. There the modal poles were not identifiable, and a dead time plus lags described the
-data best. Boundaries work as a channel when the basis diagonalises the operator and the field is observed.
+data best. Boundaries work as a channel when the basis diagonalizes the operator and the field is observed.
 
 ## Discussion
 
@@ -275,7 +275,7 @@ On Cahn–Hilliard a TFNO rolls out 2× better. That gap is set within one windo
 
 The choice of training windows matters more than the architecture. The robust structural benefit is extrapolation
 in the mode content of the initial field, which every WPO variant kept (2.2–2.7× against the TFNO's 10.4×). In
-project A the same physical-k parametrisation also lets a 2D model move to a larger domain without retraining.
+project A the same physical-k parametrization also lets a 2D model move to a larger domain without retraining.
 
 **Practice.** Two lessons on fitting came out of failed predictions.
 - Fixed iteration budgets under-fit the weakly excited modes. Claims about those modes need a fit run to

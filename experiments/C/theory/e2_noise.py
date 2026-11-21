@@ -2,9 +2,9 @@
 
 Noise model (``e2_train.make_splits``): white Gaussian on the train / validation outputs,
 per sample with relative L2 norm eta, i.e. std s = eta / sqrt(n_t) on the per-sample
-normalised residual (y_hat - y) / ||y||, which is the residual analysed in phase 1. For the
+normalized residual (y_hat - y) / ||y||, which is the residual analyzed in phase 1. For the
 minimal-form tied layer at the truth (float64) the Fisher information is J^T J / s^2, with J
-the Jacobian of the normalised residual over the 200 training samples. For each pole the
+the Jacobian of the normalized residual over the 200 training samples. For each pole the
 trace bound E|mu_hat - mu|^2 >= CRB(Re mu) + CRB(Im mu) gives the relative error bound
 
     rel_CRB = sqrt(CRB(Re mu) + CRB(Im mu)) / |mu|        (unbiased estimators)
@@ -88,7 +88,7 @@ def main():
              "of 5). Per pole: RMS relative error of single runs / of the group consensus (truth-free, "
              "e2_floor.py; ∞ = pole missing from the consensus) / relative CRB (trace bound, unbiased "
              "estimators). Recovered = single runs with relative error < 0.1. η = 0: no noise (bias / "
-             "optimisation only).", ""]
+             "optimization only).", ""]
     for system, (base, noisy) in SYSTEMS.items():
         cr = crb_unit(base)
         true = [complex(*z) for z in cr["poles"]]

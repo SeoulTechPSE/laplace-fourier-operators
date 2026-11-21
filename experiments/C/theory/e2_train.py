@@ -9,7 +9,7 @@ Fixed across conditions (only the data change):
   init      E1 ``band`` init with its T = 20 ranges (Re in [-0.5, -0.05], Im in [0, 5.03] rad/s),
             so the initial pole distribution is the same in rad/s for every window T
   protocol  E1 ``common`` with pole lr x 10 (``common+plr10``), 1000 epochs
-Data: ``e2_richness.make`` (dt = 20/1024): train = the 200 samples analysed in phase 1
+Data: ``e2_richness.make`` (dt = 20/1024): train = the 200 samples analyzed in phase 1
 (data seed 0), validation 50 (seed 1), test 100 (seed 2), same family / K / T.
 
     python experiments/C/theory/e2_train.py --cond p4_e1_T20 p4_ms16_T20 --seeds 0 1 2
@@ -38,7 +38,7 @@ Remedies (E2 -> E3/E4 candidates):
               output nearly unchanged) and the freed slot moved, with residue 0, to the point of
               the log grid on [-5, -0.05] farthest from all real slots
   *_l1, *_l1s  sparsity: + lambda(ep) sum_j |beta_j| ||e^{mu_j t}||_2 (impulse-response norm of each
-              slot, so fast decays are not favoured), lambda = 1e-3 / 1e-2 to epoch 200, linearly
+              slot, so fast decays are not favored), lambda = 1e-3 / 1e-2 to epoch 200, linearly
               to 0 at 300; at epoch 300 slots whose output is < 2 % of the layer output (train
               inputs) are pruned (residue masked to 0) and training continues to 1000 without
               penalty. Pole metrics use the remaining slots only.
@@ -57,12 +57,12 @@ Remedies (E2 -> E3/E4 candidates):
               c = 0.5 (Re mu = -c |Im mu| sigmoid(a), a learned), so a heavily damped oscillation
               cannot stand in for a fast real decay; damp8w: c = 1. True complex poles: |Re|/|Im| <= 0.33
   *_ms        multi-start: 8 candidate inits (seeds 100 * seed + c) trained 100 epochs each,
-              the best on validation continues with the full protocol (1000 epochs, fresh optimiser)
+              the best on validation continues with the full protocol (1000 epochs, fresh optimizer)
 Conditions ending in ``_foh``: the tied layer's response 1 / (i omega - mu) is replaced by the exact
 sampled response to a first-order-hold (piecewise-linear) input, the input model of the data
 generator (``FOHPoleResidue``); the oracle uses the same layer. E4 traced the layer's low-noise
-"discretisation floor" to this hold mismatch (``e4_profile.py --hold foh``).
-The real constraint is a parametrisation of ``pr.mu`` (Im multiplied by a 0/1 mask), applied
+"discretization floor" to this hold mismatch (``e4_profile.py --hold foh``).
+The real constraint is a parametrization of ``pr.mu`` (Im multiplied by a 0/1 mask), applied
 after the init, so the constrained slots start on the real axis at the band init's Re.
 
 Outputs: results/e2_train/<cond>_s<seed>.json (committed), results/e2_train.md,
@@ -105,7 +105,7 @@ SPLIT_EPOCHS, SPLIT_TOL = (150, 300), 0.1                 # coalescence check: |
 GRID = np.log(np.geomspace(0.05, 5.0, 200))               # candidate log|Re| for a split slot
 L1_LAMBDA = {"_l1": 1e-3, "_l1s": 1e-2}                    # sparsity weight, constant to epoch 200, 0 at 300
 L1_ON, L1_OFF, PRUNE_EPOCH, PRUNE_TOL = 200, 300, 300, 0.02
-E.POLE_PARAMS = E.POLE_PARAMS + ("mu.original", ".gate")   # parametrised pr.mu and real gates get the pole lr
+E.POLE_PARAMS = E.POLE_PARAMS + ("mu.original", ".gate")   # parametrized pr.mu and real gates get the pole lr
 
 
 class ImagGate(torch.nn.Module):
@@ -471,7 +471,7 @@ def build(variant, mu_true, beta_true, t, seed, kind="tied", modes=None, delta=N
              else E.Layer1(kind, n, t, "stable", modes or E.MODES))
     if hold == "foh":
         assert kind == "tied" and type(model.pr) is PoleResidueTS1d
-        model.pr.__class__ = FOHPoleResidue                 # before any parametrisation of pr.mu
+        model.pr.__class__ = FOHPoleResidue                 # before any parametrization of pr.mu
     rng = np.random.default_rng(seed)
     E.layer_init(model, "warm" if variant == "warm" else "band", mu_true, beta_true, rng)
     if any(full.removesuffix("_ms").endswith(sfx) for sfx in ("_l1", "_l1s", "_prune")):

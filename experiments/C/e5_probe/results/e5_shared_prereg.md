@@ -9,7 +9,7 @@ several of them at slightly different frequencies dephase. Across all 42 runs wi
 
 **Variant** `lnots_stable_plr10`. It is the textbook-wired LNO with one set of poles shared by all channel pairs:
 16 poles (ρ = 10: 84) instead of width² × modes. Residues stay per channel pair. Everything else matches
-`lnotb_stable_plr10`: stable initialisation, pole lr × 10, `common` protocol. 5 seeds × 18 sets, 90 runs; probed
+`lnotb_stable_plr10`: stable initialization, pole lr × 10, `common` protocol. 5 seeds × 18 sets, 90 runs; probed
 with `e5_probe.py --only`; rule v4 unchanged.
 
 **Predictions** (baseline `lnotb_stable_plr10` in brackets).

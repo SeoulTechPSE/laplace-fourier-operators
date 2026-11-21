@@ -5,7 +5,7 @@ On the fine grid (p6_ms16_T80_N4096) Adam stops at test 4.2e-4 against an oracle
 5.6e-5, so the phase-1 prediction (-1 identifiable at N = 4096) was not tested at the
 floor. Here every saved Adam checkpoint (``runs/C/e2/<run>.pt``) is polished with
 L-BFGS-B (scipy, full training batch, data loss only: no weight decay, no penalty;
-float32 model, float64 optimiser state; at most MAXITER iterations, restarted after a
+float32 model, float64 optimizer state; at most MAXITER iterations, restarted after a
 line-search stall while a restart still gains > 1e-4 of the starting loss) and re-scored.
 Before and after are the same run, so the comparison is paired.
 

@@ -35,8 +35,8 @@ by (in, out, n) and
 which is the residue of K(s) V(s) at s = mu (sign as in the original 1D code).
 ``poles()`` returns the learned (mu, beta) for the pole audit.
 
-Initialisation (not given in either paper). With the original LNO pole
-initialisation (``pole_init="lno"``: Re, Im uniform in [0, 1/(in*out)), i.e.
+Initialization (not given in either paper). With the original LNO pole
+initialization (``pole_init="lno"``: Re, Im uniform in [0, 1/(in*out)), i.e.
 slightly unstable poles near 0) a 4-layer stack does not train: the transient
 term grows layer by layer (relu: diverges; sin: saturates). Two remedies work
 (Duffing c=0, iid, 300 epochs, 1 seed; STATUS.md 2026-11-12):
@@ -46,8 +46,8 @@ term grows layer by layer (relu: diverges; sin: saturates). Two remedies work
 - ``norm=True``: InstanceNorm around each pole-residue layer, as in the
   original v2 code (``LNO2dV2``).
 
-The default is the stable initialisation without normalisation, because a
-normalisation between layers makes the learned poles harder to interpret.
+The default is the stable initialization without normalization, because a
+normalization between layers makes the learned poles harder to interpret.
 """
 from __future__ import annotations
 

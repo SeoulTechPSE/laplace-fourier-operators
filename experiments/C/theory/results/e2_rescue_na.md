@@ -1,6 +1,6 @@
 # E2: truth-free single-slot restarts after the polish, noise-aware rule (E4)
 
-Every polished run (seeds 10-29) gets up to 3 rounds of single-slot moves (residue 0, 300-iteration screen, noise-aware rule: in the noise regime (S ≤ 2 n_s n_t σ̂²) minimise S and accept if S falls ≥ 13.28 σ̂², otherwise accept if training loss falls ≥ 1 %, then full polish). Before = after the polish (e2_polish.py). Best of 5: lowest validation loss in groups of 5 consecutive seeds. η̂: noise level estimated from the training outputs (median over runs); noise regime: runs that used the noise-aware test.
+Every polished run (seeds 10-29) gets up to 3 rounds of single-slot moves (residue 0, 300-iteration screen, noise-aware rule: in the noise regime (S ≤ 2 n_s n_t σ̂²) minimize S and accept if S falls ≥ 13.28 σ̂², otherwise accept if training loss falls ≥ 1 %, then full polish). Before = after the polish (e2_polish.py). Best of 5: lowest validation loss in groups of 5 consecutive seeds. η̂: noise level estimated from the training outputs (median over runs); noise regime: runs that used the noise-aware test.
 
 | condition | variant | runs | η̂ | noise regime | runs moved | train/oracle (median) | test rel. L2 (median) | all (single) | best of 5: all | per pole recovered | s per run |
 |---|---|---|---|---|---|---|---|---|---|---|---|

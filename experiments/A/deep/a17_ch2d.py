@@ -1,7 +1,7 @@
 """(A) Deep operator in 2D: forced 2D Cahn-Hilliard, WPO-2D against a matched TFNO (RQ3 in the plan's setting).
 
 **System** (`lfo.data.cahn_hilliard.solve2d`): u_t = M lap (u^3 - u - kappa lap u) + f on a periodic 32 x 32 grid,
-zero initial state, M = 0.1, kappa = 0.04. Linearised: lambda(k) = M |k|^2 (1 - kappa |k|^2), unstable for
+zero initial state, M = 0.1, kappa = 0.04. Linearized: lambda(k) = M |k|^2 (1 - kappa |k|^2), unstable for
 |k| < k_c = 5, fastest at k_max = 3.54.
 
 **Data.** T = 5, n_t = 201; truth on a 32x finer time grid. Each sample is forced at 4 wavevectors from the half

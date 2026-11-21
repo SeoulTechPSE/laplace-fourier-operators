@@ -3,7 +3,7 @@
 In a16 (`a16_cahn_hilliard.py`) the probe over T = 5 gave the same per-mode poles for the WPO with Re mu > 0 allowed
 (`wpo`) and for the stable control (`wpo_stable`, every layer pole Re mu <= 0): k = 1..4 at +0.096, +0.335, +0.579,
 +0.576, residuals ~0.002. A feed-forward cascade of stable layers is stable, so the control can only be emulating
-growth over the finite window, e.g. by sums of t^j e^{mu t} terms with large cancelling residues. Over a longer
+growth over the finite window, e.g. by sums of t^j e^{mu t} terms with large canceling residues. Over a longer
 window that emulation must fail, while true unstable poles keep fitting.
 
 **Test.** The a16 probe (single-mode inputs, odd part, eps = 0.003, per-mode identification) on a T = 10 window

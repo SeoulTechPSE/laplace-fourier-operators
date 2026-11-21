@@ -156,7 +156,7 @@ def main():
             torch.cuda.empty_cache()
     mean = lambda rs, q: np.mean([r[q] for r in rs])
     rng_ = lambda xs: f"{min(xs):.2f}–{max(xs):.2f}"
-    lines = ["# (D2) Forced Cahn–Hilliard with initial fields: generalisation and 10-window rollout", "",
+    lines = ["# (D2) Forced Cahn–Hilliard with initial fields: generalization and 10-window rollout", "",
              "| model | params | id | amp (ratio to id) | high (ratio to id) | roll4 | roll10 [0, 50] |",
              "|---|---|---|---|---|---|---|"]
     for kind in KINDS:

@@ -11,7 +11,7 @@ and adds the planned LNO baseline (proposal A, Section 7.2), which the deep comp
 selection by validation, then 12000 steps with seeds 0-2):
 - `wpo_index`: a11's WPO (width 24, 4 layers, 6 poles, modes 22, stable) with each layer's poles replaced by a free
   table mu_n[k] over the 22 retained mode indices (real part through the same -softplus, so stable). Residues stay
-  polynomial in k^2. Initialised at the polynomial's initial values, so the two start from the same poles.
+  polynomial in k^2. Initialized at the polynomial's initial values, so the two start from the same poles.
   60,465 parameters (+1.6 %). Sweep: lr 3e-3 with pole lr x10 or x30 (a11 chose lr 3e-3, x30 for the WPO).
   This is the S4D / SGNO-type per-index generator inside the same architecture.
 - `lno`: the original LNO v2 (Burgers example; `lfo.models.LNO2dV2`, transient + steady branches, sin activations,

@@ -30,13 +30,13 @@ bands from a data-only gate scan: `c0_small` peak |f| ~ U[0.02, 0.1] (both gates
 Ninth pass, forced Lorenz rho = 5 (LNO paper Eq. 22: x' = 10 (y - x), y' = x (5 - z) - y, z' = x y - 8/3 z - f, output
 x; the LNO data `1D_Lorenz_rho5` checked here: from x(0) = 1, y(0) = z(0) = 0 a simulation reproduces stored samples
 to 3.0e-4 ... 7.8e-4; inputs A sin 5t). The new sets start at the stable equilibrium C+ (x = y = 3.266, z = 4), so the
-operating point is fixed; its linearisation from f to x has poles -0.9287 +- 4.1476i and -11.81. Data seed 5, bands
-from a data-only scan of centred linear fits: `lz_small` peak |f| ~ U[0.05, 0.5] (both gates pass), `lz_wide`
+operating point is fixed; its linearization from f to x has poles -0.9287 +- 4.1476i and -11.81. Data seed 5, bands
+from a data-only scan of centered linear fits: `lz_small` peak |f| ~ U[0.05, 0.5] (both gates pass), `lz_wide`
 U[0.5, 5] (all-sample residual 0.17, low band 0.05, shift 0.02: v2 fails, v3 passes).
 
 Tenth pass, forced Lorenz rho = 10 (LNO data `1D_Lorenz_rho10`, checked here: same equations from x(0) = 1 reproduce
 stored samples to 5.1e-4 ... 2.7e-3; inputs A sin 5t, A 0.05-10). New sets start at C+ (x = y = 4.899, z = 9); the
-linearisation from f to x has poles -0.5955 +- 6.1742i and -12.48. Data seed 6, bands from a data-only gate scan.
+linearization from f to x has poles -0.5955 +- 6.1742i and -12.48. Data seed 6, bands from a data-only gate scan.
 
 Splits 200 / 50 / 130 (train / vali / test); data seed 0 for `small` / `mixed`, 1 for `medium` / `moderate`. Stored in runs/C/e5_data/<name>.npz (git-ignored).
 

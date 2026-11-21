@@ -30,7 +30,7 @@ evaluated where the data carry no information, so a k^4 term cannot overflow the
 re_max (soft minimum with temperature `re_tau`), which bounds the growth e^{Re mu T} while leaving the polynomial
 unchanged well below the cap. Above the cap the soft minimum has almost no gradient, so a start whose Re mu lies
 there stays trapped (`experiments/A/layer`, a7); `re_leak` > 0 keeps a slope re_leak above the cap. `k_ref`
-evaluates the polynomials in k / k_ref, so that all coefficients have comparable scale for a first-order optimiser
+evaluates the polynomials in k / k_ref, so that all coefficients have comparable scale for a first-order optimizer
 (with k up to 16, a k^4 coefficient otherwise moves Re mu by 6.5e4 per unit step).
 
 `ic=True` adds the initial-condition path of project (D2): `forward(f, u0)` adds the free response of the

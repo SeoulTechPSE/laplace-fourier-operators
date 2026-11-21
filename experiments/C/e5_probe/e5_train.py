@@ -172,7 +172,7 @@ def run(variant, seed, device, data_tag="orig"):
     t0 = time.time()
     if isinstance(model, Offset) and data_tag.startswith("lz_r10"):
         # tenth pass (rule v4): start the offset at the training-mean trajectory; under the `common` lr schedule a
-        # zero-initialised offset stopped at ~1.5 of 3.27 in the ninth pass (the travel bound)
+        # zero-initialized offset stopped at ~1.5 of 3.27 in the ninth pass (the travel bound)
         with torch.no_grad():
             model.offset.copy_(data["train"][1].mean(0).to(device))
     hist = E.train(model, data, E.PROTOCOLS["common"], device, pole_lr_mult=VARIANTS[variant][2],

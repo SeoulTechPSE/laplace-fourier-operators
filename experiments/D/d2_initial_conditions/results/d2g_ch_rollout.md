@@ -1,4 +1,4 @@
-# (D2) Forced Cahn–Hilliard with initial fields: generalisation and 10-window rollout
+# (D2) Forced Cahn–Hilliard with initial fields: generalization and 10-window rollout
 
 | model | params | id | amp (ratio to id) | high (ratio to id) | roll4 | roll10 [0, 50] |
 |---|---|---|---|---|---|---|

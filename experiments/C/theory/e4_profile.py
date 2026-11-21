@@ -1,7 +1,7 @@
 """(C) E4: minimal-form refit, order test and per-pole profile intervals.
 
 The chi-square certificate (e2_floor.py, rule ``noise``) under-certifies at low noise: the
-spread of S between runs is set by the optimiser, so often only the best run is certified and
+spread of S between runs is set by the optimizer, so often only the best run is certified and
 the consensus (>= 2 certified runs) is empty. A union with the ratio rule does not help: the
 1.5 x ratio certifies every run whenever the loss is at the noise level. Here, per group of 5
 runs after the noise-aware restarts (stage ``rescue_na``), truth-free:
@@ -15,7 +15,7 @@ runs after the noise-aware restarts (stage ``rescue_na``), truth-free:
               explains the data as well as the best 8-slot run. If the consensus fails, the best
               run's effective poles are tried
   profile     for each fitted pole, Re mu fixed at c x its value (c = exp(+-u), u log-spaced in
-              [2e-3, ln 3]), all else re-fitted (warm start from the neighbouring c); interval = the
+              [2e-3, ln 3]), all else re-fitted (warm start from the neighboring c); interval = the
               c range around 1 with S(c) - min S <= chi2_1(0.95) sigma^2 (pointwise 95 % profile
               likelihood interval)
   identified  a fitted pole whose interval closes on both sides
@@ -26,7 +26,7 @@ band-limited one. Per pole, the discrete filter x_{j+1} = E x_j + b0 u_j + b1 u_
 (E = e^{mu dt}, b0 = I0 - I1 / dt, b1 = I1 / dt) replaces 1 / (i omega - mu) by
 (b0 + b1 z_l) / (z_l - E), z_l = e^{i omega_l dt}; the transient term keeps its form. At the truth
 this leaves S ~ 1e-13 (float32 data) instead of 8e-7 (p6), and no pole bias: the layer's
-"discretisation floor" is the hold mismatch. With foh the certificate and the order test also
+"discretization floor" is the hold mismatch. With foh the certificate and the order test also
 use FOH refits. Each run's effective poles are refitted and then reduced by backward elimination
 (drop a pole or make a complex pole real, the move that raises S least, while the rise stays below
 chi2_dp(0.99) sigma^2); the
@@ -37,7 +37,7 @@ runs' band-model poles with refitted S (wrong runs certified); both broke the co
 Outputs then go to ``results/e4_profile_foh``.
 Noise-free conditions (``CLEAN``, stage ``rescue``): sigma^2 is the float32 rounding variance of the
 stored outputs (``round_var``), so the chi-square certificate, the order test and the intervals
-work at the precision of the data; reported in their own section (no CRB). There the fits minimise
+work at the precision of the data; reported in their own section (no CRB). There the fits minimize
 S / (n sigma^2) and end with damped Newton steps (L-BFGS on S ~ 1e-13 stalled), and each reported
 pole also gets a bootstrap interval (``bootstrap``: dithers of the stored inputs and fitted outputs),
 because the rounding of the inputs, missing from sigma^2, widens the pole spread (e4_bias.py).
@@ -149,7 +149,7 @@ def noise_var_robust(v):
 def eiv_bootstrap(vp, data, t, theta, real, sig2_y, sig2_u, device, n_boot=N_BOOT, seed=0):
     """Noisy data, truth-free errors-in-variables bootstrap (e4_eiv.py): y* = G_fit x~ + e_y*,
     x~* = x~ + e_u*, white Gaussian with the per-element variances sig2_y (outputs, e2_rescue.noise_var)
-    and sig2_u (inputs, noise_var_robust) of the normalised samples; refit from theta. Returns the
+    and sig2_u (inputs, noise_var_robust) of the normalized samples; refit from theta. Returns the
     mean and std of each Re mu over the refits (bias-corrected estimate 2 theta - mean)."""
     x, y = (a.double().cpu() for a in data["train"])
     with torch.no_grad():
@@ -178,7 +178,7 @@ def add_eiv(res, profs, vp, data, t, theta, real, sig2, device):
 
 def eiv_weights(vp, theta, real, sig2_y, sig2_u):
     """Frequency weights that whiten the errors-in-variables residual. With y = G x and the stored
-    x~ = x + e_u, the residual of the true model is e_y - G e_u: per normalised sample i its spectrum
+    x~ = x + e_u, the residual of the true model is e_y - G e_u: per normalized sample i its spectrum
     is v_il = sig2_y + sig2_u (||x_i|| / ||y_i||)^2 |G(i omega_l)|^2 (stationary approximation; the
     transient of e_u is ignored). G from the fit theta: G = 1/2 sum_k (b_k H_k(omega) + conj(b_k H_k(-omega))),
     b_k the (complex) residue of pole k. Returns w = 1 / sqrt(v) (b, n_t), so that S is in units of the
@@ -243,7 +243,7 @@ class VarPro:
         self.device = device
         self.b = x.shape[0]
         self.yw = None if w is None else self.whiten(self.y[:, None])[:, 0]
-        self.s_unit = 1.0               # fit() minimises S / s_unit (noise-free data: n sigma^2, see run())
+        self.s_unit = 1.0               # fit() minimizes S / s_unit (noise-free data: n sigma^2, see run())
 
     def like(self, data):
         """The same refit model on other data (bootstrap draws)."""
@@ -393,7 +393,7 @@ class EIVML(VarPro):
 
         V = sum_il |R_il|^2 / v_il(theta),  v_il = sig2_y + sig2_u (||x_i|| / ||y_i||)^2 |G_theta(i omega_l)|^2,
 
-    R_i = fft of the normalised time-domain residual of sample i (the transient of e_u ignored, as in
+    R_i = fft of the normalized time-domain residual of sample i (the transient of e_u ignored, as in
     eiv_weights). The weights move with theta, so lowering |G| where the input is pure noise no
     longer pays (the plug-in weights of foh_eiv keep that bias). The residues enter v, so they are
     no longer projected out: theta = (pole parameters, residues), fitted jointly; a pole-only theta
@@ -511,7 +511,7 @@ class EIVMLT(EIVML):
 
 
 def denoise_input(x, sig2_u):
-    """Wiener-type shrinkage of the stored inputs, truth-free: per frequency line the mean normalised power
+    """Wiener-type shrinkage of the stored inputs, truth-free: per frequency line the mean normalized power
     P_l over the samples, noise power n_t sigma_u^2; gain max(0, 1 - n_t sigma_u^2 / P_l)."""
     X = torch.fft.fft(x, dim=1)
     P = (X.abs().pow(2) / x.pow(2).sum(1, keepdim=True)).mean(0)
@@ -752,7 +752,7 @@ def run(cond, g0, device, hold="band", reuse=None):
     if not F.NOISY(cond):
         # S ~ 1e-13 here, so gtol = 1e-14 on S itself stops L-BFGS early: a fit started at the truth
         # ended above the fit started at the report (p6 fine: S 1.29352322e-13 vs 1.29352183e-13), and
-        # pole errors of 1e-9 were off by up to 1e-8. Minimise S / (n sigma^2) = O(1) instead.
+        # pole errors of 1e-9 were off by up to 1e-8. Minimize S / (n sigma^2) = O(1) instead.
         vp.s_unit = data["train"][1].numel() * sig2
     ref = None
     t_rec = float(t[1] - t[0]) * len(t)
@@ -966,7 +966,7 @@ def summarize_hold(hold):
                 "|G(iω)|², σ_y² from the outputs, σ_u² from the inputs by a robust estimate, G from the best run's "
                 "refit). S is then in noise units and every test uses σ² = 1. With σ_u² = 0 this is `--hold foh`.", ""]
                if hold == "foh_eiv" else []),
-             *(["As `--hold foh`, but every refit minimises the frequency-domain errors-in-variables ML cost "
+             *(["As `--hold foh`, but every refit minimizes the frequency-domain errors-in-variables ML cost "
                 "Σ |R|² / (σ_y² + σ_u² (‖x_i‖ / ‖y_i‖)² |G_θ(iω)|²) (`EIVML`; poles and residues jointly, the "
                 "weights move with θ). S is in noise units and every test uses σ² = 1 (no calibration). A reported "
                 "pole within 10 % of another reported pole (duplicate) or with |Im μ| > π/dt (aliased) is "
@@ -1089,10 +1089,10 @@ def summarize_hold(hold):
             continue
         true = [complex(*z) for z in g[0]["true_poles"]]
         lines += [f"## {system}, noise-free data (σ² = float32 rounding of the outputs)", "",
-                  "Fits minimise S / (n σ²) and end with damped Newton steps. Covered: by the 95 % profile "
+                  "Fits minimize S / (n σ²) and end with damped Newton steps. Covered: by the 95 % profile "
                   f"interval (σ² from the outputs only) / by the bootstrap interval Re μ ± 1.96 std ({N_BOOT} "
                   "dithers of the stored inputs and fitted outputs by ± ulp/2). All groups of a condition share "
-                  "one data set, so coverage is one realisation per condition.", "",
+                  "one data set, so coverage is one realization per condition.", "",
                   "| condition | groups | certified runs (mean) | report from consensus | order test passed | "
                   + " | ".join(f"{lab(z)}: identified / covered (profile / bootstrap), error, half-width" for z in true)
                   + " | false identified |", "|---|---|---|---|---|" + "---|" * len(true) + "---|"]

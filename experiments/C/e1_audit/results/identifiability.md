@@ -1,10 +1,10 @@
 # E1 practical identifiability (tied layer, at the truth)
 
-Float64 re-implementation vs `PoleResidueTS1d`: rel. diff 2.3e-07. e = RMS relative L2 error over the 200 training inputs. Compare with the oracle floor (≈ 1e-3, discretisation) and the E1 test errors.
+Float64 re-implementation vs `PoleResidueTS1d`: rel. diff 2.3e-07. e = RMS relative L2 error over the 200 training inputs. Compare with the oracle floor (≈ 1e-3, discretization) and the E1 test errors.
 
 ## Local: error caused by a 10 % change of one parameter
 
-fixed: all other parameters at the truth; profiled: the others re-fitted (linearised). Small profiled e = the other poles/residues compensate the change.
+fixed: all other parameters at the truth; profiled: the others re-fitted (linearized). Small profiled e = the other poles/residues compensate the change.
 
 | system | pole | parameter | fixed e | profiled e | cond(F) |
 |---|---|---|---|---|---|

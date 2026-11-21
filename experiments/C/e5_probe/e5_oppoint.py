@@ -1,6 +1,6 @@
 """(C) E5, third pass: equivalent-linear (secant) probes along the amplitude, model against data.
 
-At an operating point x0 = A sin 5t the linearisation of the Duffing system is time-varying (stiffness
+At an operating point x0 = A sin 5t the linearization of the Duffing system is time-varying (stiffness
 k + 3 k3 x0(t)^2), so it has no poles. The comparable quantity is the equivalent linear pole: the best linear
 pair (first-order-hold VarPro, one sample) for the pair (x_A, y_A).
 

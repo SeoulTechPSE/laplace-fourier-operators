@@ -3,7 +3,7 @@
 On noise-free data the first-order-hold refit with sigma^2 = float32 rounding of the outputs
 (e4_profile.py, CLEAN conditions) reports every pole, but some 95 % profile intervals miss the
 truth by 1-1.7 half-widths. All groups of a condition share the same data, so the miss is one
-realisation, not a repeated bias. Candidates: the float32 rounding of the inputs (not in sigma^2),
+realization, not a repeated bias. Candidates: the float32 rounding of the inputs (not in sigma^2),
 of the outputs, and the arithmetic of the generator / refit.
 
 Per noise-free data set, the minimal FOH refit (VarPro, started at the truth) on four versions
@@ -149,7 +149,7 @@ def summarize(rs):
     zp, zb = np.array(zp), np.array(zb)
     lines += ["", f"Within ± 1.96 std (95 % interval): profile (σ² = output rounding) {np.sum(zp <= 1.96)}/{zp.size}, "
               f"bootstrap (inputs + outputs) {np.sum(zb <= 1.96)}/{zb.size}. Every group of a condition shares "
-              "these data, so this is one realisation per data set.", ""]
+              "these data, so this is one realization per data set.", ""]
     lines += ["", "S at the truth-started fit / n σ²_out: " + ", ".join(
         f"{r['cond']} {r['x32y32']['S'] / (r['n'] * r['sigma2_out']):.2f} (exact inputs "
         f"{r['x64y32']['S'] / (r['n'] * r['sigma2_out']):.2f})" for r in rs), ""]

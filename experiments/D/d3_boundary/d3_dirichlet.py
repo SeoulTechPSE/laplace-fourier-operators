@@ -3,7 +3,7 @@ the poles.
 
 Plan D, Table "Problems": diffusion with a time-varying boundary or source. The periodic layer cannot represent
 boundaries. On [0, L] with Dirichlet values u(0, t) = a(t), u(L, t) = b(t), the discrete sine transform (DST-I) of
-the interior points diagonalises the operator. The boundary values then enter every mode as a forcing:
+the interior points diagonalizes the operator. The boundary values then enter every mode as a forcing:
 
     d u_m / dt = lambda(k_m) u_m + f_m(t) + c(k_m) (a(t) - (-1)^m b(t)),    k_m = m pi / L,
 
@@ -19,7 +19,7 @@ signals reach every mode through the same poles mu(k).
   interior points, where the DST-I inverts exactly.
 - A finite-difference truth was considered first. Its discrete eigenvalues -(4 D / h^2) sin^2(k h / 2) are not
   polynomial over all 63 modes (a {1, k^2, k^4} fit is 1.4 % off, and its k^2 coefficient gives D = 0.0181), so
-  "D within 1 %" would have tested the discretisation rather than the model. This was decided before any fit.
+  "D within 1 %" would have tested the discretization rather than the model. This was decided before any fit.
 - Splits 200 / 50 / 100; data seeds 0-4.
 
 **Models** (modes 1..63, Re mu on {1, k^2, k^4}, Im mu free, k_ref = 63 pi; leaky Re cap; the a7 joint fit with

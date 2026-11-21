@@ -4,7 +4,7 @@ and make p6's fast real poles practically identifiable?
 Same analysis as ``e2_richness.py`` (tied layer in minimal form, float64, at the truth;
 ratio = profiled error of a 10 % change in Re mu / floor), with dt varied at fixed window T:
 dt = 20 / N for N in 256 ... 8192 (E1 / E2 use N = 1024). The outputs are exact
-(``lfo.data.lti.response``), so only the layer's discretisation changes with dt.
+(``lfo.data.lti.response``), so only the layer's discretization changes with dt.
 
     python experiments/C/theory/e2_grid.py      # writes results/e2_grid.md (+ .json)
 """

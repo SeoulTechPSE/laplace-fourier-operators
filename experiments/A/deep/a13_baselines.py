@@ -4,7 +4,7 @@ a11 (`a11_fair.py`) compared the tuned WPO (test 0.024) against an FNO with n_mo
 keeps |k| <= 6 and 7 temporal frequencies, below the forcing band (k <= 8) and far below what steps and PRBS need.
 Its error floor of ~0.1 came from the truncation. This pass replaces it with baselines whose modes cover the band:
 
-- `tfno`: Tucker-factorised FNO (neuraloperator's TFNO), n_modes (32, 64) (|k| <= 16, 33 temporal frequencies),
+- `tfno`: Tucker-factorized FNO (neuraloperator's TFNO), n_modes (32, 64) (|k| <= 16, 33 temporal frequencies),
   width 24, rank 0.02: 59,065 parameters, the WPO's budget (59,529).
 - `fno_big`: full-rank FNO, n_modes (32, 64), width 16: 1,084,849 parameters (18x), as a reference outside the
   budget.

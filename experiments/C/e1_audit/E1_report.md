@@ -126,13 +126,13 @@ unstable (Re μ > 0), and 10 of 30 deep LFNO runs diverged mid-training. Weight 
 ## Limitations
 
 - ALNO and LFNO are re-implementations (no public code); LFNO's layer arrangement and
-  both models' initialisations are not specified in the papers.
+  both models' initializations are not specified in the papers.
 - Three systems, one data seed, one window and grid. The deep pole error is an
   optimistic bound (closest of ≈ 800–1,000 pooled poles).
 - The layer setting does not match parameter budgets across models (they differ by
   construction: 8–56 parameters); the deep setting does (5,927–5,977).
 - Local identifiability is evaluated at the truth only; the good-fit / wrong-pole minima
-  found in training were not analysed one by one (E2 classifies their types).
+  found in training were not analyzed one by one (E2 classifies their types).
 - E2 uses only the tied single layer; ALNO / LFNO and the deep setting were not re-run
   with the E2 data or recipe. Training on the finer grids was not run.
 - LNO v1 at the matched 5.9k budget does not train from its original init; its published
@@ -142,7 +142,7 @@ unstable (Re μ > 0), and 10 of 30 deep LFNO runs diverged mid-training. Weight 
 
 1. **Reported set:** the table above in the main text (published protocols, pole-lr × 10
    control, warm start). The full grid (`results/summary.md`) goes in an appendix.
-2. **Deep "closest pooled pole":** in the main text, labelled in the table and caption as an
+2. **Deep "closest pooled pole":** in the main text, labeled in the table and caption as an
    optimistic upper bound (closest of ≈ 800–1,000 pooled poles). It is the only deep-setting
    evidence for part 2.
 3. **Parameter budget:** the same-budget rule is waived for the layer setting only. That

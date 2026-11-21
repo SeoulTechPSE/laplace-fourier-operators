@@ -4,9 +4,9 @@
 
 Pseudo-spectral in x (rfft, 2/3-rule dealiasing of u^2), integrating-factor RK4 in t (the diffusion is exact; the
 nonlinear term and the forcing are integrated by RK4). The forcing is given on the solver's time grid and taken as
-linear between its samples (so midpoints use the average of neighbouring samples).
+linear between its samples (so midpoints use the average of neighboring samples).
 
-Linearised at u = 0 the equation is diffusion: each mode has the pole lambda(k) = -nu k^2. For small forcing the
+Linearized at u = 0 the equation is diffusion: each mode has the pole lambda(k) = -nu k^2. For small forcing the
 solution tends to the linear response (tested).
 """
 from __future__ import annotations
@@ -19,7 +19,7 @@ __all__ = ["solve"]
 def solve(fk: np.ndarray, dt: float, nu: float, n_x: int, stride: int = 1, u0k: np.ndarray | None = None) -> np.ndarray:
     """Spectral solution of the forced Burgers equation from rest.
 
-    fk     (B, K, n) complex: rfft (over n_x points, numpy normalisation) of the forcing at t_j = j dt, K = n_x // 2 + 1
+    fk     (B, K, n) complex: rfft (over n_x points, numpy normalization) of the forcing at t_j = j dt, K = n_x // 2 + 1
     dt     solver step = forcing sample spacing
     stride return every `stride`-th time sample
     u0k    optional (B, K) rfft of the initial field (default: rest)

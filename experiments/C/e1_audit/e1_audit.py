@@ -28,13 +28,13 @@ Protocols.
               (LFNO workshop paper, Appendix C); LFNO only.
 
 Diagnostic inits (layer setting only, ``layer_init``): ``band`` (Im mu within the steady
-band) and ``warm`` (truth + 20 % noise). They separate optimisation failure from
+band) and ``warm`` (truth + 20 % noise). They separate optimization failure from
 non-identifiability: published inits answer "what do the models learn as used";
 ``warm`` answers "is the truth a stable point of training".
 
 Control (``--pole-lr-mult m``): the poles get learning rate m * lr, everything else
 unchanged. Under Adam the total pole travel is bounded by about sum(lr * steps)
-(4.0 for ``common``); m = 10 raises it to 40. Runs are labelled ``<protocol>+plr<m>``.
+(4.0 for ``common``); m = 10 raises it to 40. Runs are labeled ``<protocol>+plr<m>``.
 
 Pole conventions. Outputs are Re(sum gamma_n e^{mu_n t}), so one learned complex pole
 can represent a conjugate pair. Before matching, learned and true poles are folded
@@ -210,7 +210,7 @@ def true_folded(mu, beta):
 
 @torch.no_grad()
 def layer_init(model: "Layer1", init: str, mu_true, beta_true, rng: np.random.Generator):
-    """E1-only diagnostic initialisations of the single layer (not part of any published model).
+    """E1-only diagnostic initializations of the single layer (not part of any published model).
 
     band  Re mu = -exp(U[log 1/T, log 10/T]) as in "stable", but Im mu ~ U[0, omega_MODES]
           (the steady band), instead of up to the Nyquist/4.
@@ -459,7 +459,7 @@ def main():
         if a.setting == "deep" and init in ("band", "warm"):
             raise SystemExit("band/warm inits are defined for the layer setting only")
         if kind == "lno_v1" and init != "lno":
-            continue            # the LNO port has only the original initialisation
+            continue            # the LNO port has only the original initialization
         run(a.setting, system, kind, init, protocol, seed, device, a.n_poles, a.pole_lr_mult)
 
 

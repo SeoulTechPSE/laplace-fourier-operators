@@ -103,7 +103,7 @@ Ours (`reproduce_lno.py --case burgers`, 3 seeds, test rel. L2, mean ± std):
   better than LNO v2 and than the published FNO with IDFT (5.32e-2). The SI does not
   give the published FNO-with-IDFT architecture, so the gap cannot be attributed.
 - The Burgers data has one initial-condition family (Gaussian random field) in
-  all splits: the original split is already in-distribution (nearest-neighbour
+  all splits: the original split is already in-distribution (nearest-neighbor
   distance test→train 0.64 vs train→train 0.62). As expected, ood and iid agree.
 - LNO v1 on Burgers (9.15e-2) is not reproduced: the original code has no v1
   Burgers script and the SI gives no v1 hyperparameters for it.
@@ -148,7 +148,7 @@ in direction with LFNO's in-distribution results.
 
 Sources: NeurIPS 2025 ML4PS workshop paper ("Best of Both Worlds", Appendix C,
 Table 2) and arXiv:2606.07601 v1 (Appendix A, Tables 6–7). Neither gives the
-initialisation or the exact layer arrangement.
+initialization or the exact layer arrangement.
 
 | setting (Duffing / ODE) | workshop Table 2 | arXiv Table 6 | our sanity runs |
 |---|---|---|---|
@@ -189,8 +189,8 @@ Observations:
   | workshop (lr 0.002, wd 0.01, gamma 0.8) | 1.000 (no training) | 0.185 |
   | arXiv (lr 0.0025, wd 0.02, gamma 0.85) | 0.995 (no training) | 0.260 |
 
-  The large weight decay does not rescue the original LNO initialisation, so the
-  authors' code must differ from our reconstruction in initialisation, normalisation or
+  The large weight decay does not rescue the original LNO initialization, so the
+  authors' code must differ from our reconstruction in initialization, normalization or
   layer arrangement. With the stable init, about half of the learned poles end with
   Re mu > 0 (all start with Re mu < 0): coupled L2 decay pulls poles toward the
   origin and nothing keeps them stable. Relevant to the (C) audit.

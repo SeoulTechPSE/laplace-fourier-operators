@@ -5,7 +5,7 @@ inputs and test extrapolation outside the training range. a29 (stage 1) fixed M 
 phi0. Here the same IC-path layer gets M and kappa as inputs and is tested on (M, kappa) pairs outside the training
 grid. 1D, linear regime (early time), as a29.
 
-**System.** u_t = M d_xx (u^3 - u - kappa d_xx u), periodic, n_x = 64, no forcing, solver as a29. Linearised:
+**System.** u_t = M d_xx (u^3 - u - kappa d_xx u), periodic, n_x = 64, no forcing, solver as a29. Linearized:
 
     lambda(k; M, kappa, phi0) = M k^2 (1 - 3 phi0^2) - M kappa k^4.
 
@@ -20,13 +20,13 @@ grid. 1D, linear regime (early time), as a29.
 
 **Models.** The IC path u_hat(k, t) = gamma(k) u0_hat(k) e^{mu t}, gamma on {1, q}, q = (k / 16)^2, phi0 from the
 mean of u0; inputs m = M / 0.1, c = kappa / 0.04.
-- `phys`: mu = m (a q + b q phi0^2) + m c d q^2 (the form of the linearisation; true a = 25.6, b = -76.8,
+- `phys`: mu = m (a q + b q phi0^2) + m c d q^2 (the form of the linearization; true a = 25.6, b = -76.8,
   d = -262.1). 3 reals.
 - `bilin`: mu = sum over m^i c^j (i, j in {0, 1}) of (b1 q + b2 q phi0^2 + b3 q^2 + b4 q^2 phi0^2): a29's law
   with each coefficient bilinear in (m, c). 16 reals; contains the truth but does not know how M and kappa enter.
 - `mlp`: mu = MLP(q, phi0^2, m, c), 2 hidden layers of 32 (tanh), no form. 1249 reals.
 - `fixed`: a29's `joint` law, ignoring M and kappa. 4 reals.
-- `oracle`: the linearisation.
+- `oracle`: the linearization.
 Fit: 4 starts, each to convergence with the d3g rule; pick by validation. Starts: `phys`/`bilin`/`fixed`: the q
 coefficient a1 log-uniform in [5, 50], the q^2 coefficient -10 a1, the rest 0; `mlp` torch seeds 0-3.
 

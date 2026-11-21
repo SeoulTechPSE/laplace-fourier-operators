@@ -6,7 +6,7 @@ Plan: `docs/proposal_A_wavenumber_pole_operator.qmd`, Section 4.4 (deep model, p
 linear layer.
 
 **System.** u_t + u u_x = nu u_xx + f on periodic x in [0, 2 pi), zero initial state, nu = 0.1
-(`lfo.data.burgers`: pseudo-spectral, 2/3 dealiasing, integrating-factor RK4 on a 32x finer time grid). Linearised
+(`lfo.data.burgers`: pseudo-spectral, 2/3 dealiasing, integrating-factor RK4 on a 32x finer time grid). Linearized
 at u = 0: lambda(k) = -nu k^2.
 
 **Data.**

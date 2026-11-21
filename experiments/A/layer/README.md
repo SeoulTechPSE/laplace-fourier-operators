@@ -69,7 +69,7 @@ Fixed by `modes = 17` (the forced band) and a smooth cap Re μ ≤ 0.5. The pred
 - **The polynomial fit is badly non-convex.**
   - Higher-order terms (k⁴, k³) let wrong basins fit the low k and grow elsewhere.
   - The oscillatory term v k (up to 8 rad/s here) adds phase-wrapping local minima, as in E1's frequency fits.
-- **The failure is optimisation, not representation.** That is E1's lesson again, now in k.
+- **The failure is optimization, not representation.** That is E1's lesson again, now in k.
 
 **Next.**
 
@@ -77,7 +77,7 @@ Fixed by `modes = 17` (the forced band) and a smooth cap Re μ ≤ 0.5. The pred
   1. fit one pole per excited k (a small, well-conditioned problem per mode, with the E2 polish / restarts if
      needed);
   2. fit the polynomial μ(k) to those poles by least squares, which is linear for fixed degree;
-  3. use the result to initialise or replace the joint fit.
+  3. use the result to initialize or replace the joint fit.
 - Alternatives: a curriculum in k (low k first) or multi-start; and degree selection (a k⁴ term without physics is
   the main source of wrong basins).
 
@@ -136,8 +136,8 @@ Data seeds 0–4; `diff` and `adr`.
   floor. This is RQ1's first positive result on two 1D linear PDEs.
 - **The spurious higher-order terms vanish in the fine-tune.** Stage 2's degree choice is unreliable, but the
   joint fit started near the truth drives the extra k⁴ / k³ coefficients to negligible values. So degree selection
-  matters less than a good start and a well-scaled, second-order optimiser.
-- **What made the difference.** Scaling (`k_ref`), a second-order optimiser, and an initialisation from per-mode
+  matters less than a good start and a well-scaled, second-order optimizer.
+- **What made the difference.** Scaling (`k_ref`), a second-order optimizer, and an initialization from per-mode
   identification restricted to well-resolved modes. Together they are the (A) analogue of the (C) E2 recipe.
 - **Limits.**
   - Two 1D systems, with first-order dynamics per mode (one pole per k).
@@ -312,10 +312,10 @@ validation error is selected.
   2D: 2, 6, 7). The failure depends on the start, not on the data.
 - A failed start ends with Re μ = 0.5 at every k, the value of the soft cap. Its residues shrink to about 0.05,
   and the training error stalls at 0.87. Above the cap, the soft minimum has almost zero gradient with respect to
-  the polynomial, so the optimiser cannot bring Re μ back down. The cap was added in a1 to stop overflow, and it
+  the polynomial, so the optimizer cannot bring Re μ back down. The cap was added in a1 to stop overflow, and it
   creates this trap.
 - The beam's failing starts end at test errors 10–37× the oracle, like a4's wrong basins (validation 0.11–0.5).
-  Their mechanism was not analysed.
+  Their mechanism was not analyzed.
 - Validation error separates failed from successful starts by two orders of magnitude (0.9 against 0.01), so
   selection is never in doubt.
 
@@ -398,7 +398,7 @@ is within 5 %, though its dispersion error is 5–30× larger. Outside the band,
 physics, because its structure is the physics. The trade-off is not accuracy against interpretability inside the
 band: the polynomial wins both whenever its form is right. What the MLP buys is freedom from a wrong form, which
 none of these systems needed. A system whose λ(k) is not polynomial (nonlocal, fractional) is the test that would
-favour the MLP.
+favor the MLP.
 
 ## RQ4, second test (2026-11-19): a non-polynomial dispersion relation
 
@@ -427,13 +427,13 @@ on k ≤ 8 it is 71 % off over k = 9..16. a19 protocol, 5 data seeds. The oracle
 - **A practical check.** Fit both. If the polynomial's in-band error matches the MLP's, its form is supported and
   its extrapolation can be trusted. If it is clearly worse (5–8× here, against 1.00 in a19), the form is wrong.
 - The polynomial's learned dispersion error (19–35 %) is far above its least-squares floor (2.3 %). The joint fit
-  does not reach the best polynomial when no polynomial is right. Not analysed further.
+  does not reach the best polynomial when no polynomial is right. Not analyzed further.
 
 ## Application 2, stage 1 (2026-11-20): the spinodal linear regime across mean compositions
 
 `a29_spinodal.py` → `results/a29_spinodal.md` (predictions d8b5e58; solver extension 954e509). Unforced 1D
 Cahn–Hilliard (M = 0.1, κ = 0.04), started from a uniform composition φ₀ plus a small perturbation (per-mode
-amplitude 1e-4 to 1e-3), T = 5. Linearised: λ(k; φ₀) = Mk²(1 − 3φ₀²) − Mκk⁴, spinodal |φ₀| < 1/√3. The layer
+amplitude 1e-4 to 1e-3), T = 5. Linearized: λ(k; φ₀) = Mk²(1 − 3φ₀²) − Mκk⁴, spinodal |φ₀| < 1/√3. The layer
 is the D2 initial-condition path alone: û(k, t) = γ(k) û₀(k) e^{μ(k, φ₀) t}, with φ₀ read from the mean of u₀.
 - `joint`: μ on {q, qφ₀², q², q²φ₀²}, q = (k/16)²; 6 reals.
 - `stable`: the same through −softplus(−μ) ≤ 0, the LNO's stability constraint.
@@ -472,7 +472,7 @@ The oracle floor is the nonlinear residual (5e-4 to 3.6e-3).
 the gradient energy κ varied and fed to the layer (m = M/0.1, c = κ/0.04). Training grid M ∈ {0.05, 0.1},
 κ ∈ {0.03, 0.06}, φ₀ ∈ {0, 0.2, 0.4, 0.6}. Test points (M, κ): `interp` (0.075, 0.045) inside the grid; `hiM`
 (0.2, 0.08), `lowk` (0.025, 0.015) and `hiMk` (0.15, 0.045) outside it; each at φ₀ = 0.15, 0.45, 0.7.
-- `phys`: μ = m(aq + bqφ₀²) + mc·dq², the form of the linearisation; 3 reals.
+- `phys`: μ = m(aq + bqφ₀²) + mc·dq², the form of the linearization; 3 reals.
 - `bilin`: a29's 4-term law with each coefficient bilinear in (m, c); 16 reals, contains the truth.
 - `mlp`: μ = MLP(q, φ₀², m, c), 1249 reals, no form.
 - `fixed`: a29's law, ignoring M and κ.
@@ -496,7 +496,7 @@ Test error / oracle, mean over φ₀; range over 5 data seeds. k̂_c(0) of `phys
 4. `fixed` ≥ 10× at every extrapolation point: **holds** (257–826×).
 
 **Reading.**
-- With the parameters entering in the form of the linearisation, three numbers learned on a 2 × 2 grid give the
+- With the parameters entering in the form of the linearization, three numbers learned on a 2 × 2 grid give the
   oracle at M twice and κ half the grid's range, and the band edge k_c to 1.5e-4.
 - A richer law that contains the truth (`bilin`) does not recover it reliably. The 16 coefficients are fitted
   well at the grid (training loss ~ the oracle's), but the small nonlinear residual is absorbed by spurious terms

@@ -23,7 +23,7 @@ Minimal first-order-hold refit started at the truth, training split (200 samples
 | p6_e1_T20 | -1 | -4.2e-10 | -3.6e-09 | +3.1e-09 | +0.0e+00 | 2.0e-08 | 1.2e-08 | 1.2e-08 | 2.0e-08 | 1.4e-08 | 0.0 | 0.0 |
 | p6_e1_T20 | -2 | -1.4e-08 | +1.2e-10 | -1.4e-08 | -6.7e-16 | 5.4e-08 | 3.8e-08 | 3.7e-08 | 6.0e-08 | 4.4e-08 | 0.4 | 0.2 |
 
-Within ± 1.96 std (95 % interval): profile (σ² = output rounding) 13/18, bootstrap (inputs + outputs) 18/18. Every group of a condition shares these data, so this is one realisation per data set.
+Within ± 1.96 std (95 % interval): profile (σ² = output rounding) 13/18, bootstrap (inputs + outputs) 18/18. Every group of a condition shares these data, so this is one realization per data set.
 
 
 S at the truth-started fit / n σ²_out: p4_ms16_T20 1.04 (exact inputs 1.00), p6_ms16_T80 1.04 (exact inputs 1.00), p6_ms16_T80_N4096 1.01 (exact inputs 1.00), p4_e1_T20 1.31 (exact inputs 1.00), p6_e1_T20 1.21 (exact inputs 1.00)

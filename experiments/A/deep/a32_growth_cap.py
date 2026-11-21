@@ -2,7 +2,7 @@
 
 In a31 one WPO-2D seed (0) diverged in the 20-window rollout (max |u(21)| 4e5) with layers 2–4 at the growth cap
 (max Re mu 1.10 / 1.01 / 1.01 with re_max = 1.0 and leak 0.05, so the leak lets Re mu pass the cap). About the
-separated phases u = +-1 the linearisation is stable, lambda = -M k^2 (2 + kappa k^2), so in the coarsening regime the
+separated phases u = +-1 the linearization is stable, lambda = -M k^2 (2 + kappa k^2), so in the coarsening regime the
 data need no growing pole. This script asks whether a tighter cap removes the divergence and what it costs per window.
 
 Everything (data, windows, training, metrics) is a31's (`a31_coarsening.py`, imported); only the WPO-2D pole

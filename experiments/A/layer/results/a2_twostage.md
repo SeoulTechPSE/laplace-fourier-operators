@@ -1,6 +1,6 @@
 # (A) Two-stage dispersion identification, then fine-tuning
 
-Stage 1: one pole per excited k (grid + Nelder–Mead, residue by least squares). Stage 2: polynomial LS, degree by BIC. Stage 3: layer initialised from stage 2, Adam 1000 steps. Data seeds 0–4.
+Stage 1: one pole per excited k (grid + Nelder–Mead, residue by least squares). Stage 2: polynomial LS, degree by BIC. Stage 3: layer initialized from stage 2, Adam 1000 steps. Data seeds 0–4.
 
 | system | data seed | stage 1: max pole error (k = 1..16) | degree (Re; Im) | D | v | k_r | test: init → tuned | oracle | dispersion error |
 |---|---|---|---|---|---|---|---|---|---|

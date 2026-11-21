@@ -11,7 +11,7 @@ random initial fields, no forcing.
 averaged).
 
 **Exact map to this repository's solver.** With X = 2 pi x and w = 2 pi u the equation becomes w_t + w w_X =
-nu' w_XX on [0, 2 pi) with nu' = 4 pi^2 (nu / pi) = 0.04 pi = 0.1257. Linearised at u = 0 each mode m decays at
+nu' w_XX on [0, 2 pi) with nu' = 4 pi^2 (nu / pi) = 0.04 pi = 0.1257. Linearized at u = 0 each mode m decays at
 lambda_m = -nu' m^2 (the same number in physical units: (nu / pi) (2 pi m)^2). Checked before any fit (below).
 
 **Models** (3 seeds; relative L2 loss; Adam with cosine decay; batch 25; lr sweep at 4000 steps with model seed 0,

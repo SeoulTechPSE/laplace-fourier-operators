@@ -10,7 +10,7 @@ so the entry point alone does not matter.
 
 In `wpo_ic` the initial field enters once: lifted pointwise, it is the initial state of the first pole layer, whose
 free response sum_n gamma_n e^{mu_n(k) t} uses that layer's poles and a k-independent gamma. Variants:
-- `wpo_ic_sep`: the first layer's free response gets its own pole set (same parametrisation and constraint as the
+- `wpo_ic_sep`: the first layer's free response gets its own pole set (same parametrization and constraint as the
   forced poles; +60 parameters). Tests whether sharing the poles constrains the fit.
 - `wpo_ic_all`: every pole layer adds a free response from its own input at t = 0 (layer 1: the lifted initial
   field as in `wpo_ic`; layers 2..4: the hidden state v_l(x, 0)), each with its own gamma, on the layer's poles.

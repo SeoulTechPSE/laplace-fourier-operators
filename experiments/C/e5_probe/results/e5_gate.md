@@ -1,6 +1,6 @@
 # E5: data-side gates of the trust rule
 
-v2 gate: all-sample linear residual < 0.1. v3 gate: lowest 20% of samples by peak |f| linear (residual < 0.1) and equivalent-pole shift all vs low < 0.1. A trusted run is correct if its Jacobian pole is within 10 % of the small-signal pole: −0.25 ± 0.9682i (damped Duffing, pendulum), ± i (`c0_*`, undamped Duffing), −0.9287 ± 4.1476i (`lz_*`, Lorenz ρ = 5 at C+) or −0.5955 ± 6.1742i (`lz_r10_*`, ρ = 10 at C+); Lorenz from centred data.
+v2 gate: all-sample linear residual < 0.1. v3 gate: lowest 20% of samples by peak |f| linear (residual < 0.1) and equivalent-pole shift all vs low < 0.1. A trusted run is correct if its Jacobian pole is within 10 % of the small-signal pole: −0.25 ± 0.9682i (damped Duffing, pendulum), ± i (`c0_*`, undamped Duffing), −0.9287 ± 4.1476i (`lz_*`, Lorenz ρ = 5 at C+) or −0.5955 ± 6.1742i (`lz_r10_*`, ρ = 10 at C+); Lorenz from centered data.
 
 | set | all: pole, resid | low band (peak |f| ≤): pole, resid | shift | v2 | v3 | v1 trusted: correct / all (errors) | v2 false / missed | v3 false / missed |
 |---|---|---|---|---|---|---|---|---|

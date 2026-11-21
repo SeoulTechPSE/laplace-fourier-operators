@@ -4,7 +4,7 @@ Source: github.com/qianyingcao/Laplace-Neural-Operator, commit 78c64ef
 (Cao, Goswami, Karniadakis, arXiv:2303.10528).
 
 The port keeps the original arithmetic exactly (same einsum contractions, same
-normalisation, same parameter shapes and initialisation) so that, for equal
+normalization, same parameter shapes and initialization) so that, for equal
 weights, outputs agree with the original to float32 round-off. That equivalence
 is checked in ``tests/test_lno.py``. The only changes are:
 
@@ -53,7 +53,7 @@ def _as_grid(x) -> torch.Tensor:
 
 
 def _unit_grid(shape, device) -> torch.Tensor:
-    """Normalised coordinates in [0, 1] appended as input features (original get_grid)."""
+    """Normalized coordinates in [0, 1] appended as input features (original get_grid)."""
     b = shape[0]
     axes = []
     for d, n in enumerate(shape[1:-1]):
@@ -119,10 +119,10 @@ class LNO1d(nn.Module):
     All 1D examples use transient_sign=-1.
 
     ``textbook=True`` replaces the pole-residue layer by ``lfo.models.hybrid.PoleResidueTS1d`` (same shapes and
-    initialisation distributions; poles in ``conv0.mu``, residues in ``conv0.beta``). The original layer multiplies
+    initialization distributions; poles in ``conv0.mu``, residues in ``conv0.beta``). The original layer multiplies
     each transient coefficient by another channel's pole (quirk 1 in the module docstring), so the periodic steady
-    term's wrap-around is not cancelled and the layer is non-causal; the textbook wiring is causal up to
-    discretisation ((C) E5, eleventh pass). The default keeps the original for reproduction.
+    term's wrap-around is not canceled and the layer is non-causal; the textbook wiring is causal up to
+    discretization ((C) E5, eleventh pass). The default keeps the original for reproduction.
     """
 
     def __init__(self, width: int, modes: int, t, use_grid: bool = False,
@@ -210,7 +210,7 @@ class LNO2d(nn.Module):
     """LNO v1 for 2D examples (Diffusion, Reaction-diffusion, Beam).
 
     Input (batch, n_x, n_t, 1) -> output (batch, n_x, n_t, 1). The original
-    appends normalised (x, t) coordinates and applies InstanceNorm around the
+    appends normalized (x, t) coordinates and applies InstanceNorm around the
     pole-residue layer.
     """
 

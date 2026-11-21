@@ -41,7 +41,7 @@ Phase 2 was run as 16 parallel processes (8 conditions × 2 seed halves), ≈ 9 
 Setup: the float64 tied layer in minimal form from `e1_audit/identifiability.py`
 (one slot per conjugate pair, **real poles constrained real**), at the true parameters;
 dt = 20/1024 fixed, T changes n_t; 200 samples, data seed 0. Per pole: ratio =
-profiled error of a 10 % change in Re μ (others re-fitted, linearised) / representation
+profiled error of a 10 % change in Re μ (others re-fitted, linearized) / representation
 floor; ratio ≥ 10 = practically identifiable. The Jacobian is computed in forward mode
 (few parameters, many outputs); this needed `.conj()` → `torch.conj_physical` in
 `identifiability.py` (same values; the view form fails under forward AD). The E1
@@ -57,7 +57,7 @@ Results (`results/e2_richness.md`):
 - **p6: the fast real poles −1, −2 stay non-identifiable for every data change tried**
   (max ratio 1.8 / 0.6, multisine16 at T = 80). The complex pairs become identifiable
   with rich data (±4i from K ≥ 6; both at multisine16, T ≥ 40).
-- The floor (5e-4 to 2e-3) is the layer's DFT discretisation error and does not fall
+- The floor (5e-4 to 2e-3) is the layer's DFT discretization error and does not fall
   with richer data; for p6 it, not the data, is what hides −1 and −2. Grid resolution
   (dt, number of modes) is the untested variable.
 
@@ -65,7 +65,7 @@ Results (`results/e2_richness.md`):
 
 Setup: E1 `Layer1("tied")`, n_poles = 4 (p4) / 6 (p6) complex slots, `band` init with
 its T = 20 ranges for every T (same initial poles in rad/s), `common` + pole lr × 10,
-1000 epochs. Train = the 200 analysed samples (seed 0), validation 50 (seed 1), test
+1000 epochs. Train = the 200 analyzed samples (seed 0), validation 50 (seed 1), test
 100 (seed 2), same family. 8 conditions × 10 seeds = 80 runs, none diverged.
 
 Results (`results/e2_train.md`; ratio / recovered fraction / pole error):
@@ -92,7 +92,7 @@ Findings:
    that stand in for −1 and −0.2 stay complex: e.g. −0.82 + 0.61i and −0.23 + 0.13i
    (multisine16, T = 20/40). Most of the pole error is the spurious Im part. Test error
    stays 4–10× above the oracle, so training ends in a local minimum, not at the truth.
-3. The mismatch is in the parameterisation: phase 1 analyses the minimal form in which a
+3. The mismatch is in the parameterization: phase 1 analyzes the minimal form in which a
    real pole has no Im parameter; the trained layer gives every slot a free Im μ (and p4
    has one spare slot, 4 slots for 3 folded poles). A real decay can be approximated by a
    slowly oscillating pair, and at Im = 0 the loss is flat in Im to first order (E1),
@@ -100,16 +100,16 @@ Findings:
 4. p6 behaves as phase 1 predicts: pairs found, −1 / −2 not.
 
 So for p4, data richness is necessary but not sufficient: it removes the data
-limitation, and what remains is an optimisation / parameterisation limitation of
+limitation, and what remains is an optimization / parameterization limitation of
 complex slots for real poles. This qualifies E1's part (iii) ("the data cannot identify
 them") as stated for p6 only.
 
-## Phase 2 controls: optimisation or parameterisation?
+## Phase 2 controls: optimization or parameterization?
 
 `e2_train.py --variant` (100 runs, 10 seeds each, none diverged): `warm` (E1 warm init),
 `free_min` (one complex slot per folded pole, no spare), `real_spare` (as base, two slots
 constrained real), `real_min` (the minimal form of phase 1: one complex + real-constrained
-slots). Real constraint = parametrisation of `pr.mu` with Im × 0/1 mask (pole lr × 10 still
+slots). Real constraint = parametrization of `pr.mu` with Im × 0/1 mask (pole lr × 10 still
 applied). Recovered fraction / pole error per true pole:
 
 | data | variant | slots | test rel. L2 | pair | −1 | −0.2 |
@@ -144,7 +144,7 @@ Findings:
 
 Revised E2 message: data richness makes the poles locally identifiable (phase 1, confirmed
 by the warm start), but from a generic init the tied layer's landscape has wrong-assignment
-and pole-coalescence minima, so recovery is an optimisation problem, not a data problem,
+and pole-coalescence minima, so recovery is an optimization problem, not a data problem,
 for p4. Candidate remedies for E3/E4: inits on the real axis plus complex slots, spare
 slots with pruning, multi-start.
 
@@ -191,7 +191,7 @@ Findings:
    alone (`wide`, same parameter count as `mixed`) or multi-start alone (`base_ms`) recover
    no real pole. `mixed` gives 40–60 %; with multi-start p4 reaches 60 / 70 % and test error
    within 2–3 × of the oracle.
-2. **Not an artefact of the grid.** With the grid shifted away from the true poles
+2. **Not an artifact of the grid.** With the grid shifted away from the true poles
    (`mixed_off`) the results are the same within seed noise. In p6 the slot that ends at
    −2 travels there from −4 to −6.
 3. **p6's −2 is recovered in 40–60 % of runs from a generic init**, although its
@@ -233,7 +233,7 @@ Findings:
    slots spread out, with two slots on either side of a true pole, e.g. p4:
    −0.05 / −0.31 around −0.2 and −1.1 / −1.58 around −1; p6: −0.72 / −2.06 around −1 / −2.
    With 2 × as many real slots as real poles, the spare slots do not die out but share
-   the decay with a neighbour. Test error stays near the oracle (9.6e-4 / 5.8e-4 with
+   the decay with a neighbor. Test error stays near the oracle (9.6e-4 / 5.8e-4 with
    split + multi-start): these are good-fit, wrong-pole solutions.
 3. Hence the redundant real slots are the remaining problem: a remedy needs to remove
    them (residue sparsity / pruning) or use fewer of them, not to separate them.
@@ -275,7 +275,7 @@ No variant is better than the reference beyond seed noise; pruning rarely fires
   `mixed_off` (no multi-start) 24 / 45 / 61 %.
 - **p6: the wrong-pole solutions fit as well or better** on these 10 seeds; validation
   selection made recovery worse (10 → 0 %). *Not confirmed by independent runs (next
-  section): this was a 10-seed artefact.*
+  section): this was a 10-seed artifact.*
 
 (The E2 conclusion drawn here from 10 seeds is revised in the next section.)
 
@@ -306,7 +306,7 @@ Complex pairs: 100 % single and selected in both systems.
 
 **E2 conclusion (revised).** Rich data make all poles locally identifiable for p4, and
 the truth is a stable minimum (warm start). From generic inits, recovery is limited by
-optimisation: mixed real-constrained init + multi-start + best of 5 by validation loss
+optimization: mixed real-constrained init + multi-start + best of 5 by validation loss
 recovers all p4 poles in 8/10 groups and all p6 poles in 7/10, from 0 % with the E1 recipe.
 p6's −1, −2 remain the harder case: phase-1 ratios < 2, weak link between loss and pole
 error, misses near the floor. Their identifiability is weak but not absent: we did not
@@ -348,9 +348,9 @@ Complex pairs 80–100 % everywhere.
 ## Phase 1b: grid resolution
 
 `e2_grid.py` → `results/e2_grid.md` / `.json`: the phase-1 analysis with dt = 20/N,
-N = 256 … 8192, at fixed T (outputs exact, so only the layer's discretisation changes).
+N = 256 … 8192, at fixed T (outputs exact, so only the layer's discretization changes).
 
-- The floor falls ∝ dt (first-order discretisation error): p6 multisine16 T = 80: 5.5e-3
+- The floor falls ∝ dt (first-order discretization error): p6 multisine16 T = 80: 5.5e-3
   (N = 256) → 4.2e-4 (1024) → 3.1e-5 (8192). The profiled error of a 10 % pole change
   is set by the data and nearly constant, so ratios grow ∝ 1/dt.
 - p6 −1 / −2 ratios, N = 1024 → 4096 → 8192: E1 data T = 20: 0.6 / 0.2 → 3.0 / 1.0 → 6.3 / 2.0;
@@ -359,7 +359,7 @@ N = 256 … 8192, at fixed T (outputs exact, so only the layer's discretisation 
   a fine grid; −2 stays just below the threshold even at N = 8192, T = 80.
 - p4: ratios double per halving of dt (E1 data: all ≥ 10 from N = 2048 except −1 at 9.5).
 - Interpretation: "practically identifiable" is relative to the error level the model
-  cannot remove (here the discretisation floor; with real data also noise). With exact
+  cannot remove (here the discretization floor; with real data also noise). With exact
   data and an exact model every pole is identifiable; the ratio asks whether a 10 % pole
   change is visible above that level. Not tested: training on the fine grids
   (N = 4096 at T = 80 is n_t = 16,384, ≈ 4 × the run time).
@@ -367,7 +367,7 @@ N = 256 … 8192, at fixed T (outputs exact, so only the layer's discretisation 
 ## Prior-free sizing, second try: complex slots bounded away from the real axis
 
 `bound8` (`e2_train.py`): as `fixed8` (8 slots: 4 real-constrained on a random-offset log
-grid, 4 complex), with the complex slots parameterised as |Im μ| = 2π/T + |Im μ̃| (at
+grid, 4 complex), with the complex slots parameterized as |Im μ| = 2π/T + |Im μ̃| (at
 least one period in the window; 0.31 rad/s at T = 20, 0.079 at T = 80). 60 runs (`_ms` 20
 seeds = 4 groups, plain 10). References on the same group structure.
 
@@ -408,7 +408,7 @@ seeds 10–29 (20 runs, ≈ 6 min each), compared with the same seeds at dt = 20
 - **Training does not reach the lower floor**: test error stays at 4.2e-4, 7.5 × the
   fine-grid oracle and near the coarse floor. The finer grid makes −1 distinguishable in
   principle; the training protocol (1000 epochs, StepLR) does not converge to that
-  precision, so the gain is not realised.
+  precision, so the gain is not realized.
 
 ## Prior-free sizing, third try: damping-bounded complex slots
 
@@ -436,7 +436,7 @@ Re μ = −c |Im μ| σ(a) (a learned), so |Re μ| < c |Im μ|; c = 0.5 (damping
   0.1–0.3) at the floor, or local minima where the real slots coalesce near −0.8 (test
   ≈ 2e-3). The near misses reach the floor (see the certificate table below), so at this
   dt the data do not pin −2 (phase 1: ratio 0.6). With 8 slots the polished test error
-  is *below* the oracle (3.0e-4 vs 4.0e-4): the extra slots fit the discretisation error
+  is *below* the oracle (3.0e-4 vs 4.0e-4): the extra slots fit the discretization error
   of the truth.
 
 ## L-BFGS polish after Adam
@@ -505,12 +505,12 @@ Before = after the polish.
   from 3.5–5 × to 0.93 × the oracle (median), and test error reaches the oracle
   (5.2e-5 vs 5.6e-5). With the damping bound, prior-free p6 now recovers every pole in
   90 % of single runs and −2 in all 20.
-- **The damping bound matters most once the optimiser is good.** Without it
+- **The damping bound matters most once the optimizer is good.** Without it
   (`mixed_off_ms`, the truth-sized recipe) the restarts lower the loss further on the
   coarse grid, but a damped spare complex slot (−2.40 + 0.73i, −1.27 + 0.31i) takes part
   of −2 (35 % all poles). With it, the fast decay can only be real (80 %).
 - **On the coarse grid every restarted run ends at the same level** (0.67–0.77 × the
-  oracle). The extra slots fit the discretisation error of the truth (e.g. a slot at
+  oracle). The extra slots fit the discretization error of the truth (e.g. a slot at
   −0.50 + 5.0i, at the band edge), so the minimum is below the oracle and shifted from it.
   −2 is biased (median error 0.054 vs 0.024 on the fine grid) rather than unidentifiable.
   The phase-1 ratio (0.6) measures this bias relative to a 10 % shift; it does not mean
@@ -590,7 +590,7 @@ mode truncation: 1.7e-3 (p4) and 9.8e-4 (p6), against 5.9e-4 and 5.6e-5 for the 
   1.5 × of the oracle and 5 of them still miss a real pole. Loss alone cannot tell
   these runs from the correct ones: the truncation error (1.7e-3) is larger than what a
   shifted slow decay costs.
-- **On p6 it is both optimisation and identifiability.** Most runs stay 2–7 × above the
+- **On p6 it is both optimization and identifiability.** Most runs stay 2–7 × above the
   oracle (restarts move 1/20 ALNO runs, 16/20 LFNO runs, but do not close the gap). The few
   runs at the floor also miss −1 / −2: ALNO seed 10 is at 1.07 × the oracle with its four
   real slots at −0.55 to −0.69 instead of −1 and −2.
@@ -646,7 +646,7 @@ against the tied oracle. (full tables: `results/e2_rescue.md`, `results/e2_floor
   layer on the same data goes 3.50 → 0.93.
 - **δ = 0.3 is better than δ = 0.03 for ALNO** (30 vs 10 %, 1.22 vs 3.21 × the oracle).
   A small residual does not make the problem easier. Reading: the obstacle on p6 is
-  optimisation, and the residual changes the landscape that the restarts search, more than
+  optimization, and the residual changes the landscape that the restarts search, more than
   it changes what is identifiable. The certified-and-recovered counts are small (1–6 runs),
   so the δ comparison is weak.
 
@@ -726,7 +726,7 @@ polish → noise-aware restarts. Reference: the noise-aware tied runs of the E4 
 `e2_noise.py`. Gaussian noise on the training and validation outputs, per sample with
 relative L2 norm η; the test set stays clean. One noise draw per group of 5 seeds. CRB:
 trace bound for the minimal-form tied layer at the truth (Fisher information from the
-Jacobian of the normalised residual), as a relative error.
+Jacobian of the normalized residual), as a relative error.
 
 ![noise vs CRB](results/figures/fig_e4_noise.png)
 
@@ -770,12 +770,12 @@ Jacobian of the normalised residual), as a relative error.
 `e2_rescue.py --rule noise`, `e2_floor.py` (rule `noise`). Everything uses the training
 outputs only.
 
-- The noise variance per normalised output sample, σ̂², comes from 6th-order differences of
+- The noise variance per normalized output sample, σ̂², comes from 6th-order differences of
   the training outputs. The band-limited signal cancels and white noise does not. η̂ is
   within 1 % of η at every η (and ≈ 1e-8 without noise).
-- S is the sum of squared normalised residuals. A run is in the noise regime if
+- S is the sum of squared normalized residuals. A run is in the noise regime if
   S ≤ 2 n_s n_t σ̂².
-- Restarts: in the noise regime the screen minimises S and accepts a move if S falls by
+- Restarts: in the noise regime the screen minimizes S and accepts a move if S falls by
   ≥ χ²₄(0.99) σ̂² = 13.3 σ̂² (likelihood-ratio test for the 4 real parameters of one slot).
   Otherwise the 1 % ratio rule applies.
 - Certificate: in the noise regime a run is certified if S − S_min ≤ χ²_p(0.99) σ̂², with p
@@ -806,7 +806,7 @@ outputs only.
     reject the wrong −2 at the 99 % level of the joint test, so −2 is not identified at
     this η by this test. The consensus then omits −2 rather than reporting a wrong value.
   - At η = 1e-3 it certifies only 5–6 runs. The spread of S between correct runs is set by
-    the optimiser, not by the noise, and exceeds χ²_p σ̂². At low noise the ratio rule is the
+    the optimizer, not by the noise, and exceeds χ²_p σ̂². At low noise the ratio rule is the
     better test; a combined rule would take the looser of the two.
 - **Errors stay far above the CRB.** For example, on p6 at η = 1e-2 the single-run errors
   are 4.6e-3 / 3.5e-4 / 2.8e-2 / 3.5e-2 against a CRB of 4.1e-5 / 5.9e-6 / 7.2e-4 / 2.1e-3,
@@ -867,7 +867,7 @@ interval half-widths: `results/e4_profile.md`)
 - **Where the noise dominates, the intervals are honest.** At η ≥ 1e-2 the intervals cover
   the truth for 67 of 84 group-pole intervals (the real poles of p4: 23/24), their
   half-widths are 1.4–2 × the CRB, and there is one false identified pole in the 24 groups at η ≥ 1e-2.
-- **At low noise the statistics break down.** At η = 1e-3 the model error (the discretised
+- **At low noise the statistics break down.** At η = 1e-3 the model error (the discretized
   layer vs the data, S ≈ 130 σ̂² on p6 at the truth at η = 1e-2, ≈ 700 σ̂² on p4) exceeds the
   noise. The order test fails in 3/4 groups, 2 false poles get closed intervals per
   system, and on p6 the intervals miss the truth in all 16 cells (−2: error 2.1e-2, 100 ×
@@ -885,7 +885,7 @@ Where the model error of the third pass comes from (diagnostic scripts, not kept
 - It scales as dt² of the data generator: N = 1024 gives 4.3e-2, N = 4096 3.0e-3 (16 × for
   4 × dt). `lfo.data.lti.response` drives the system with a first-order-hold
   (piecewise-linear) input between samples; the layer assumes a band-limited input. The
-  mismatch is O(dt²) and is the whole "discretisation floor": with the exact FOH response,
+  mismatch is O(dt²) and is the whole "discretization floor": with the exact FOH response,
   S at the true poles is 1.3e-13 (the float32 rounding of the data) instead of 8e-7, and the
   noise-free bias is ≈ 1e-11. A Richardson step from decimated data cannot remove it (the
   bias does not depend on the data grid).
@@ -985,9 +985,9 @@ the tied layer's 1 / (iω − μ) is replaced by the exact first-order-hold resp
 - **Without noise the FOH layer reaches every pole in every run, also on the coarse grid**
   (p6 coarse, T = 80 with N = 1024: 100 % against 80 %), and the test error drops 7–225 × (to 2.4–7.0e-6).
   The gain comes in the restarts: after Adam and the polish the two layers are alike
-  (30–70 % vs 35–85 %). The hold changes the minimum, not how the optimiser finds it.
+  (30–70 % vs 35–85 %). The hold changes the minimum, not how the optimizer finds it.
 - **The ratio certificate does not carry over.** The runs stop 4–25 × above the FOH oracle
-  (float32 optimisation, against a floor at the rounding of the data), so few are within
+  (float32 optimization, against a floor at the rounding of the data), so few are within
   1.5 × the best one: the consensus forms in 1/4 groups (p4, p6 coarse) and 3/4 (p6 fine),
   although every run is right. The certificate needs a noise or precision term here, as
   under noise.
@@ -1007,7 +1007,7 @@ Two items left by the fifth pass.
 sixth-difference estimate (`e2_rescue.noise_var`) fails without noise: it sees the signal and,
 on the E1 data, the steps of the inputs (σ̂² ≈ 7e-11). On noise-free data `e4_profile.py` now
 uses the variance of the float32 rounding of the stored outputs instead (ulp² / 12 per sample,
-normalised by ||y_i||²; truth-free, from the storage format alone). At the truth the FOH refit's
+normalized by ||y_i||²; truth-free, from the storage format alone). At the truth the FOH refit's
 score is 1.0–1.3 × n σ². Everything else is the fourth pass (`--hold foh`, per-run reduction,
 consensus, order test, profile intervals), on band- and FOH-trained runs (restart stage).
 
@@ -1055,7 +1055,7 @@ band- and FOH-trained):
   reports them in 4/4 (p4) and 4/4 / 2/4 (p6) groups. With the FOH refit and the precision
   term every group reports every pole at relative errors 1e-11 to 1e-8, with no false pole.
   The phase-1 ratio criterion (≥ 10 × the band floor) was conservative: a ratio of 4.6
-  means the 10 % change is still 4.6 × above the best fit, which the optimiser can resolve.
+  means the 10 % change is still 4.6 × above the best fit, which the optimizer can resolve.
   The limit is noise. *Corrected in the eighth pass: η* below is a per-sample criterion; the
   limit is the CRB, η ≈ 0.03 for p6 −2, ≈ 0.1 for −1 and ~1 for the p4 real poles, confirmed
   under noise.* (Originally: −2 of p6 identifiable only below ~1.5e-5 (η*), −1 below ~5e-5,
@@ -1105,7 +1105,7 @@ or of the outputs only (`results/e4_bias.md`):
 - **The refit needed a second fix.** On S ≈ 1e-13, L-BFGS with gtol = 1e-14 on S stopped
   early in flat valleys. On p6 fine a fit started at the truth ended 3.5 σ² above the minimum
   reached from the report, with Re μ of −1 / −2 off by 3e-9 / 1e-8, about 2 std. Noise-free
-  fits now minimise S / (n σ²) and end with damped Newton steps (autograd Hessian). Then both
+  fits now minimize S / (n σ²) and end with damped Newton steps (autograd Hessian). Then both
   starts reach the same point. The reports of the sixth pass were already at that minimum
   (same digits after the rerun); the stalled fits were the truth-started ones of the
   diagnosis. Noisy conditions are unchanged.
@@ -1241,7 +1241,7 @@ bootstrap of the ninth pass (`e4_profile.eiv_bootstrap`, 32 draws, bias-correcte
 `--add-boot` adds it to existing groups.
 
 **EIV weighting (`--hold foh_eiv`).** The residual of the true model on the stored inputs is
-e_y − G e_u, which is coloured. Its spectrum per normalised sample is
+e_y − G e_u, which is colored. Its spectrum per normalized sample is
 σ_y² + σ_u² (‖x_i‖ / ‖y_i‖)² |G(iω)|². `eiv_weights` takes σ_y² from the outputs, σ_u² from
 the inputs (robust estimate) and G from the refit of the best run. Every FOH refit (VarPro) is
 then a weighted least-squares fit with these frequency weights. S is in noise units, and the
@@ -1267,7 +1267,7 @@ weighted S / n = 0.998, against 1.30 unweighted (p6 E1, η_u = 0.03). With σ_u�
 (`results/e2_rescue_na.md`).)
 
 - **Unweighted, the certificate breaks once input noise exceeds output noise.** The
-  propagated input noise is coloured. Spurious poles fit it, and the runs' scores spread far
+  propagated input noise is colored. Spurious poles fit it, and the runs' scores spread far
   beyond χ² σ̂². So one run is certified, there is no consensus, and the best run keeps 7–16
   false poles. The order test passes trivially, because the reference is that same run. The
   profile intervals cover 0–5 of 12–16.
@@ -1298,7 +1298,7 @@ refit and by 179 in the ML refit (E1 inputs: 5008 vs 66). Without input noise th
 cause: the stationary noise model itself. Its spectrum is off by −28 % at the lowest
 frequencies and +5 % to +23 % above 2 Hz, because of the start-up of the propagated input
 noise (zero initial state), which the circulant model ignores. The exact time-domain ML
-(covariance σ_y² I + σ_u² L Lᵀ) was not tried: it costs a 1024² factorisation per evaluation.
+(covariance σ_y² I + σ_u² L Lᵀ) was not tried: it costs a 1024² factorization per evaluation.
 
 **2. Bootstrap-calibrated reduction of the report (`calibrated_reduce`, `--hold foh_eivb`).**
 The tests themselves are miscalibrated under input noise. On truth data, adding a real pole at
@@ -1777,7 +1777,7 @@ with a bootstrap spread of about 6 %.
 
 **Reading.**
 
-- **Multisine inputs.** The bias correction is the part of the rule that generalises: p4 at
+- **Multisine inputs.** The bias correction is the part of the rule that generalizes: p4 at
   30 × η_y is exact in 8 of 8 groups.
 - **E1 inputs.** The split, duplicate and alias rules fixed the four groups they were built on,
   but not new ones. Above η_u ≈ 0.03 the E1 reports fail in several ways at once:
@@ -1805,7 +1805,7 @@ and −52 lie inside that band.
     (0.85 s and 10 GB per evaluation).
   - At the true model it gives S / n = 0.995, and 1.000 on simulated noise.
 - **Fitted, it degenerates.** The refitted true model reaches S / n = 0.00 on E1 inputs and 0.25
-  on multisine (`results/e4_eivtd.md`). Without a log det term the cost can be driven towards
+  on multisine (`results/e4_eivtd.md`). Without a log det term the cost can be driven toward
   zero by an ill-conditioned M (eigenvalues of M Mᵀ down to 1e-33). It is recorded as a
   negative result.
 
@@ -1861,7 +1861,7 @@ In the eleventh pass, the gain of 66 on E1 inputs was for much faster poles (−
 **Reading.**
 
 - **The EIVML refit replaces the gated bias correction.** It is consistent, needs no gate, and
-  generalises from multisine to E1 inputs at 0.05.
+  generalizes from multisine to E1 inputs at 0.05.
 - **At 0.1 the E1 data are beyond what any rule tried here resolves.** The −1 / −2 pair is
   merged, duplicated or biased in every group, and a few fast poles stay supported.
 - **Not done yet.**
@@ -2090,7 +2090,7 @@ dead; NaN and dead runs count as not recovered.)
 - E4: close real pairs beyond the limit under input noise (report unresolved, not merged:
   p6 E1 at η_u = 10 η_y); an aliasing check (|Im μ| near 2π/dt); the EIV bias of −1 at
   η_u = 30 η_y; the order test near the CRB limit; calibrated profile intervals (or the bootstrap as the reported interval); the exact
-  time-domain EIV ML; coloured input noise; resolving close real pairs at the CRB limit
+  time-domain EIV ML; colored input noise; resolving close real pairs at the CRB limit
   (p6 −1 / −2 at η = 0.1);
   a zero-order-hold variant; simultaneous (joint) intervals; more groups for the
   complex-pole coverage.

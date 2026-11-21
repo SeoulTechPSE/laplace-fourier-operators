@@ -1,6 +1,6 @@
 """(A) Deep operator: data efficiency on forced Burgers, WPO against the matched-budget TFNO.
 
-a11 / a13 (200 training samples) left both models with a generalisation gap (train 0.009-0.011, test 0.024-0.031).
+a11 / a13 (200 training samples) left both models with a generalization gap (train 0.009-0.011, test 0.024-0.031).
 Here the training-set size varies; the protocol is fixed (a11 WPO configuration: stable, lr 3e-3, pole ratio 30;
 a13 TFNO: lr 3e-3; 12000 steps, batch 25, seeds 0-2; no new sweep).
 

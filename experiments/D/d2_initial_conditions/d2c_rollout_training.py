@@ -1,4 +1,4 @@
-"""(D2) Training for rollout: pushforward and the semigroup regulariser (plan D, Section 5) on forced Burgers.
+"""(D2) Training for rollout: pushforward and the semigroup regularizer (plan D, Section 5) on forced Burgers.
 
 d2b (`d2b_burgers_rollout.py`) found that every model roughly doubles its error over 4 chained windows. Even the
 shared-pole initial-state path (`wpo_ic`, lowest rollout error) does, because in a nonlinear system each window
@@ -8,7 +8,7 @@ model:
 - `push` (pushforward): training samples are two consecutive windows of one trajectory. The first window starts
   from the true field. The second starts from the model's own prediction at t = 5 (detached, no gradient through
   it), so the model learns to start from its own outputs. Loss: mean of the two windows' relative L2.
-- `semi` (semigroup regulariser): on a single window, the prediction over [0, T] should equal chaining two
+- `semi` (semigroup regularizer): on a single window, the prediction over [0, T] should equal chaining two
   half-windows, G(f[T/2:], G(f[:T/2], u0)[end]). The penalty ||G_full[T/2:] - G_chained[T/2:]|| / ||G_full[T/2:]|| is
   added with weight 1.
 
@@ -112,7 +112,7 @@ def main():
             OUT.write_text(json.dumps(out, indent=1))
             del m
             torch.cuda.empty_cache()
-    lines = ["# (D2) Training for rollout on forced Burgers: pushforward and semigroup regulariser (wpo_ic)", "",
+    lines = ["# (D2) Training for rollout on forced Burgers: pushforward and semigroup regularizer (wpo_ic)", "",
              "| training | window test (mean) | rollout over [0, 20] (mean) | rollout / test (range) |", "|---|---|---|---|"]
     for mode in ("base", "push", "semi"):
         rs = [r for r in out if r["mode"] == mode]

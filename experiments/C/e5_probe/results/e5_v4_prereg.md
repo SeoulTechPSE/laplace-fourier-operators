@@ -8,8 +8,8 @@ trajectory scores rel. L2 0.011–0.110.
 **Rule v4** (`e5_v4.py`). It keeps v1's validity check, d < 0.1 and the v3 data gate unchanged, and changes the rest:
 
 - **Probe agreement**: a = |μ_LTI − μ_J| / |μ_J| < 0.1. Here μ_LTI is the one-pair pole of the odd-part LTI probe at
-  ε = 0.01, and μ_J is the Jacobian impulse-response pole. Both probe the same linearisation, so they must agree.
-- **Centred fit**: e_c < 0.5. This is the test error relative to the test outputs minus the training-mean
+  ε = 0.01, and μ_J is the Jacobian impulse-response pole. Both probe the same linearization, so they must agree.
+- **Centered fit**: e_c < 0.5. This is the test error relative to the test outputs minus the training-mean
   trajectory, per sample, averaged. It replaces rel. L2 < 0.5.
 
 A run is correct if its J pole is within 10 % of the reference, as before.
@@ -19,19 +19,19 @@ A run is correct if its J pole is within 10 % of the reference, as before.
 - v4 trusts 44 runs, with 0 false trusts and 5 missed (`c0_medium`, the gate's known cost).
 - v3 trusted 45, with 1 false and 5 missed.
 - The 44 correct trusts have a ≤ 0.04 and e_c ≤ 0.18.
-- The ninth-pass false trust has a ≈ 1900 and e_c = 0.30. So the agreement condition removes it, not the centred
+- The ninth-pass false trust has a ≈ 1900 and e_c = 0.30. So the agreement condition removes it, not the centered
   fit.
 - The thresholds 0.1 and 0.5 were fixed by analogy with d and the old fit criterion, not tuned on these values.
 
 **Tied-layer offset.** On `lz_r10_*` the tied layer's offset starts at the training-mean trajectory. In the ninth
-pass, a zero-initialised offset stopped at about 1.5 of 3.27: the `common` lr schedule bounds how far any parameter
+pass, a zero-initialized offset stopped at about 1.5 of 3.27: the `common` lr schedule bounds how far any parameter
 can move.
 
 **System.** LNO Example 6: the same equations with ρ = 10, output x.
 
 - The LNO data `1D_Lorenz_rho10` start from x(0) = 1 with inputs A sin 5t, A 0.05–10. A simulation reproduces the
   stored samples to 5.1e-4 … 2.7e-3.
-- Equilibrium C+ = (4.899, 4.899, 9). The linearisation from f to x has poles **−0.5955 ± 6.1742i** (reference)
+- Equilibrium C+ = (4.899, 4.899, 9). The linearization from f to x has poles **−0.5955 ± 6.1742i** (reference)
   and −12.48. It is less damped than ρ = 5 (ζ ≈ 0.10 vs 0.22).
 - On the true impulse response the order-2 pencil gives −0.589 + 6.104i, 1.1 % from the reference.
 
@@ -76,11 +76,11 @@ If prediction 1 fails, v4 is not adopted as the RQ4 rule.
 **Diagnosis** (one diagnostic run, seed 0, 300 epochs).
 
 - The offset starts at the mean (4.90), and the training loss starts at 0.0066.
-- The `common` protocol's weight decay (1e-4, coupled L2 inside Adam) then pulls the offset towards zero. Its own
-  gradient is near zero at the optimum, so Adam's normalised step moves it at almost the full learning rate. The
+- The `common` protocol's weight decay (1e-4, coupled L2 inside Adam) then pulls the offset toward zero. Its own
+  gradient is near zero at the optimum, so Adam's normalized step moves it at almost the full learning rate. The
   loss rises to 0.57.
 - With weight decay 0 the loss falls to 0.0014, and the offset stays at 4.899.
-- The ninth-pass offset (zero-initialised, stopped at ~1.5) shows the same balance. The cause there was weight
+- The ninth-pass offset (zero-initialized, stopped at ~1.5) shows the same balance. The cause there was weight
   decay too, not only the travel bound.
 
 **Addendum runs.** Variant `tied4o_stable_plr10` is the tied layer + offset with the offset excluded from weight

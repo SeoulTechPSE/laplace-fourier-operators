@@ -1,6 +1,6 @@
 # E5: linear-probe poles of Duffing models, `lz_orig` data set
 
-Forced Lorenz ρ = 5 (z' = xy − 8/3 z − f, output x), the original LNO data (`1D_Lorenz_rho5`, from x(0) = 1, y(0) = z(0) = 0, inputs A sin 5t), Lorenz LNO architecture (grid input, tanh, 16 modes), 5 seeds per variant; the tied layer has a learned output offset. Reference: the dominant pole of the linearisation at C+, **−0.9287 ± 4.1476i** (third pole −11.81). Equivalent poles from centred data.
+Forced Lorenz ρ = 5 (z' = xy − 8/3 z − f, output x), the original LNO data (`1D_Lorenz_rho5`, from x(0) = 1, y(0) = z(0) = 0, inputs A sin 5t), Lorenz LNO architecture (grid input, tanh, 16 modes), 5 seeds per variant; the tied layer has a learned output offset. Reference: the dominant pole of the linearization at C+, **−0.9287 ± 4.1476i** (third pole −11.81). Equivalent poles from centered data.
 Errors in brackets: relative distance to it.
 
 - **layer**: stored poles within 10 % / all, and the closest.

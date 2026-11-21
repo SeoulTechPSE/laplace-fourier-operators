@@ -13,7 +13,7 @@ estimated floor agree on their poles:
                   certified runs needed): the poles the data identify, as far as the runs tell
 
 Noise-aware rule (E4; conditions with output noise): when the floor estimate is at the noise
-level (S_min <= 2 n_s n_t sigma^2, with S the sum of squared normalised training residuals and
+level (S_min <= 2 n_s n_t sigma^2, with S the sum of squared normalized training residuals and
 sigma^2 estimated from the outputs, ``e2_rescue.noise_var``), the 1.5 x ratio certifies every
 run. A run is then certified when S - S_min <= chi2_p(0.99) sigma^2 (likelihood-ratio test,
 p = real parameters of the layer): the runs the data cannot tell apart from the best one.

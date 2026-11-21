@@ -57,7 +57,7 @@ with 64 modes. The ALNO/LFNO floor is mode truncation, not identifiability.
 | Warm start, LFNO paper protocol (wd 0.01): poles drift | 0.05 / 0.24 / 0.49 — weight decay on the poles moves them off the truth |
 | Band init: good fit, wrong poles even for tied | tied p6 test 1.2e-2, pole error 0.37; all models 0.14–1.7 |
 
-Reading: in this audit the first obstacle is optimisation (initialisation, weight
+Reading: in this audit the first obstacle is optimization (initialization, weight
 decay, instability), before dual-branch non-identifiability. With a warm start the tied
 layer identifies the truth (consistent with H2), the untied ones stay close but are
 limited by truncation; from generic starts all models reach good-fit/wrong-pole minima.
@@ -79,13 +79,13 @@ with error < 0.1, signed ΔRe/ΔIm; plus pole travel from the reconstructed init
 
 Reading: under the published protocols the "learned" poles of the deep models are their
 initial poles shifted by a bounded amount, so the audit mostly measures the
-initialisation and the learning-rate schedule. Pole parameterisation (e.g. log decay
+initialization and the learning-rate schedule. Pole parameterization (e.g. log decay
 rate, pole-specific learning rate) is a prerequisite for any interpretability claim, and
 a design input for (A).
 
 ## Control: pole learning rate × 10 (2026-11-13)
 
-`--pole-lr-mult 10` (runs labelled `<protocol>+plr10`): the poles get 10 × lr, all else
+`--pole-lr-mult 10` (runs labeled `<protocol>+plr10`): the poles get 10 × lr, all else
 unchanged, so the travel bound rises from 4.0 to 40 (3.6 → 36 for `lfno_paper`).
 Layer 10 seeds, deep 5 seeds; same systems, data and inits (`stable`, `band`; deep LNO v1 `lno`).
 
@@ -112,7 +112,7 @@ Reading:
    deep models, by the rest of the network. A fast decay contributes little output energy
    on [0, 20], so the loss is insensitive to it — a practical-identifiability question
    (Fisher information / profile likelihood; plan Section 4.3, E2).
-3. Raising the pole learning rate alone destabilises LFNO; a parameterisation (e.g. log
+3. Raising the pole learning rate alone destabilizes LFNO; a parameterization (e.g. log
    decay rate) is the cleaner remedy to test next.
 
 ## Practical identifiability of the true poles (2026-11-13)
@@ -132,14 +132,14 @@ Re μ of one pole fixed at c × truth, all else re-fitted with L-BFGS from the t
 | Conditioning degrades with the number of poles | cond(F) = 47 (p2), 3.9e4 (p4), 6.8e6 (p6) |
 | A real pole sits at a flat point in Im μ | first-order sensitivity to Im μ and Im β is zero at Im μ = 0 **for a real residue** (as at the truth). *E2 correction:* with a complex β, d/d(Im μ) = −t Im(β) e^{Re μ t} ≠ 0, so during training a slot on the real axis does not stay there |
 
-Reading: the real-pole failure of E1 is not an optimisation artefact. With these inputs
+Reading: the real-pole failure of E1 is not an optimization artifact. With these inputs
 and window, the data do not determine the fast decays: the other poles reproduce
-their effect to within the discretisation floor of the layer itself. This is the
+their effect to within the discretization floor of the layer itself. This is the
 practical-identifiability side of H2 — unique in principle (warm start converges), flat
 in practice. Which input/window changes restore it (fast-content inputs, more samples
 near t = 0, finer grid) is the E2 question.
 
-*Revised by E2 (`experiments/C/theory/README.md`):* "not an optimisation artefact" holds
+*Revised by E2 (`experiments/C/theory/README.md`):* "not an optimization artifact" holds
 for the E1 data and grid, but not in general. With richer data (p4) or a finer grid
 (p6 −1) the real poles become locally identifiable, and the truth is a stable minimum
 (warm start). From generic inits training then still fails, and a training recipe (mixed

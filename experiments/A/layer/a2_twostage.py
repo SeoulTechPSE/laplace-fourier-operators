@@ -1,6 +1,6 @@
 """(A) Pole layer, second validation: two-stage identification of the dispersion relation.
 
-The first validation (`a1_dispersion.py`) fitted the polynomial mu(k) jointly and failed by optimisation:
+The first validation (`a1_dispersion.py`) fitted the polynomial mu(k) jointly and failed by optimization:
 - wrong basins appeared through k^4 / k^3 terms;
 - phase wrapping in v k added local minima.
 Here the dispersion relation is identified in two stages, and the layer is then fine-tuned from it:
@@ -12,7 +12,7 @@ Here the dispersion relation is identified in two stages, and the layer is then 
    - refinement: Nelder-Mead on the residual.
 2. **Polynomial.** Least-squares fit of Re mu_k on {1, k^2, k^4} and of Im mu_k on {k, k^3}, over k = 1..16 with
    equal weights. The degree is chosen by BIC: each of k^4 and k^3 is kept only if it lowers the BIC.
-3. **Fine-tune.** `WavenumberPoleLayer1d` (N = 1) is initialised with the stage-2 polynomial and its beta(k) fitted
+3. **Fine-tune.** `WavenumberPoleLayer1d` (N = 1) is initialized with the stage-2 polynomial and its beta(k) fitted
    to the b_k (b0 + b1 k^2), then trained with Adam, lr 1e-3, 1000 steps. Settings otherwise as in
    `a1_dispersion.py`: modes = 17, Re cap 0.5.
 
@@ -164,7 +164,7 @@ def main():
 def summarize(floors, out):
     lines = ["# (A) Two-stage dispersion identification, then fine-tuning", "",
              "Stage 1: one pole per excited k (grid + Nelder–Mead, residue by least squares). Stage 2: polynomial LS, "
-             "degree by BIC. Stage 3: layer initialised from stage 2, Adam 1000 steps. Data seeds 0–4.", "",
+             "degree by BIC. Stage 3: layer initialized from stage 2, Adam 1000 steps. Data seeds 0–4.", "",
              "| system | data seed | stage 1: max pole error (k = 1..16) | degree (Re; Im) | D | v | k_r | test: init → tuned | oracle | dispersion error |",
              "|---|---|---|---|---|---|---|---|---|---|"]
     for r in out:

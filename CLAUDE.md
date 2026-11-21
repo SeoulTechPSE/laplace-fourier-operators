@@ -41,6 +41,8 @@ docs/               research plans (Quarto .qmd) and figures
 
 ## Conventions
 
+- English text (docs, papers, docstrings, comments, commit messages) uses American spelling
+  (-ize, -ization, color, center, modeling, toward).
 - Python ≥ 3.10, PyTorch. Baselines (FNO, TFNO) come from `neuraloperator`;
   do not re-implement them.
 - **Metrics are defined once, in `src/lfo/metrics/`.** All three projects must use

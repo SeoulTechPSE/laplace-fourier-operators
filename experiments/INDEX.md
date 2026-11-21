@@ -56,7 +56,7 @@ JSON results where recorded (GPU wall time, often with another job on the GPU).
 |---|---|---|---|---|
 | `a20_fopdt.py` | 1989e24 2026-11-19 | `a20_fopdt.json`, `a20_fopdt.md` | 1.1 h | (A) Application 1, first step: delay identification on FOPDT / SOPDT (plan Section 5.1, Table "Process-dynamics"). |
 | `a21_noise.py` | 9ab74fe 2026-11-19 | `a21_noise.json`, `a21_noise.md` | 4 min | (A) Application 1: delay identification under output noise (FOPDT / SOPDT). |
-| `a23_cstr.py` | f224ba0 2026-11-19 | `a23_cstr.json`, `a23_cstr.md` | 0.2 h | (A) Application 1: a nonlinear CSTR. Do probes of deep operators recover the linearised poles at a steady state? |
+| `a23_cstr.py` | f224ba0 2026-11-19 | `a23_cstr.json`, `a23_cstr.md` | 0.2 h | (A) Application 1: a nonlinear CSTR. Do probes of deep operators recover the linearized poles at a steady state? |
 | `a24_dispersion_reactor.py` | 5c4d793 2026-11-19 | `a24_dispersion_reactor.json`, `a24_dispersion_reactor.md` | — | (A) Application 1: lumped delay against distributed dispersion (plan Section 5.2). |
 | `a25_wpo_delay.py` | 45eddc5 2026-11-19 | `a25_wpo_delay.json`, `a25_wpo_delay.md` | 0.2 h | (A) Delay and dispersion together: the wavenumber pole layer with a shared input delay. |
 | `a26_cstr_closed_loop.py` | df503db 2026-11-19 | `a26_cstr_closed_loop.json`, `a26_cstr_closed_loop.md` | 0.4 h | (A) Application 1: CSTR identification from closed-loop data with measurement noise. |
@@ -127,7 +127,7 @@ JSON results where recorded (GPU wall time, often with another job on the GPU).
 |---|---|---|---|---|
 | `d2_ic_rollout.py` | 1191c1c 2026-11-19 | `d2_ic_rollout.json`, `d2_ic_rollout.md` | 2 min | (D2) Initial conditions as an explicit input, and rollout by chaining windows (plan D, Section 5). |
 | `d2b_burgers_rollout.py` | 42bc898 2026-11-19 | `d2b_burgers_rollout.json`, `d2b_burgers_rollout.md` | 1.6 h | (D2) Deep nonlinear rollout: forced Burgers with initial fields, chained over 4 windows. |
-| `d2c_rollout_training.py` | 2776b70 2026-11-19 | `d2c_rollout_training.json`, `d2c_rollout_training.md` | 3.7 h | (D2) Training for rollout: pushforward and the semigroup regulariser (plan D, Section 5) on forced Burgers. |
+| `d2c_rollout_training.py` | 2776b70 2026-11-19 | `d2c_rollout_training.json`, `d2c_rollout_training.md` | 3.7 h | (D2) Training for rollout: pushforward and the semigroup regularizer (plan D, Section 5) on forced Burgers. |
 | `d2d_start_states.py` | 450deaa 2026-11-20 | `d2d_start_states.json`, `d2d_start_states.md` | 3.1 h | (D2) Why did d2c's `base` roll out better than d2b's? Developed start states against window count. |
 | `d2e_ic_generalisation.py` | 554d0f4 2026-11-20 | `d2e_ic_generalisation.json`, `d2e_ic_generalisation.md` | 1.6 h | (D2) Initial fields outside the training range, and rollout over 10 windows (RQ2 and the plan's 10x metric). |
 | `d2f_beam_ic.py` | 19ce7dc 2026-11-20 | `d2f_beam_ic.json`, `d2f_beam_ic.md` | 1.0 h | (D2) A damped beam with initial displacement and velocity, observed through its displacement. |

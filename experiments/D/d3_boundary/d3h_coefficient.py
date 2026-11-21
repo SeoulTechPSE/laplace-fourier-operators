@@ -136,7 +136,7 @@ D_MIN = 1e-4
 
 
 def loss_fn(m, d):
-    """Relative L2; where min D(x) < D_MIN the eigenproblem is not solved and a penalty that slopes back towards
+    """Relative L2; where min D(x) < D_MIN the eigenproblem is not solved and a penalty that slopes back toward
     D_MIN is returned instead, so the line search backtracks (fix after the first launch, see the docstring)."""
     dmin = (CGRID.to(m.d.device) @ m.d).min()
     if dmin < D_MIN:

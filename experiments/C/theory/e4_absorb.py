@@ -1,11 +1,11 @@
 """(C) E4, input noise: can the calibrated reduction path tell a merged close pair from EIV bias?
 
 `e4_profile.py --hold foh_eivu` flags a kept pole as unresolved when a calibration-only drop
-(chi2_dp(0.99) < dS <= kappa chi2_dp(0.99)) removes a neighbouring pole (|z_removed - z_kept| <=
+(chi2_dp(0.99) < dS <= kappa chi2_dp(0.99)) removes a neighboring pole (|z_removed - z_kept| <=
 |z_kept|). This script re-reads the stored `foh_eivu` steps (no refits) and compares that rule
 with a second truth-free rule:
 
-  neighbour  as foh_eivu (flags stored in the group JSON)
+  neighbor  as foh_eivu (flags stored in the group JSON)
   absorb     a kept pole that moves by more than MERGE |z| in a calibration-only drop
              (it absorbed what the dropped pole carried)
 
@@ -51,11 +51,11 @@ def absorbed(steps, start):
 def main():
     rs = [json.loads(f.read_text()) for f in sorted(SRC.glob("*.json"))]
     lines = ["# E4: unresolved flags from the calibrated reduction path", "",
-             "Stored `foh_eivu` steps, no refits. neighbour = the `foh_eivu` rule (a calibration-only drop of a "
+             "Stored `foh_eivu` steps, no refits. neighbor = the `foh_eivu` rule (a calibration-only drop of a "
              "pole within |z_kept| of a kept one); absorb = a kept pole moves by > "
              f"{MERGE:g} |z| in a calibration-only drop. Groups with a flag in the report or a certified run; "
              f"slow poles (|z| < {SLOW:g}) moved under absorb, before → after.", "",
-             "| condition | groups | neighbour: groups flagged | absorb: groups flagged | slow poles moved (absorb) |",
+             "| condition | groups | neighbor: groups flagged | absorb: groups flagged | slow poles moved (absorb) |",
              "|---|---|---|---|---|"]
     for cond in dict.fromkeys(r["cond"] for r in rs):
         g = [r for r in rs if r["cond"] == cond]

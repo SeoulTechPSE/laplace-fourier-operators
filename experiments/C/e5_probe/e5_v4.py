@@ -5,8 +5,8 @@ Rule v3 = v1 (valid Jacobian probe, d < 0.1, test rel. L2 < 0.5) and the v3 data
 slow pole that is not the system's. Rule v4 changes the model-side checks:
 
 - **probe agreement** a = |mu_LTI - mu_J| / |mu_J| < 0.1, with mu_LTI the one-pair pole of the odd-part LTI probe at
-  eps = 0.01 and mu_J the Jacobian impulse-response pole (two probes of the same linearisation must agree);
-- **centred fit** e_c < 0.5: test error relative to the test outputs minus the training-mean trajectory, per sample,
+  eps = 0.01 and mu_J the Jacobian impulse-response pole (two probes of the same linearization must agree);
+- **centered fit** e_c < 0.5: test error relative to the test outputs minus the training-mean trajectory, per sample,
   averaged (the plain relative L2 is dominated by a large output mean on Lorenz);
 - valid Jacobian, d < 0.1 and the v3 data gate unchanged.
 
@@ -79,13 +79,13 @@ def counts(rows, key):
 
 
 def summarize(res):
-    lines = ["# E5: rule v4 (probe agreement, centred fit) against v3", "",
-             f"v4 = valid Jacobian ∧ d < {P.TRUST_D:g} ∧ probe agreement |μ_LTI − μ_J| / |μ_J| < {AGREE:g} ∧ centred "
+    lines = ["# E5: rule v4 (probe agreement, centered fit) against v3", "",
+             f"v4 = valid Jacobian ∧ d < {P.TRUST_D:g} ∧ probe agreement |μ_LTI − μ_J| / |μ_J| < {AGREE:g} ∧ centered "
              f"test error < {FIT_C:g} ∧ v3 data gate. v3 = v1 (valid ∧ d < {P.TRUST_D:g} ∧ test < {P.TRUST_TEST:g}) ∧ v3 "
              f"gate. Correct: J pole within {CORRECT:.0%} of the reference. Missed: correct runs that v1 trusts but the "
              "rule does not.", "",
              "| set | v3 gate | v3: trusted / false / missed | v4: trusted / false / missed | v1-trusted runs: agreement a, "
-             "centred error e_c, pole error |", "|---|---|---|---|---|"]
+             "centered error e_c, pole error |", "|---|---|---|---|---|"]
     tot = {k: dict(trusted=0, false=0, missed=0) for k in ("v3", "v4")}
     for tag, g in res.items():
         c3, c4 = counts(g["rows"], "v3"), counts(g["rows"], "v4")

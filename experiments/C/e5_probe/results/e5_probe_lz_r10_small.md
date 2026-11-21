@@ -1,6 +1,6 @@
 # E5: linear-probe poles of Duffing models, `lz_r10_small` data set
 
-Forced Lorenz ρ = 10 (z' = xy − 8/3 z − f, output x), `e5_data.py` set `lz_r10_small` (diverse E1 waveforms, started at the equilibrium C+), Lorenz ρ = 10 LNO architecture (grid input, tanh, 84 modes), 5 seeds per variant; the tied layer has a learned output offset started at the training mean. Reference: the dominant pole of the linearisation at C+, **−0.5955 ± 6.1742i** (third pole −12.48). Equivalent poles from centred data.
+Forced Lorenz ρ = 10 (z' = xy − 8/3 z − f, output x), `e5_data.py` set `lz_r10_small` (diverse E1 waveforms, started at the equilibrium C+), Lorenz ρ = 10 LNO architecture (grid input, tanh, 84 modes), 5 seeds per variant; the tied layer has a learned output offset started at the training mean. Reference: the dominant pole of the linearization at C+, **−0.5955 ± 6.1742i** (third pole −12.48). Equivalent poles from centered data.
 Errors in brackets: relative distance to it.
 
 - **layer**: stored poles within 10 % / all, and the closest.

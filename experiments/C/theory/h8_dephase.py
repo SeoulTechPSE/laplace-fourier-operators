@@ -3,13 +3,13 @@
 e^{(-a + i w) t} = int c_{a-a'}(nu) e^{(-a' + i (w + nu)) t} d nu for t >= 0, with c_g the Cauchy density of width g
 (because e^{-g t} is its characteristic function). So K modes with the smaller decay rate a' and spread frequencies
 approximate one mode with rate a on a window [0, T], with an error that falls as K grows. With spare slots, a decay
-rate is therefore identifiable only up to such substitutions, and only towards smaller rates: frequencies cannot
+rate is therefore identifiable only up to such substitutions, and only toward smaller rates: frequencies cannot
 stand in for faster decay than the slots have (a' > a gives a lower bound on the error, see `over`).
 
 Check: target e^{-a t} cos(w t), a = 0.25, w = 0.9682 (damped Duffing / pendulum small-signal pole), on the E5
 probe window t in (0, 8] (h_1 ... h_799) and on the full window (0, 20.47]. For K = 1 ... 16 modes of rate a' = r a,
 r in {0.2, 0.4, 0.6, 0.8, 1.2, 1.5}, frequencies and real cos / sin weights are fitted by least squares (frequencies
-by a few starts of a bounded optimiser, warm-started from Cauchy quantiles); reported: the relative L2 error and
+by a few starts of a bounded optimizer, warm-started from Cauchy quantiles); reported: the relative L2 error and
 the order-2 matrix-pencil pole of the best K-mode sum (what the E5 probe would read).
 
     python experiments/C/theory/h8_dephase.py      # writes results/h8_dephase.md / .json

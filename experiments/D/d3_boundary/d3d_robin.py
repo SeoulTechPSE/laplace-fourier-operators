@@ -30,7 +30,7 @@ finer time grid. T = 5, n_t = 201, splits 200 / 50 / 100, data seeds 0-4. Fit: t
 0.2036559 by finite differences; cond(Phi) = 1.4. Oracle: 5.6e-3 (seed 0), 5.9e-3 (seed 1).
 
 **Fix before any result** (first launch crashed in seed 0 `robin` on a singular basis). beta is now
-parameterised as softplus(rho) > 0, the physical range (H > 0): for -1 < beta < 0 the first root leaves the bracket
+parameterized as softplus(rho) > 0, the physical range (H > 0): for -1 < beta < 0 the first root leaves the bracket
 ((1/2) pi, pi). A start whose basis is singular is skipped.
 The second launch completed `robin` and `fixed`, but every `dn` start failed: at beta = 0 the root is the bracket's
 left end, which the bisection missed (a bug in the control, fixed afterwards; `dn` rerun alone).

@@ -29,7 +29,7 @@ Every result is reported on two splits (`lfo.data.lno_bench`):
 
 - `ood`: the original split. Train and test use different forcing families
   (e.g. Duffing: train A·sin 5t, test A·e^{-0.05t}·sin 5t), so it measures
-  out-of-distribution generalisation.
+  out-of-distribution generalization.
 - `iid`: the same 380 samples pooled and re-split at random (200/50/130,
   stratified by forcing family, split seed 0), so train and test share a
   distribution.

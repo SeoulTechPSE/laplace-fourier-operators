@@ -1,14 +1,14 @@
 """(C) E5 / RQ4, first pass: linear-probe poles of the trained Duffing LNO against its layer poles and the
-linearised system.
+linearized system.
 
 Plan: `docs/proposal_C_identifiability.qmd`, Section 5 (diagnostic for nonlinear models) and E5.
 
-- **Linearised truth.** Damped Duffing (LNO data `1D_Duffing_c05`: x'' + 0.5 x' + x + k3 x^3 = f). The poles of the
-  linearisation at x = 0 are estimated from the data alone: a first-order-hold fit of one complex pair to the 4
+- **Linearized truth.** Damped Duffing (LNO data `1D_Duffing_c05`: x'' + 0.5 x' + x + k3 x^3 = f). The poles of the
+  linearization at x = 0 are estimated from the data alone: a first-order-hold fit of one complex pair to the 4
   smallest-amplitude training samples (|f| <= 0.2). Theory: -0.25 +- i sqrt(1 - 0.0625) = -0.25 +- 0.9682i.
 - **Models.** The original 1-layer LNO (width 4, 16 poles per channel pair, sin activation; 4 x 4 x 16 = 256 layer
   poles), trained on the original split (`experiments/foundation/reproduce_lno.py --case duffing_c05 --tag e5`).
-- **Layer poles.** All 256 stored mu (the exponents of the layer's transient term): the closest to the linearised
+- **Layer poles.** All 256 stored mu (the exponents of the layer's transient term): the closest to the linearized
   pole, and how many lie within 10 %.
 - **Linear probe.** Probe inputs u_j: 16 smooth random signals (8 sinusoids, 0.2-8 rad/s, max |u| = 1). At scale eps,
   the odd part g = (G(eps u) - G(-eps u)) / (2 eps) of the trained operator G (removes the bias and even terms; the
@@ -165,7 +165,7 @@ def main(data_tag="orig", only=None):
     mu_lin, amp_max = linearised(f, u, t, device)
     if data_tag != "orig":                                  # simulated sets: the exact small-signal pole
         mu_lin = MU_TRUE_C0 if data_tag.startswith("c0_") else MU_TRUE_LZ10 if data_tag.startswith("lz_r10") else MU_TRUE_LZ if data_tag.startswith("lz_") else MU_TRUE
-    print(f"linearised pole {mu_lin:.4f} (from |f| <= {amp_max:.2f})", flush=True)
+    print(f"linearized pole {mu_lin:.4f} (from |f| <= {amp_max:.2f})", flush=True)
     P = probe_inputs(t, np.random.default_rng(0))
     out_p = RESULTS / f"e5_probe{suffix(data_tag)}.json"
     out = json.loads(out_p.read_text())["variants"] if only else {}
@@ -226,7 +226,7 @@ def summarize(res):
     fmt = lambda z: f"{z[0]:.3f}{z[1]:+.3f}i ({err(z):.2f})"
     data = res.get("data", "orig")
     lines = ["# E5: linear-probe poles of Duffing models" + ("" if data == "orig" else f", `{data}` data set"), "",
-             (f"Damped Duffing (`1D_Duffing_c05`), original split, 5 seeds per variant. Linearised pole from the 4 "
+             (f"Damped Duffing (`1D_Duffing_c05`), original split, 5 seeds per variant. Linearized pole from the 4 "
               f"smallest-amplitude training samples (|f| ≤ {res['amp_max']:.2f}): **{mu_lin.real:.4f} ± "
               f"{abs(mu_lin.imag):.4f}i** (theory −0.25 ± 0.9682i).") if data == "orig" else
              (f"Driven pendulum x'' + 0.5 x' + sin x = f, " + ("the original LNO data (`1D_Pendulum_c05`)" if data == "pend_orig"
@@ -241,14 +241,14 @@ def summarize(res):
               "x(0) = 1, y(0) = z(0) = 0, inputs A sin 5t)" if data == "lz_r10_orig" else f"`e5_data.py` set `{data}` (diverse "
               "E1 waveforms, started at the equilibrium C+)") + ", Lorenz ρ = 10 LNO architecture (grid input, tanh, 84 "
               "modes), 5 seeds per variant; the tied layer has a learned output offset started at the training mean. "
-              "Reference: the dominant pole of the linearisation at C+, **−0.5955 ± 6.1742i** (third pole −12.48). "
-              "Equivalent poles from centred data.")
+              "Reference: the dominant pole of the linearization at C+, **−0.5955 ± 6.1742i** (third pole −12.48). "
+              "Equivalent poles from centered data.")
              if data.startswith("lz_r10") else
              (f"Forced Lorenz ρ = 5 (z' = xy − 8/3 z − f, output x), " + ("the original LNO data (`1D_Lorenz_rho5`, from "
               "x(0) = 1, y(0) = z(0) = 0, inputs A sin 5t)" if data == "lz_orig" else f"`e5_data.py` set `{data}` (diverse "
               "E1 waveforms, started at the equilibrium C+)") + ", Lorenz LNO architecture (grid input, tanh, 16 modes), 5 "
               "seeds per variant; the tied layer has a learned output offset. Reference: the dominant pole of the "
-              "linearisation at C+, **−0.9287 ± 4.1476i** (third pole −11.81). Equivalent poles from centred data.")
+              "linearization at C+, **−0.9287 ± 4.1476i** (third pole −11.81). Equivalent poles from centered data.")
              if data.startswith("lz_") else
              (f"Simulated damped Duffing x'' + 0.5 x' + x + x³ = f, `e5_data.py` set `{data}` (diverse E1 waveforms), 5 "
               f"seeds per variant. Reference: the exact small-signal pole **−0.25 ± 0.9682i**."),

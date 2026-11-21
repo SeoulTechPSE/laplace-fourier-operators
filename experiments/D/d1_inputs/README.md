@@ -26,7 +26,7 @@ Each representation computes the response from the input samples, so the whole e
 
 **Truths.**
 
-- *Sample truth:* the exact response to the piecewise-linear interpolant of the same samples. This favours FOH,
+- *Sample truth:* the exact response to the piecewise-linear interpolant of the same samples. This favors FOH,
   which is exact for that interpolant.
 - *Fine truth:* the inputs are defined on a 32× finer grid and the paths see only the n samples. This is the fair
   comparison.
@@ -162,5 +162,5 @@ Oracle floors (true poles): band 3.7e-3, FOH 3.4e-3.
 **Next.**
 
 - Piecewise Chebyshev with a stable recursion, and its cost.
-- The S4D view: the FOH recursion is a diagonal SSM discretisation.
+- The S4D view: the FOH recursion is a diagonal SSM discretization.
 - A qualifying note in (C) E4.7 / E4.8: the FOH layer's gains there assume data with a first-order hold.

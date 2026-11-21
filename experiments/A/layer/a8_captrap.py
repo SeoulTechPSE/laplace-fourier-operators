@@ -4,7 +4,7 @@ In a7 (`a7_joint.py`) the joint fit from random starts recovered every system, b
 every data seed (1D diffusion / ADR: 5 of 16; 2D: 3 of 8). They end with Re mu at the soft cap 0.5 for every k,
 where the soft minimum has almost no gradient. In the beam, a7's failures are mixed (inspected after a7, seed 0):
 - cap-trapped starts (2, 5);
-- a near-cancelling pole pair with large opposite residues (0);
+- a near-canceling pole pair with large opposite residues (0);
 - an over-damped fit (1);
 - a fit close to the truth except at high k (3).
 

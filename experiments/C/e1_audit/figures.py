@@ -6,7 +6,7 @@ fig1_travel     pole travel / travel bound, `stable` init, baseline vs pole lr x
 fig2_recovery   fraction of seeds recovering each true pole (error < 0.1), per condition
 fig3_profile    p6 profiles of Re mu (results/identifiability.json)
 
-Colours: categorical slots 1-4 of the dataviz reference palette, in fixed order.
+Colors: categorical slots 1-4 of the dataviz reference palette, in fixed order.
 """
 from __future__ import annotations
 

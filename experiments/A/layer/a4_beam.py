@@ -15,7 +15,7 @@ Recipe (the `a3_twostage.py` recipe, extended to two poles per mode):
    - Grid for one pole (as in a2).
    - With it fixed, grid for a second pole; both residues by least squares.
    - Nelder-Mead on all four real parameters.
-   - The poles are labelled by the sign of Im mu, with no truth used.
+   - The poles are labeled by the sign of Im mu, with no truth used.
 2. **Polynomials.** Weighted least squares per label on the modes with max |mu| dt <= 0.25. Re mu on
    {1, k^2, k^4}, Im mu on {k, k^2, k^3}, residue on {1, k^2}. No degree selection: a3 showed that the fine-tune
    removes extra terms.
@@ -86,7 +86,7 @@ def unit_responses(mu, fk, dt):
 
 
 def lsq(X, uk):
-    """Residues b (P,) minimising || uk - sum_p b_p X_p ||, and the relative residual."""
+    """Residues b (P,) minimizing || uk - sum_p b_p X_p ||, and the relative residual."""
     A_ = X.reshape(X.shape[0], -1).T
     b = torch.linalg.lstsq(A_, uk.reshape(-1, 1)).solution[:, 0]
     r = (uk.reshape(-1) - A_ @ b).abs().pow(2).sum().sqrt() / uk.abs().pow(2).sum().sqrt()

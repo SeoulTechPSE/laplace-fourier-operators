@@ -2,11 +2,11 @@
 
     python experiments/C/e5_probe/figures.py      # writes figures/*.png and *.pdf
 
-fig1_gate    data gate: low-band linear residual vs equivalent-pole shift, one point per set, coloured by whether
+fig1_gate    data gate: low-band linear residual vs equivalent-pole shift, one point per set, colored by whether
              the runs rule v1 trusts there are correct (results/e5_gate.json)
-fig2_agree   probe agreement vs pole error of every v1-trusted run, coloured by the data gate (results/e5_v4.json)
+fig2_agree   probe agreement vs pole error of every v1-trusted run, colored by the data gate (results/e5_v4.json)
 
-Colours and style: the E1 figures (`experiments/C/e1_audit/figures.py`), categorical slots in fixed order.
+Colors and style: the E1 figures (`experiments/C/e1_audit/figures.py`), categorical slots in fixed order.
 """
 from __future__ import annotations
 

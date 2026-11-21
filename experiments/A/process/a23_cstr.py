@@ -1,4 +1,4 @@
-"""(A) Application 1: a nonlinear CSTR. Do probes of deep operators recover the linearised poles at a steady state?
+"""(A) Application 1: a nonlinear CSTR. Do probes of deep operators recover the linearized poles at a steady state?
 
 **System** (dimensionless exothermic CSTR, Uppal-Ray-Poore form):
 
@@ -8,11 +8,11 @@
 Da = 0.072, B = 8, beta = 0.3, gamma = 20. Three steady states at u = 0. We use the upper, stable one
 (x1 = 0.7646, x2 = 4.7050), whose Jacobian has the complex pair mu = -0.7694 +- 0.9597 i. Input: the coolant-
 temperature deviation u(t). Output: the reactor-temperature deviation y = x2 - x2_s. Large inputs can extinguish
-the reactor (a jump towards the lower steady state).
+the reactor (a jump toward the lower steady state).
 
 **Data.** T = 20, dt = 0.05 (n_t = 401); RK4 on a 32x finer grid, input linear between fine samples. Inputs are
 E1-family profiles times s, with s log-uniform in [0.015, 0.5]. Splits 200 / 50 / 100. Measured before training
-(`--describe`): the part of y not explained by the linearisation is 1 % / 7 % / 44 % at the 10th / 50th / 90th
+(`--describe`): the part of y not explained by the linearization is 1 % / 7 % / 44 % at the 10th / 50th / 90th
 percentile, up to 86 %.
 
 **Models** (3 seeds; relative L2; Adam with cosine decay, 6000 steps, batch 25):

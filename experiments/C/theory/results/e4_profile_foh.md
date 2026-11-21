@@ -66,7 +66,7 @@ Noise on the stored train / validation inputs as well (outputs from the clean in
 
 ## p4, noise-free data (σ² = float32 rounding of the outputs)
 
-Fits minimise S / (n σ²) and end with damped Newton steps. Covered: by the 95 % profile interval (σ² from the outputs only) / by the bootstrap interval Re μ ± 1.96 std (32 dithers of the stored inputs and fitted outputs by ± ulp/2). All groups of a condition share one data set, so coverage is one realisation per condition.
+Fits minimize S / (n σ²) and end with damped Newton steps. Covered: by the 95 % profile interval (σ² from the outputs only) / by the bootstrap interval Re μ ± 1.96 std (32 dithers of the stored inputs and fitted outputs by ± ulp/2). All groups of a condition share one data set, so coverage is one realization per condition.
 
 | condition | groups | certified runs (mean) | report from consensus | order test passed | -0.4+3i: identified / covered (profile / bootstrap), error, half-width | -1: identified / covered (profile / bootstrap), error, half-width | -0.2: identified / covered (profile / bootstrap), error, half-width | false identified |
 |---|---|---|---|---|---|---|---|---|
@@ -77,7 +77,7 @@ Fits minimise S / (n σ²) and end with damped Newton steps. Covered: by the 95 
 
 ## p6, noise-free data (σ² = float32 rounding of the outputs)
 
-Fits minimise S / (n σ²) and end with damped Newton steps. Covered: by the 95 % profile interval (σ² from the outputs only) / by the bootstrap interval Re μ ± 1.96 std (32 dithers of the stored inputs and fitted outputs by ± ulp/2). All groups of a condition share one data set, so coverage is one realisation per condition.
+Fits minimize S / (n σ²) and end with damped Newton steps. Covered: by the 95 % profile interval (σ² from the outputs only) / by the bootstrap interval Re μ ± 1.96 std (32 dithers of the stored inputs and fitted outputs by ± ulp/2). All groups of a condition share one data set, so coverage is one realization per condition.
 
 | condition | groups | certified runs (mean) | report from consensus | order test passed | -0.5+1.5i: identified / covered (profile / bootstrap), error, half-width | -0.3+4i: identified / covered (profile / bootstrap), error, half-width | -1: identified / covered (profile / bootstrap), error, half-width | -2: identified / covered (profile / bootstrap), error, half-width | false identified |
 |---|---|---|---|---|---|---|---|---|---|

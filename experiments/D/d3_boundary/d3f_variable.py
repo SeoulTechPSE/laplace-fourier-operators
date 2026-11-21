@@ -1,7 +1,7 @@
 """(D) A variable coefficient: u_t = (D(x) u_x)_x + f on [0, 1] with u = 0 at both ends. The basis is no longer sines.
 
 d3–d3e kept constant coefficients, where a known basis (sines, cosines, or sines with learned wavenumbers for Robin)
-diagonalises the operator. With D(x) varying, the eigenfunctions of the Sturm–Liouville operator are not sines, and
+diagonalizes the operator. With D(x) varying, the eigenfunctions of the Sturm–Liouville operator are not sines, and
 a diagonal layer in the sine basis is the wrong model class. The question is whether the layer can learn the basis
 as well as the poles.
 

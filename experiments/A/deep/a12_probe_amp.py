@@ -3,7 +3,7 @@
 a10 found that the probe of the stable WPO gives nu_hat = 0.111-0.114 (truth 0.1) in all three seeds. One candidate
 explanation is that the probe amplitude eps = 0.01 lies below the smallest training scale (s = 0.03), so the probe
 reads the model where it was never trained. If so, nu_hat should change with eps and approach 0.1 inside the
-training range. If nu_hat is flat in eps, the bias sits in the model's linearisation itself (for example an
+training range. If nu_hat is flat in eps, the bias sits in the model's linearization itself (for example an
 effective viscosity absorbed from the nonlinear samples).
 
 **Scan.** The a9 probe (single-mode inputs k = 1..16, odd part, per-mode identification, cuts, WLS for nu) at

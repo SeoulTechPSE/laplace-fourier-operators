@@ -1,7 +1,7 @@
 """(A) Application 1: a dispersion reactor with real inlet / outlet boundaries (Danckwerts), inlet -> outlet.
 
 a24 used a periodic analogue. A real tubular reactor has an inlet and an outlet, so Fourier modes do not
-diagonalise it. Its modes are the eigenfunctions of the dispersion operator with Danckwerts boundary conditions,
+diagonalize it. Its modes are the eigenfunctions of the dispersion operator with Danckwerts boundary conditions,
 and its transfer function is still a sum of poles, one per mode. This run asks whether a "dispersion relation over
 the mode index" captures it, with the mode number n in place of the wavenumber.
 

@@ -16,7 +16,7 @@ learning rates), and evaluated on what the plan asks for and the earlier passes 
   let ramps grow 10x beyond the training range.) Reported: error over [0, 50], over the first 4 windows, and per
   window.
 
-Generalisation is reported as the ratio of the set's error to the model's own `id` error.
+Generalization is reported as the ratio of the set's error to the model's own `id` error.
 
 **Predictions** (written before running).
 

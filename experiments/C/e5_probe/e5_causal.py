@@ -4,9 +4,9 @@ Hypothesis. LNO v1 computes y = steady (periodic, FFT) + transient. For one pole
 wraps the tail of the impulse response around the window, and the exact causal response is
 y = y_periodic - C e^{mu t} with a coefficient C fixed by the whole input. The textbook layer (`PoleResidueTS1d`,
 the tied layer) attaches that coefficient to the same pole, so the wrap cancels and the layer is causal (up to
-discretisation). The original LNO code contracts the residue's output channel again with the pole's input channel
+discretization). The original LNO code contracts the residue's output channel again with the pole's input channel
 (`"bix,ioxz->boz"`, quirk 1 in `lfo.models.lno`), so each coefficient multiplies another pole's exponential and the
-wrap is not cancelled.
+wrap is not canceled.
 
 Test, for every trained LNO checkpoint of the E5 sets:
 

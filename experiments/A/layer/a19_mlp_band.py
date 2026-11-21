@@ -1,6 +1,6 @@
 """(A) RQ4: polynomial against MLP pole functions. Does the learned dispersion relation extend beyond the forced band?
 
-The plan (Section 4.3) offers two parameterisations of mu_n(k): a polynomial (strong prior, interpretable
+The plan (Section 4.3) offers two parameterizations of mu_n(k): a polynomial (strong prior, interpretable
 coefficients) and an MLP (flexible, interpreted post hoc). Inside the band the data excite, both can fit. The test
 here is the band the data do not excite: training data are forced at k <= 8 only, and the learned mu(k) is checked
 at k = 9..16, both directly (dispersion error) and on test data forced at k = 9..16.

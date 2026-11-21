@@ -3,7 +3,7 @@
 With advection, u_t = -v u_x + D u_xx + f on [0, 1] is not diagonal in the sine basis: -v u_x couples sine and
 cosine modes. The substitution w = e^{-alpha x} u with alpha = v / (2 D) removes the advection:
 w_t = D w_xx - (v^2 / 4D) w + e^{-alpha x} f, with Dirichlet values w(0) = a, w(1) = b e^{-alpha}. So the sine
-modes of the weighted field diagonalise the problem, with lambda(k) = -D k^2 - v^2 / (4D).
+modes of the weighted field diagonalize the problem, with lambda(k) = -D k^2 - v^2 / (4D).
 
 **Model** (`adv`): the d3b basis layer (sine modes, a free cubic law per boundary channel) applied to the weighted
 fields. A single learned alpha weights the input by e^{-alpha x} before the transform and the output by e^{alpha x}

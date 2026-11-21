@@ -12,8 +12,8 @@ stage-1 poles are all observable over the window,
     max(|Re mu_hat|, |Im mu_hat|) * T >= 2      for every pole of the mode (T = 5),
 
 computed from the stage-1 estimates only (no truth). The threshold 2 (two e-folds or two radians) is where the
-linearisation e^{mu t} ~ 1 + mu t is off by order 1 over the window. The fine-tune still sees all modes 0..16; only
-the polynomial initialisation changes.
+linearization e^{mu t} ~ 1 + mu t is off by order 1 over the window. The fine-tune still sees all modes 0..16; only
+the polynomial initialization changes.
 
 **Stage 1 is reused**, not rerun: it is deterministic and independent of stage 2, so the per-mode poles are read
 from `results/a3_twostage.json` and `results/a4_beam.json` (data regenerated from the same seeds). The comparison

@@ -2,15 +2,15 @@
 
     u_t = M d_xx ( u^3 - u - kappa d_xx u ) + f(x, t),      x in [0, 2 pi) periodic,  u(x, 0) = 0.
 
-Linearised at u = 0, every mode has the pole
+Linearized at u = 0, every mode has the pole
 
     lambda(k) = M k^2 (1 - kappa k^2),
 
 positive for 0 < k < k_c = 1 / sqrt(kappa) (spinodal band), largest at k_max = k_c / sqrt(2). The cubic term
-saturates the growth (phase separation towards u = +-1).
+saturates the growth (phase separation toward u = +-1).
 
 **Initial state and mean composition** (project D2 / A application 2). `solve(..., u0k=...)` starts from a given
-field instead of rest. Its mean (mode 0, rfft normalisation: n_x * phi0) is conserved. Linearised about a uniform
+field instead of rest. Its mean (mode 0, rfft normalization: n_x * phi0) is conserved. Linearized about a uniform
 phi0, the cubic term adds 3 phi0^2 to f'' = -1, so each mode has
 
     lambda(k; phi0) = M k^2 (1 - 3 phi0^2 - kappa k^2)      (`growth_rate(k, M, kappa, phi0)`),

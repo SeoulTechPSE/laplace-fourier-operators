@@ -1,7 +1,7 @@
 """(A) Deep operator on forced 1D Cahn-Hilliard: can the WPO and its probe recover an unstable band (RQ3)?
 
 **System** (`lfo.data.cahn_hilliard`): u_t = M d_xx (u^3 - u - kappa d_xx u) + f, periodic, zero initial state,
-M = 0.1, kappa = 0.04. Linearised at u = 0: lambda(k) = M k^2 (1 - kappa k^2), positive for k < k_c = 5, largest at
+M = 0.1, kappa = 0.04. Linearized at u = 0: lambda(k) = M k^2 (1 - kappa k^2), positive for k < k_c = 5, largest at
 k_max = 3.54 (lambda = 0.625). Over T = 5 the fastest mode grows by e^{3.1} = 22x before the cubic term saturates
 it.
 

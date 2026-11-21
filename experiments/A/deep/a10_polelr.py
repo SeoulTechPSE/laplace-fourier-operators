@@ -1,6 +1,6 @@
 """(A) Deep operator, second pass: a separate pole learning rate for the WPO on forced Burgers.
 
-a9 (`a9_burgers.py`) found that the WPO's poles barely moved from their initialisation at the shared Adam learning
+a9 (`a9_burgers.py`) found that the WPO's poles barely moved from their initialization at the shared Adam learning
 rate (1e-3). The diffusion pole -nu k^2 needs a k^2 coefficient of -nu k_ref^2 = -25.6 in k / k_ref units, beyond
 what 4000 Adam steps at 1e-3 can reach. Some poles stayed at Re mu > 0, and the T = 10 extrapolation blew up.
 

@@ -5,7 +5,7 @@ small-signal pole, but the nearest stored pole is 12-20 % from it (d >= 0.1), so
 
 Hypothesis. A one-layer LNO is feed-forward. In the textbook wiring its small-signal impulse response is a sum of
 exponentials at the stored poles, with gains from the lifting, the channel mixing and the projection, plus a
-direct term. The order-2 pencil summarises that sum by one pair. If several stored poles straddle the
+direct term. The order-2 pencil summarizes that sum by one pair. If several stored poles straddle the
 small-signal pole, the summary can be right while no single stored pole is.
 
 Test, for every textbook-wired LNO on a gated set (d >= 0.1 runs against d < 0.1 runs):

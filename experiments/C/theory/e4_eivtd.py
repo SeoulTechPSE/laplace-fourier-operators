@@ -8,7 +8,7 @@ candidate cause: its stationary noise model ignores the start-up of the propagat
 
 The model is linear in the input: y_i = M_theta x_i, with M_theta (n_t x n_t) the first-order-hold
 response matrix with zero initial state (the VarPro design applied to unit impulses). For the
-stored x~_i = x_i + e_u,i, the residual r_i = y_i - M x~_i = e_y,i - M e_u,i has, per normalised
+stored x~_i = x_i + e_u,i, the residual r_i = y_i - M x~_i = e_y,i - M e_u,i has, per normalized
 sample, the covariance
 
     C_i = sig2_y I + sig2_u (||x_i|| / ||y_i||)^2 M M^T,
@@ -24,7 +24,7 @@ EIVML, EIVTD); gain dS = S_true - S_extra in noise units, against chi2_dp(0.99).
     python experiments/C/theory/e4_eivtd.py --summarize      # writes results/e4_eivtd.md
 
 Finding (truth data, eta_u = 0.1): the EIVTD cost degenerates (S / n of the refitted true model 0.00 on
-E1 inputs, 0.25 on multisine): without a log det term it can be driven towards zero by an ill-conditioned
+E1 inputs, 0.25 on multisine): without a log det term it can be driven toward zero by an ill-conditioned
 M. The frequency-domain EIVML, in contrast, gives a spurious -50 on E1 inputs a gain of 0.1-0.7, far
 below chi2. Hence `--drop`: the `foh_eivo` reports (group data) refitted under EIVML, each pole dropped
 in turn, gain dS = S_dropped - S_report against chi2_dp(0.99) (> chi2: the pole is supported).
@@ -68,7 +68,7 @@ class EIVTD(EP.EIVML):
         eye = torch.eye(self.n_t, dtype=torch.float64)
         self.imp = EP.VarPro({"train": (eye, torch.ones_like(eye))}, t, device, hold)   # unit impulses
         x, _ = (a.to(device).double() for a in data["train"])
-        self.x = x * self.scale                                       # inputs in normalised-output units
+        self.x = x * self.scale                                       # inputs in normalized-output units
 
     def like(self, data):
         return EIVTD(data, self.t_np, self.device, self.hold, self.sig2_y, self.sig2_u)

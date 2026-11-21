@@ -9,7 +9,7 @@ poles near one mode. The README's next step was therefore "fewer poles (one per 
 **Variant** `lnots4_stable_plr10`. It is `lnots_stable_plr10` with N_FEW = 4 shared poles on every set. That covers
 the small-signal modes of every system: one complex pair for Duffing and the pendulum, and at most one real pole plus
 one pair for forced Lorenz, with one spare pole. Residues stay per channel pair. Everything else is unchanged: stable
-initialisation, pole lr × 10, `common` protocol. 5 seeds × 18 sets, 90 runs. Probed with `e5_probe.py --only`; rule
+initialization, pole lr × 10, `common` protocol. 5 seeds × 18 sets, 90 runs. Probed with `e5_probe.py --only`; rule
 v4 unchanged.
 
 *Budget.* The layer has fewer parameters than the baselines: 865–869 against 1057–3489 for `lnotb`. This pass asks

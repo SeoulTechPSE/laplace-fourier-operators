@@ -15,7 +15,7 @@ and x(tau) = 0 for tau < 0 (rest). This is exact for piecewise-linear inputs, ca
 differentiable in theta (m jumps where r wraps, and the formula is continuous there).
 
 `PoleResidueDelay` is a SISO operator on (batch, n_t) signals. Real outputs: real poles with real residues, or
-complex poles whose output is 2 Re(.) (conjugate pairs implied). Delays are softplus-parameterised; `shared_delay`
+complex poles whose output is 2 Re(.) (conjugate pairs implied). Delays are softplus-parameterized; `shared_delay`
 uses one theta for all terms (the plan's first stage).
 """
 from __future__ import annotations

@@ -6,7 +6,7 @@ lambda(k), with emphasis on k_c and k_max. 1D here (the plan's 2D solver is the 
 path carries the data, since spinodal decomposition is free evolution from a perturbed uniform state.
 
 **System** (`lfo.data.cahn_hilliard`, `u0k`; 954e509): u_t = M d_xx (u^3 - u - kappa d_xx u), M = 0.1,
-kappa = 0.04, periodic, n_x = 64, no forcing. Linearised about phi0:
+kappa = 0.04, periodic, n_x = 64, no forcing. Linearized about phi0:
 
     lambda(k; phi0) = M k^2 (1 - 3 phi0^2) - M kappa k^4,   k_c = sqrt((1 - 3 phi0^2) / kappa),   k_max = k_c / sqrt 2,
 
@@ -27,14 +27,14 @@ the mean of u0. Laws in q = (k / 16)^2; gamma on {1, q} (true 1, 0).
   a21 = 0). 6 reals.
 - `stable`: the same with mu passed through -softplus(-mu) <= 0 (the LNO's stability constraint).
 - `nophi`: mu = a10 q + a20 q^2, with no composition dependence.
-- `oracle`: the true linearisation (gamma = 1).
+- `oracle`: the true linearization (gamma = 1).
 Fit: 4 starts (a10 log-uniform in [5, 50], a20 = -a10, the rest 0), each run to convergence with the d3g rule
 (`experiments/D/d3_boundary/d3g_converged.py`); pick by validation.
 
 **Derived.** phi_s = sqrt(-a10 / a11); k_c(phi0) = 16 sqrt(-(a10 + a11 phi0^2) / (a20 + a21 phi0^2)),
 k_max = k_c / sqrt 2.
 
-**Checks before any fit** (seed 0). The oracle (the linearisation) leaves 1.7e-3 on the training set and
+**Checks before any fit** (seed 0). The oracle (the linearization) leaves 1.7e-3 on the training set and
 2.8e-3, 2.6e-3, 1.3e-3, 5.4e-4, 8.2e-4 on the held-out compositions (the nonlinear residual). Max |u - phi0| is 0.045
 (phi0 = 0.15), so the data stay in the linear regime.
 
@@ -212,7 +212,7 @@ def main():
                      + ", ".join(rg([r["kc"][p] for r in rs], ".3f") for p in ("0.0", "0.3", "0.5")) + " |")
     o = [r for r in out if r["model"] == "joint"]
     if o:
-        lines += ["", "Oracle (linearisation) error by φ0: " + ", ".join(
+        lines += ["", "Oracle (linearization) error by φ0: " + ", ".join(
             f"{p}: {rg([r['oracle'][str(p)] for r in o], '.1e')}" for p in TEST_PHI) + "."]
     (OUT.with_suffix(".md")).write_text("\n".join(lines) + "\n")
     print("\n".join(lines))

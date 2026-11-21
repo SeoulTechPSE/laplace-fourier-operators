@@ -116,7 +116,7 @@ Suggested next steps (in order):
    EIVML fit (denoised inputs) covers 33/36 there and 21/24 at p4 0.1; on p6 E1 0.1 misses
    follow the wrong −1 / −2 pair (20/31). Next: noise-dependent release; zero-order hold;
    joint intervals; RQ4.
-4. Optional E1 extras: log-parameterised decay rate; untied models with 64 steady modes
+4. Optional E1 extras: log-parameterized decay rate; untied models with 64 steady modes
    (H1); weight decay excluded from poles; deep LNO v1 at its published size.
 5. Theory draft `experiments/C/theory/H1_H2.md` (checks `h12_check.py`): H2 proved for the
    tied layer (global uniqueness from one sparse input: every transient-excited pole; all poles
@@ -127,7 +127,7 @@ Suggested next steps (in order):
    tied estimate by −H⁻¹G R̂_δ ≤ C δ (checked to two digits; saturates at δ_sat ≈ 2–4e-3; with
    exact data no movement); C is truth-free (p6 −2: 711).
 6. E5 / RQ4 first pass (`experiments/C/e5_probe/`): on damped Duffing the original LNO's 256
-   layer poles stay at their initialisation (0/256 within 10 % of the linearised pole), while
+   layer poles stay at their initialization (0/256 within 10 % of the linearized pole), while
    the average impulse response of its small-signal Jacobian gives the pole within 10 % in 3/5
    seeds; the operator is far from causal LTI (76–90 % non-causal Jacobian), so a causal LTI
    probe fails. Second pass (models whose poles move): only the linear tied layer gives a
@@ -163,7 +163,7 @@ Suggested next steps (in order):
    workshop paper draft `experiments/C/e1_audit/paper/e1_workshop.qmd`, rendered (8 pages,
    Fig. 1–3, checked BibTeX references). Next: user review of the draft (venue, length);
    E5 write-up. Tenth pass (pre-registered): rule v4 = v3 gate + LTI/Jacobian probe agreement +
-   centred fit; on Lorenz ρ = 10 it makes no false trust where v3 makes 2. Over 18 sets / 375
+   centered fit; on Lorenz ρ = 10 it makes no false trust where v3 makes 2. Over 18 sets / 375
    runs: v4 52 trusted, 0 false, 5 missed. The tied layer needs its output offset excluded from
    weight decay. RQ4 rule = v4. The E1 draft and the E5 note are merged into one working paper,
    `experiments/C/paper/c_paper.qmd` (13 pages, 5 figures); submission postponed (user, 2026-11-18). Eleventh
@@ -191,7 +191,7 @@ Things to know:
   - Gates: LNO reproduction met; (C) audit "existing models recover poles" no (the planned (C) path); (D) D1
     "differs from padded FNO" effectively not met (see Open decisions); (A) dispersion recovery met; (A)
     k_c / k_max met in the 1D linear regime (5 digits), not tested in the nonlinear or 2D regime.
-  - Hand-offs not used: (C) → (A) steady-branch consistency (R_res bound); (D) → (A) semigroup regularisation
+  - Hand-offs not used: (C) → (A) steady-branch consistency (R_res bound); (D) → (A) semigroup regularization
     (no gain in d2c).
   - Planned but missing: SSM-based baselines (S4D; the proposal's main novelty risk); LNO / ALNO / LFNO in the (A)
     deep comparison (only FNO / TFNO); Brusselator / 2D reaction–diffusion; vector fitting (process); cost metrics
@@ -306,7 +306,7 @@ Things to know:
 - Next: (A) application 2 can close: linear regime (a29, a30) and domain transfer (a34) are the pole
   operator's contributions; on the training box the TFNO is the better nonlinear surrogate. Option: a TFNO trained
   on the 4π box as the accuracy reference. (D) the WPO backbone on Cahn–Hilliard (pointwise expressivity /
-  optimisation), or close D2 here.
+  optimization), or close D2 here.
 
 ### 2026-11-21 — (A) application 2 stage 2c: amplitude-perturbed starts; (D) d2j one-window gap by input
 
@@ -371,7 +371,7 @@ Things to know:
   - `experiments/D/d2_initial_conditions/d2h_ch_budget.py` (predictions 7cafdb2): d2g at 12000 steps
     (`wpo_ic`, `tfno_chan`). D2 README and D paper.
   - `experiments/A/layer/a30_parametric.py` (predictions a4ac287): IC-path layer with M, κ, φ₀ as inputs, trained on a
-    2 × 2 (M, κ) grid, tested inside and outside it; laws `phys` (form of the linearisation), `bilin` (16 terms,
+    2 × 2 (M, κ) grid, tested inside and outside it; laws `phys` (form of the linearization), `bilin` (16 terms,
     contains the truth), `mlp`, `fixed`. Start rule changed before any fit (documented). A README and A paper.
 - Results:
   - d2h: both models improve by about a quarter in distribution; the TFNO stays 2× better in rollout (roll4 ratio
@@ -532,7 +532,7 @@ Things to know:
     The learned laws are right on the excited modes (m ≤ 8: 0.06–1.3 %, one seed 4 %; Dirichlet ∝ k, Neumann
     constant) but not over all 32 modes (1.5–60 %). Prediction 1 fails; 2 holds.
 - Decisions: boundary laws, like dispersion relations, are claimed only on the band the data excite.
-- Next: semigroup regulariser and pushforward training for deep rollout; advective boundaries.
+- Next: semigroup regularizer and pushforward training for deep rollout; advective boundaries.
 - Push: blocked by the auto-mode classifier; the user pushes manually.
 
 ### 2026-11-19 — (D) D2 initial-condition path and chaining; time-varying Dirichlet boundaries
@@ -551,9 +551,9 @@ Things to know:
     oracle. Both predictions hold.
 - Decisions:
   - Initial fields enter as a free response that shares the poles.
-  - Boundary values enter as a forcing channel with a k-dependent coefficient, on the basis that diagonalises the
+  - Boundary values enter as a forcing channel with a k-dependent coefficient, on the basis that diagonalizes the
     boundary conditions.
-- Next: D2 for deep nonlinear models (a state readout and the semigroup regulariser); Neumann / Robin and advective
+- Next: D2 for deep nonlinear models (a state readout and the semigroup regularizer); Neumann / Robin and advective
   boundaries.
 
 ### 2026-11-19 — (A) closed-loop CSTR and the ARX comparison
@@ -596,7 +596,7 @@ Things to know:
     L = 3, 11 %); 2 fails (slope 8 % above t̄'s, 3 % above 1 / v).
   - Delayed ADR: the wavenumber layer with a delay recovers θ, D, v, k_r within 0.04 % at the oracle. Without a
     delay: 14–44× the oracle. Both predictions hold.
-- Decisions: delays are modelled as e^{−θs} on the layer when they are dead times, and as −ivk in λ(k) when they are
+- Decisions: delays are modeled as e^{−θs} on the layer when they are dead times, and as −ivk in λ(k) when they are
   transport inside the domain.
 - Next: noise and closed-loop data for the CSTR; a reactor with true inlet/outlet boundaries (non-periodic, the D2
   topic).
@@ -660,7 +660,7 @@ Things to know:
   - TFNO: test 0.100–0.125 (underfits, 20 % fewer parameters, no sweep); k_c = 4.49–4.96; in-band errors up to
     19 %.
   - Predictions 1 and 2 hold; 3 fails (the TFNO's k_c lands within 10 % in 2 seeds).
-- Decisions: the (A) deep results (Burgers, Cahn–Hilliard 1D and 2D) are summarised in the working paper. Not for
+- Decisions: the (A) deep results (Burgers, Cahn–Hilliard 1D and 2D) are summarized in the working paper. Not for
   submission yet.
 - Next (proposals): a tuned 2D baseline (budget-matched rank and sweep) before any 2D accuracy claim; the plan's
   process-dynamics application (A, months 11–16); an MLP μ(k) against the polynomial (RQ4).
@@ -688,7 +688,7 @@ Things to know:
     against 0.029 for the TFNO. The TFNO's probe fails: spurious out-of-band poles.
   - Stable control: same test error, and its probe reproduces the growing modes to three digits. Its layer poles
     sit just below zero (near-integrators), and a cascade of them emulates e^{λt} on the window.
-  - The T = 10 probe does not separate the two: the linearisation leaves the linear regime (growth ×300).
+  - The T = 10 probe does not separate the two: the linearization leaves the linear regime (growth ×300).
   - a16: predictions 1, 3, 5 hold; 2, 4 fail. a16b: 1 fails, 2 is not discriminative.
 - Decisions: an unstable pole is claimed only when probe and layer structure agree (Re μ > 0 allowed and used). The
   probe alone does not identify growth within a finite window.
@@ -705,7 +705,7 @@ Things to know:
     (k = 9: 1–4 %); the FNO variants give arbitrary poles. Probe residual: WPO 0.003, FNO variants 0.008–0.49.
   - Predictions 1, 3, 4 hold; 2 fails (the large FNO overfits).
 - Decisions: the in-band probe does not separate the models. The WPO's distinctive properties are out-of-band
-  structure, an LTI-consistent linearisation and time extrapolation.
+  structure, an LTI-consistent linearization and time extrapolation.
 - Next: data efficiency (training-set size), resolution transfer, and a second nonlinear system (2D, or
   Cahn–Hilliard's unstable band).
 
@@ -718,7 +718,7 @@ Things to know:
     per-mode error ≤ 1 % for k ≤ 7.
   - FNO: test 0.106–0.109.
   - Predictions 1 and 2 hold. 3 fails: the probe bias was undertraining. 4 fails: both models now have a
-    generalisation gap.
+    generalization gap.
   - Flaw: the FNO's n_modes (12, 12) keeps |k| ≤ 6 and 7 temporal frequencies (neuralop 2.0), below the forcing
     band. The a9–a11 FNO comparison is not fair. It was found after the run and is documented in the README.
 - Decisions: no accuracy claim against FNO until a band-covering baseline is run.
@@ -732,7 +732,7 @@ Things to know:
 - Results (`experiments/A/deep/README.md`, "Probe bias"):
   - The stable WPO's ν̂ is flat in the probe amplitude (0.003–0.03): not an amplitude extrapolation (both
     predictions hold).
-  - Mode by mode, the WPO's linearisation matches −ν k² to about 1 % for k ≤ 6. At k = 7–8, the weakly forced top
+  - Mode by mode, the WPO's linearization matches −ν k² to about 1 % for k ≤ 6. At k = 7–8, the weakly forced top
     of the band, it is 5–12 % too damped. The {1, k²} summary turns that curvature into ν̂ = 0.111–0.114.
   - Linear fits: Q1 gives ν_lin = 0.0997. Larger samples add a uniform decay rate (offset 0.37 in Q4), not
     viscosity. a12b prediction 1 fails and 2 fails in part.
@@ -766,7 +766,7 @@ Things to know:
   - Test error: WPO 0.117, FNO 0.105 (both underfit).
   - WPO extrapolation over (5, 10] blows up (3–8). Probe ν̂: WPO 0.03–0.08, FNO 0.104–0.109 (k = 3–6 only).
   - Prediction 1 holds only nominally; predictions 2 and 3 fail.
-  - Cause: the WPO's poles stayed near their initialisation (Re μ flat in k, some > 0). With a shared Adam lr of
+  - Cause: the WPO's poles stayed near their initialization (Re μ flat in k, some > 0). With a shared Adam lr of
     1e-3, a pole coefficient cannot reach −25.6 (the k² coefficient of −ν k² in k / k_ref units) in 4000 steps.
 - Decisions: deep models need a separate pole learning rate, as found in (C) E2 / E5.
 - Next: a10, pole lr ×30, with and without `stable`, same budget; then longer training for both models.
@@ -884,7 +884,7 @@ Things to know:
   - ADR N = 1: no seed fits (0.24–0.47).
   - N = 2: the two poles share the mode.
   - Both predictions fail.
-- Decisions: the failure is attributed to optimisation (non-convex polynomial fit, phase wrapping), not
+- Decisions: the failure is attributed to optimization (non-convex polynomial fit, phase wrapping), not
   representation.
 - Next: a two-stage identification (per-mode poles, then a polynomial least-squares fit) as the init or the
   estimator; degree selection; then 2D diffusion and the beam.
@@ -970,7 +970,7 @@ Things to know:
   - `e5_cluster.py` (prediction committed in 4d85fe5): for the 47 textbook LNOs with a correct J pole on the
     gated sets (ρ = 10 excluded), decomposes the small-signal response over the stored poles.
 - Results:
-  - The registered measure (ridge LS) is unsuitable: cancelling terms spread the energy (cluster ≤ 7 %). The
+  - The registered measure (ridge LS) is unsuitable: canceling terms spread the energy (cluster ≤ 7 %). The
     prediction is recorded as failed.
   - Post hoc analytic residues reconstruct the response to ≤ 3.4 %. They show that the d ≥ 0.1 runs (12) store
     the oscillation in poles that decay at a median 36 % of the true rate (d < 0.1: 80 %), with a similar
@@ -1026,7 +1026,7 @@ Things to know:
 
 ### 2026-11-18 — (C) E5 / RQ4: rule v4 on forced Lorenz (ρ = 10)
 
-- Done: rule v4 (`e5_v4.py`: valid Jacobian ∧ d < 0.1 ∧ probe agreement |μ_LTI − μ_J| / |μ_J| < 0.1 ∧ centred
+- Done: rule v4 (`e5_v4.py`: valid Jacobian ∧ d < 0.1 ∧ probe agreement |μ_LTI − μ_J| / |μ_J| < 0.1 ∧ centered
   test error < 0.5 ∧ v3 gate). Case `lorenz_rho10` (`reproduce_lno.py`, 84 modes); ρ = 10 sets `lz_r10_small` /
   `lz_r10_wide` (data seed 6) and `lz_r10_orig` (LNO data, checked). The tied offset starts at the training-mean
   trajectory. Variant `tied4o_stable_plr10` excludes the offset from weight decay (`e1_audit.param_groups`
@@ -1037,7 +1037,7 @@ Things to know:
   - ρ = 10 main: v4 no false trust (prediction held); v3 again trusts `base` s3 on `lz_r10_wide` (97 % off,
     a ≈ 4800).
   - Tied layers with weight decay on the offset: test 0.64–0.65 (prediction failed). Cause: coupled weight decay
-    drags a zero-gradient offset towards 0; the ninth-pass offset had the same cause.
+    drags a zero-gradient offset toward 0; the ninth-pass offset had the same cause.
   - Addendum (no decay): `lz_r10_small` 4 of 5 trusted at 2–3 %; `lz_r10_wide` 3 trusted at 2–3 %, plus a v3-only
     false trust (J pole −1.49 + 39.4i, a = 0.91) that v4 removes.
   - No stored pole near −12.48. Stable-init LNOs again have correct J poles but mostly non-causal Jacobians.
@@ -1049,7 +1049,7 @@ Things to know:
 
 - Done: `e5_data.py` (Lorenz from C+, sets `lz_small` peak |f| 0.05–0.5 and `lz_wide` 0.5–5, data seed 5);
   `reproduce_lno.py` case `lorenz_rho5`; `e5_train.py` (`lz_*` tags, tied layer + learned offset `Offset`);
-  `e5_probe.py` / `e5_gate.py` (reference −0.9287 ± 4.1476i, centred data for `lz_*`). Pre-registration
+  `e5_probe.py` / `e5_gate.py` (reference −0.9287 ± 4.1476i, centered data for `lz_*`). Pre-registration
   `results/e5_lorenz_prereg.md` committed before training (1d3597e). 60 runs. `src/lfo/` unchanged.
 - Results (rule v3 unchanged):
   - `lz_small`: gates pass; v1 trusts no run (stable-init LNOs 8–16 % off, Jacobians mostly non-causal).
@@ -1065,7 +1065,7 @@ Things to know:
 - Decisions: v3 not changed after the fact. Two v1 gaps recorded: d can be satisfied by a non-physical slow pole,
   and rel. L2 < 0.5 is weak when the output has a large mean. Post hoc, LTI-probe vs J pole agreement is ≤ 4 % in
   all 49 correct trusts and ~1900× in the false one; it is a candidate for rule v4, not adopted.
-- Next: pre-register rule v4 (probe agreement, centred fit criterion, offset initialised at the training mean)
+- Next: pre-register rule v4 (probe agreement, centered fit criterion, offset initialized at the training mean)
   and test it on new Lorenz data; user review of the workshop draft.
 
 ### 2026-11-18 — (C) E5 / RQ4: undamped Duffing (c = 0)
@@ -1119,7 +1119,7 @@ Things to know:
   recipe), `CLAUDE.md` (budget-rule exception for the E1 layer setting).
 - Decisions:
   1. Main text: the selected table (published protocols, pole lr × 10, warm start); full grid in an appendix.
-  2. Deep "closest pooled pole" in the main text, labelled as an optimistic upper bound.
+  2. Deep "closest pooled pole" in the main text, labeled as an optimistic upper bound.
   3. Same-budget rule waived for the layer setting only (minimal model, compares poles); deep setting
      keeps matched budgets.
   4. Workshop paper = E1 + one E2 paragraph (data identify the fast real poles; prior-free recipe; CRB
@@ -1226,22 +1226,22 @@ Things to know:
     (8–14 % from the small-signal pole, between it and the equivalent pole); 2 failed fits
     (test 0.9) agree internally too.
   - LNO variants: probe invalid in 15/15 (non-causal 0.21–0.90). Stable init + pole lr × 10
-    holds a pole within 5 % of the linearised one in 3/5 seeds, but the probe lands elsewhere.
+    holds a pole within 5 % of the linearized one in 3/5 seeds, but the probe lands elsewhere.
 - Decisions: RQ4 rule = valid probe ∧ probe–layer agreement ∧ good fit; a trusted pole is the
-  amplitude-averaged equivalent linearisation, not the small-signal pole.
+  amplitude-averaged equivalent linearization, not the small-signal pole.
 - Next: operating-point probes; a small-amplitude or diverse Duffing training set; Duffing c = 0.
 
 ### 2026-11-17 — (C) E5 / RQ4: linear-probe poles of the Duffing LNO (first pass)
 
 - Done: `experiments/C/e5_probe/` (`e5_probe.py`, README). `reproduce_lno.py` gained the case
   `duffing_c05` (same configuration as c0); 5 LNO seeds trained (tag `e5`, test 0.13–0.37).
-  Linearised pole from the 4 smallest-amplitude training samples: −0.2500 ± 0.9684i (theory
+  Linearized pole from the 4 smallest-amplitude training samples: −0.2500 ± 0.9684i (theory
   −0.25 ± 0.9682i). Probes: stored layer poles; causal LTI fit of the odd small-signal response
   (ε = 0.01 … 3); Jacobian at x = 0 (non-causal share, Toeplitz residual, impulse-response
   pencil). `src/lfo/` unchanged.
 - Results:
-  - Layer poles stay at the initialisation (|μ| ≈ 0.1, 200–237 of 256 unstable); 0/256
-    within 10 % of the linearised pole in every seed (E1 finding 1 in a nonlinear model).
+  - Layer poles stay at the initialization (|μ| ≈ 0.1, 200–237 of 256 unstable); 0/256
+    within 10 % of the linearized pole in every seed (E1 finding 1 in a nonlinear model).
   - The trained operator is not causal LTI: 76–90 % of ‖J‖ above the diagonal, Toeplitz
     residual 0.58–0.97; a causal LTI probe leaves 80–98 % unexplained at every scale.
   - The average impulse response of J gives −0.15 … −0.25 ± 0.76 … 1.07i: within 10 % in 3/5
@@ -1266,7 +1266,7 @@ Things to know:
   - Trade-off: p6 E1 fit 7.7e-4 → 6.1e-4 (−21 %) while −2's error goes 0.7 % → 9 % (C = 711;
     −1: 120; pairs 1.6–7); p4 multisine stays within 0.2 % even saturated.
 - Decisions: H3 is stated as a bound on the deviation from the tied estimate (not from the
-  truth); E3's δ = 0.3 is beyond saturation, so its p6 failures are optimisation.
+  truth); E3's δ = 0.3 is beyond saturation, so its p6 failures are optimization.
 - Next: E5 / RQ4 (Duffing linear-probe poles); E1 paper decisions.
 
 ### 2026-11-17 — (C) Theory: H1 and H2 for one pole-residue layer (draft)
@@ -1394,7 +1394,7 @@ Things to know:
   alias rules are not validated on E1 inputs; the width rule is recorded as post hoc.
 - Next: a truth-free check of spurious fast poles (time constant vs input bandwidth and dt);
   then the width rule on fresh groups; calibrated profile intervals; exact time-domain EIV ML;
-  coloured input noise; noise-dependent release; zero-order hold; joint intervals; RQ4.
+  colored input noise; noise-dependent release; zero-order hold; joint intervals; RQ4.
 
 ### 2026-11-17 — (C) E4: bias-corrected split null and a combined report rule
 
@@ -1415,7 +1415,7 @@ Things to know:
   in `e4_split.py` until checked on new groups.
 - Next: new groups (other seeds, η_u between 0.03 and 0.1 on p6 E1) to check the rule out of
   sample; a check for a spurious isolated real pole; calibrated profile intervals; exact
-  time-domain EIV ML; coloured input noise; noise-dependent release; zero-order hold; joint
+  time-domain EIV ML; colored input noise; noise-dependent release; zero-order hold; joint
   intervals; RQ4.
 
 ### 2026-11-17 — (C) E4: location-calibrated split test
@@ -1440,19 +1440,19 @@ Things to know:
   yet.
 - Next: a null that includes the input-noise effect on the real data (no denoising, or
   draws from the full reference model); a check for duplicated and aliased poles; the EIV
-  bias at 30 η_y; calibrated profile intervals; exact time-domain EIV ML; coloured input
+  bias at 30 η_y; calibrated profile intervals; exact time-domain EIV ML; colored input
   noise; noise-dependent release; zero-order hold; joint intervals; RQ4.
 
 ### 2026-11-16 — (C) E4: aliasing fold and unresolved flags (negative result)
 
 - Done: `e4_profile.py --hold foh_eivu` (= `foh_eivo` + aliasing fold of every run + an
-  "unresolved" flag from calibration-only drops of a neighbouring pole) on the 20 groups of
+  "unresolved" flag from calibration-only drops of a neighboring pole) on the 20 groups of
   p6 E1 η_u = 0.1 / 0.03 and p4 η_u = 0.1 / 0.3; `e4_absorb.py` (a second flag rule, from the
   stored steps). README section "E4, sixteenth pass". `src/lfo/` unchanged.
 - Results:
   - p6 E1 at 0.1 is not fixed. The folded aliased pole refits to a fast real pair
     (−127 ± 1.3i) and is kept; false poles 6 → 8. The −1 / −2 merge is never flagged (the
-    dropped pole −5.7 is not a neighbour of the merged −0.69).
+    dropped pole −5.7 is not a neighbor of the merged −0.69).
   - The flag fires on the controls: 5/8 p4 groups at 0.1 and 1/4 at 0.3 flag a
     well-identified true pole (near-duplicate or spurious fast pole dropped at ΔS > χ²).
   - The absorb rule (a slow pole moving > 10 % in a calibration-only drop) catches the p6
@@ -1461,7 +1461,7 @@ Things to know:
   negative result.
 - Next: an information-side unresolved rule (bootstrap spread of a merged pole vs the pair
   spacing, or the local EIV CRB); the EIV bias at 30 η_y; calibrated profile intervals;
-  exact time-domain EIV ML; coloured input noise; noise-dependent release; zero-order hold;
+  exact time-domain EIV ML; colored input noise; noise-dependent release; zero-order hold;
   joint intervals; RQ4.
 
 ### 2026-11-16 — (C) E4: stronger input noise; where the calibrated pipeline breaks
@@ -1480,7 +1480,7 @@ Things to know:
 - Decisions: none.
 - Next: report close pairs as unresolved under input noise (a merge stop rule); an aliasing
   check; the EIV bias at 30 η_y; calibrated profile intervals; exact time-domain EIV ML;
-  coloured input noise; noise-dependent release; zero-order hold; joint intervals; RQ4.
+  colored input noise; noise-dependent release; zero-order hold; joint intervals; RQ4.
 
 ### 2026-11-16 — (C) E4: power of the calibrated order test
 
@@ -1494,7 +1494,7 @@ Things to know:
   - The hard direction under input noise is false alarms, not power.
 - Decisions: none.
 - Next: stronger input noise and E1 inputs at η_u ≥ 10 η_y; the order test near the CRB limit;
-  calibrated profile intervals; exact time-domain EIV ML; coloured input noise; close real
+  calibrated profile intervals; exact time-domain EIV ML; colored input noise; close real
   pairs; noise-dependent release; zero-order hold; joint intervals; RQ4 linear probe.
 
 ### 2026-11-16 — (C) E4: a bootstrap-calibrated order test under input noise
@@ -1512,7 +1512,7 @@ Things to know:
 - Decisions: none.
 - Next: power of the calibrated order test against a missed true pole; stronger input noise
   and E1 inputs at η_u ≥ 10 η_y; calibrated profile intervals; exact time-domain EIV ML;
-  coloured input noise; close real pairs at the limit; noise-dependent release; zero-order
+  colored input noise; close real pairs at the limit; noise-dependent release; zero-order
   hold; joint intervals; RQ4 linear probe.
 
 ### 2026-11-16 — (C) E4: calibrated certificate, fallback and more input-noise data
@@ -1533,7 +1533,7 @@ Things to know:
   - Coverage at η_u = 0.1: profile 8/24, bootstrap 21/24.
 - Decisions: none.
 - Next: a calibrated order test (the calibrated elimination chain, or a bootstrap of the
-  8-slot reference); calibrated profile intervals; exact time-domain EIV ML; coloured input
+  8-slot reference); calibrated profile intervals; exact time-domain EIV ML; colored input
   noise; close real pairs at the limit; noise-dependent release; zero-order hold; joint
   intervals; RQ4 linear probe.
 
@@ -1567,7 +1567,7 @@ Things to know:
 - Decisions: none.
 - Next: the fallback when every candidate fails the calibrated order test; more groups and
   input-noise levels; sensitivity to the κ_g summary (median / min / mean); calibrated
-  profile intervals; exact time-domain EIV ML; coloured input noise; close real pairs at the
+  profile intervals; exact time-domain EIV ML; colored input noise; close real pairs at the
   limit; noise-dependent release; zero-order hold; joint intervals; RQ4 linear probe.
 
 ### 2026-11-16 — (C) E4: bootstrap-calibrated order under strong input noise
@@ -1593,7 +1593,7 @@ Things to know:
     the two-start refit fixed it.
 - Decisions: none.
 - Next: a calibrated certificate between runs (consensus 1/4 at η_u = 0.1); calibrated profile
-  intervals; exact time-domain EIV ML; coloured input noise; resolving close real pairs at
+  intervals; exact time-domain EIV ML; colored input noise; resolving close real pairs at
   the limit; noise-dependent release; zero-order hold; joint intervals; RQ4 linear probe.
 
 ### 2026-11-16 — (C) E4: input noise in the full pipeline; EIV-weighted refits
@@ -1619,7 +1619,7 @@ Things to know:
     there (report |G| / true |G| = 0.92 at 5–25 Hz), as a Wiener filter would; plug-in
     weights do not remove this bias.
 - Decisions: none.
-- Next: a consistent EIV refit (θ-dependent weights or the excited band only); coloured input
+- Next: a consistent EIV refit (θ-dependent weights or the excited band only); colored input
   noise; resolving close real pairs at the limit; noise-dependent release; zero-order hold;
   joint intervals; RQ4 linear probe.
 
@@ -1643,7 +1643,7 @@ Things to know:
     (p6 fine −0.3+4i, η_u = 0.03 / 0.1); after the bootstrap correction 0.15, 0.11, 0.08.
 - Decisions: none.
 - Next: the EIV bootstrap inside `e4_profile.py` (trained runs, certificate and order test
-  under input noise); coloured input noise; resolving close real pairs at the limit;
+  under input noise); colored input noise; resolving close real pairs at the limit;
   noise-dependent release; zero-order hold; joint intervals; RQ4 linear probe.
 
 ### 2026-11-15 — (C) E4: the E1 data under noise; the noise limit is the CRB, not η*
@@ -1674,7 +1674,7 @@ Things to know:
 
 - Done: `e4_bias.py` (minimal FOH refit on stored vs exact inputs / outputs, Monte Carlo over
   ±ulp/2 dithers, truth-free parametric bootstrap; 5 noise-free data sets). In `e4_profile.py`,
-  noise-free conditions only: fits minimise S / (n σ²) and end with damped Newton steps;
+  noise-free conditions only: fits minimize S / (n σ²) and end with damped Newton steps;
   `bootstrap()` intervals per reported pole; `VarPro.pred` factored out of `S`. The 40
   noise-free groups rerun (old JSONs in `runs/archive/e4_profile_foh_clean_v1`). README
   section "E4, seventh pass". Noisy conditions and `src/lfo/` unchanged.
@@ -1711,7 +1711,7 @@ Things to know:
   - Precision-term FOH-refit certificate: order test, consensus and all poles in 40/40
     groups (multisine and E1, both layers), no false pole, errors 1e-11–2.5e-8. The 95 %
     intervals undercover for some poles (truth 1–1.7 half-widths outside, same in every
-    group): an unmodelled bias at 1e-9–1e-8 (input rounding? generator arithmetic?).
+    group): an unmodeled bias at 1e-9–1e-8 (input rounding? generator arithmetic?).
 - Decisions: none taken. E1 finding 3 ("the E1 data cannot identify them") does not hold for
   noise-free data; it holds only under relative output noise above η*. Added to the open
   decisions (how to state finding 3 in the E1 paper).
@@ -1758,7 +1758,7 @@ Things to know:
   - Release under noise: η = 1e-2 all poles 20/20 (both forms), certificate 4/4, no false
     pole, as tied. η = 0.1 worse than tied: all poles 25 % (tied 45 %), −2 30–35 % (45 %),
     test error 2.5–3.5 ×, best of 5 0/4 (3/4), 1–3 false poles.
-  - The low-noise "discretisation floor" is the input hold: `lfo.data.lti.response` uses a
+  - The low-noise "discretization floor" is the input hold: `lfo.data.lti.response` uses a
     piecewise-linear input, the layer a band-limited one. Bias ∝ dt² of the generator
     (p6 −2: 4.3e-2 at N = 1024, 3.0e-3 at 4096), unchanged by decimating the data; with the
     FOH model S at the truth is 1.3e-13 (float32), bias ≈ 1e-11.
@@ -1797,7 +1797,7 @@ Things to know:
     lacks −2 (ΔS ≈ 1.8e4 σ̂² vs ≈ 29), and the fallback's real poles get open intervals
     (−1 / −2 unresolved) rather than a wrong pole. One false identified pole in 24 groups
     at η ≥ 1e-2.
-  - Limit: at η = 1e-3 the model (discretisation) error exceeds the noise; order test 1/4,
+  - Limit: at η = 1e-3 the model (discretization) error exceeds the noise; order test 1/4,
     intervals cover the truth in 0/28 cells, 2 false poles per system.
 - Decisions: the combined certificate is not "the looser of ratio / χ²" (the ratio rule
   certifies every noisy run); it is χ² certification + minimal refit + order test.
@@ -1825,7 +1825,7 @@ Things to know:
     missing). p6 η = 0.3: 0 → 15 %.
   - χ² certificate: η = 1e-2 certifies 19–20 runs, all correct, no false pole; η = 0.1
     certifies all 20 p6 runs (the data do not reject the wrong −2 at 99 %), consensus omits
-    −2; η = 1e-3 certifies only 5–6 runs (optimiser spread > χ²_p σ̂²). Errors still
+    −2; η = 1e-3 certifies only 5–6 runs (optimizer spread > χ²_p σ̂²). Errors still
     15–110 × the CRB at η = 1e-2.
 - Decisions: none.
 - Next: p6 partial tie stuck above the floor (restarts that reset R_res, δ schedule from
@@ -1934,7 +1934,7 @@ Things to know:
     N = 4096 (11.6) and 8192 (24.3); −2 reaches 8.3 at N = 8192.
 - Decisions: the E2 recipe needs the real-pole count; removing that prior is open (learned
   gate rejected). "Practically identifiable" is relative to the model's error level
-  (discretisation floor, in practice also noise); stated in the E1 report and the E2 README.
+  (discretization floor, in practice also noise); stated in the E1 report and the E2 README.
 - Next: complex slots bounded away from the real axis (|Im μ| ≥ 2π/T) as a prior-free
   sizing; training on a fine grid for p6 (T = 80, N = 4096); more best-of-5 groups;
   E1/E2 paper decisions (open decision 4).
@@ -1950,8 +1950,8 @@ Things to know:
     95 %); in all 8 groups with a good run the selection picked it. Spearman(val loss,
     pole error) +0.84.
   - p6: single 32 %, best of 5 **7/10**; Spearman +0.24. The previous entry's p6 claim
-    (selection lowers recovery 10 → 0 %, "identifiability limit") was a 10-seed artefact.
-- Decisions: E2 conclusion revised: from generic inits recovery is limited by optimisation
+    (selection lowers recovery 10 → 0 %, "identifiability limit") was a 10-seed artifact.
+- Decisions: E2 conclusion revised: from generic inits recovery is limited by optimization
   in both systems; recipe = mixed real-constrained init + multi-start + best of 5 by
   validation loss. p6's fast real poles are weakly identifiable (phase-1 ratio < 2, weak
   loss–pole link), not shown to be non-identifiable. Previous log entry's p6 decision
@@ -1974,7 +1974,7 @@ Things to know:
     (`mixed_off_ms`, bootstrap from 10 seeds).
   - p6: failed and successful runs fit equally (1.5 × oracle); validation selection lowers
     recovery (10 → 0 %): practical non-identifiability, as in phase 1.
-- Decisions: E2 conclusion: two separable limits, optimisation (p4: fixed by mixed
+- Decisions: E2 conclusion: two separable limits, optimization (p4: fixed by mixed
   real-constrained init + multi-start + selection) and identifiability (p6 fast real poles:
   no training remedy). Candidate E3/E4 recipe: `mixed_off_ms` + best of ≥ 5 by validation.
   Sparsity / pruning / repulsion / split not adopted.
@@ -1987,7 +1987,7 @@ Things to know:
 
 - Done: `e2_train.py` variants `mixed_off_rep(_ms)` (annealed log-space repulsion between
   real slots) and `mixed_off_split(_ms)` (merge slots within 10 %, move the freed slot);
-  `e1_audit.train` gained optional `penalty` / `hook` (E1 behaviour unchanged). 80 runs
+  `e1_audit.train` gained optional `penalty` / `hook` (E1 behavior unchanged). 80 runs
   (p4 multisine16, p6 multisine16 T = 80; 10 seeds). README section "Remedies (second round)".
 - Results:
   - Coalescence removed (11 / 9 coalesced pairs over 10 seeds → 0–2), but recovery not
@@ -2022,7 +2022,7 @@ Things to know:
 ### 2026-11-13 — (C) E2: controls for the unrecovered real poles of p4
 
 - Done: `e2_train.py --variant` (`warm`, `free_min`, `real_spare`, `real_min`; real
-  constraint = Im mask parametrisation of `pr.mu`). 100 runs: p4 on E1 data and
+  constraint = Im mask parametrization of `pr.mu`). 100 runs: p4 on E1 data and
   multisine16 × 4 variants, p6 multisine16 T = 80 × (`warm`, `real_min`), 10 seeds each.
   README section "Phase 2 controls".
 - Results:
@@ -2035,7 +2035,7 @@ Things to know:
     recovered. Removing the spare slot makes things worse.
 - Decisions: E2 message: rich data make the poles locally identifiable (phase 1, warm
   start), but recovery from generic inits fails at wrong-assignment / coalescence
-  minima, an optimisation problem (p4). p6's −1 / −2 remain data/floor-limited from
+  minima, an optimization problem (p4). p6's −1 / −2 remain data/floor-limited from
   generic inits. This feeds E3/E4 remedies.
 - Next: remedies (mixed real/band init with spare slots, multi-start, pruning);
   p6 grid-resolution sweep.
@@ -2054,13 +2054,13 @@ Things to know:
     E1 data at T ≥ 40, mostly PRBS); E1 data at T = 20 do not (7.0 / 4.6 / 9.5).
   - Phase 1, p6: −1 / −2 stay non-identifiable under every data change (max ratio
     1.8 / 0.6); the pairs become identifiable with rich data. The floor (DFT
-    discretisation) is the limit there.
+    discretization) is the limit there.
   - Phase 2: complex pairs follow the prediction (p4 pair 70 % → 100 % recovered,
     test error up to 10× lower). p4's real poles: 0 % recovered in every condition,
     although predicted identifiable; their slots stay complex (e.g. −0.82 + 0.61i for −1)
     and test error stays 4–10× above the oracle (local minimum).
 - Decisions: E1 part (iii) holds for p6 (data/floor limit); for p4 the remaining
-  limitation is optimisation / parameterisation (free Im μ on every slot, spare slot),
+  limitation is optimization / parameterization (free Im μ on every slot, spare slot),
   not data. To be reflected in `E1_report.md` when the paper set is decided.
 - Problems / open questions: the first phase-1 run (reverse-mode Jacobian) timed out after
   1 h without output; fixed as above, results saved incrementally now.
@@ -2092,10 +2092,10 @@ Things to know:
 - Decisions: E1 message, three parts: (i) published protocols: poles limited by the
   learning-rate travel bound; (ii) with the bound lifted, frequencies are found;
   (iii) fast real poles remain unidentified because the data do not determine them
-  (practical identifiability), not because of optimisation. (iii) hands over to E2.
+  (practical identifiability), not because of optimization. (iii) hands over to E2.
 - Problems / open questions: one profile point failed (p4, −0.2, c = 3: nan).
   Local analysis is at the truth only; the good-fit/wrong-pole minima found in training
-  were not analysed individually.
+  were not analyzed individually.
 - Next: E1 summary for the workshop paper; E2 starting from `identifiability.py`.
 
 ### 2026-11-13 — (C) E1 audit: pole learning-rate control
@@ -2115,7 +2115,7 @@ Things to know:
   fast real poles are not identified although the fit is good (practical
   identifiability). Part (ii) is the bridge to H2/E2.
 - Next: per-pole Fisher information / profile likelihood for the tied layer; log decay
-  parameterisation.
+  parameterization.
 
 ### 2026-11-12 — (C) E1 audit: per-pole breakdown and pole travel
 
@@ -2134,11 +2134,11 @@ Things to know:
     minima, matched poles ≈ −0.5 with spurious Im.
   - Weight decay 0.01 (LFNO protocol) shrinks real poles toward 0 from a warm start.
 - Decisions: E1 conclusions under the published protocols are stated as "poles ≈ init
-  + bounded drift"; any interpretability claim needs a pole parameterisation or
+  + bounded drift"; any interpretability claim needs a pole parameterization or
   learning rate that lets poles move (also a design input for (A)).
 - Problems / open questions: the travel bound is approximate (Adam's early steps can
   exceed lr slightly: layer max 5.0 vs 4.0).
-- Next: E1 control with pole-specific learning rate / log parameterisation.
+- Next: E1 control with pole-specific learning rate / log parameterization.
 
 ### 2026-11-12 — (C) E1 audit: first full run, layer and deep settings
 
@@ -2174,7 +2174,7 @@ Things to know:
     are counted and excluded from the statistics; their pole metrics are stored as null.
   - Deep-setting pole error = closest pooled poles (optimistic bound), stated as such.
 - Problems / open questions:
-  - First obstacle is optimisation (init, weight decay, instability), not yet
+  - First obstacle is optimization (init, weight decay, instability), not yet
     dual-branch non-identifiability. The audit therefore needs the warm/band diagnostics
     to separate the two; this shapes the E1 paper message.
   - My first `warm` init (complex factor on mu) made lightly damped poles unstable;
@@ -2204,7 +2204,7 @@ Things to know:
   - For (C) E1: train LFNO with its published protocol (Adam, wd 0.01–0.02) as well as the
     common protocol; the weight decay acts on the poles and may decide pole recovery.
   - Unstable learned poles: decide whether E1 reports them as-is (yes, for the audit) and
-    whether (A) needs a stability parameterisation (Re mu = -softplus).
+    whether (A) needs a stability parameterization (Re mu = -softplus).
 - Next: (C) E1 audit setup.
 
 ### 2026-11-12 — Shared foundation (S1): ALNO and LFNO re-implemented (1D)
@@ -2227,7 +2227,7 @@ Things to know:
 - Results:
   - Tests: one-channel layer = original LNO v1 layer; with the true poles the layer
     gives the exact LTI response for a periodic input (rel. error < 1e-2).
-  - Initialisation matters. Duffing c=0, iid, 300 epochs, 1 seed, test rel. L2:
+  - Initialization matters. Duffing c=0, iid, 300 epochs, 1 seed, test rel. L2:
 
     | setting | ALNO (7,001) | LFNO (5,977) |
     |---|---|---|
@@ -2239,12 +2239,12 @@ Things to know:
     (LNO v1 under the same 300-epoch run: 0.309.) Sanity checks only, not reported results.
 - Decisions:
   - Default `pole_init="stable"` (Re mu = -exp(U[log 1/T, log 10/T]), Im mu ~ U[0, pi/(4 dt)]),
-    `norm=False`: no normalisation between layers keeps learned poles interpretable for (C).
+    `norm=False`: no normalization between layers keeps learned poles interpretable for (C).
   - New re-implementations use the textbook pole-residue contraction (no second channel
     mixing); the LNO port keeps the original quirk.
 - Problems / open questions:
-  - Neither paper states its initialisation; the (C) audit should report pole recovery
-    under both initialisations, since the init may decide which poles are found.
+  - Neither paper states its initialization; the (C) audit should report pole recovery
+    under both initializations, since the init may decide which poles are found.
   - LFNO's published numbers use its own regenerated data (not comparable); ALNO has no
     published ODE results. So neither model can be checked against published values.
   - 2D versions of ALNO/LFNO not implemented (not needed for E1).
@@ -2260,7 +2260,7 @@ Things to know:
     `optimizer`, `lno`, `input_stride`. Low-to-high resolution: every model reads every
     2nd input point (32 × 25) and predicts on 64 × 50; FNO/TFNO via neuraloperator
     `output_shape` ("FNO with IDFT").
-  - `lfo.data.lno_bench`: docstring generalised (sizes per case; Burgers note);
+  - `lfo.data.lno_bench`: docstring generalized (sizes per case; Burgers note);
     `tests/test_lno_bench.py` Burgers test (27/27 pass).
   - LNO v2, FNO, TFNO × 3 seeds × ood/iid (`results/<split>/burgers_*.json`).
 - Results (test rel. L2, 3 seeds; `experiments/foundation/paper_comparison.md`):
@@ -2414,7 +2414,7 @@ Things to know:
   - Error by input amplitude (3-seed mean; bins 0–1, 1–3, 3–6, 6–10):
     LNO test 0.15/0.12/0.22/0.31, LNO train 0.11/0.06/0.08/**0.49**;
     FNO test 0.39/0.60/0.96/1.22, FNO train 0.16/0.07/0.10/0.29.
-    The original 1-layer LNO is nearly linear: it generalises across waveforms but
+    The original 1-layer LNO is nearly linear: it generalizes across waveforms but
     cannot fit the strongly nonlinear regime even on training data.
 - Decisions: FNO's Duffing gap is a property of the benchmark (single-waveform
   training set), not a bug in our setup. Report it as such; when FNO numbers are
@@ -2454,7 +2454,7 @@ Things to know:
   - Paper values not yet compared: fill in the LNO paper's Duffing (Example 1) and
     Diffusion (Example 8) numbers to close the month-4 gate.
   - Duffing FNO/TFNO reach train L2 ≈ 0.17–0.20 but validation ≈ 0.9–1.1, i.e. they
-    do not generalise. Candidate causes, untested: very small budget (1.8k params),
+    do not generalize. Candidate causes, untested: very small budget (1.8k params),
     default `positional_embedding="grid"`, periodicity assumption on transient
     signals. Must be understood before FNO numbers are used in any paper.
   - Diffusion TFNO has large seed spread (1.6e-3, 6.7e-3, 2.0e-2).
