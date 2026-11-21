@@ -15,7 +15,7 @@ Each session appends one entry using the template at the bottom.
 | (A) Application 1: process dynamics | 11–16 | **started** (2026-11-19): delay layer; FOPDT / SOPDT identified | — |
 | (D) Initial conditions and rollout | 13–19 | **started** (2026-11-19): IC path in the wavenumber layer, exact window chaining (linear); deep Burgers rollout (pushforward / semigroup did not help; developed start states and window count each −15 %); Dirichlet, Neumann, mixed, advective and Robin boundaries as channels (Robin coefficient by a profile); out-of-range initial fields and 10-window rollout; beam with two initial fields; variable coefficient by a learned basis or as D(x) through an eigenproblem; fits run to convergence; D paper consolidated; the TFNO's Cahn–Hilliard rollout edge is its one-window edge (d2i), largest in the initial-field response (d2j), independent of how the initial field enters (d2k) and of poles or depth (d2l); the Cahn–Hilliard line is closed | — |
 | (A) Application 2: Cahn–Hilliard | 17–22 | **started** (2026-11-20): stages 1 and 3 in the 1D linear regime: spinodal and k_c(φ₀) recovered from early-time data (`a29_spinodal.py`); M, κ as inputs, extrapolation with the physical form only (`a30_parametric.py`); stage 2, 2D coarsening rollouts: L(t) reproduced by all models, TFNO best pointwise, one WPO seed diverges (`a31_coarsening.py`); the growth cap is not the cause, the WPO-2D window map lacks amplitude saturation (`a32_growth_cap.py`, `a32b_amplitude.py`); amplitude-perturbed training starts remove the divergence (`a33_amplitude_aug.py`); WPO-2D transfers to a 4π box without retraining, the TFNO does not (`a34_domain.py`); a TFNO trained on 4π with its band rescaled is 1.8× more accurate (`a35_tfno_4pi.py`) | recover k_c, k_max (month 20) |
-| Consolidation and code release | 23–24 | not started | — |
+| Consolidation and code release | 23–24 | **started** (2026-11-21): A and D papers consolidated; experiment index (`experiments/INDEX.md`); README with reproduction steps; `lfo.models.set_domain`. Open: license and public release (user decision) | — |
 
 ## Open decisions
 
@@ -173,6 +173,23 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-21 — Consolidation and code release: first pass
+
+- Done:
+  - A paper: the coarsening section is one table (a31–a35) with four findings. The abstract has a Cahn–Hilliard
+    paragraph, and the discussion says where the structure pays (identification, out-of-band continuation,
+    parametric extrapolation with the right form, domain transfer) and where it does not (pointwise accuracy in
+    the strongly nonlinear regime). Limitations updated.
+  - D paper: abstract, discussion and limitations updated with d2i–d2l. The unseen-mode tolerance is stated per
+    system (Burgers 0.7× against 3.3×, Cahn–Hilliard 2.2–2.7× against 10×). Both papers render.
+  - `experiments/make_index.py` → `experiments/INDEX.md`: 97 scripts with their pre-registration commits, result
+    files and recorded compute.
+  - `lfo.models.set_domain` (a34's transfer as a shared helper; tiling test for 1D with the IC path and for 2D;
+    70 tests pass). README: papers, index, reproduction steps, layer usage.
+- Decisions: none (license, version and making the repository public are left to the user).
+- Next: choose a license and the release scope; check that the C paper matches its README numbers as the A and D
+  papers were checked; a figure for the coarsening transfer.
 
 ### 2026-11-21 — (A) application 2 stage 2e: TFNO trained on 4π; (D) d2l WPO backbone variants
 

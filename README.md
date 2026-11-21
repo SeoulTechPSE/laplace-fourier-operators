@@ -30,6 +30,40 @@ Render the plans (requires [Quarto](https://quarto.org)):
 cd docs && quarto render proposal_A_wavenumber_pole_operator.qmd --to pdf
 ```
 
+## Papers and results
+
+Working papers (Quarto; render with `quarto render <file>.qmd`):
+
+| project | paper | experiments |
+|---|---|---|
+| (A) | `experiments/A/paper/a_paper.qmd` | `experiments/A/{layer,deep,process}/` |
+| (C) | `experiments/C/paper/c_paper.qmd` | `experiments/C/` |
+| (D) | `experiments/D/paper/d_paper.qmd` | `experiments/D/{d1_inputs,d2_initial_conditions,d3_boundary}/` |
+
+Every experiment script was committed with its predictions before it ran, and every failed prediction is reported
+in its folder's README. [`experiments/INDEX.md`](experiments/INDEX.md) lists each script with its
+pre-registration commit, result files and recorded compute (regenerate with `python experiments/make_index.py`).
+
+## Reproducing a result
+
+```bash
+python experiments/A/deep/a34_domain.py      # writes experiments/A/deep/results/a34_domain.{md,json}
+```
+
+- Scripts run from the repository root. Most skip runs already present in their JSON results; delete the JSON to rerun.
+- Large data and checkpoints are cached in `runs/` (git-ignored) and regenerated when missing.
+- Most deep experiments expect a CUDA GPU. Compute times per script are in the index.
+- Seeds are fixed per run, so a rerun on the same hardware and library versions reproduces the numbers.
+
+## Using the layers
+
+```python
+from lfo.models import WavenumberPoleOperator1d, set_domain
+model = WavenumberPoleOperator1d(t, width=24, n_layers=4, n_poles=6, modes=22, re_max=1.0, k_ref=16.0)
+y = model(f)                       # f: (batch, n_x, n_t) forcing on a periodic grid of length 2 pi
+set_domain(model, 4 * math.pi)     # the same model on a domain twice as long (inputs on 2 n_x points)
+```
+
 ## Layout
 
 ```
