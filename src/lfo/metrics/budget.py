@@ -1,7 +1,8 @@
 """Parameter budgets in real degrees of freedom.
 
 `sum(p.numel())` counts a complex weight once, so a Fourier-type model with complex spectral weights looks about
-half its size next to a real-valued model. Budgets across models are matched on `n_real_params`: a complex
+half its size next to a real-valued model. (C) E1 matched budgets this way from the start
+(`lfo.training.count_params`, which now calls this function); (A) deep and (D) used `numel`. Budgets across models are matched on `n_real_params`: a complex
 parameter counts as two (decision 2026-11-22 in `STATUS.md`)."""
 from __future__ import annotations
 

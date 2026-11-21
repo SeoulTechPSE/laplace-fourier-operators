@@ -79,5 +79,6 @@ def seed_everything(seed: int) -> None:
 
 
 def count_params(model: torch.nn.Module) -> int:
-    """Number of real parameters; a complex entry counts as two."""
-    return sum(p.numel() * (2 if p.is_complex() else 1) for p in model.parameters())
+    """Number of real parameters; a complex entry counts as two (`lfo.metrics.n_real_params`)."""
+    from .metrics import n_real_params
+    return n_real_params(model)
