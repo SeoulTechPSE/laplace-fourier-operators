@@ -18,7 +18,7 @@ csl: ../../C/paper/ieee.csl
 ---
 
 <!-- Project A working paper, 2026-11-21. Not for submission yet. Every number comes from
-experiments/A/layer/README.md (layer experiments) and experiments/A/deep/README.md (deep experiments, to a37), whose predictions
+experiments/A/layer/README.md (layer experiments) and experiments/A/deep/README.md (deep experiments, to a39), whose predictions
 were committed before each run (hashes there). Figures: experiments/A/paper/figures.py. -->
 
 ## Abstract {.unnumbered}
@@ -261,6 +261,21 @@ benchmark to 3e-4 through an exact rescaling, so the linearization is known: λ_
 - The pre-registered WPO runs ended in nan from an overflow in a masked branch of the time kernel for very fast
   poles; the reported runs repeat them unchanged after the fix (post hoc).
 
+### Is the gap the missing odd symbol? (a39)
+
+Even residues and pointwise channel mixes leave no part of the WPO that applies the derivative symbol i k, which
+Burgers' convection needs. Two minimal changes, both at the WPO's real budget, test this: residues with odd powers
+of k, and a 5-tap convolution over x in place of the pointwise mix.
+
+- Neither closes the gap on PDEBench: 0.047 and 0.054 against the WPO's 0.045 and the FNO's 0.026. Four of six
+  predictions failed, including both that predicted a gain.
+- Odd residues keep the form's benefits on forced Burgers: test 0.025, probe outside the band 0.12, and unseen
+  modes at 2.0× the test error.
+- Local mixing does not. Its stencil is a symbol in k Δx learned in the band, so the probe outside the band rises
+  to 0.32, unseen modes to 7.5×, and the error at 4× the resolution to 1.29×.
+- The gap is therefore not in the linear symbol. The remaining candidates are the nonlinear block and the time
+  axis: the FNO's temporal Fourier modes mix the whole window.
+
 ### An identifiability limit: growth emulated by stable layers
 
 A stable control, with every layer pole at Re μ ≤ 0, fits Cahn–Hilliard as well as the WPO. Its probe reproduces
@@ -445,7 +460,7 @@ sample time (a20).
 
   It does not pay in pointwise accuracy in the strongly nonlinear regime on the training domain. There the TFNO
   is 2× better (2D coarsening, also at an equal real budget; also project D's Cahn–Hilliard with initial
-  fields, 1.8× at an equal budget) and 1.8× better on PDEBench Burgers at an equal real budget.
+  fields, 1.8× at an equal budget) and 1.8× better on PDEBench Burgers at an equal real budget. Odd residue powers or local mixing do not close this gap (a39).
 - **Rollout stability is a data question.** The WPO-2D coarsening divergence was cured by amplitude-scaled
   training starts, not by any pole constraint.
 - **Training details decide the outcome**, as in (C):

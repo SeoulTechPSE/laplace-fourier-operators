@@ -185,6 +185,22 @@ Things to know:
 
 ## Log
 
+### 2026-11-22 — Step 4: odd residues and local mixing do not close the nonlinear gap (a39)
+
+- Done:
+  - a39 (predictions 513e658), at the WPO's real budget, 3 seeds:
+    - PDEBench: `wpo_odd` (residue powers 0–3) 0.0467 and `wpo_local` (5-tap x convolution) 0.0539, against
+      the WPO's 0.0452 and the TFNO's 0.0257.
+    - Forced Burgers: `wpo_odd` keeps the form's benefits (test 0.0250, probe outside the band 0.115, unseen
+      modes 1.98×). `wpo_local` loses them (0.315, 7.5×) and its resolution invariance (1.29×).
+  - Predictions: 3 and 5 held; 1, 2, 4 (`wpo_local` ratio 1.29 against > 1.3) and 6 failed.
+  - Reading: the missing odd symbol is not the cause of the gap. A deep README and A paper updated.
+- Decisions: none. The `beta_powers` option stays in `lfo.models` (default unchanged).
+- Next: locate the gap in the nonlinear block or in the time axis. Proposed a40:
+  - WPO with a wider channel MLP at the same budget (fewer poles);
+  - WPO + a small spectral channel mix;
+  - TFNO with temporal modes truncated (causal-like), to see whether the time axis carries the TFNO's edge.
+
 ### 2026-11-22 — Real-budget reruns (a38, d2m); step 4 started (a39)
 
 - Done:

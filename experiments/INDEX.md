@@ -28,7 +28,7 @@ JSON results where recorded (GPU wall time, often with another job on the GPU).
 | `a36_index_poles.py` | ebcce69 2026-11-22 | `a36_index_poles.json`, `a36_index_poles.md` | — | (A) Next-level step 1: is it the physical-wavenumber form of the poles that pays, and how does the LNO compare? |
 | `a37_pdebench_burgers.py` | c12faba 2026-11-22 | `a37_pdebench_burgers.json`, `a37_pdebench_burgers.md` | — | (A) Next-level step 3: the core (A) claims on a public benchmark, PDEBench 1D Burgers (nu = 0.01). |
 | `a38_real_budget_2d.py` | b77bffe 2026-11-22 | `a38_real_budget_2d.json`, `a38_real_budget_2d.md` | 0.2 h | (A) 2D Cahn–Hilliard coarsening: the TFNO at the WPO-2D's real parameter budget (a33 setup). |
-| `a39_odd_local.py` | 513e658 2026-11-22 | — | — | (A) Next-level step 4: closing the nonlinear gap without giving up the physical-wavenumber form. |
+| `a39_odd_local.py` | 513e658 2026-11-22 | `a39_odd_local.json`, `a39_odd_local.md` | 4.5 h | (A) Next-level step 4: closing the nonlinear gap without giving up the physical-wavenumber form. |
 | `a9_burgers.py` | eac2be5 2026-11-18 | `a9_burgers.json`, `a9_burgers.md` | 0.9 h | (A) First deep validation: the deep wavenumber pole operator on forced viscous Burgers, against FNO, with a linear |
 
 ## A/layer

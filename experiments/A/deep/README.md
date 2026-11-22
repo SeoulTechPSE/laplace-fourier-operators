@@ -664,3 +664,49 @@ that range. The three WPO runs were repeated unchanged with the fixed kernel (po
   initial fields of PDEBench excite a broad band but no forcing isolates modes, so the small-amplitude response is
   only partly constrained by the data. The WPO's nu' is right in one seed of three (2.4 %), near in one (9 %).
 - The bug fix matters beyond a37: any WPO with very fast poles (fine grids, wide bands) could hit it.
+
+## Next-level step 4 (2026-11-22): odd residues and local mixing against the nonlinear gap (a39)
+
+`a39_odd_local.py` → `results/a39_odd_local.md` (predictions 513e658; `beta_powers` in 4cee292). The hypothesis:
+the WPO cannot apply the derivative symbol i k. Its residues are polynomials in k², so every pole layer is even in
+k, and the pointwise channel mixes apply no symbol at all; Burgers' convection needs i k at every layer. Two minimal
+changes keep the poles as functions of k:
+- `wpo_odd`: residues with powers (0, 1, 2, 3) of k / k_ref.
+- `wpo_local`: the pointwise mix replaced by a 5-tap periodic convolution over x.
+
+Widths were reduced to the WPO's real budget (P: 17 / 22; F: 17 / 22). Training was the WPO's selected
+configuration with 3 seeds.
+
+| part | model | real params | error | other |
+|---|---|---|---|---|
+| P (PDEBench) | WPO (a37 rerun) | 61,130 | 0.0452 (0.0440–0.0460) | 1024 / 256 1.00; dispersion error 0.24 |
+| P | TFNO, real budget (a37) | 64,745 | **0.0257** | 1.00; 0.67 |
+| P | `wpo_odd` | 61,568 | 0.0467 (0.0459–0.0475) | 1.00; 0.18 (0.10–0.22) |
+| P | `wpo_local` | 63,763 | 0.0539 (0.0526–0.0561) | 1.29 (1.19–1.36); 0.20 |
+| F (forced Burgers) | WPO (a11) | 59,529 | **0.0237** | probe outside the band 0.12; unseen / test 1.34 |
+| F | TFNO, real budget (a36) | 54,649 | 0.0279 | 0.89; 32 |
+| F | `wpo_odd` | 58,083 | 0.0250 (0.0230–0.0262) | 0.115 (0.108–0.124); 1.98 (1.55–2.26) |
+| F | `wpo_local` | 57,933 | 0.0246 (0.0239–0.0259) | 0.315 (0.263–0.383); 7.5 (6.8–8.0) |
+
+**Predictions against results.**
+1. P: `wpo_odd` ≤ 0.036: **fails** (0.0467, no gain over the WPO).
+2. P: `wpo_local` ≤ 0.036: **fails** (0.0539, worse than the WPO).
+3. P: neither reaches the TFNO: **holds**.
+4. P: `wpo_local`'s 1024 / 256 ratio > 1.3 and `wpo_odd`'s ≤ 1.1: **fails** on the first part (1.29, mean just
+   below the threshold; seeds 1.37 / 1.19 / 1.31). The second part holds (1.00).
+5. F: `wpo_odd` keeps the form's benefits (unseen ratio ≤ 3, probe outside the band ≤ 0.3, every seed): **holds**.
+6. F: `wpo_odd`'s test ≤ the WPO's 0.0237: **fails** (0.0250; within the seed spread).
+
+**Reading.**
+- The missing odd symbol is not what separates the WPO from the TFNO. Giving the residues odd powers changes
+  neither accuracy (P 0.047 vs 0.045) nor time extrapolation. The derivative is evidently already available to
+  the deep model; the pointwise nonlinearity between layers can produce the convective term from even-symbol
+  features.
+- Odd residues are free in the other respects: the form's benefits stay (unseen modes 2.0× against 1.3×; probe
+  outside the band unchanged), and the probe's dispersion error on PDEBench is a little lower and less spread
+  (0.18 against 0.24).
+- Local mixing costs. Its stencil is a symbol in k dx learned in the band, so it does not continue outside it
+  (probe 0.32, unseen modes 7.5×; the TFNO is at 0.89 and 32×), and it loses resolution invariance (1.29×).
+- The gap therefore sits elsewhere than in the linear symbol. The remaining candidates are the nonlinear block
+  (pointwise mixing at width ~20–30 against the TFNO's full spectral mixing of channels) and the time axis (the
+  TFNO's Fourier modes in t mix the whole window; the WPO's FOH recursion is causal).
