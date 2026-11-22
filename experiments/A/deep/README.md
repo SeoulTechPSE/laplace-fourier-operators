@@ -779,3 +779,65 @@ keeps the form's benefits. Setup as a36: width 23, 57,011 real parameters; the W
   Its gain on PDEBench is specific to the initial-value task.
 - **Decision.** The default deep block stays the WPO's. `wpo_mlp` remains an experiment-level variant, not
   promoted to `lfo.models`. The conditional reruns (2D coarsening, D2) are not run.
+
+## Five seeds with intervals for the headline claims (2026-11-22, a42)
+
+`a42_five_seeds.py` → `results/a42_five_seeds.md` (predictions cf1822b). This adds seeds 3 and 4, otherwise
+unchanged, to a36's form comparison and a37's PDEBench comparison. Reported: mean ± sd [95 % t-interval] over 5
+seeds.
+
+| setup | model | test | probe outside the band | unseen / test |
+|---|---|---|---|---|
+| F | WPO, poles in k | 0.0239 ± 0.0006 [0.0232, 0.0245] | **0.098** [0.058, 0.139] | **1.26** [0.92, 1.61] |
+| F | WPO, poles per index | 0.0230 ± 0.0008 [0.0219, 0.0240] | 0.980 [0.948, 1.012] | 181 [106, 255] |
+| F | TFNO, real budget | 0.0287 ± 0.0020 [0.0262, 0.0311] | 0.874 [0.779, 0.969] | 30.5 [18.7, 42.3] |
+
+| setup | model | nRMSE | probe nu' | nu' within 5 % | dispersion error |
+|---|---|---|---|---|---|
+| P | WPO | 0.0450 ± 0.0008 [0.0440, 0.0459] | 0.101 [0.079, 0.124] | 1 of 5 | 0.25 [0.10, 0.39] |
+| P | TFNO, real budget | **0.0254** ± 0.0006 [0.0247, 0.0261] | 0.040 [0.030, 0.051] | 0 of 5 | 0.69 [0.59, 0.79] |
+
+Time extrapolation, (5, 10] / test: WPO 1.85 [1.76, 1.95], per index 1.75 [1.67, 1.83], TFNO 10.0 [9.2, 10.9].
+
+**Predictions against results: all five hold.**
+1. The unseen-mode intervals separate (WPO's upper bound 1.61; the others' lower bounds 106 and 18.7).
+2. The out-of-band probe intervals separate.
+3. The in-band test intervals of the two WPO forms overlap. The per-index form is marginally better, by 4 %.
+4. The TFNO's nRMSE interval lies below the WPO's; ratio of means 1.77.
+5. The WPO's nu' is within 5 % in 1 of 5 seeds.
+
+**Reading.** The three-seed headline numbers stand, with intervals:
+- the form separates out-of-band behavior by an order of magnitude or more;
+- the PDEBench gap is 1.77×, with tight intervals;
+- the WPO's probe ν' on PDEBench is not reliable seed by seed (0.079–0.124 interval).
+
+## Cost per model (2026-11-22, a43)
+
+`a43_cost.py` → `results/a43_cost.md` (predictions 34352ab). Each model was measured alone on the RTX 4090:
+- training step: forward, loss, backward and Adam at batch 25, median of 5 × 20 steps after warm-up;
+- inference: per sample at batch 50;
+- peak training memory.
+
+| setup | model | dtype | train step (ms) | × TFNO | inference (ms / sample) | peak memory (MB) |
+|---|---|---|---|---|---|---|
+| F | WPO | float64 | 131 | 4.66 | 1.67 | 2197 |
+| F | WPO per index | float64 | 128 | 4.55 | 1.66 | 2197 |
+| F | TFNO | float32 | 28 | 1.00 | 0.46 | 1277 |
+| F | LNO v2 | float32 | 27 | 0.97 | 0.35 | 2238 |
+| P | WPO | float64 | 79 | 4.36 | 1.07 | 1570 |
+| P | `wpo_mlp` | float64 | 98 | 5.44 | 1.32 | 1931 |
+| P | TFNO | float32 | 18 | 1.00 | 0.29 | 975 |
+| P | `fno_x` | float32 | 19 | 1.06 | 0.14 | 822 |
+
+**Predictions against results.**
+1. P: WPO step 1.3–3× the TFNO's: **fails** (4.36×).
+2. F: ≥ 3×: **holds** (4.66×).
+3. WPO peak memory ≥ the TFNO's in both setups: **holds** (1.7× and 1.6×).
+
+**Reading.**
+- The WPO costs 4–5× the TFNO per training step and 3.6× per inference sample.
+- The comparison mixes precisions. The WPO runs in float64 (the FOH recursion and the pole fits), and the 4090's
+  float64 throughput is a small fraction of its float32 throughput. Part of the factor is therefore precision,
+  not the method; a float32 WPO was not measured.
+- The pole form itself costs nothing: per-index poles cost the same as poles in k.
+- Correction to the a43 docstring: the LNO port runs in float32, not float64.

@@ -185,6 +185,29 @@ Things to know:
 
 ## Log
 
+### 2026-11-22 — Five seeds with intervals (a42), cost (a43), consistency proposition, CI
+
+- Done:
+  - a42 (predictions cf1822b): seeds 3–4 added to a36 (form) and a37 (PDEBench); 95 % t-intervals over 5 seeds.
+    - Unseen-mode ratio: WPO 1.26 [0.92, 1.61], per index 181 [106, 255], TFNO 30.5 [18.7, 42.3].
+    - Out-of-band probe: WPO 0.098 against 0.98 (per index) and 0.87 (TFNO).
+    - PDEBench: 0.0450 against 0.0254 (1.77×); WPO ν' within 5 % in 1 of 5 seeds.
+    - All 5 predictions held. A paper abstract, tbl-form and the PDEBench text now quote the 5-seed intervals.
+  - a43 (predictions 34352ab), alone on the RTX 4090: WPO training step 4.4–4.7× the TFNO's, inference 3.6×,
+    memory 1.6–1.7× (WPO float64, TFNO float32); per-index poles cost the same. Predictions 2 and 3 held; 1 failed
+    (P ratio 4.36, predicted 1.3–3).
+  - A paper: "Domain and window consistency" proposition with proof (528daa0). Tiled inputs transfer exactly
+    under `set_domain`, and window restriction commutes, as for the true solution map. Index-parametrized weights
+    break both (s² decay error for learned diffusion).
+  - Release: CI workflow (pytest on CPU, Python 3.10 / 3.12) and CITATION.cff, both in the release build
+    (6ee59a7).
+- Decisions: none.
+- Next:
+  - Release rebuild with the new results (force-push to the public repository; user confirmation). Zenodo DOI
+    needs the user's Zenodo–GitHub link.
+  - Optional: a float32 WPO to separate precision from method in the cost.
+  - Open user decisions: C venue, D1 placement, A paper split.
+
 ### 2026-11-22 — Step 4c: the FNO block does not carry over to forced Burgers (a41); step 4 closed
 
 - Done:

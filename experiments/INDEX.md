@@ -31,6 +31,8 @@ JSON results where recorded (GPU wall time, often with another job on the GPU).
 | `a39_odd_local.py` | 513e658 2026-11-22 | `a39_odd_local.json`, `a39_odd_local.md` | 4.5 h | (A) Next-level step 4: closing the nonlinear gap without giving up the physical-wavenumber form. |
 | `a40_gap_source.py` | 547db6c 2026-11-22 | `a40_gap_source.json`, `a40_gap_source.md` | 1.7 h | (A) Next-level step 4b: where the TFNO's nonlinear edge on PDEBench Burgers comes from. |
 | `a41_block_forced.py` | 0362d7a 2026-11-22 | `a41_block_forced.json`, `a41_block_forced.md` | 4.7 h | (A) Next-level step 4c: does the FNO block keep the physical-wavenumber form's benefits (forced Burgers)? |
+| `a42_five_seeds.py` | cf1822b 2026-11-22 | `a42_five_seeds.json`, `a42_five_seeds.md` | 8.8 h | (A) Plan-review item: five seeds with intervals for the headline (A) claims. |
+| `a43_cost.py` | 34352ab 2026-11-22 | `a43_cost.json`, `a43_cost.md` | — | (A) Plan-review item: computational cost across models, at the budgets of the headline comparisons. |
 | `a9_burgers.py` | eac2be5 2026-11-18 | `a9_burgers.json`, `a9_burgers.md` | 0.9 h | (A) First deep validation: the deep wavenumber pole operator on forced viscous Burgers, against FNO, with a linear |
 
 ## A/layer
