@@ -18,7 +18,7 @@ csl: ../../C/paper/ieee.csl
 ---
 
 <!-- Project A working paper, 2026-11-21. Not for submission yet. Every number comes from
-experiments/A/layer/README.md (layer experiments) and experiments/A/deep/README.md (deep experiments, to a43), whose predictions
+experiments/A/layer/README.md (layer experiments) and experiments/A/deep/README.md (deep experiments, to a44), whose predictions
 were committed before each run (hashes there). Figures: experiments/A/paper/figures.py. -->
 
 ## Abstract {.unnumbered}
@@ -555,8 +555,11 @@ sample time (a20).
   (@sec-coarsening). Domain transfer was tested for one factor (2π to 4π), one time range (to t = 21), and a
   WPO-2D trained on 2π only; a WPO-2D trained on 4π was not run.
 - Two nonlinear systems, both with a known linearization at rest.
-- Cost: the WPO takes 4.4–4.7× the TFNO's time per training step and 1.6–1.7× its memory (a43). It runs in float64
-  and the TFNO in float32, so part of this factor is precision; per-index poles cost the same as poles in k.
+- Cost: in float64 the WPO takes 4.4–5× the TFNO's (float32) time per training step and 1.6–1.7× its memory
+  (a43). The factor is precision: in float32 (poles, FOH coefficients and pole parameters kept in float64) its
+  step is 1.0–1.05× the TFNO's on forced Burgers and 1.3× on PDEBench, with less memory than the TFNO, and the
+  form claim and PDEBench accuracy are unchanged within the 5-seed intervals (a44; the PDEBench float32 runs are a
+  post hoc rerun after a GPU FFT defect was fixed). Per-index poles cost the same as poles in k.
 - One parameter budget (59 k); FNO-type baselines from neuraloperator with a learning-rate sweep but no
   architecture search. Up to a35 the baselines were matched by `numel` (1.5–1.9× the WPO's real parameters);
   the key comparisons were rerun at equal real budgets (a36, a38; D: d2m) with the same conclusions.

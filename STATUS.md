@@ -185,6 +185,24 @@ Things to know:
 
 ## Log
 
+### 2026-11-23 — The WPO in float32 (a44): the cost factor is precision; a GPU irfft defect fixed
+
+- Done:
+  - `lfo.models` (379f1b4): float32 path for the 1D deep WPO (`WavenumberPoleOperator1d(dtype=...)`,
+    `WavenumberPoleConv1d(compute_dtype=...)`); poles, FOH coefficients and pole parameters stay float64. Default
+    bit-identical (checked on F and P).
+  - a44 (predictions a0edd34), alone on the RTX 4090: float32 WPO step 1.00–1.05× the TFNO's (F) and 1.31× (P);
+    0.21–0.32× the float64 WPO; memory 0.51× float64, below the TFNO's.
+  - Accuracy, 5 seeds: F unchanged (test 0.0238, unseen 1.33 [1.00, 1.67]); P pre-registered runs failed
+    (0.774). Post hoc diagnosis: complex64 cuFFT C2R does not ignore Im at k = 0 for large batches (torch 2.6,
+    CUDA 12.4; P's shapes affected, F's not). Fix 9d48999 (drop Im at k = 0 / Nyquist before irfft; regression
+    test; float64 path bit-identical, so no earlier result changes). P rerun with the fix: 0.0459 (+2 %).
+  - Predictions 1, 3, 4 held; 2 failed (F 1.00×, predicted ≥ 1.3×); 5 failed as registered, met post hoc.
+  - README a44 section; A paper cost bullet rewritten.
+- Decisions: none (float64 stays the default; float32 is an option).
+- Next: release rebuild with a44 (force-push needs the user); Zenodo; open user decisions (C venue, D1
+  placement, A paper split).
+
 ### 2026-11-22 — Release rebuild: follow-up code removed from the late modules
 
 - Found while rebuilding: the 7 `C/theory` modules in the public release had their docstrings and comments

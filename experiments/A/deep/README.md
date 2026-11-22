@@ -841,3 +841,60 @@ Time extrapolation, (5, 10] / test: WPO 1.85 [1.76, 1.95], per index 1.75 [1.67,
   not the method; a float32 WPO was not measured.
 - The pole form itself costs nothing: per-index poles cost the same as poles in k.
 - Correction to the a43 docstring: the LNO port runs in float32, not float64.
+
+## The WPO in float32: cost and accuracy (2026-11-23, a44)
+
+`a44_float32.py` → `results/a44_float32.md` (predictions a0edd34). `lfo.models` gained a float32 path for the 1D
+deep WPO (379f1b4): activations, pointwise layers and the pole layers' channel-sized work in float32 / complex64;
+pole and residue functions, FOH coefficients and pole parameters stay float64 (same real budget). The default
+float64 path is bit-identical.
+
+**Cost** (alone on the RTX 4090, a43's procedure; with the fixed layer, below):
+
+| setup | model | train step (ms) | × TFNO | × WPO float64 | inference (ms / sample) | peak memory (MB) |
+|---|---|---|---|---|---|---|
+| F | WPO float64 | 152 | 4.96 | 1.00 | 2.04 | 2197 |
+| F | WPO float32 | 32 | 1.05 | 0.21 | 0.49 | 1112 |
+| F | TFNO | 31 | 1.00 | 0.20 | 0.53 | 1277 |
+| P | WPO float64 | 88 | 4.46 | 1.00 | 1.23 | 1570 |
+| P | WPO float32 | 26 | 1.31 | 0.29 | 0.30 | 815 |
+| P | TFNO | 20 | 1.00 | 0.22 | 0.33 | 975 |
+
+The pre-registered measurement (before the fix) gave the same ratios: F 1.00×, P 1.31× the TFNO; 0.22× / 0.32×
+the float64 WPO. Absolute times of the second session are about 10 % higher for every model.
+
+**Accuracy** (5 seeds, 95 % t-intervals; float64 rows from a42):
+
+| setup | model | test / nRMSE | unseen / test | probe outside the band / ν' |
+|---|---|---|---|---|
+| F | WPO float64 | 0.0239 [0.0232, 0.0245] | 1.26 [0.92, 1.61] | 0.098 [0.058, 0.139] |
+| F | WPO float32 | 0.0238 [0.0233, 0.0243] | 1.33 [1.00, 1.67] | 0.121 [0.028, 0.213] |
+| F | per index / TFNO (a42) | 0.0230 / 0.0287 | 181 [106, 255] / 30.5 [18.7, 42.3] | 0.98 / 0.87 |
+| P | WPO float64 | 0.0450 [0.0440, 0.0459] | – | ν' 0.101 |
+| P | WPO float32, pre-registered | 0.774 (3 of 5 seeds at 1.0) | – | nan |
+| P | WPO float32, rerun with the fixed layer (post hoc) | 0.0459 [0.0439, 0.0479] | – | ν' 0.091 |
+
+**A defect found on the way (post hoc).** The pre-registered P runs failed. At the same trained weights the
+float32 forward differed from float64 by 144 %, although every FFT, kernel and contraction agreed to 1e-7. Cause:
+complex residues give the k = 0 bin an imaginary part, which irfft must ignore. CPU and float64 cuFFT do, but
+complex64 cuFFT C2R does not for large batches (torch 2.6, CUDA 12.4): 6 % error on random spectra at P's shapes
+(n_x = 256 from 64 bins), none at F's (n_x = 64 from 22 bins), so the F runs are valid. The layer now drops that
+imaginary part explicitly (9d48999), with a regression test that fails without the fix. The float64 path is
+bit-identical, so no earlier result changes.
+
+**Predictions against results.**
+1. float32 step ≤ 0.5× the float64 WPO's in both setups: **holds** (0.22, 0.32; rerun 0.21, 0.29).
+2. float32 step still ≥ 1.3× the TFNO's in both: **fails** on F (1.00; rerun 1.05), holds on P (1.31).
+3. float32 peak memory ≤ 0.7× float64's: **holds** (0.51, 0.52).
+4. F: form claim kept, test within 5 %: **holds** (unseen 1.33 [1.00, 1.67], disjoint from 106–255 and 18.7–42.3;
+   test 0.0238 against 0.0239).
+5. P: nRMSE within 5 % of float64's: **fails** as registered (0.774, the cuFFT defect). Post hoc, with the fixed
+   layer: 0.0459, 2 % above.
+
+**Reading.**
+- a43's 4.4–5× cost factor is precision, not method. In float32 the WPO matches the TFNO's training step on
+  forced Burgers (201 time samples) and takes 1.3× on PDEBench, with less memory than the TFNO in both.
+- float32 keeps the results: the form claim on F and the PDEBench accuracy (post hoc) are unchanged within the
+  intervals.
+- Mixed-precision code on the GPU needs a Hermitian check before irfft; a unit test at initialization (real
+  residues) did not catch it.

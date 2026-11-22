@@ -11,6 +11,17 @@
 | P | wpo32 | 61130 | float32 | 24.9 | 1.31 | 0.32 | 0.258 | 815 |
 | P | tfno_r | 64745 | float32 | 19.0 | 1.00 | 0.24 | 0.292 | 975 |
 
+## Cost with the fixed layer (post hoc) (NVIDIA GeForce RTX 4090, torch 2.6.0+cu124)
+
+| setup | model | real params | dtype | train step (ms) | ratio to tfno_r | ratio to wpo (float64) | inference (ms / sample) | peak train memory (MB) |
+|---|---|---|---|---|---|---|---|---|
+| F | wpo | 59529 | float64 | 152.3 | 4.96 | 1.00 | 2.044 | 2197 |
+| F | wpo32 | 59529 | float32 | 32.1 | 1.05 | 0.21 | 0.494 | 1112 |
+| F | tfno_r | 54649 | float32 | 30.7 | 1.00 | 0.20 | 0.527 | 1277 |
+| P | wpo | 61130 | float64 | 88.2 | 4.46 | 1.00 | 1.228 | 1570 |
+| P | wpo32 | 61130 | float32 | 26.0 | 1.31 | 0.29 | 0.296 | 815 |
+| P | tfno_r | 64745 | float32 | 19.8 | 1.00 | 0.22 | 0.329 | 975 |
+
 ## F: forced Burgers (a42 setup)
 
 Mean ± standard deviation [95 % t-interval] over seeds 0–4; float64 rows from a42.
@@ -29,3 +40,4 @@ Mean ± standard deviation [95 % t-interval] over seeds 0–4; float64 rows from
 | wpo | 5 | 0.0450 ± 0.0008 [0.0440, 0.0459] | 1.00 ± 0.00 [1.00, 1.00] | 0.1014 ± 0.0179 [0.0792, 0.1235] | 0.246 ± 0.116 [0.103, 0.390] |
 | tfno_r | 5 | 0.0254 ± 0.0006 [0.0247, 0.0261] | 1.00 ± 0.00 [1.00, 1.00] | 0.0402 ± 0.0084 [0.0297, 0.0507] | 0.691 ± 0.078 [0.594, 0.787] |
 | wpo32 (pre-registered; cuFFT defect) | 5 | 0.7741 ± 0.3382 [0.3542, 1.1940] | 1.00 ± 0.00 [1.00, 1.00] | nan ± nan [nan, nan] | 0.868 ± 0.188 [0.635, 1.102] |
+| wpo32 rerun (fixed layer, post hoc) | 5 | 0.0459 ± 0.0016 [0.0439, 0.0479] | 1.00 ± 0.00 [1.00, 1.00] | 0.0912 ± 0.0127 [0.0755, 0.1069] | 0.304 ± 0.107 [0.171, 0.436] |
