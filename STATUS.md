@@ -200,8 +200,12 @@ Things to know:
   - Predictions 1, 3, 4 held; 2 failed (F 1.00×, predicted ≥ 1.3×); 5 failed as registered, met post hoc.
   - README a44 section; A paper cost bullet rewritten.
 - Decisions: none (float64 stays the default; float32 is an option).
-- Next: release rebuild with a44 (force-push needs the user); Zenodo; open user decisions (C venue, D1
-  placement, A paper split).
+- Release rebuilt with a44 (scratchpad `lfo_release3`: 227 commits, 2,066 files; release pytest 66 passed,
+  9 skipped; no follow-up code, file names or commit messages). The C paper's E2 paragraph ("a follow-up study
+  (to appear)") still summarizes the follow-up's headline results; it was in every earlier build. Left for the
+  user to decide.
+- Next: force-push of `lfo_release3` (user); Zenodo; open user decisions (C venue, D1 placement, A paper split,
+  the C paper's E2 paragraph in the release).
 
 ### 2026-11-22 — Release rebuild: follow-up code removed from the late modules
 
