@@ -185,6 +185,22 @@ Things to know:
 
 ## Log
 
+### 2026-11-22 — Release rebuild: follow-up code removed from the late modules
+
+- Found while rebuilding: the 7 `C/theory` modules in the public release had their docstrings and comments
+  stripped, but still carried the follow-up's code and report strings (E2/E4 titles, EIV and certificate code).
+  This was also true of the build pushed earlier.
+- Fix (`release/make_release.py`, `shake_late`): each late module keeps only the top-level code released scripts
+  use, transitively. That leaves 2 modules: `e2_train.FOHPoleResidue` and `e4_profile.VarPro` / `pack` /
+  `unpack_theta`. No follow-up terms remain.
+  - The shaken `VarPro` gives bit-identical fits to the development one.
+  - Release pytest: 64 passed, 9 skipped.
+  - (A) commit messages that mention propositions are no longer withheld.
+- Not done: the force-push of the rebuilt release (221 commits, scratchpad `lfo_release2`) was blocked by the
+  permission settings and needs the user.
+- Next: user to force-push (or allow it), then Zenodo; float32 WPO cost (needs a float32 path in `lfo.models`,
+  not started).
+
 ### 2026-11-22 — Five seeds with intervals (a42), cost (a43), consistency proposition, CI
 
 - Done:
