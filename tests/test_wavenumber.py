@@ -435,3 +435,21 @@ def test_float32_deep_operator_matches_float64_and_keeps_float64_poles():
     assert ((y32.double() - y64).norm() / y64.norm()) < 1e-5
     y32.square().sum().backward()                 # gradients reach the float64 pole parameters
     assert m32.K[1].mu_re.grad is not None and torch.isfinite(m32.K[1].mu_re.grad).all()
+
+
+def test_conv1d_drops_imaginary_dc_so_float32_matches_float64_on_gpu():
+    """Complex residues give the k = 0 bin an imaginary part; irfft must ignore it. complex64 cuFFT C2R does not for
+    large batches, so the layer drops it explicitly (a44). On CPU this only checks the float32 / float64 match."""
+    from lfo.models.wavenumber import WavenumberPoleConv1d
+    dev = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    t = np.linspace(0, 1, 41)
+    torch.manual_seed(0)
+    K = WavenumberPoleConv1d(23, 23, 6, t, modes=64, stable=True, k_ref=2 * math.pi * 16, length=1.0).to(dev)
+    with torch.no_grad():
+        K.beta.normal_()                                   # complex residues, also at k^0
+    v = torch.randn(25, 23, 256, 41, dtype=torch.float64, device=dev)
+    with torch.no_grad():
+        y64 = K(v)
+        K.compute_dtype = torch.float32
+        y32 = K(v.float()).double()
+    assert ((y32 - y64).norm() / y64.norm()) < 1e-5

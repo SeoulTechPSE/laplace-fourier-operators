@@ -393,6 +393,14 @@ class WavenumberPoleConv1d(WavenumberPoleLayer1d):
         vk = vk - torch.einsum("oikt,bik->bokt", C, fk[..., 0])
         if free is not None:
             vk = vk + free
+        # irfft must see a Hermitian spectrum: drop Im at k = 0 (and at the Nyquist bin) explicitly. Complex residues
+        # give these bins an imaginary part; CPU and float64 cuFFT ignore it, but complex64 cuFFT C2R does not for
+        # large batches (torch 2.6, CUDA 12.4: a 6 % error on random spectra, a different function in training, a44)
+        keep = torch.ones(K, dtype=torch.bool, device=f.device)
+        keep[0] = False
+        if n_x % 2 == 0 and K == n_x // 2 + 1:
+            keep[-1] = False
+        vk = torch.where(keep[:, None], vk, vk.real.to(vk.dtype))
         return torch.fft.irfft(vk, n=n_x, dim=2).to(f.dtype)
 
 
