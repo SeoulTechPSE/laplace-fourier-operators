@@ -753,3 +753,29 @@ Three variants, each at the WPO's real budget, with an lr sweep at 4000 steps an
   extrapolation 1.8× against the TFNO's 10×).
 - Not tested here: whether `wpo_mlp` keeps the form's benefits on forced Burgers (out of band, unseen modes), and
   whether the two parts add up.
+
+## Next-level step 4c (2026-11-22): the FNO block on forced Burgers (a41)
+
+`a41_block_forced.py` → `results/a41_block_forced.md` (predictions 0362d7a). This tests whether a40's `wpo_mlp`
+keeps the form's benefits. Setup as a36: width 23, 57,011 real parameters; the WPO's configuration; 3 seeds.
+
+| model | real params | test | (5, 10] / test | probe outside the band | unseen / test |
+|---|---|---|---|---|---|
+| WPO (a11) | 59,529 | **0.0237** (0.0230–0.0244) | 1.83 | **0.116** (0.091–0.142) | 1.34 (1.11–1.71) |
+| TFNO, real budget (a36) | 54,649 | 0.0279 | 10.3 | 0.887 | 32 |
+| `wpo_mlp` | 57,011 | 0.0242 (0.0223–0.0265) | 2.02 (1.93–2.09) | 0.386 (0.139–0.837) | 2.16 (1.81–2.36) |
+
+**Predictions against results.**
+1. Mean test ≤ 0.0215: **fails**. At 0.0242 the error is the WPO's; the block's PDEBench gain does not carry over.
+2. In every seed, unseen-mode ratio ≤ 3 and probe outside the band ≤ 0.3: **fails**. The unseen-mode part holds
+   in every seed (≤ 2.36). The probe part fails in seed 0 (0.84).
+3. Mean (5, 10] / test ≤ 2.5: **holds** (2.02).
+
+**Reading.**
+- **Seed 0's probe.** It is right to k = 11 (≤ 18 %) and then diverges: 31 % at k = 12, 88 % at k = 14 and 3× at
+  k = 16. The other two seeds stay within 35 %. The extra nonlinear capacity lets the polynomial pole laws drift
+  where the data put no constraint. That was a stated risk; per-index poles (a36) fail the same way, though more.
+- **No accuracy gain here.** On forced Burgers the WPO was already ahead of the TFNO, and the block adds nothing.
+  Its gain on PDEBench is specific to the initial-value task.
+- **Decision.** The default deep block stays the WPO's. `wpo_mlp` remains an experiment-level variant, not
+  promoted to `lfo.models`. The conditional reruns (2D coarsening, D2) are not run.

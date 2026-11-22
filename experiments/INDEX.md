@@ -30,6 +30,7 @@ JSON results where recorded (GPU wall time, often with another job on the GPU).
 | `a38_real_budget_2d.py` | b77bffe 2026-11-22 | `a38_real_budget_2d.json`, `a38_real_budget_2d.md` | 0.2 h | (A) 2D Cahn–Hilliard coarsening: the TFNO at the WPO-2D's real parameter budget (a33 setup). |
 | `a39_odd_local.py` | 513e658 2026-11-22 | `a39_odd_local.json`, `a39_odd_local.md` | 4.5 h | (A) Next-level step 4: closing the nonlinear gap without giving up the physical-wavenumber form. |
 | `a40_gap_source.py` | 547db6c 2026-11-22 | `a40_gap_source.json`, `a40_gap_source.md` | 1.7 h | (A) Next-level step 4b: where the TFNO's nonlinear edge on PDEBench Burgers comes from. |
+| `a41_block_forced.py` | 0362d7a 2026-11-22 | `a41_block_forced.json`, `a41_block_forced.md` | 4.7 h | (A) Next-level step 4c: does the FNO block keep the physical-wavenumber form's benefits (forced Burgers)? |
 | `a9_burgers.py` | eac2be5 2026-11-18 | `a9_burgers.json`, `a9_burgers.md` | 0.9 h | (A) First deep validation: the deep wavenumber pole operator on forced viscous Burgers, against FNO, with a linear |
 
 ## A/layer

@@ -185,6 +185,31 @@ Things to know:
 
 ## Log
 
+### 2026-11-22 — Step 4c: the FNO block does not carry over to forced Burgers (a41); step 4 closed
+
+- Done:
+  - a41 (predictions 0362d7a): `wpo_mlp` on forced Burgers (57,011 real parameters):
+    - test 0.0242, against the WPO's 0.0237;
+    - (5, 10] ratio 2.02;
+    - unseen modes ≤ 2.36 in every seed;
+    - probe outside the band 0.14 / 0.18 / 0.84 (seed 0 diverges above k = 12).
+  - Predictions: 1 (≤ 0.0215) and 2 (every seed) failed; 3 held.
+- Decisions:
+  - The default deep block is unchanged. `wpo_mlp` is not promoted to `lfo.models`.
+  - The conditional reruns (2D coarsening, D2) are dropped.
+- Step 4 summary (a39–a41):
+  - The nonlinear gap on initial-value data is not the linear symbol.
+  - Part of it is the block: on PDEBench only, and at a robustness cost.
+  - Most of the rest is consistent with whole-window temporal mixing. That is the price of the causal time axis,
+    which buys time extrapolation (1.8–2.0× against the TFNO's 10×) and forcing semantics. Stated as such in the
+    A paper.
+- Next: next-level steps 1, 3 and 4 are done; step 2 (C venue) and D1 placement / A paper split are user
+  decisions. Remaining "also" items of the plan review, proposed in order:
+  - ≥ 5 seeds with intervals for the headline (A) claims;
+  - a cost metric across models (time and memory per sample);
+  - the domain-scaling statement as a short theory result;
+  - a release rebuild with Zenodo DOI and CI.
+
 ### 2026-11-22 — Step 4b: the gap is half the block, half the time axis (a40)
 
 - Done:
