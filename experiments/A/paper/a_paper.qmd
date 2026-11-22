@@ -117,6 +117,60 @@ with $\beta_n(k)$ a polynomial in k². The parameters are continuous in k, so th
   channel pairs and a residue matrix per pole. Summing the poles into one frequency-domain kernel per channel pair
   makes training 2.5× faster, with identical outputs.
 
+### Domain and window consistency {#sec-consistency}
+
+Write $\Phi_{L}$ for a deep WPO on a periodic domain of length L, at grid spacing h and band $|k|\le K_c$. When L
+changes, `set_domain` rescales the mode count, so the physical band stays the same. Write $P_s$ for the map that
+reads an L-periodic field as an sL-periodic one ($s\in\mathbb N$, same spacing). On the grid this is tiling s
+times.
+
+**Proposition (consistency).**
+
+(a) *Domain.* $\Phi_{sL}\circ P_s=P_s\circ\Phi_L$ exactly.
+
+(b) *Window.* For $T'>T$ at the same Δt, the output of $\Phi$ on $[0,T']$ restricted to $[0,T]$ equals its
+output on $[0,T]$ from the restricted input.
+
+The solution map $S$ of any autonomous, translation-invariant evolution equation with unique solutions has both
+properties, linear or not. Hence on inputs of the form $P_s f$, the relative error on the large domain equals the
+relative error on the training domain. Tiling scales both norms by $\sqrt s$.
+
+*Proof.*
+
+- *Domain.* $P_s f$ has Fourier support on $(2\pi/L)\mathbb Z\subset(2\pi/(sL))\mathbb Z$, with the same coefficients
+  under the FFT normalization. Each pole layer multiplies mode k by a temporal kernel that depends only on k, and
+  the band selects the same physical k on both grids. Lifting, channel mixes, activations and projection act
+  pointwise, and the sL grid is s copies of the L grid, so every block commutes with $P_s$. Induction over the
+  blocks gives (a).
+- *Window.* Every block is causal. The FOH recursion uses only Δt and past samples, and the pointwise parts act
+  sample by sample. This gives (b).
+- Uniqueness and translation invariance give $S_{sL}P_s=P_sS_L$; autonomy and causality of the evolution give (b)
+  for $S$. ∎
+
+**Index-parametrized operators.**
+
+- *Domain (a).* A spectral layer with a weight $R_m$ per mode index m has property (a) only if $R_{sm}=R_m$ on
+  the band. On the sL grid, $P_sf$ occupies the indices sm, so the layer applies $R_{sm}$ where $R_m$ was learned.
+  Its band shrinks to $|m|\le m_c/s$ in units of the old index.
+  - Example: a layer that has learned exact diffusion, $R_m=e^{-\nu(2\pi m/L)^2\Delta t}$, still applies $R_m$ at
+    index m. On the sL grid that index is the physical wavenumber $2\pi m/(sL)$, whose true factor is
+    $e^{-\nu(2\pi m/(sL))^2\Delta t}$. Every resolved mode therefore decays $s^2$ times too fast.
+  - This is the mechanism behind the TFNO's failure on the 4π box (@sec-coarsening).
+- *Window (b).* An FNO's temporal Fourier modes over the padded window break (b). This is the whole-window mixing
+  that carries part of its accuracy on PDEBench (a40).
+
+**Beyond tiled inputs.**
+
+- A general sL-periodic input also excites the wavenumbers between the training ones, and there the layer is
+  evaluated off its training grid. For a single linear layer whose pole law has the form of the truth (polynomials
+  in k² of degree d), agreement at d + 1 distinct training |k| implies agreement at every k in the band. Otherwise
+  the error at a new k is the interpolation error of the law, which the in-band probe bounds only at the training
+  wavenumbers.
+- For deep nonlinear operators no such bound is offered. The 2D transfer (1.02–1.03× the training-domain error;
+  a34) is empirical.
+- Property (a) and the causality behind (b) are tested in `tests/test_wavenumber.py` (tiled fields under
+  `set_domain`; causality of the layer and of the deep operator).
+
 ## Linear systems {#sec-linear}
 
 **Data.** Periodic x, 64 points, T = 5, n_t = 201. Each sample is forced at a few random modes with step, ramp,
@@ -396,7 +450,8 @@ n = 0.261. {#tbl-coarsening}
 - **The pole operator transfers across box sizes; the TFNO does not.**
   - A WPO-2D trained on 2π runs on a 4π box at the same spacing with no data and no retraining: each layer gets
     the new length and twice the mode count. The poles are functions of the physical wavenumber, so the
-    one-window error is unchanged (1.02–1.03×) and the 4π rollouts keep the law (a34).
+    one-window error is unchanged (1.02–1.03×) and the 4π rollouts keep the law (a34). Tiled inputs transfer exactly (@sec-consistency);
+    the 4π states are not tiled, so this is the off-grid case.
   - The TFNO's spectral weights belong to mode indices, which on 4π are other physical wavenumbers: 35× the
     error, domains growing 2.2× too fast (@fig-transfer).
   - A TFNO trained on 4π with its mode count doubled is 1.8× more accurate than the transferred WPO-2D (a35). With
