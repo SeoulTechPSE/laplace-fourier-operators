@@ -381,3 +381,22 @@ budget, d2g's setup (3 seeds): `poles12` (12 poles, width 16, 57,825), `layers6`
 - The unseen-mode tolerance holds in every variant (2.2–2.7 against 10.4). This is the WPO's robust structural
   advantage with initial fields.
 - D2's Cahn–Hilliard line closes here.
+
+## Thirteenth pass (2026-11-22): the TFNO at the WPO's real budget (d2m)
+
+`d2m_real_budget.py` → `results/d2m_real_budget.md` (predictions b77bffe). Found in (A) a36: `numel` counts a
+complex weight once, so d2g's `tfno_chan` (59,113 by `numel`) had 110,617 real parameters, 1.81× `wpo_ic`'s
+61,130. `tfno_r`: width 21, rank 0.014, 61,320 real; otherwise d2g.
+
+| model | real params | id | high (ratio to id) | roll4 | force_only | ic_only |
+|---|---|---|---|---|---|---|
+| wpo_ic | 61,130 | 0.0255 | 0.0599 (2.35) | 0.0498 | 0.0457 | 0.0209 |
+| tfno_chan | 110,617 | 0.0126 | 0.1314 (10.4) | 0.0240 | 0.0333 | 0.0087 |
+| tfno_r | 61,320 | 0.0141 (0.0135–0.0153) | 0.1899 (13.4) | 0.0241 | 0.0385 | 0.0101 |
+
+**Predictions against results.**
+1. `tfno_r` between 0.0126 and 0.019: **holds** (0.0141).
+2. `tfno_r` unseen-mode ratio ≥ 5: **holds** (13.4).
+
+**Reading.** Halving the TFNO's real parameters costs it 12 % in distribution and nothing in 4-window rollout. The
+Cahn–Hilliard gap (now 1.8×) is not a budget artifact; nor is the TFNO's unseen-mode weakness.

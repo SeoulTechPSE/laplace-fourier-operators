@@ -173,6 +173,9 @@ Rollout chains 4 windows over [0, 20].
   - Nor is it the temporal expressivity or the depth of the backbone (d2l). Twelve poles at a narrower width are
     worse (0.029). Depth helps with diminishing returns: 3, 4 and 6 layers give 0.032, 0.026 and 0.024. The best
     WPO stays at 2× the TFNO's error; the gap is a property of the two architectures on this system.
+  - Nor is it the TFNO's parameter count (d2m). The TFNO had 1.81× the WPO's real parameters (its complex
+    weights were counted once). At the WPO's real budget it gives 0.014 against 0.013, 1.8× better than the WPO,
+    and its unseen-mode ratio is 13.
 ### Two initial fields
 
 - **A damped beam.** u_tt = −c²u_xxxx + η u_xxt + f, observed through its displacement, with
@@ -270,8 +273,8 @@ in place. What makes this possible is an exact, causal time axis that does not a
 (about 10 % over 4 windows with fresh-start training, 4 % with developed-start training) and none over 10 windows.
 On Cahn–Hilliard a TFNO rolls out 2× better. That gap is set within one window, not by rollout instability:
 - the true dynamics contract a carried error (0.81–0.96 per window), and both models reproduce that contraction;
-- the gap survives four ways of feeding the initial field, twice the poles, and 3 to 6 layers (best WPO 0.024
-  against 0.013).
+- the gap survives four ways of feeding the initial field, twice the poles, 3 to 6 layers (best WPO 0.024
+  against 0.013), and an equal real parameter budget (TFNO 0.014; d2m).
 
 The choice of training windows matters more than the architecture. The robust structural benefit is extrapolation
 in the mode content of the initial field, which every WPO variant kept (2.2–2.7× against the TFNO's 10.4×). In

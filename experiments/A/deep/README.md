@@ -612,6 +612,23 @@ every model except the LNO is within a few % of −νk², as ν̂ shows.)
 - The TFNO's earlier 2× real budget did not help it here: at the WPO's real budget it is slightly better. The
   WPO's lead on forced Burgers (15 %) holds at equal real budgets.
 
+## Real-budget rerun (2026-11-22): 2D coarsening (a38)
+
+`a38_real_budget_2d.py` → `results/a38_real_budget_2d.md` (predictions b77bffe). a31 / a33's TFNO had 27,409 real
+parameters (1.46× the WPO-2D's 18,737). `tfno_r`: width 12, rank 0.01, 19,037 real; otherwise a33.
+
+| model | real params | window-end error | rollout, window 1 / 5 / 20 | L(21) / truth | n |
+|---|---|---|---|---|---|
+| wpo_aug (a33) | 18,737 | 0.0366 | 0.223 / 0.472 / 0.812 | 0.961–0.990 | 0.244–0.262 |
+| tfno_aug (a33) | 27,409 | 0.0189 | 0.140 / 0.241 / 0.407 | 0.974–0.976 | 0.255–0.257 |
+| tfno_r | 19,037 | 0.0197 (0.0185–0.0218) | 0.140 / 0.239 / 0.462 | 0.981–0.987 | 0.259–0.263 |
+
+**Predictions against results.** 1. window-end below 0.028: **holds** (0.0197). 2. window-20 below `wpo_aug`'s:
+**holds** (0.46 against 0.81).
+
+**Reading.** At an equal real budget the TFNO keeps its 1.9× per-window lead; the budget miscount did not create
+it.
+
 ## Next-level step 3 (2026-11-22): PDEBench 1D Burgers, a public benchmark (a37)
 
 `a37_pdebench_burgers.py` → `results/a37_pdebench_burgers.md` (predictions c12faba; post hoc rerun 1cdc1b5 and

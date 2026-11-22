@@ -82,10 +82,11 @@ excited band and transferable across domain sizes. @sec-form tests that claim ag
 same architecture.
 
 **Parameter budgets.** All budgets are counted in real degrees of freedom. The FNO-type baselines up to a35 were
-matched by `numel`, which counts a complex weight once; their real budgets were about 1.9× the WPO's. This only
-strengthens the comparisons the WPO wins; where the TFNO wins (2D coarsening, @sec-coarsening), it did so with
-more parameters. a36 checks the effect on forced Burgers: a TFNO at the WPO's real budget is as accurate as the
-larger one.
+matched by `numel`, which counts a complex weight once; their real budgets were 1.5–1.9× the WPO's. Reruns at
+equal real budgets change no conclusion: on forced Burgers the smaller TFNO is slightly better (a36), in 2D
+coarsening it keeps its lead (window-end 0.020 against 0.019 at 1.46×; a38), and on project D's Cahn–Hilliard
+it is 0.014 against 0.013 (d2m). The tables below give the original runs; the reruns are in the experiment
+records.
 
 Every experiment below was pre-registered: predictions were committed before the runs, and every failed
 prediction is reported.
@@ -443,8 +444,8 @@ sample time (a20).
   - transfer across domain sizes without retraining (@sec-coarsening).
 
   It does not pay in pointwise accuracy in the strongly nonlinear regime on the training domain. There the TFNO
-  is 2× better (2D coarsening, with about 1.9× the real parameters; also project D's Cahn–Hilliard with initial
-  fields) and 1.8× better on PDEBench Burgers at an equal real budget.
+  is 2× better (2D coarsening, also at an equal real budget; also project D's Cahn–Hilliard with initial
+  fields, 1.8× at an equal budget) and 1.8× better on PDEBench Burgers at an equal real budget.
 - **Rollout stability is a data question.** The WPO-2D coarsening divergence was cured by amplitude-scaled
   training starts, not by any pole constraint.
 - **Training details decide the outcome**, as in (C):
@@ -460,8 +461,8 @@ sample time (a20).
   WPO-2D trained on 2π only; a WPO-2D trained on 4π was not run.
 - Two nonlinear systems, both with a known linearization at rest.
 - One parameter budget (59 k); FNO-type baselines from neuraloperator with a learning-rate sweep but no
-  architecture search. Up to a35 the baselines were matched by `numel` (about 1.9× the WPO's real parameters);
-  only a36 and a37 match real budgets, and the 2D comparisons have not been rerun.
+  architecture search. Up to a35 the baselines were matched by `numel` (1.5–1.9× the WPO's real parameters);
+  the key comparisons were rerun at equal real budgets (a36, a38; D: d2m) with the same conclusions.
 - One public benchmark (PDEBench 1D Burgers), unforced; the SSM and spectral-generator operators of the related
   work were represented by per-index poles inside the WPO, not run from their own code.
 - The probe is a small-amplitude linearization at u = 0. Linearizations about other uniform states were learned

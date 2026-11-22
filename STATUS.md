@@ -185,6 +185,19 @@ Things to know:
 
 ## Log
 
+### 2026-11-22 — Real-budget reruns (a38, d2m); step 4 started (a39)
+
+- Done:
+  - a38 (2D coarsening, predictions b77bffe): TFNO at the WPO-2D's real budget (19,037): window-end 0.0197
+    (0.0189 at 1.46×), window 20 0.46 against the WPO's 0.81. Both predictions held.
+  - d2m (D2 Cahn–Hilliard, b77bffe): TFNO at 61,320 real: id 0.0141 (0.0126 at 1.81×), unseen-mode ratio 13.4.
+    Both predictions held. The nonlinear gap (1.8–1.9×) is not a budget artifact. A and D papers updated.
+  - Step 4: the WPO cannot apply the odd symbol i k (residues even in k; pointwise mixes); `beta_powers` added to
+    `WavenumberPoleConv1d` (test). a39 pre-registered (513e658): odd residue powers and 5-tap local mixing, on
+    PDEBench (gap) and forced Burgers (form's benefits). Running.
+- Decisions: none.
+- Next: a39 results.
+
 ### 2026-11-22 — Next-level steps 1–3: literature, per-index poles and LNO (a36), PDEBench (a37), (C) paper prep
 
 - Done:

@@ -27,6 +27,8 @@ JSON results where recorded (GPU wall time, often with another job on the GPU).
 | `a35_tfno_4pi.py` | ca6f6e3 2026-11-21 | `a35_tfno_4pi.json`, `a35_tfno_4pi.md` | 2.6 h | (A) Application 2, stage 2e: a TFNO trained on the 4 pi box (the accuracy reference for a34's transfer). |
 | `a36_index_poles.py` | ebcce69 2026-11-22 | `a36_index_poles.json`, `a36_index_poles.md` | — | (A) Next-level step 1: is it the physical-wavenumber form of the poles that pays, and how does the LNO compare? |
 | `a37_pdebench_burgers.py` | c12faba 2026-11-22 | `a37_pdebench_burgers.json`, `a37_pdebench_burgers.md` | — | (A) Next-level step 3: the core (A) claims on a public benchmark, PDEBench 1D Burgers (nu = 0.01). |
+| `a38_real_budget_2d.py` | b77bffe 2026-11-22 | `a38_real_budget_2d.json`, `a38_real_budget_2d.md` | 0.2 h | (A) 2D Cahn–Hilliard coarsening: the TFNO at the WPO-2D's real parameter budget (a33 setup). |
+| `a39_odd_local.py` | 513e658 2026-11-22 | — | — | (A) Next-level step 4: closing the nonlinear gap without giving up the physical-wavenumber form. |
 | `a9_burgers.py` | eac2be5 2026-11-18 | `a9_burgers.json`, `a9_burgers.md` | 0.9 h | (A) First deep validation: the deep wavenumber pole operator on forced viscous Burgers, against FNO, with a linear |
 
 ## A/layer
@@ -139,6 +141,7 @@ JSON results where recorded (GPU wall time, often with another job on the GPU).
 | `d2j_ch_paths.py` | ba5edd3 2026-11-21 | `d2j_ch_paths.json`, `d2j_ch_paths.md` | 1.1 h | (D2) Cahn–Hilliard with initial fields: is the one-window gap in the initial-field or in the forcing response? |
 | `d2k_ic_capacity.py` | 66443e4 2026-11-21 | `d2k_ic_capacity.json`, `d2k_ic_capacity.md` | 1.8 h | (D2) Cahn–Hilliard with initial fields: does the IC path lack capacity? Two variants at a matched budget. |
 | `d2l_backbone.py` | 8a047e9 2026-11-21 | `d2l_backbone.json`, `d2l_backbone.md` | 3.2 h | (D2) Cahn–Hilliard with initial fields: is the WPO backbone limited by its temporal or by its nonlinear depth? |
+| `d2m_real_budget.py` | b77bffe 2026-11-22 | `d2m_real_budget.json`, `d2m_real_budget.md` | 0.3 h | (D2) Cahn–Hilliard with initial fields: the TFNO at the WPO's real parameter budget. |
 
 ## D/d3_boundary
 
