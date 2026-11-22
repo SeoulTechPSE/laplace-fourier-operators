@@ -6,8 +6,9 @@ hashes quoted in the READMEs to the new ones. Not released: `docs/` (plans), `ST
 foundation reproduction results, `experiments/C/e1_audit/E1_report.md` (internal report with the follow-up plan),
 and `experiments/C/theory/` (a follow-up study, unpublished).
 
-The follow-up study stays out of the release: the `C/theory` modules that released scripts import are added in the
-release commit only (no history, no comments or inner docstrings, module docstring replaced by a neutral line), file references to the
+The follow-up study stays out of the release: of the `C/theory` modules that released scripts import, only the
+top-level code those scripts use (transitively) is kept (`shake_late`), added in the release commit only (no history,
+no comments or inner docstrings, module docstring replaced by a neutral line); file references to the
 follow-up are replaced by "a follow-up study" in every version (REPLACE_TEXT), and commit messages that mention the
 follow-up (E2–E4, H1–H3, propositions, CRB, certificates, EIV) are replaced by a neutral message.
 
@@ -46,7 +47,11 @@ Proposition 7==>a follow-up result
 """
 MESSAGE_CALLBACK = r"""
 import re
-if re.search(rb"\b(E[234]|H[1-3]|[Pp]roposition|CRB|Cram|certificate|EIV|[Ii]nput noise|output noise)\b", message):
+first = message.split(b"\n", 1)[0]
+terms = rb"E[234]|H[1-3]|CRB|Cram|certificate|EIV|[Ii]nput noise|output noise"
+if not first.startswith(b"A:"):        # (A)'s own propositions (domain consistency) are not the follow-up's
+    terms += rb"|[Pp]roposition"
+if re.search(rb"\b(" + terms + rb")\b", message):
     scope = message.split(b":", 1)[0] if b":" in message.split(b"\n", 1)[0] else b"C"
     message = scope + b": update (message withheld: it concerns an unpublished follow-up study)\n"
 return message
@@ -121,6 +126,94 @@ def neutral_module(src: str) -> str:
     return "\n".join(out)
 
 
+def _bound(node):
+    """Names a top-level statement binds."""
+    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+        return {node.name}
+    if isinstance(node, (ast.Import, ast.ImportFrom)):
+        return {(a.asname or a.name).split(".")[0] for a in node.names}
+    if isinstance(node, (ast.Assign, ast.AnnAssign, ast.AugAssign)):
+        targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+        return {n.id for t in targets for n in ast.walk(t) if isinstance(n, ast.Name)}
+    return set()
+
+
+def _late_aliases(tree, stems):
+    """alias -> late module stem, for `import stem [as alias]`."""
+    return {(a.asname or a.name): a.name for n in ast.walk(tree) if isinstance(n, ast.Import)
+            for a in n.names if a.name in stems}
+
+
+def shake_late(paths, late):
+    """Keep, in each late module, only the top-level code that released scripts use (transitively).
+
+    Roots are the names released scripts import from a late module (`from m import x`, `import m as M` with `M.x`).
+    Within a late module a kept statement pulls in every top-level statement binding a name it references, and
+    `M.x` on another late module adds x to that module's roots. `sys.path` set-up, `from __future__` and the module
+    docstring are kept; everything else (the follow-up's own code, its CLI and report writers) is dropped. Returns
+    {path: source} for the modules with any kept code."""
+    stems = {Path(p).stem: p for p in late}
+    trees = {p: ast.parse(git("show", f"HEAD:{p}")) for p in late}
+    roots = {p: set() for p in late}
+
+    def add_refs(tree_nodes, aliases):
+        changed = False
+        for node in tree_nodes:
+            for n in ast.walk(node):
+                if isinstance(n, ast.ImportFrom) and n.module in stems:
+                    new = {a.name for a in n.names} - roots[stems[n.module]]
+                    if new:
+                        roots[stems[n.module]] |= new
+                        changed = True
+                if isinstance(n, ast.Attribute) and isinstance(n.value, ast.Name) and n.value.id in aliases:
+                    q = stems[aliases[n.value.id]]
+                    if n.attr not in roots[q]:
+                        roots[q].add(n.attr)
+                        changed = True
+        return changed
+
+    for p in paths:
+        if p.endswith(".py"):
+            tree = ast.parse((ROOT / p).read_text())
+            add_refs([tree], _late_aliases(tree, stems))
+    keep = {p: set() for p in late}
+    while True:
+        changed = False
+        for p, tree in trees.items():
+            body = tree.body
+            aliases = _late_aliases(tree, stems)
+            want = set(roots[p])
+            while True:
+                kept = [i for i, n in enumerate(body) if _bound(n) & want or
+                        (i == 0 and isinstance(n, ast.Expr) and isinstance(n.value, ast.Constant)) or
+                        (isinstance(n, ast.ImportFrom) and n.module == "__future__") or
+                        (want and isinstance(n, ast.Expr) and "sys.path" in ast.unparse(n))]
+                refs = {n.id for i in kept for n in ast.walk(body[i]) if isinstance(n, ast.Name)}
+                if refs <= want:
+                    break
+                want |= refs
+            kept_set = set(kept) if roots[p] else set()
+            if kept_set != keep[p]:
+                keep[p] = kept_set
+                changed = True
+            if add_refs([body[i] for i in kept_set], aliases):
+                changed = True
+        if not changed:
+            break
+    out = {}
+    for p, tree in trees.items():
+        if not roots[p]:
+            continue
+        src = git("show", f"HEAD:{p}").split("\n")
+        parts = []
+        for i in sorted(keep[p]):
+            n = tree.body[i]
+            start = min([n.lineno] + [d.lineno for d in getattr(n, "decorator_list", [])])
+            parts.append("\n".join(src[start - 1:n.end_lineno]))
+        out[p] = "\n".join(parts) + "\n"
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("out", type=Path)
@@ -163,9 +256,11 @@ def main():
          "| date | development | release | message |", "|---|---|---|---|"]
         + [f"| {d} | `{o}` | `{n}` | {s} |" for d, o, n, s in rows]) + "\n")
     shutil.copy(ROOT / "release" / "README.md", out / "README.md")
-    for p in late:
+    shaken = shake_late(paths, late)
+    for p, src in shaken.items():
         (out / p).parent.mkdir(parents=True, exist_ok=True)
-        (out / p).write_text(neutral_module(git("show", f"HEAD:{p}")))
+        (out / p).write_text(neutral_module(src))
+    late = list(shaken)
     subprocess.run([sys.executable, "experiments/make_index.py"], cwd=out, check=True)
     env = dict(os.environ, GIT_AUTHOR_NAME="Kee-Youn Yoo", GIT_COMMITTER_NAME="Kee-Youn Yoo")
     git("add", "-A", cwd=out)
