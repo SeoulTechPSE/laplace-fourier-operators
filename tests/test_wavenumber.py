@@ -410,3 +410,28 @@ def test_conv1d_beta_powers_default_and_odd_derivative():
     f = torch.sin(3 * x)[None, None, :, None] * torch.linspace(0, 1, 11, dtype=torch.float64)
     df = 3 * torch.cos(3 * x)[None, None, :, None] * torch.linspace(0, 1, 11, dtype=torch.float64)
     assert torch.allclose(c(f), d(df), atol=1e-10)
+
+
+def test_float32_deep_operator_matches_float64_and_keeps_float64_poles():
+    """dtype=float32 runs activations and channel-sized work in float32 / complex64; the pole parameters stay
+    float64, so the parameter count is unchanged, and the output matches the float64 operator with the same weights."""
+    from lfo.metrics import n_real_params
+    from lfo.models.wavenumber import WavenumberPoleOperator1d
+    t = np.linspace(0, 1, 41)
+    kw = dict(width=6, n_layers=3, n_poles=2, stable=True, modes=8, ic=True)
+    torch.manual_seed(0)
+    m64 = WavenumberPoleOperator1d(t, **kw)
+    m32 = WavenumberPoleOperator1d(t, dtype=torch.float32, **kw)
+    assert n_real_params(m32) == n_real_params(m64)
+    assert m32.K[0].mu_re.dtype == torch.float64 and m32.lift.weight.dtype == torch.float32
+    with torch.no_grad():
+        for p32, p64 in zip(m32.parameters(), m64.parameters()):
+            p32.copy_(p64)
+    f = torch.randn(3, 16, 41, dtype=torch.float64)
+    u0 = torch.randn(3, 16, dtype=torch.float64)
+    y64 = m64(f, u0)
+    y32 = m32(f.float(), u0.float())
+    assert y32.dtype == torch.float32
+    assert ((y32.double() - y64).norm() / y64.norm()) < 1e-5
+    y32.square().sum().backward()                 # gradients reach the float64 pole parameters
+    assert m32.K[1].mu_re.grad is not None and torch.isfinite(m32.K[1].mu_re.grad).all()

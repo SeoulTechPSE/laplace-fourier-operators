@@ -337,13 +337,19 @@ class WavenumberPoleConv1d(WavenumberPoleLayer1d):
     `beta_powers` (optional) gives the powers of k / k_ref in beta_n(k) instead of (0, 2, ..., 2 beta_degree - 2).
     Odd powers are valid (only k >= 0 is evaluated, the field stays real) and let a layer apply odd symbols such as
     the derivative i k, which even polynomials cannot.
+    `compute_dtype` (float64 by default, or float32) is the precision of the channel-sized work: the spatial FFT,
+    the pole sums over channel pairs and the temporal convolution. The pole and residue functions, the FOH
+    coefficients and the FFT of the kernels (N x K x n_t, small) stay in float64 / complex128 and are cast once.
     Input (batch, c_in, n_x, n_t), output (batch, c_out, n_x, n_t).
     """
 
     def __init__(self, c_in: int, c_out: int, n_poles: int, t, beta_degree: int = 2, ic: bool = False,
-                 beta_powers: tuple | None = None, **kw):
+                 beta_powers: tuple | None = None, compute_dtype: torch.dtype = torch.float64, **kw):
         super().__init__(n_poles, t, beta_degree=1, **kw)
         del self.beta
+        if compute_dtype not in (torch.float32, torch.float64):
+            raise ValueError("compute_dtype must be torch.float32 or torch.float64")
+        self.compute_dtype = compute_dtype
         self.c_in, self.c_out = c_in, c_out
         self.beta_powers = tuple(beta_powers) if beta_powers is not None else tuple(2 * j for j in range(beta_degree))
         b = torch.zeros(n_poles, len(self.beta_powers), c_out, c_in, 2, dtype=torch.float64)
@@ -362,7 +368,9 @@ class WavenumberPoleConv1d(WavenumberPoleLayer1d):
     def forward(self, f: torch.Tensor, v0: torch.Tensor | None = None) -> torch.Tensor:
         b_, c_in, n_x, n_t = f.shape
         dt = float(self.t[1] - self.t[0])
-        fk = torch.fft.rfft(f.to(torch.float64), dim=2)
+        rd = self.compute_dtype
+        cd = torch.complex64 if rd == torch.float32 else torch.complex128
+        fk = torch.fft.rfft(f.to(rd), dim=2)
         K = fk.shape[2] if self.modes is None else min(self.modes, fk.shape[2])
         fk = fk[:, :, :K]                                                     # (b, c_in, K, n_t)
         mu, beta = self.poles(self.wavenumbers(n_x)[:K])                      # (N, K), (N, c_out, c_in, K)
@@ -371,14 +379,15 @@ class WavenumberPoleConv1d(WavenumberPoleLayer1d):
             k2 = (self.wavenumbers(n_x)[:K] / self.k_ref) ** 2
             gam = sum(torch.complex(self.gamma[:, j, ..., 0, None], self.gamma[:, j, ..., 1, None]) * k2 ** j
                       for j in range(self.gamma.shape[1]))                   # (N, c_out, c_in, K)
-            v0k = torch.fft.rfft(v0.to(torch.float64), dim=2)[:, :, :K]       # (b, c_in, K)
+            v0k = torch.fft.rfft(v0.to(rd), dim=2)[:, :, :K]                  # (b, c_in, K)
             ej = torch.exp(mu[..., None] * dt * torch.arange(n_t, device=f.device, dtype=torch.float64))  # (N, K, n_t)
-            free = torch.einsum("noik,bik,nkt->bokt", gam, v0k, ej)
+            free = torch.einsum("noik,bik,nkt->bokt", gam.to(cd), v0k, ej.to(cd))
         g, c = foh_kernel(mu, n_t, dt)                                         # (N, K, n_t)
         # sum over poles first (the FOH response is linear in the kernel): one causal convolution per channel pair
         # in the frequency domain, H_oi(k, w) = sum_n beta_noi(k) G_n(k, w), instead of N x c_in convolutions
-        H = torch.einsum("noik,nkw->oikw", beta, torch.fft.fft(g, 2 * n_t))   # (c_out, c_in, K, 2 n_t)
-        C = torch.einsum("noik,nkt->oikt", beta, c)                            # first-sample correction kernels
+        beta = beta.to(cd)
+        H = torch.einsum("noik,nkw->oikw", beta, torch.fft.fft(g, 2 * n_t).to(cd))   # (c_out, c_in, K, 2 n_t)
+        C = torch.einsum("noik,nkt->oikt", beta, c.to(cd))                     # first-sample correction kernels
         Fw = torch.fft.fft(fk, 2 * n_t)                                        # (b, c_in, K, 2 n_t)
         vk = torch.fft.ifft(torch.einsum("oikw,bikw->bokw", H, Fw))[..., :n_t]
         vk = vk - torch.einsum("oikt,bik->bokt", C, fk[..., 0])
@@ -420,23 +429,27 @@ class WavenumberPoleOperator1d(nn.Module):
     lift (pointwise, 1 -> width) -> n_layers x [ v <- act(K_l v + W_l v) ] -> projection (pointwise, width -> hidden
     -> 1). K_l is a `WavenumberPoleConv1d`, W_l a pointwise channel mix; no activation after the last layer. Every
     part is causal in time, so the operator is causal. Input / output (batch, n_x, n_t) real.
+    `dtype` (float64 by default, or float32) is the precision of the activations, the pointwise layers and the
+    pole layers' channel-sized work (`WavenumberPoleConv1d.compute_dtype`); the pole and residue parameters stay
+    float64 in both cases.
     """
 
     def __init__(self, t, width: int = 16, n_layers: int = 4, n_poles: int = 4, hidden: int = 64, ic: bool = False,
-                 **layer_kw):
+                 dtype: torch.dtype = torch.float64, **layer_kw):
         super().__init__()
-        f64 = dict(dtype=torch.float64)
-        self.lift = nn.Linear(1, width, **f64)
+        self.dtype = dtype
+        fp = dict(dtype=dtype)
+        self.lift = nn.Linear(1, width, **fp)
         # initial field (D2): lifted pointwise and fed as the initial state of the first pole layer (shared poles)
-        self.lift0 = nn.Linear(1, width, bias=False, **f64) if ic else None
-        self.K = nn.ModuleList(WavenumberPoleConv1d(width, width, n_poles, t, ic=ic and i == 0, **layer_kw)
-                               for i in range(n_layers))
-        self.W = nn.ModuleList(nn.Linear(width, width, **f64) for _ in range(n_layers))
-        self.proj = nn.Sequential(nn.Linear(width, hidden, **f64), nn.GELU(), nn.Linear(hidden, 1, **f64))
+        self.lift0 = nn.Linear(1, width, bias=False, **fp) if ic else None
+        self.K = nn.ModuleList(WavenumberPoleConv1d(width, width, n_poles, t, ic=ic and i == 0, compute_dtype=dtype,
+                                                    **layer_kw) for i in range(n_layers))
+        self.W = nn.ModuleList(nn.Linear(width, width, **fp) for _ in range(n_layers))
+        self.proj = nn.Sequential(nn.Linear(width, hidden, **fp), nn.GELU(), nn.Linear(hidden, 1, **fp))
 
     def forward(self, f: torch.Tensor, u0: torch.Tensor | None = None) -> torch.Tensor:
-        v = self.lift(f.to(torch.float64)[..., None]).permute(0, 3, 1, 2)    # (b, width, n_x, n_t)
-        v0 = None if u0 is None else self.lift0(u0.to(torch.float64)[..., None]).permute(0, 2, 1)   # (b, width, n_x)
+        v = self.lift(f.to(self.dtype)[..., None]).permute(0, 3, 1, 2)       # (b, width, n_x, n_t)
+        v0 = None if u0 is None else self.lift0(u0.to(self.dtype)[..., None]).permute(0, 2, 1)   # (b, width, n_x)
         for i, (K, W) in enumerate(zip(self.K, self.W)):
             v = (K(v, v0) if i == 0 and v0 is not None else K(v)) + W(v.permute(0, 2, 3, 1)).permute(0, 3, 1, 2)
             if i < len(self.K) - 1:
