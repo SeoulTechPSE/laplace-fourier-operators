@@ -334,14 +334,19 @@ class WavenumberPoleConv1d(WavenumberPoleLayer1d):
 
     The N poles mu_n(k) are shared by all channel pairs (the modal form: one dispersion relation per pole); each pole
     has a residue matrix beta_n(k), polynomial in k^2. Pole options as in `WavenumberPoleLayer1d`.
+    `beta_powers` (optional) gives the powers of k / k_ref in beta_n(k) instead of (0, 2, ..., 2 beta_degree - 2).
+    Odd powers are valid (only k >= 0 is evaluated, the field stays real) and let a layer apply odd symbols such as
+    the derivative i k, which even polynomials cannot.
     Input (batch, c_in, n_x, n_t), output (batch, c_out, n_x, n_t).
     """
 
-    def __init__(self, c_in: int, c_out: int, n_poles: int, t, beta_degree: int = 2, ic: bool = False, **kw):
+    def __init__(self, c_in: int, c_out: int, n_poles: int, t, beta_degree: int = 2, ic: bool = False,
+                 beta_powers: tuple | None = None, **kw):
         super().__init__(n_poles, t, beta_degree=1, **kw)
         del self.beta
         self.c_in, self.c_out = c_in, c_out
-        b = torch.zeros(n_poles, beta_degree, c_out, c_in, 2, dtype=torch.float64)
+        self.beta_powers = tuple(beta_powers) if beta_powers is not None else tuple(2 * j for j in range(beta_degree))
+        b = torch.zeros(n_poles, len(self.beta_powers), c_out, c_in, 2, dtype=torch.float64)
         b[:, 0, :, :, 0] = torch.randn(n_poles, c_out, c_in, dtype=torch.float64) / math.sqrt(c_in * n_poles)
         self.beta = nn.Parameter(b)
         # initial-state path (D2): free response of an initial channel field, gamma matrices share the poles
@@ -349,9 +354,9 @@ class WavenumberPoleConv1d(WavenumberPoleLayer1d):
 
     def poles(self, k: torch.Tensor):
         """(mu (N, K), beta (N, c_out, c_in, K)) complex128."""
-        k2 = (k / self.k_ref) ** 2
-        b = sum(torch.complex(self.beta[:, j, ..., 0, None], self.beta[:, j, ..., 1, None]) * k2 ** j
-                for j in range(self.beta.shape[1]))
+        kr = k / self.k_ref
+        b = sum(torch.complex(self.beta[:, j, ..., 0, None], self.beta[:, j, ..., 1, None]) * kr ** p
+                for j, p in enumerate(self.beta_powers))
         return self.mu(k), b
 
     def forward(self, f: torch.Tensor, v0: torch.Tensor | None = None) -> torch.Tensor:

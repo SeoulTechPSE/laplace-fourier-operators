@@ -381,3 +381,32 @@ def test_foh_kernel_finite_gradient_for_very_fast_poles():
     u[3] = 1.0
     x = foh_recursion(mu.detach()[1], u, dt)
     assert torch.allclose(g.detach()[1, :38], x[3:], atol=1e-12)
+
+
+def test_conv1d_beta_powers_default_and_odd_derivative():
+    """Default beta_powers reproduce the k^2 polynomial; an odd power lets one pole act as the derivative i k."""
+    import math
+    import numpy as np
+    import torch
+    from lfo.models.wavenumber import WavenumberPoleConv1d
+    t = np.linspace(0, 1, 11)
+    torch.manual_seed(0)
+    a = WavenumberPoleConv1d(2, 2, 3, t, beta_degree=2, modes=8)
+    torch.manual_seed(0)
+    b = WavenumberPoleConv1d(2, 2, 3, t, beta_powers=(0, 2), modes=8)
+    f = torch.randn(4, 2, 16, 11, dtype=torch.float64)
+    assert torch.allclose(a(f), b(f), atol=1e-12)
+    # residue i (k / k_ref) on a pole at mu = -1: the response to f is the response of d f / dx (k_ref = 1)
+    c = WavenumberPoleConv1d(1, 1, 1, t, beta_powers=(1,), k_ref=1.0)
+    with torch.no_grad():
+        c.mu_re.zero_(); c.mu_im.zero_()
+        c.mu_re[0, 0] = -10.0                  # stable: Re mu = -softplus(...) not used; cap not set
+        c.beta.zero_(); c.beta[0, 0, 0, 0, 1] = 1.0
+    d = WavenumberPoleConv1d(1, 1, 1, t, beta_powers=(0,), k_ref=1.0)
+    with torch.no_grad():
+        d.mu_re.copy_(c.mu_re); d.mu_im.copy_(c.mu_im)
+        d.beta.zero_(); d.beta[0, 0, 0, 0, 0] = 1.0
+    x = torch.linspace(0, 2 * math.pi, 17, dtype=torch.float64)[:-1]
+    f = torch.sin(3 * x)[None, None, :, None] * torch.linspace(0, 1, 11, dtype=torch.float64)
+    df = 3 * torch.cos(3 * x)[None, None, :, None] * torch.linspace(0, 1, 11, dtype=torch.float64)
+    assert torch.allclose(c(f), d(df), atol=1e-10)
