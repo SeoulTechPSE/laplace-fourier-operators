@@ -185,6 +185,31 @@ Things to know:
 
 ## Log
 
+### 2026-11-22 — Next-level steps 1–3: literature, per-index poles and LNO (a36), PDEBench (a37), (C) paper prep
+
+- Done:
+  - Literature re-check (`experiments/A/literature.md`): per-Fourier-mode generators exist (SGNO, S4D-type SSMs,
+    LGN-KM with |k|^p damping, unforced); the (A) claim is restated as the physical-wavenumber form. Related work
+    added to the A and C papers (references checked against doi.org / arXiv).
+  - Parameter budgets: a13's TFNO had 1.86× the WPO's real parameters (`numel` counts complex weights once).
+    Decision: real degrees of freedom (`lfo.metrics.n_real_params`; `lfo.training.count_params` calls it).
+  - a36 (predictions ebcce69), forced Burgers: free per-index poles match the WPO in band (0.0234 vs 0.0237) and
+    in time extrapolation, but fail outside it (probe 0.99 vs 0.12; unseen modes 188× vs 1.3× the test error).
+    LNO v2 at the same budget 0.38. TFNO at the real budget 0.028 (better than at 2×). 5 of 6 predictions held
+    (the LNO's extrapolation-ratio part failed).
+  - a37 (predictions c12faba), PDEBench 1D Burgers ν = 0.01: the pre-registered WPO runs all ended in nan; cause
+    an overflow in `foh_kernel`'s masked branch for Re(mu) dt < −709 (fixed with a test, 1cdc1b5); post hoc
+    rerun: WPO nRMSE 0.045, TFNO (equal real budget) 0.026; both resolution-invariant; WPO probe ν 2.4 / 9 / 35 %
+    off, TFNO's 57–72 % off. Prediction 1 (ν within 5 % in every seed; 3× dispersion-error ratio, got 2.86)
+    failed; 2 and 3 held.
+  - (C) paper: related-work section, 20 references; `experiments/C/paper/SUBMISSION.md` (venue open; TMLR
+    recommended).
+  - American spelling throughout (1b53398); CLAUDE.md convention.
+- Decisions: real-DOF budgets (above).
+- Next: step 4, a hybrid (WPO linear propagation + flexible nonlinear block) against the nonlinear gap, now
+  measured at equal real budgets (PDEBench 1.8×, forced Burgers WPO ahead); rerun the 2D coarsening and D2
+  Cahn–Hilliard TFNO comparisons at real budgets; (C) venue decision (user).
+
 ### 2026-11-22 — Plan review against the integrated schedule; next-level plan
 
 - Review (calendar month 1 of 24; all nine work packages started):

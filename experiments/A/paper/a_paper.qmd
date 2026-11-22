@@ -18,7 +18,7 @@ csl: ../../C/paper/ieee.csl
 ---
 
 <!-- Project A working paper, 2026-11-21. Not for submission yet. Every number comes from
-experiments/A/layer/README.md (layer experiments) and experiments/A/deep/README.md (deep experiments, to a35), whose predictions
+experiments/A/layer/README.md (layer experiments) and experiments/A/deep/README.md (deep experiments, to a37), whose predictions
 were committed before each run (hashes there). Figures: experiments/A/paper/figures.py. -->
 
 ## Abstract {.unnumbered}
@@ -47,6 +47,11 @@ forced viscous Burgers and forced Cahn–Hilliard.
 - The FNO baselines are right inside the forced band but produce arbitrary poles outside it.
 - **Limit:** a deep stack whose layer poles are all stable reproduces the growing modes in the probe over the
   training window. An unstable pole is therefore claimed only when probe and layer structure agree.
+- **The form is what pays.** The same operator with a free pole per mode index (the per-mode generators of
+  state-space and spectral-generator operators) matches the in-band accuracy and the time extrapolation, but its
+  error on unseen forcing modes is 188× its test error, against 1.3× with poles in k.
+- On PDEBench 1D Burgers the Tucker FNO is 1.8× more accurate at an equal real-parameter budget; the WPO's probe
+  recovers ν within 3 % in one seed of three.
 
 **Cahn–Hilliard application.**
 
@@ -65,6 +70,22 @@ default: poles do not move under published protocols, and fits are equally good 
 the constructive question. If the pole structure is made explicit in the wavenumber, can a model identify the
 system's dispersion relation, and does that structure pay off in accuracy, data efficiency or extrapolation
 against Fourier neural operators [@li2021fno]?
+
+**Related work.** Several recent operators learn a stable linear generator per spatial Fourier mode:
+structured state-space models keep diagonal poles per channel [@gu2022s4; @gu2022s4d] and serve as neural
+operators for dynamical systems [@hu2025ssmno]; SGNO [@li2026sgno] learns a multiplier per Fourier index with an
+exponential-integrator update; LGN-KM [@jamil2026lgn] ties a latent Koopman generator's damping to |k|^p and reads
+dispersion branches from it, for unforced flows. "Poles per Fourier mode" is therefore not what is new here. The
+claim of this paper is narrower: the poles are smooth functions μₙ(k) of the *physical* wavenumber in an
+input-driven operator with an exact time axis, which is what makes them identifiable, continuable outside the
+excited band and transferable across domain sizes. @sec-form tests that claim against free per-index poles in the
+same architecture.
+
+**Parameter budgets.** All budgets are counted in real degrees of freedom. The FNO-type baselines up to a35 were
+matched by `numel`, which counts a complex weight once; their real budgets were about 1.9× the WPO's. This only
+strengthens the comparisons the WPO wins; where the TFNO wins (2D coarsening, @sec-coarsening), it did so with
+more parameters. a36 checks the effect on forced Burgers: a TFNO at the WPO's real budget is as accurate as the
+larger one.
 
 Every experiment below was pre-registered: predictions were committed before the runs, and every failed
 prediction is reported.
@@ -170,7 +191,8 @@ learning-rate sweep.
 | model | params | test (N = 200) | error over (5, 10] | probe residual |
 |---|---|---|---|---|
 | WPO (stable) | 59.5 k | **0.024** | **0.04** | **0.003** |
-| TFNO (Tucker, n_modes 32 × 64) | 59.1 k | 0.031 | 0.29 | 0.008–0.25 |
+| TFNO (Tucker, n_modes 32 × 64) | 110.6 k real (59.1 k numel) | 0.031 | 0.29 | 0.008–0.25 |
+| TFNO, real budget (a36) | 54.6 k | 0.028 | 0.29 | – |
 | FNO (full rank, 18×) | 1.08 M | 0.042 (overfits) | 0.29 | 0.36–0.49 |
 
 : Forced Burgers, 3 seeds; time extrapolation from training on T = 5 to T = 10. {#tbl-burgers}
@@ -199,6 +221,44 @@ control, reproduce the growing modes.](fig_probe.png){#fig-probe width=100%}
 - **Cahn–Hilliard** (M = 0.1, κ = 0.04; λ(k) = M k²(1 − κ k²), $k_c$ = 5). With Re μ > 0 allowed, the WPO's probe
   gives $k_c$ = 4.99–5.03 and every sign right (a16), against 5.107 from the solver's own probe. The TFNO's in-band
   poles are right in one seed, but out-of-band poles spoil its fit in all three.
+
+### Is it the physical-wavenumber form? (a36) {#sec-form}
+
+Same data, same architecture and training as the WPO, but each layer's poles are a free table over the 22
+retained mode indices (residues stay polynomial): the per-mode generator of S4D- or SGNO-type operators. Two
+extra tests: the probe's poles outside the forced band (k = 9–16), and a set forced only at k = 9–12, which no
+training sample excites. The original LNO (v2, steady modes raised to cover the band) is added at the same real
+budget.
+
+| model | test | (5, 10] / test | probe outside the band (k = 9–16) | unseen modes / test |
+|---|---|---|---|---|
+| WPO, poles in k | **0.024** | **1.8** | **0.12** | **1.3** |
+| WPO, poles per index | **0.023** | **1.7** | 0.99 | 188 |
+| TFNO, real budget | 0.028 | 10.3 | 0.89 | 32 |
+| LNO v2 | 0.38 | 1.2 | 1.06 | 2.9 |
+
+: Forced Burgers, 3 seeds (means); probe column: mean relative pole error against −νk². {#tbl-form}
+
+- Inside the forced band the form does not matter: same test error, same time extrapolation (the FOH recursion
+  carries it), and every model's probe is right at k ≤ 8.
+- Outside it only the polynomial poles continue. Per-index poles at modes the data never excite stay where they
+  started, and an input there produces a response 4× the truth's size.
+- The original LNO, at this budget, does not fit forced Burgers (16× the WPO's error). Five of six predictions
+  held; the LNO's predicted extrapolation ratio above 2.5 failed because its in-window error is already large.
+
+### A public benchmark: PDEBench 1D Burgers (a37)
+
+Initial field → trajectory (ν = 0.01, 256 × 41, PDEBench's split and nRMSE). The repository solver reproduces the
+benchmark to 3e-4 through an exact rescaling, so the linearization is known: λ_m = −0.1257 m².
+
+- The Tucker FNO (equal real budget) is 1.8× more accurate (nRMSE 0.026 against 0.045); both are unchanged at 4×
+  the resolution.
+- The probe separates the models less than on forced Burgers: both get the slowest modes (m ≤ 4); at m = 8–10 two
+  WPO seeds are within 10 % and no FNO seed is. The WPO's ν is 2.4 %, 9 % and 35 % off; the prediction of 5 % in
+  every seed failed. Without forcing that isolates modes, the data constrain the small-amplitude response only
+  partly.
+- The pre-registered WPO runs ended in nan from an overflow in a masked branch of the time kernel for very fast
+  poles; the reported runs repeat them unchanged after the fix (post hoc).
 
 ### An identifiability limit: growth emulated by stable layers
 
@@ -372,7 +432,8 @@ sample time (a20).
   - In deep nonlinear models, the linearization at rest, through a probe, inside the forced band. That is true of
     FNO-type models as well.
   - What the pole structure adds: a dispersion relation that continues outside the forced band, and an
-    LTI-consistent linear response.
+    LTI-consistent linear response. Free poles per mode index do not give this (@sec-form): the gain comes from
+    the physical-wavenumber form, not from having poles.
 - **Where the accuracy gain comes from.** Data efficiency (2× at 50 samples) and time extrapolation (7×). The
   in-window error at 400 samples is close to parity (9 %).
 - **Where the structure pays, and where it does not.** It pays in four places:
@@ -382,7 +443,8 @@ sample time (a20).
   - transfer across domain sizes without retraining (@sec-coarsening).
 
   It does not pay in pointwise accuracy in the strongly nonlinear regime on the training domain. There the TFNO
-  is 2× better (2D coarsening; also project D's Cahn–Hilliard with initial fields).
+  is 2× better (2D coarsening, with about 1.9× the real parameters; also project D's Cahn–Hilliard with initial
+  fields) and 1.8× better on PDEBench Burgers at an equal real budget.
 - **Rollout stability is a data question.** The WPO-2D coarsening divergence was cured by amplitude-scaled
   training starts, not by any pole constraint.
 - **Training details decide the outcome**, as in (C):
@@ -398,7 +460,10 @@ sample time (a20).
   WPO-2D trained on 2π only; a WPO-2D trained on 4π was not run.
 - Two nonlinear systems, both with a known linearization at rest.
 - One parameter budget (59 k); FNO-type baselines from neuraloperator with a learning-rate sweep but no
-  architecture search.
+  architecture search. Up to a35 the baselines were matched by `numel` (about 1.9× the WPO's real parameters);
+  only a36 and a37 match real budgets, and the 2D comparisons have not been rerun.
+- One public benchmark (PDEBench 1D Burgers), unforced; the SSM and spectral-generator operators of the related
+  work were represented by per-index poles inside the WPO, not run from their own code.
 - The probe is a small-amplitude linearization at u = 0. Linearizations about other uniform states were learned
   only in the linear regime of one system (@sec-spinodal), not probed from a deep model. Extrapolation in M and κ
   was shown for a law with the right form; no form was discovered.

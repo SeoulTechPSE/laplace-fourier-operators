@@ -565,3 +565,85 @@ a31's mode count it gives up most of that edge (0.034). The transferred WPO-2D, 
 within 10 % of a TFNO trained there with the wrong band (0.038 against 0.034). It is 1.8× behind the one with the
 right band. Application 2, stage 2 in one line: the TFNO is the better surrogate on any box it is trained on, and
 the pole operator is the one that moves between boxes without data or retraining.
+
+## Next-level step 1 (2026-11-22): poles per mode index vs per physical wavenumber; LNO; real budgets (a36)
+
+`a36_index_poles.py` → `results/a36_index_poles.md` (predictions ebcce69). Literature re-check first
+(`experiments/A/literature.md`): per-Fourier-mode generators with exponential updates exist (SGNO, S4D-type SSMs;
+LGN-KM ties damping to |k|^p, unforced). So the (A) claim to test is the physical-wavenumber form. a11's forced
+Burgers, a11's protocol, 3 seeds:
+- `wpo_index`: the WPO with each layer's poles as a free table over the 22 mode indices (residues polynomial),
+  initialized at the polynomial's values;
+- `lno`: the original LNO v2, steady modes (9, 9) to cover the band, at the WPO's real budget (width 6);
+- `tfno` (a13 retrained, 110,569 real parameters) and `tfno_r` (rank 0.01, 54,649 real).
+- New metrics: probe pole error outside the forced band (k = 9..16) and a set forced only at k = 9..12.
+
+Found while setting up: a13's "matched" TFNO counted complex weights once (`numel`); in real degrees of freedom it
+had 1.86× the WPO's. Budgets are now matched with `lfo.metrics.n_real_params` (STATUS decision 2026-11-22).
+
+| model | real params | test | (5, 10] / test | probe ν̂ | probe outside the band | unseen modes | unseen / test |
+|---|---|---|---|---|---|---|---|
+| wpo (a11 checkpoints) | 59,529 | **0.0237** | 1.83 | 0.1016 | **0.116** | **0.032** | **1.34** |
+| wpo_index | 60,465 | **0.0234** | 1.71 | 0.1016 | 0.985 | 4.38 | 188 |
+| tfno_r | 54,649 | 0.0279 | 10.3 | 0.0987 | 0.887 | 0.91 | 32 |
+| tfno | 110,569 | 0.0304 | 9.53 | 0.0988 | 0.865 | 0.67 | 22 |
+| lno | 55,834 | 0.376 | 1.20 | 0.060 | 1.063 | 1.09 | 2.9 |
+
+(The probe's "in-band dispersion error" in the result file is computed over each model's kept modes; the
+observability cut keeps out-of-band modes for some models, so that column mixes in- and out-of-band. At k ≤ 8
+every model except the LNO is within a few % of −νk², as ν̂ shows.)
+
+**Predictions against results.**
+1. `wpo_index` test within ±15 % of the WPO's: **holds** (0.0234 against 0.0237).
+2. `wpo_index` out-of-band probe error ≥ 3× the WPO's and above 0.142 in every seed: **holds** (0.985, 8.5×).
+3. Unseen-mode ratio ≥ 2× the WPO's for `wpo_index` and `tfno`: **holds** (188 and 22 against 1.34).
+4. `wpo_index` extrapolation ratio ≤ 2 in every seed: **holds** (1.70–1.73).
+5. `lno`: test ≥ 1.5× the WPO's **holds** (16×); out-of-band ≥ 3× **holds**; extrapolation ratio > 2.5 in every
+   seed **fails** (1.06–1.40: its in-window error is already 0.38).
+6. `tfno_r` within 1.2× of `tfno`: **holds**; it is 8 % better with half the parameters.
+
+**Reading.**
+- **The physical-wavenumber form is what pays, not having poles.** Free per-index poles give the same in-band
+  accuracy and the same time extrapolation (both come from the FOH recursion), but outside the excited band they
+  stay near their initialization: the probe there is wrong (0.99), and forcing at unseen modes gives a response
+  4× too large (error 188× the test error). With poles in k the unseen modes cost 1.3×.
+- The original LNO does not fit forced Burgers at this budget (0.38), as its spatial "poles" have no Fourier-mode
+  structure; its low extrapolation ratio reflects a poor fit, not good extrapolation.
+- The TFNO's earlier 2× real budget did not help it here: at the WPO's real budget it is slightly better. The
+  WPO's lead on forced Burgers (15 %) holds at equal real budgets.
+
+## Next-level step 3 (2026-11-22): PDEBench 1D Burgers, a public benchmark (a37)
+
+`a37_pdebench_burgers.py` → `results/a37_pdebench_burgers.md` (predictions c12faba; post hoc rerun 1cdc1b5 and
+the a37 rerun commit). The first (A) result on data not generated here: PDEBench 1D Burgers, nu = 0.01, initial
+field → trajectory on [0, 2], 256 × 41, 9,000 / 1,000 split, PDEBench's nRMSE.
+- Checks before any fit: the repository solver through the exact map to [0, 2π) (w = 2π u, nu' = 0.04π)
+  reproduces PDEBench to nRMSE 2.9e-4, and the probe on the solver returns nu' exactly.
+- Budgets in real degrees of freedom (`lfo.metrics.n_real_params`): WPO 61,130, TFNO 64,745.
+
+**The pre-registered WPO runs ended in nan, all three.** Diagnosis (same configuration, logged): the loss fell
+normally while the fastest poles (m up to 63) grew to Re mu ≈ −14,000; at step 6,270 the gradient overflowed. The
+cause was a bug in the shared `foh_kernel`: a masked branch evaluated exp(−mu dt), which is inf for Re(mu) dt <
+−709, and the masked inf turned the gradient into nan. Fixed with a test (1cdc1b5); no earlier experiment reached
+that range. The three WPO runs were repeated unchanged with the fixed kernel (post hoc, marked as such).
+
+| model | nRMSE 256 | nRMSE 1024 (zero-shot) | probe nu' (truth 0.1257) | dispersion error, m = 1..10 |
+|---|---|---|---|---|
+| WPO (pre-registered) | nan, every seed | | | |
+| WPO, rerun after the fix | 0.045 (0.044–0.046) | 0.045 | 0.106 (0.081–0.123) | 0.24 (0.12–0.41) |
+| TFNO, real budget | **0.026** (0.025–0.026) | **0.026** | 0.041 (0.035–0.054) | 0.67 (0.56–0.74) |
+
+**Predictions against results** (the WPO numbers are from the post hoc rerun).
+1. WPO nu' within 5 % in every seed, and the TFNO's dispersion error ≥ 3× the WPO's: **fails**. nu' is 2.4 %,
+   9 % and 35 % off; the error ratio is 2.86.
+2. The TFNO more accurate, the WPO within 2×: **holds** (1.76×).
+3. Both within 1.3× at 1024 points: **holds** (1.00 for both).
+
+**Reading.**
+- On a public benchmark the picture is the one from (A)'s own data: the TFNO is the more accurate surrogate
+  (1.8×), and both are resolution-invariant.
+- The linear probe separates the models less than on forced Burgers. Per mode, both get the slowest modes
+  (m ≤ 4) right; at m = 5–7 both are off; at m = 8–10 two WPO seeds are within 10 % and no TFNO seed is. The
+  initial fields of PDEBench excite a broad band but no forcing isolates modes, so the small-amplitude response is
+  only partly constrained by the data. The WPO's nu' is right in one seed of three (2.4 %), near in one (9 %).
+- The bug fix matters beyond a37: any WPO with very fast poles (fine grids, wide bands) could hit it.

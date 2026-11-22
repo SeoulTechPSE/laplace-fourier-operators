@@ -25,6 +25,8 @@ JSON results where recorded (GPU wall time, often with another job on the GPU).
 | `a33_amplitude_aug.py` | 410fd88 2026-11-21 | `a33_amplitude_aug.json`, `a33_amplitude_aug.md` | 0.9 h | (A) Application 2, stage 2c: training WPO-2D on amplitude-perturbed starts (a restoring force for coarsening). |
 | `a34_domain.py` | a93e03f 2026-11-21 | `a34_domain.json`, `a34_domain.md` | 1.1 h | (A) Application 2, stage 2d: transfer to a larger box (4 pi, same grid spacing) without retraining. |
 | `a35_tfno_4pi.py` | ca6f6e3 2026-11-21 | `a35_tfno_4pi.json`, `a35_tfno_4pi.md` | 2.6 h | (A) Application 2, stage 2e: a TFNO trained on the 4 pi box (the accuracy reference for a34's transfer). |
+| `a36_index_poles.py` | ebcce69 2026-11-22 | `a36_index_poles.json`, `a36_index_poles.md` | — | (A) Next-level step 1: is it the physical-wavenumber form of the poles that pays, and how does the LNO compare? |
+| `a37_pdebench_burgers.py` | c12faba 2026-11-22 | `a37_pdebench_burgers.json`, `a37_pdebench_burgers.md` | — | (A) Next-level step 3: the core (A) claims on a public benchmark, PDEBench 1D Burgers (nu = 0.01). |
 | `a9_burgers.py` | eac2be5 2026-11-18 | `a9_burgers.json`, `a9_burgers.md` | 0.9 h | (A) First deep validation: the deep wavenumber pole operator on forced viscous Burgers, against FNO, with a linear |
 
 ## A/layer
