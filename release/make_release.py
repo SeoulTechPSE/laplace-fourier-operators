@@ -9,7 +9,8 @@ and `experiments/C/theory/` (a follow-up study, unpublished).
 The follow-up study stays out of the release: of the `C/theory` modules that released scripts import, only the
 top-level code those scripts use (transitively) is kept (`shake_late`), added in the release commit only (no history,
 no comments or inner docstrings, module docstring replaced by a neutral line); file references to the
-follow-up are replaced by "a follow-up study" in every version (REPLACE_TEXT), and commit messages that mention the
+follow-up are replaced by "a follow-up study" in every version (REPLACE_TEXT), as is the C paper's summary of the
+follow-up's results (one neutral sentence; the sentences that relied on it are reworded), and commit messages that mention the
 follow-up (E2–E4, H1–H3, propositions, CRB, certificates, EIV) are replaced by a neutral message.
 
     pip install git-filter-repo
@@ -37,7 +38,16 @@ LATE = "experiments/C/theory/"     # imported modules from here enter in the rel
 STUB = ('"""Helper module of a follow-up identification study (not part of this release); included because released '
         'scripts import it."""')
 # cross-references to the follow-up in released files, replaced in every historical version
-REPLACE_TEXT = """`experiments/C/theory/H1_H2.md`==>a follow-up study
+REPLACE_TEXT = """experiments/C/theory/README.md (E2 paragraph)==>a follow-up study
+A follow-up study (to appear) shows that the E1 data do identify these poles:==>A follow-up study (to appear) addresses whether the E1 data identify these poles.
+regex:\\n- A training recipe without prior knowledge of the poles recovers[^\\n]*==>
+regex:\\n- A truth-free certificate built on a first-order-hold refit[^\\n]*==>
+regex:\\n- Under relative output noise the limit is the Cramér–Rao bound[^\\n]*==>
+regex:\\nThe fast real poles are therefore missed by the published recipes, not hidden by the data\\.\\n==>
+regex:\\n- The follow-up recipe was tested on the tied single layer only\\.==>
+### Fast real poles are not found, although the data identify them {#sec-fastreal}==>### Fast real poles are not found {#sec-fastreal}
+3. Fast real poles are not found by any published recipe, although the data identify them.==>3. Fast real poles are not found by any published recipe; their profiles are flat within the layer's own floor.
+`experiments/C/theory/H1_H2.md`==>a follow-up study
 `experiments/C/theory/README.md`==>a follow-up study
 experiments/C/theory/README.md==>a follow-up study
 `H1_H2.md`==>a follow-up study
