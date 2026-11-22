@@ -28,6 +28,16 @@ steps, inference batch 50): F and P, `wpo` (float64), `wpo32`, `tfno_r`, all re-
    `tfno_r` intervals (no overlap), and its mean test error is within 5 % of the float64 WPO's (0.0239).
 5. P: `wpo32`'s mean nRMSE is within 5 % of the float64 WPO's (0.0450).
 
+**Post hoc (added after the runs, 2026-11-23).** The pre-registered P runs failed (3 of 5 seeds at nRMSE 1.0, two
+at 0.24 / 0.63) while F matched float64. Diagnosis: at the same trained weights the float32 forward differed from
+float64 by 144 %, and every pole layer by 55-87 %, although the FFTs, kernels and contractions each agreed to 1e-7.
+The cause is the final irfft: complex residues give the k = 0 bin an imaginary part, which irfft must ignore. CPU
+and float64 cuFFT do; complex64 cuFFT C2R does not for large batches (torch 2.6, CUDA 12.4; 6 % error on random
+spectra at P's shapes, n_x = 256 from 64 bins; correct at F's shapes, n_x = 64 from 22 bins, so the F runs are
+valid). The layer now drops that imaginary part explicitly (`lfo.models`, 9d48999; float64 path bit-identical).
+`P --rerun` repeats the five P seeds with the fixed layer (stored under "rerun"), and `cost --rerun` re-measures
+the cost; the failed runs stay in "runs".
+
     python experiments/A/deep/a44_float32.py cost            # alone on the GPU, first
     python experiments/A/deep/a44_float32.py F|P [seed ...]   # training runs (parallel processes)
     python experiments/A/deep/a44_float32.py --summary        # results/a44_float32.md
@@ -82,12 +92,13 @@ def locked_update(fn):
     with open(f"/tmp/{OUT.stem}.lock", "w") as lk:
         fcntl.flock(lk, fcntl.LOCK_EX)
         out = json.loads(OUT.read_text()) if OUT.exists() else dict(cost=[], runs=[])
+        out.setdefault("rerun", [])
         fn(out)
         OUT.write_text(json.dumps(out, indent=1, default=float))
         return out
 
 
-def cost(device):
+def cost(device, key="cost"):
     rows = []
     for part, setup in (("F", X43.setup_f), ("P", X43.setup_p)):
         models, batch, call = setup(device)
@@ -107,11 +118,11 @@ def cost(device):
             print(r, flush=True)
             del m
             torch.cuda.empty_cache()
-    locked_update(lambda o: o.update(cost=rows, gpu=torch.cuda.get_device_name(), torch=torch.__version__))
+    locked_update(lambda o: o.update({key: rows, "gpu": torch.cuda.get_device_name(), "torch": torch.__version__}))
 
 
-def done(part, seed):
-    return any(r["part"] == part and r["seed"] == seed for r in locked_update(lambda o: None)["runs"])
+def done(part, seed, key="runs"):
+    return any(r["part"] == part and r["seed"] == seed for r in locked_update(lambda o: None)[key])
 
 
 def run_f(seeds, device):
@@ -134,14 +145,14 @@ def run_f(seeds, device):
         torch.cuda.empty_cache()
 
 
-def run_p(seeds, device):
+def run_p(seeds, device, key="runs"):
     d = X37.load()
     t = d["t"].numpy()
     S = X37.splits(d)
     n_t = S["train"].shape[2]
     full_test = d["full"][X37.NTR:].to(torch.float64)
     for seed in seeds:
-        if done("P", seed):
+        if done("P", seed, key):
             continue
         t1 = time.time()
         m = wpo32_p(seed, t, device)
@@ -152,7 +163,7 @@ def run_p(seeds, device):
                  test_1024=X37.nrmse(X37.predict(m, full_test, device), full_test),
                  probe=X37.model_probe(m, t, 256, n_t, device), seconds=round(time.time() - t1, 1))
         print("P", seed, f"test {r['test']:.4f} nu' {r['probe']['nu_hat']:.4f}", f"{r['seconds']} s", flush=True)
-        locked_update(lambda o: o["runs"].append(r))
+        locked_update(lambda o: o[key].append(r))
         del m
         torch.cuda.empty_cache()
 
@@ -162,12 +173,14 @@ def summarize():
     F5, P5 = X42.collect()
     fmt = X42.fmt
     lines = ["# (A) The WPO in float32: cost and accuracy", ""]
-    if out.get("cost"):
-        lines += [f"## Cost, measured alone on the GPU ({out['gpu']}, torch {out['torch']})", "",
+    for ck, title in (("cost", "Cost, measured alone on the GPU"), ("cost_rerun", "Cost with the fixed layer (post hoc)")):
+        if not out.get(ck):
+            continue
+        lines += [f"## {title} ({out['gpu']}, torch {out['torch']})", "",
                   "| setup | model | real params | dtype | train step (ms) | ratio to tfno_r | ratio to wpo (float64) | "
                   "inference (ms / sample) | peak train memory (MB) |", "|---|---|---|---|---|---|---|---|---|"]
         for part in ("F", "P"):
-            rs = {r["model"]: r for r in out["cost"] if r["part"] == part}
+            rs = {r["model"]: r for r in out[ck] if r["part"] == part}
             for r in rs.values():
                 lines.append(f"| {part} | {r['model']} | {r['real_params']} | {r['dtype']} | {r['train_ms']:.1f} | "
                              f"{r['train_ms'] / rs['tfno_r']['train_ms']:.2f} | {r['train_ms'] / rs['wpo']['train_ms']:.2f} | "
@@ -175,6 +188,7 @@ def summarize():
         lines.append("")
     fr = sorted([r for r in out["runs"] if r["part"] == "F"], key=lambda r: r["seed"])
     pr = sorted([r for r in out["runs"] if r["part"] == "P"], key=lambda r: r["seed"])
+    prr = sorted([r for r in out.get("rerun", []) if r["part"] == "P"], key=lambda r: r["seed"])
     lines += ["## F: forced Burgers (a42 setup)", "",
               "Mean ± standard deviation [95 % t-interval] over seeds 0–4; float64 rows from a42.", "",
               "| model | n | test | (5, 10] / test | probe outside the band | unseen / test |", "|---|---|---|---|---|---|"]
@@ -186,7 +200,7 @@ def summarize():
     lines += ["", "## P: PDEBench 1D Burgers (a42 setup)", "",
               "| model | n | nRMSE 256 | nRMSE 1024 / 256 | probe ν' (truth 0.1257) | dispersion error |",
               "|---|---|---|---|---|---|"]
-    for k, rs in list(P5.items()) + [("wpo32", pr)]:
+    for k, rs in list(P5.items()) + [("wpo32 (pre-registered; cuFFT defect)", pr), ("wpo32 rerun (fixed layer, post hoc)", prr)]:
         if rs:
             lines.append(f"| {k} | {len(rs)} | {fmt([r['test'] for r in rs], '.4f')} | "
                          f"{fmt([r['test_1024'] / r['test'] for r in rs], '.2f')} | "
@@ -199,12 +213,13 @@ def main():
     args = sys.argv[1:]
     device = torch.device("cuda")
     seeds = [int(a) for a in args if a.isdigit()] or list(SEEDS)
+    rerun = "--rerun" in args
     if "cost" in args:
-        cost(device)
+        cost(device, "cost_rerun" if rerun else "cost")
     if "F" in args:
         run_f(seeds, device)
     if "P" in args:
-        run_p(seeds, device)
+        run_p(seeds, device, "rerun" if rerun else "runs")
     summarize()
 
 
