@@ -185,6 +185,25 @@ Things to know:
 
 ## Log
 
+### 2026-11-22 — Step 4b: the gap is half the block, half the time axis (a40)
+
+- Done:
+  - a40 (predictions 547db6c), PDEBench at the WPO's real budget, 3 seeds:
+    - `wpo_mlp` (WPO with the neuraloperator block: channel MLP and gated skip): 0.0357. The WPO is at 0.0452 and
+      the TFNO at 0.0257. Dispersion error 0.165, the best on this benchmark; resolution ratio 1.00.
+    - `tfno_nomlp`: 0.0299.
+    - `fno_x` (no temporal mixing): 0.0373.
+  - Predictions: 1 and 4 held; 2 and 3 failed.
+  - Reading: the FNO block closes half of the gap at no cost. Most of the rest is consistent with whole-window
+    temporal mixing, which a causal time axis cannot use for initial-value data. A deep README and A paper
+    (tbl-gap) updated.
+- Decisions: none. Candidate for the default deep block: `wpo_mlp` (decide after a41).
+- Next (a41):
+  - `wpo_mlp` on forced Burgers: check that it keeps the form's benefits (out of band, unseen modes, time
+    extrapolation) and see whether its accuracy gain carries over.
+  - If it passes, make the block an `lfo.models` option (with a test) and rerun the 2D coarsening and D2
+    Cahn–Hilliard gaps.
+
 ### 2026-11-22 — Step 4: odd residues and local mixing do not close the nonlinear gap (a39)
 
 - Done:

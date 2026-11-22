@@ -18,7 +18,7 @@ csl: ../../C/paper/ieee.csl
 ---
 
 <!-- Project A working paper, 2026-11-21. Not for submission yet. Every number comes from
-experiments/A/layer/README.md (layer experiments) and experiments/A/deep/README.md (deep experiments, to a39), whose predictions
+experiments/A/layer/README.md (layer experiments) and experiments/A/deep/README.md (deep experiments, to a40), whose predictions
 were committed before each run (hashes there). Figures: experiments/A/paper/figures.py. -->
 
 ## Abstract {.unnumbered}
@@ -276,6 +276,28 @@ of k, and a 5-tap convolution over x in place of the pointwise mix.
 - The gap is therefore not in the linear symbol. The remaining candidates are the nonlinear block and the time
   axis: the FNO's temporal Fourier modes mix the whole window.
 
+### Where the gap comes from: block and time axis (a40)
+
+The neuraloperator FNO differs from the WPO in two ways beyond its spectral weights. Its block adds a channel MLP
+with a gated skip, which gives it two nonlinearities per layer. Its time axis mixes the whole window, with t as an
+input. Three variants at the WPO's real budget separate the two:
+
+| model | PDEBench nRMSE | dispersion error |
+|---|---|---|
+| WPO | 0.045 | 0.24 |
+| WPO with the FNO block | 0.036 | **0.17** |
+| FNO without channel MLP | 0.030 | 0.63 |
+| FNO over x per time sample (no temporal mixing) | 0.037 | 0.64 |
+| FNO | **0.026** | 0.67 |
+
+: PDEBench 1D Burgers, 3 seeds (means), equal real budgets. {#tbl-gap}
+
+- The FNO block closes half of the gap at no cost: resolution invariance is kept, and the probe improves.
+- Without temporal mixing the FNO loses more than half of its edge. The rest of the gap therefore lies in the
+  time axis: a whole-window method can use the trajectory non-causally, and the WPO's recursion does not.
+- That accuracy is what the causal axis pays for time extrapolation and for exact forcing semantics.
+- Two of four predictions held. The MLP's share on the FNO side and the time axis's share were both misjudged.
+
 ### An identifiability limit: growth emulated by stable layers
 
 A stable control, with every layer pole at Re μ ≤ 0, fits Cahn–Hilliard as well as the WPO. Its probe reproduces
@@ -460,7 +482,7 @@ sample time (a20).
 
   It does not pay in pointwise accuracy in the strongly nonlinear regime on the training domain. There the TFNO
   is 2× better (2D coarsening, also at an equal real budget; also project D's Cahn–Hilliard with initial
-  fields, 1.8× at an equal budget) and 1.8× better on PDEBench Burgers at an equal real budget. Odd residue powers or local mixing do not close this gap (a39).
+  fields, 1.8× at an equal budget) and 1.8× better on PDEBench Burgers at an equal real budget. Odd residue powers or local mixing do not close this gap (a39); the FNO's block closes half of it, and the rest is consistent with whole-window temporal mixing (a40).
 - **Rollout stability is a data question.** The WPO-2D coarsening divergence was cured by amplitude-scaled
   training starts, not by any pole constraint.
 - **Training details decide the outcome**, as in (C):

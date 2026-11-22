@@ -710,3 +710,46 @@ configuration with 3 seeds.
 - The gap therefore sits elsewhere than in the linear symbol. The remaining candidates are the nonlinear block
   (pointwise mixing at width ~20–30 against the TFNO's full spectral mixing of channels) and the time axis (the
   TFNO's Fourier modes in t mix the whole window; the WPO's FOH recursion is causal).
+
+## Next-level step 4b (2026-11-22): the nonlinear block and the time axis (a40)
+
+`a40_gap_source.py` → `results/a40_gap_source.md` (predictions 547db6c). The neuraloperator FNO differs from the
+WPO in two ways beyond its spectral weights:
+- **Block.** Each FNO block adds a channel MLP (width → width / 2 → width) and a gated skip of the block input,
+  so it has two nonlinearities per layer; the WPO has one.
+- **Time axis.** The FNO mixes the whole padded window through 21 temporal modes and gets (x, t) as grid channels;
+  the WPO's recursion is causal.
+
+Three variants, each at the WPO's real budget, with an lr sweep at 4000 steps and then 3 seeds × 12,000 steps:
+- `wpo_mlp`: the WPO with the FNO block order;
+- `tfno_nomlp`: the a37 TFNO without channel MLPs;
+- `fno_x`: an FNO over x applied to each time sample, u(·, t) = G(u0, t), with no mixing across time.
+
+| model | real params | nRMSE 256 | 1024 / 256 | probe nu' (truth 0.1257) | dispersion error |
+|---|---|---|---|---|---|
+| WPO (a37 rerun) | 61,130 | 0.0452 (0.0440–0.0460) | 1.00 | 0.106 | 0.235 |
+| `wpo_mlp` | 63,382 | 0.0357 (0.0347–0.0368) | 1.00 | 0.109 (0.095–0.122) | **0.165** (0.12–0.24) |
+| TFNO (a37) | 64,745 | **0.0257** (0.0252–0.0264) | 1.00 | 0.041 | 0.672 |
+| `tfno_nomlp` | 62,201 | 0.0299 (0.0289–0.0311) | 1.00 | 0.047 | 0.632 |
+| `fno_x` | 62,257 | 0.0373 (0.0324–0.0419) | 1.00 | 0.047 | 0.643 |
+
+**Predictions against results.**
+1. `wpo_mlp` ≤ 0.036: **holds**, narrowly (0.0357).
+2. `tfno_nomlp` ≥ 0.032: **fails** (0.0299). Without the MLP the TFNO loses about a fifth of its edge (0.0042
+   of 0.0195), not a third.
+3. `fno_x` ≤ 0.030: **fails** (0.0373). Without temporal mixing the FNO loses more than half of its edge.
+4. `wpo_mlp` keeps the WPO's properties (1024 / 256 ≤ 1.1, dispersion error ≤ 0.3): **holds** (1.00; 0.165).
+
+**Reading.**
+- The gap has two parts, and neither part alone accounts for it.
+- **The block.** The FNO block on the WPO closes half of the gap (0.045 → 0.036) and costs nothing. The probe
+  improves as well (dispersion error 0.165, the lowest of any model on this benchmark), and resolution invariance
+  is kept. On the TFNO side the MLP is worth a smaller share (0.026 → 0.030).
+- **The time axis.** Taking temporal mixing out of the FNO costs it more (0.026 → 0.037). The rest of the TFNO's
+  edge is therefore consistent with its non-causal mixing over the window, together with t as an input; the WPO's
+  recursion is causal.
+- This bears on the claim. For initial-value data a causal time axis gives up accuracy that a whole-window method
+  can use; what the causal axis buys is time extrapolation and the FOH semantics for forcing (a36: (5, 10]
+  extrapolation 1.8× against the TFNO's 10×).
+- Not tested here: whether `wpo_mlp` keeps the form's benefits on forced Burgers (out of band, unseen modes), and
+  whether the two parts add up.
