@@ -30,7 +30,7 @@ ROOT = Path(__file__).resolve().parents[1]
 FOLDERS = ("src/lfo", "tests", "experiments/A/layer", "experiments/A/deep", "experiments/A/process",
            "experiments/A/paper", "experiments/C/e1_audit", "experiments/C/e5_probe", "experiments/C/paper",
            "experiments/D")
-FILES = ("LICENSE", "pyproject.toml", ".gitignore", "experiments/make_index.py", "experiments/foundation/README.md")
+FILES = ("LICENSE", "CITATION.cff", ".github/workflows/tests.yml", "pyproject.toml", ".gitignore", "experiments/make_index.py", "experiments/foundation/README.md")
 EXCLUDE = ("experiments/C/e1_audit/E1_report.md",)
 LATE = "experiments/C/theory/"     # imported modules from here enter in the release commit only
 STUB = ('"""Helper module of a follow-up identification study (not part of this release); included because released '

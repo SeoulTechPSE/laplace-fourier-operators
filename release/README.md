@@ -37,6 +37,7 @@ pytest
 
 Nine tests in `tests/test_lno.py` compare the ported LNO with the original code bit for bit; they need that
 code in `runs/ref/LNO` and a CUDA GPU, and are skipped otherwise.
+The test suite runs on CPU in GitHub Actions (`.github/workflows/tests.yml`, Python 3.10 and 3.12).
 
 ## Reproducing a result
 
@@ -71,3 +72,7 @@ src/lfo/        shared package: models, data generators, metrics, training utili
 experiments/    per-paper scripts, READMEs and result summaries (A, C, D)
 tests/          tests for the shared package
 ```
+
+## Citation
+
+See [`CITATION.cff`](CITATION.cff).
