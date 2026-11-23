@@ -940,7 +940,7 @@ Sweep (seed 0, 4000 steps, validation): lr 1e-3 / 3e-3 / 1e-2, pole lr ×1 / ×3
 **Post hoc context** (not pre-registered). The ALNO and LFNO probe means (≈ 3e13) come from fits that find no
 meaningful out-of-band pole in any seed; the medians are 6e12 and 3e13. Medians of unseen / test: S4D 27.5, ALNO
 66.5, LFNO 9.6. LFNO's (5, 10] mean is driven by two seeds (670 and 81; median 69). LFNO P seed 4 (0.90) did not
-train; without it the LFNO nRMSE is 0.118. The selected lr is the sweep's upper edge for several rows.
+train; without it the LFNO nRMSE is 0.118. Several rows selected an edge of the lr grid; a46 extends it.
 
 **Reading.**
 - The failed predictions were optimistic about the SSM: at equal budget the WPO is 1.6× more accurate than the
@@ -951,3 +951,32 @@ train; without it the LFNO nRMSE is 0.118. The selected lr is the sweep's upper 
 - The pole operators of the related work (LNO, ALNO, LFNO) do not reach the FNO / SSM accuracy level at this
   budget; the original LNO does not train on PDEBench (nRMSE 0.88).
 - The TFNO remains the most accurate model on PDEBench; the WPO is second.
+
+## The lr sweep beyond a45's edges (2026-11-23, a46)
+
+`a46_lr_edges.py` → `results/a46_lr_edges.md` (predictions 8d0a23c). a45 selected the upper edge of its lr grid
+(1e-2) for F:alno, F:lfno, P:s4d, P:alno and P:lfno, and the lower edge (1e-3) for P:lno. Added at a45's sweep
+protocol (4000 steps, seed 0): lr 3e-2 and 1e-1 (pole lr ×1 / ×30 for ALNO and LFNO), and 3e-4 and 1e-4 for P:lno.
+
+| job | a45 best (vali) | best new point (vali) | new points diverged or at ≈ 1 |
+|---|---|---|---|
+| F:alno | 1e-2, ×1 (0.0843) | 3e-2, ×1 (0.0901) | 3 of 4 |
+| F:lfno | 1e-2, ×1 (0.0952) | 3e-2, ×1 (0.1236) | 3 of 4 |
+| P:s4d | 1e-2 (0.0672) | 3e-2 (0.1036) | 1 of 2 |
+| P:alno | 1e-2, ×1 (0.1227) | 3e-2, ×30 (0.1785) | 2 of 4 |
+| P:lfno | 1e-2, ×30 (0.1400) | 3e-2, ×1 (0.1543) | 3 of 4 |
+| P:lno | 1e-3 (0.8877) | 3e-4 (0.8908) | – (all ≈ 0.89–0.91) |
+
+No selection changed, so no final run was repeated; a46's tables equal a45's. 0.8 GPU-hours.
+
+**Predictions against results: five of six hold.**
+1. Failed. P:s4d below a45's 0.0513: the selection did not change, so the nRMSE is a45's. Its validation fell
+   up to 1e-2 and rises beyond it.
+2. Held. P:s4d at or above the WPO's 0.0450 (0.0513).
+3. Held. F:alno and F:lfno test ≥ 1.5× the WPO's (0.077, 0.094).
+4. Held. F:alno and F:lfno unseen / test > 3 (114, 9.2).
+5. Held. P:lno > 0.5 at every lr (validation 0.89–0.91).
+6. Held. P:alno and P:lfno above the WPO's 0.0450 (0.088, 0.275).
+
+**Reading.** The a45 baselines sit at a validation minimum of the extended grid, not at a truncated edge; the
+comparison in a45 stands as reported.

@@ -427,8 +427,8 @@ extrapolation can be trusted. If not, use the MLP and do not extrapolate.
   the key comparison was rerun at equal real budgets (a36) with the same conclusion.
 - One public benchmark (PDEBench 1D Burgers), unforced. The SSM baseline uses the authors' S4D layer inside our
   (x, t) operator, not a published S4D operator; ALNO and LFNO are our implementations in (x, t); SGNO-type
-  operators are represented by the per-index form only. For several baselines the selected learning rate is the
-  upper edge of the sweep.
+  operators are represented by the per-index form only. Learning rates were swept over 1e-4 to 1e-1 where the
+  first grid's edge was selected; no selection changed (a46).
 - The probe is a small-amplitude linearization at u = 0.
 - Appendix A compares time axes on linear single layers only.
 - The oracle floor of the data (steps and PRBS between samples) limits every test error to about 1 %.

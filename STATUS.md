@@ -192,6 +192,19 @@ Things to know:
 
 ## Log
 
+### 2026-11-23 — (A) a46: the lr sweep beyond a45's edges
+
+- Done: `experiments/A/deep/a46_lr_edges.py` (predictions 8d0a23c).
+  - Added lr 3e-2 and 1e-1 for the five jobs that selected a45's upper edge (F:alno, F:lfno, P:s4d, P:alno,
+    P:lfno), and 3e-4 and 1e-4 for P:lno.
+  - 0.8 GPU-hours.
+- Result:
+  - Every new point validates worse than a45's selection (most diverge or stay at ≈ 1), so no selection changed
+    and the a45 numbers stand.
+  - Five of six predictions held. The failed one predicted that P:s4d would improve.
+- Paper 1: the limitations no longer list edge-selected learning rates.
+- Next: paper 1 step 2 (a second nonlinear system).
+
 ### 2026-11-23 — (A) a45: SSM, LNO, ALNO and LFNO baselines at the WPO's budget (paper 1, step 1)
 
 - Done: `experiments/A/deep/a45_baselines.py` (predictions 30d44a7), with `lfo.models.ALNO2d` / `LFNO2d` (09227a7)
