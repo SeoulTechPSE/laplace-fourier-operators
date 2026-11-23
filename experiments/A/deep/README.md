@@ -898,3 +898,56 @@ bit-identical, so no earlier result changes.
   intervals.
 - Mixed-precision code on the GPU needs a Hermitian check before irfft; a unit test at initialization (real
   residues) did not catch it.
+
+## Missing baselines: SSM, LNO, ALNO, LFNO at the WPO's budget (2026-11-23, a45)
+
+`a45_baselines.py` → `results/a45_baselines.md` (predictions 30d44a7; S4D layer vendored in 40fd989). Four
+operators of the related work, each at the WPO's real budget (54.8–64.5 k real against 59.5 k / 61.1 k), on a36's
+forced Burgers (F) and a37's PDEBench 1D Burgers (P), 5 seeds, 95 % t-intervals:
+- `s4d`: per layer GELU(S4D along t (the authors' layer, `lfo.models.s4d`) + SpectralConv along x + 1×1);
+- `lno`: the original LNO v2 (F seeds 0–2 from a36, 3–4 added; P new);
+- `alno`, `lfno`: `lfo.models.ALNO2d` / `LFNO2d` (separable poles in x and t, textbook contraction).
+
+Sweep (seed 0, 4000 steps, validation): lr 1e-3 / 3e-3 / 1e-2, pole lr ×1 / ×30. Selected: s4d 3e-3 (F) and 1e-2
+(P); alno 1e-2 ×1 (F, P); lfno 1e-2 ×1 (F) and ×30 (P); lno 1e-3 (P). Final 12000 steps. 3.3 GPU-hours.
+
+| F | test | (5, 10] / test | probe outside the band | unseen / test |
+|---|---|---|---|---|
+| WPO (a42) | **0.0239** [0.0232, 0.0245] | **1.85** [1.76, 1.95] | **0.098** [0.058, 0.139] | **1.26** [0.92, 1.61] |
+| S4D-type SSM | 0.0390 [0.0359, 0.0422] | 2.61 [2.11, 3.11] | 1.00 [0.90, 1.10] | 29.4 [23.9, 34.8] |
+| ALNO | 0.0773 [0.0704, 0.0842] | 4.14 [3.58, 4.70] | > 10 in every seed | 114 [−29, 258] |
+| LFNO | 0.0945 [0.0824, 0.1067] | 166 [−187, 519] | > 10 in every seed | 9.2 [7.9, 10.6] |
+| LNO v2 | 0.325 [0.214, 0.435] | 1.35 [0.92, 1.77] | 1.08 [0.96, 1.19] | 3.6 [2.0, 5.3] |
+
+| P | nRMSE 256 (= 1024) | probe ν' (truth 0.01 → 0.1257 m²) | ν' within 5 % | dispersion error |
+|---|---|---|---|---|
+| TFNO, real budget (a42) | **0.0254** [0.0247, 0.0261] | 0.040 | 0 of 5 | 0.69 |
+| WPO (a42) | 0.0450 [0.0440, 0.0459] | 0.101 | 1 of 5 | **0.25** |
+| S4D-type SSM | 0.0513 [0.0485, 0.0541] | 0.039 | 0 of 5 | 0.71 |
+| ALNO | 0.0879 [0.0754, 0.1005] | 0.030 | 0 of 5 | 0.80 |
+| LFNO | 0.275 [−0.161, 0.710] | 0.014 | 0 of 5 | 0.90 |
+| LNO v2 | 0.878 [0.876, 0.880] | 0.012 | 0 of 5 | 0.92 |
+
+**Predictions against results: three of six hold.**
+1. Failed. Unseen / test intervals above the WPO's: S4D, LFNO and LNO yes; ALNO's mean is 114 but its interval
+   reaches below the WPO's upper bound (seeds 12.7–252).
+2. Held. Every baseline's mean out-of-band probe error ≥ 0.35 (S4D 1.00, LNO 1.08, ALNO and LFNO > 10).
+3. Failed. S4D test within 0.8–1.6× the WPO's: it is 1.63×. LNO (13.6×), ALNO (3.2×), LFNO (4.0×) ≥ 1.5× held.
+4. Held. S4D (5, 10] / test ≤ 3 (2.61); ALNO (4.14) and LFNO (166) > 3.
+5. Failed. S4D nRMSE below the WPO's 0.0450: it is 0.0513, above. LNO, ALNO and LFNO above the WPO held.
+6. Held. No baseline has ν' within 5 % in more than 2 of 5 seeds (all 0 of 5).
+
+**Post hoc context** (not pre-registered). The ALNO and LFNO probe means (≈ 3e13) come from fits that find no
+meaningful out-of-band pole in any seed; the medians are 6e12 and 3e13. Medians of unseen / test: S4D 27.5, ALNO
+66.5, LFNO 9.6. LFNO's (5, 10] mean is driven by two seeds (670 and 81; median 69). LFNO P seed 4 (0.90) did not
+train; without it the LFNO nRMSE is 0.118. The selected lr is the sweep's upper edge for several rows.
+
+**Reading.**
+- The failed predictions were optimistic about the SSM: at equal budget the WPO is 1.6× more accurate than the
+  S4D-type operator on forced Burgers and 1.14× on PDEBench, and extrapolates better in time.
+- Only poles in the physical wavenumber continue outside the forced band: every per-mode or per-index generator
+  (S4D, the WPO's own per-index form, ALNO, LFNO, LNO) has an out-of-band probe error of order 1 or worse, and an
+  unseen-mode error 3.6–181× its test error (means), against 1.3× for the WPO.
+- The pole operators of the related work (LNO, ALNO, LFNO) do not reach the FNO / SSM accuracy level at this
+  budget; the original LNO does not train on PDEBench (nRMSE 0.88).
+- The TFNO remains the most accurate model on PDEBench; the WPO is second.

@@ -192,6 +192,26 @@ Things to know:
 
 ## Log
 
+### 2026-11-23 — (A) a45: SSM, LNO, ALNO and LFNO baselines at the WPO's budget (paper 1, step 1)
+
+- Done: `experiments/A/deep/a45_baselines.py` (predictions 30d44a7), with `lfo.models.ALNO2d` / `LFNO2d` (09227a7)
+  and the authors' S4D layer vendored as `lfo.models.s4d` (40fd989, Apache-2.0). Forced Burgers (F) and PDEBench
+  (P), real budgets 54.8–64.5 k against the WPO's 59.5 / 61.1 k, 5 seeds, lr sweep; 3.3 GPU-hours.
+- Results (95 % t-intervals):
+  - F test: WPO 0.0239, S4D 0.0390, ALNO 0.077, LFNO 0.094, LNO 0.32.
+  - F unseen / test: WPO 1.26 [0.92, 1.61], LNO 3.6, LFNO 9.2, S4D 29, ALNO 114 [−29, 258].
+  - Out-of-band probe error ≥ 1 for every baseline.
+  - P nRMSE: TFNO 0.0254, WPO 0.0450, S4D 0.0513, ALNO 0.088, LFNO 0.27 (one seed did not train), LNO 0.88 (does
+    not train).
+- Predictions: three of six hold. Failed:
+  - (1) ALNO's unseen / test interval is not above the WPO's (seed spread);
+  - (3) S4D at 1.63× the WPO's test error (predicted ≤ 1.6×);
+  - (5) S4D above the WPO on PDEBench (predicted below).
+  The other halves of (3) and (5), about LNO, ALNO and LFNO, held.
+- Post hoc context (medians, failure counts) in `experiments/A/deep/README.md`.
+- Paper 1: form table, abstract, related work, PDEBench section and limitations updated with the a45 rows.
+- Next: paper 1 step 2 (a second nonlinear system), then the hybrid and the identifiability theorem.
+
 ### 2026-11-23 — Papers: D1 moved to an (A) appendix; (A) split into two papers
 
 - Decisions (user): D1 moves to the (A) method paper's appendix (the plan's month-8 fallback); the (A) draft is

@@ -52,7 +52,8 @@ forced viscous Burgers and on PDEBench 1D Burgers.
 - **The form is what pays.** The same operator with a free pole per mode index (the per-mode generators of
   state-space and spectral-generator operators) matches the in-band accuracy and the time extrapolation, but its
   error on unseen forcing modes is 181× its test error (95 % interval 106–255, 5 seeds), against 1.3× (0.9–1.6)
-  with poles in k.
+  with poles in k. An S4D-type SSM operator, ALNO, LFNO and the original LNO, run at the same budget, have
+  unseen-mode errors 3.6–114× their test errors and are 1.6–14× less accurate than the WPO (5 seeds each).
 - On PDEBench 1D Burgers the Tucker FNO is 1.8× more accurate at an equal real-parameter budget. The FNO block
   closes half of that gap; the rest is consistent with whole-window temporal mixing, which a causal time axis
   gives up.
@@ -79,7 +80,7 @@ dispersion branches from it, for unforced flows. "Poles per Fourier mode" is the
 claim of this paper is narrower: the poles are smooth functions μₙ(k) of the *physical* wavenumber in an
 input-driven operator with an exact time axis, which is what makes them identifiable, continuable outside the
 excited band and transferable across domain sizes. @sec-form tests that claim against free per-index poles in the
-same architecture.
+same architecture, and against an S4D-type SSM operator, LNO, ALNO and LFNO at the same budget.
 
 
 **Parameter budgets.** All budgets are counted in real degrees of freedom. The FNO-type baselines up to a35 were
@@ -281,24 +282,34 @@ estimates are biased for every model, the solver included.](fig_probe.png){#fig-
 Same data, same architecture and training as the WPO, but each layer's poles are a free table over the 22
 retained mode indices (residues stay polynomial): the per-mode generator of S4D- or SGNO-type operators. Two
 extra tests: the probe's poles outside the forced band (k = 9–16), and a set forced only at k = 9–12, which no
-training sample excites. The original LNO (v2, steady modes raised to cover the band) is added at the same real
-budget.
+training sample excites. Four operators of the related work are added at the same real budget (a45): an
+S4D-type SSM operator (the authors' S4D layer along t, a spectral convolution along x), the original LNO (v2,
+steady modes raised to cover the band), and ALNO and LFNO with separable poles in x and t.
 
 | model | test | (5, 10] / test | probe outside the band (k = 9–16) | unseen modes / test |
 |---|---|---|---|---|
 | WPO, poles in k | **0.024** | **1.85** [1.76, 1.95] | **0.10** [0.06, 0.14] | **1.3** [0.9, 1.6] |
 | WPO, poles per index | **0.023** | **1.75** [1.67, 1.83] | 0.98 [0.95, 1.01] | 181 [106, 255] |
 | TFNO, real budget | 0.029 | 10.0 [9.2, 10.9] | 0.87 [0.78, 0.97] | 31 [19, 42] |
-| LNO v2 | 0.38 | 1.2 | 1.06 | 2.9 |
+| S4D-type SSM | 0.039 | 2.6 [2.1, 3.1] | 1.00 [0.90, 1.10] | 29 [24, 35] |
+| ALNO | 0.077 | 4.1 [3.6, 4.7] | > 10 (every seed) | 114 [−29, 258] |
+| LFNO | 0.094 | 166 [−187, 519] | > 10 (every seed) | 9.2 [7.9, 10.6] |
+| LNO v2 | 0.32 | 1.4 [0.9, 1.8] | 1.08 [0.96, 1.19] | 3.6 [2.0, 5.3] |
 
-: Forced Burgers; WPO and TFNO rows 5 seeds, mean [95 % t-interval] (a42), LNO 3 seeds; probe column: mean relative pole error against −νk². {#tbl-form}
+: Forced Burgers; 5 seeds each, mean [95 % t-interval] (a42, a45); probe column: mean relative pole error against −νk². {#tbl-form}
 
 - Inside the forced band the form does not matter: same test error, same time extrapolation (the FOH recursion
   carries it), and every model's probe is right at k ≤ 8.
 - Outside it only the polynomial poles continue. Per-index poles at modes the data never excite stay where they
   started, and an input there produces a response 4× the truth's size.
-- The original LNO, at this budget, does not fit forced Burgers (16× the WPO's error). Five of six predictions
-  held; the LNO's predicted extrapolation ratio above 2.5 failed because its in-window error is already large.
+- Every per-mode or per-index generator (the WPO's own per-index form, S4D, ALNO, LFNO, LNO) has an out-of-band
+  probe error of order 1 or worse and an unseen-mode error 3.6–181× its test error.
+- The S4D-type operator is the strongest baseline, but at equal budget the WPO is 1.6× more accurate. The original
+  LNO does not fit forced Burgers at this budget (14× the WPO's error); ALNO and LFNO reach 3–4×.
+- a36: five of six predictions held; the LNO's predicted extrapolation ratio above 2.5 failed because its in-window
+  error is already large. a45: three of six held; two failures overestimated the SSM (predicted within 1.6× of the
+  WPO's test error: 1.63×; predicted below the WPO on PDEBench: above), the third underestimated the spread of
+  ALNO's unseen-mode error (interval not separated).
 
 ### A public benchmark: PDEBench 1D Burgers (a37)
 
@@ -306,7 +317,9 @@ Initial field → trajectory (ν = 0.01, 256 × 41, PDEBench's split and nRMSE).
 benchmark to 3e-4 through an exact rescaling, so the linearization is known: λ_m = −0.1257 m².
 
 - The Tucker FNO (equal real budget) is 1.8× more accurate: nRMSE 0.0254 [0.0247, 0.0261] against 0.0450
-  [0.0440, 0.0459] (5 seeds, 95 % intervals; a42). Both are unchanged at 4× the resolution.
+  [0.0440, 0.0459] (5 seeds, 95 % intervals; a42). Both are unchanged at 4× the resolution. The other baselines
+  (a45) are less accurate than the WPO: S4D-type 0.0513 [0.0485, 0.0541], ALNO 0.088, LFNO 0.27 (one seed of five
+  did not train; 0.118 without it), and the original LNO does not train (0.88). None has ν' within 5 % in any seed.
 - The probe separates the models less than on forced Burgers: both get the slowest modes (m ≤ 4); at m = 8–10 two
   WPO seeds are within 10 % and no FNO seed is. The WPO's ν is within 5 % in 1 of 5 seeds; the prediction of 5 % in
   every seed failed. Without forcing that isolates modes, the data constrain the small-amplitude response only
@@ -412,8 +425,10 @@ extrapolation can be trusted. If not, use the MLP and do not extrapolate.
 - One parameter budget (59 k); FNO-type baselines from neuraloperator with a learning-rate sweep but no
   architecture search. Up to a35 the baselines were matched by `numel` (1.5–1.9× the WPO's real parameters);
   the key comparison was rerun at equal real budgets (a36) with the same conclusion.
-- One public benchmark (PDEBench 1D Burgers), unforced; the SSM and spectral-generator operators of the related
-  work were represented by per-index poles inside the WPO, not run from their own code.
+- One public benchmark (PDEBench 1D Burgers), unforced. The SSM baseline uses the authors' S4D layer inside our
+  (x, t) operator, not a published S4D operator; ALNO and LFNO are our implementations in (x, t); SGNO-type
+  operators are represented by the per-index form only. For several baselines the selected learning rate is the
+  upper edge of the sweep.
 - The probe is a small-amplitude linearization at u = 0.
 - Appendix A compares time axes on linear single layers only.
 - The oracle floor of the data (steps and PRBS between samples) limits every test error to about 1 %.
