@@ -1,7 +1,7 @@
 ---
 title: "Wavenumber Pole Operators: Identifiable Dispersion Relations in Linear and Nonlinear Neural Operators"
 author: "Kee-Youn Yoo"
-date: 2026-11-22
+date: 2026-11-23
 format:
   pdf:
     papersize: a4
@@ -17,16 +17,19 @@ bibliography: ../../C/paper/references.bib
 csl: ../../C/paper/ieee.csl
 ---
 
-<!-- Project A working paper, 2026-11-21. Not for submission yet. Every number comes from
-experiments/A/layer/README.md (layer experiments) and experiments/A/deep/README.md (deep experiments, to a44), whose predictions
-were committed before each run (hashes there). Figures: experiments/A/paper/figures.py. -->
+<!-- Project A, paper 1 (method), working paper, 2026-11-23. Not for submission yet. The Cahn–Hilliard
+application is the companion paper `a2_paper.qmd` (the draft was split as planned; decision 2026-11-23). Every
+number comes from experiments/A/layer/README.md (layer experiments), experiments/A/deep/README.md (deep experiments,
+to a44) and experiments/A/process/README.md; Appendix A from experiments/D/d1_inputs/README.md. Predictions were
+committed before each run (hashes there). Figures: experiments/A/paper/figures.py. -->
 
 ## Abstract {.unnumbered}
 
 We build a neural-operator layer whose temporal kernel, for every spatial Fourier mode k, is a sum of poles and
 residues that are polynomials in k. A trained layer can therefore be read as a dispersion relation λ(k). The time
 axis is a first-order-hold exponential-integrator recursion: exact for piecewise-linear inputs, causal, and
-independent of the window length.
+independent of the window length. As a representation it is about 100× more accurate than the Fourier time axis
+of Laplace neural operators on smooth non-periodic inputs (Appendix A).
 
 **Linear systems.** In 1D diffusion, advection–diffusion–reaction, an undamped Euler–Bernoulli beam, and 2D
 diffusion and anisotropic ADR, the layer recovers the dispersion relation at the data's oracle floor in every
@@ -38,30 +41,27 @@ details decide success:
 - a leaky cap on Re μ, because a hard cap traps starts.
 
 **Nonlinear systems.** A deep version (lifting, channel-mixing pole layers, pointwise nonlinearities) is tested on
-forced viscous Burgers and forced Cahn–Hilliard.
+forced viscous Burgers and on PDEBench 1D Burgers.
 
 - It trains only with a separate, larger learning rate for its poles.
 - At a matched budget it beats a band-covering Tucker FNO by 2× with 50 training samples, by 9 % with 400, and
   by 7× in time extrapolation.
-- A small-amplitude linear probe recovers ν to 1–3 %, and the unstable band of Cahn–Hilliard ($k_c$ to 1 %).
-- The FNO baselines are right inside the forced band but produce arbitrary poles outside it.
-- **Limit:** a deep stack whose layer poles are all stable reproduces the growing modes in the probe over the
-  training window. An unstable pole is therefore claimed only when probe and layer structure agree.
+- A small-amplitude linear probe recovers ν to 1–3 %. The FNO baselines are right inside the forced band but
+  produce arbitrary poles outside it.
 - **The form is what pays.** The same operator with a free pole per mode index (the per-mode generators of
   state-space and spectral-generator operators) matches the in-band accuracy and the time extrapolation, but its
   error on unseen forcing modes is 181× its test error (95 % interval 106–255, 5 seeds), against 1.3× (0.9–1.6)
   with poles in k.
-- On PDEBench 1D Burgers the Tucker FNO is 1.8× more accurate at an equal real-parameter budget; the WPO's probe
-  recovers ν within 3 % in one seed of three.
+- On PDEBench 1D Burgers the Tucker FNO is 1.8× more accurate at an equal real-parameter budget. The FNO block
+  closes half of that gap; the rest is consistent with whole-window temporal mixing, which a causal time axis
+  gives up.
 
-**Cahn–Hilliard application.**
+**Pole laws and delay.** A polynomial pole law extrapolates outside the forced band when its form is right; an MLP
+law wins in band when it is not, and fitting both is a check. A pole–residue–delay layer recovers dead times that
+are not multiples of the sample time to 1e-4, and on a dispersion reactor the wavenumber layer separates transport
+from delay.
 
-- In the linear (spinodal) regime the layer recovers $k_c(\phi_0)$ from early-time data. With the mobility and
-  gradient energy as inputs, it extrapolates beyond the training grid only with the physical form of the law.
-- In 2D coarsening every stable model reproduces $L(t) \sim t^n$, and the Tucker FNO is 2× better pointwise. A WPO
-  that diverged in rollout needed amplitude-scaled training starts, not a pole constraint.
-- Trained on one box, the pole operator runs on a box twice as large with an unchanged error and the right
-  coarsening law, without data or retraining. The FNO's mode-indexed weights do not transfer (35× the error).
+A companion paper applies the layer to Cahn–Hilliard phase separation.
 
 ## Introduction
 
@@ -82,12 +82,15 @@ input-driven operator with an exact time axis, which is what makes them identifi
 excited band and transferable across domain sizes. @sec-form tests that claim against free per-index poles in the
 same architecture.
 
+
 **Parameter budgets.** All budgets are counted in real degrees of freedom. The FNO-type baselines up to a35 were
 matched by `numel`, which counts a complex weight once; their real budgets were 1.5–1.9× the WPO's. Reruns at
-equal real budgets change no conclusion: on forced Burgers the smaller TFNO is slightly better (a36), in 2D
-coarsening it keeps its lead (window-end 0.020 against 0.019 at 1.46×; a38), and on project D's Cahn–Hilliard
-it is 0.014 against 0.013 (d2m). The tables below give the original runs; the reruns are in the experiment
-records.
+equal real budgets change no conclusion: on forced Burgers the smaller TFNO is slightly better (a36). The tables
+below give the original runs; the reruns are in the experiment records.
+
+**Scope.** This paper covers the layer, its identification on linear systems, deep operators on Burgers, the
+choice of pole law, and a first process-dynamics step. The Cahn–Hilliard application (the spinodal band, 2D
+forced and coarsening dynamics, transfer across domain sizes) is the companion paper.
 
 Every experiment below was pre-registered: predictions were committed before the runs, and every failed
 prediction is reported.
@@ -104,8 +107,8 @@ with $\beta_n(k)$ a polynomial in k². The parameters are continuous in k, so th
 
 - **Time axis.** The exact first-order-hold recursion $x_{j+1}=E\,x_j+b_0u_j+b_1u_{j+1}$, evaluated as a causal
   FFT convolution plus a first-sample correction. It is exact for inputs that are linear between samples, causal,
-  and needs only Δt, so the same layer runs on a longer window or a finer Δt. This was the D1 decision; the Fourier
-  time axis of LNO costs 4e-4 to 2e-3 on non-periodic inputs.
+  and needs only Δt, so the same layer runs on a longer window or a finer Δt. On non-periodic inputs the
+  Fourier time axis of LNO costs 4e-4 to 2e-3 as a representation (Appendix A).
 - **Options.**
   - `modes`: truncation to the forced band.
   - `re_max`: a smooth cap on Re μ. With `re_leak`, it keeps a slope above the cap (@sec-trap).
@@ -156,7 +159,7 @@ relative error on the training domain. Tiling scales both norms by $\sqrt s$.
   - Example: a layer that has learned exact diffusion, $R_m=e^{-\nu(2\pi m/L)^2\Delta t}$, still applies $R_m$ at
     index m. On the sL grid that index is the physical wavenumber $2\pi m/(sL)$, whose true factor is
     $e^{-\nu(2\pi m/(sL))^2\Delta t}$. Every resolved mode therefore decays $s^2$ times too fast.
-  - This is the mechanism behind the TFNO's failure on the 4π box (@sec-coarsening).
+  - This is the mechanism behind a Tucker FNO's failure on a box twice as large in the companion paper.
 - *Window (b).* An FNO's temporal Fourier modes over the padded window break (b). This is the whole-window mixing
   that carries part of its accuracy on PDEBench (a40).
 
@@ -167,8 +170,8 @@ relative error on the training domain. Tiling scales both norms by $\sqrt s$.
   in k² of degree d), agreement at d + 1 distinct training |k| implies agreement at every k in the band. Otherwise
   the error at a new k is the interpolation error of the law, which the in-band probe bounds only at the training
   wavenumbers.
-- For deep nonlinear operators no such bound is offered. The 2D transfer (1.02–1.03× the training-domain error;
-  a34) is empirical.
+- For deep nonlinear operators no such bound is offered. The 2D transfer of the companion paper (1.02–1.03× the
+  training-domain error; a34) is empirical.
 - Property (a) and the causality behind (b) are tested in `tests/test_wavenumber.py` (tiled fields under
   `set_domain`; causality of the layer and of the deep operator).
 
@@ -263,10 +266,9 @@ test set).](fig_data_eff.png){#fig-data width=50%}
 
 ### What the probe reads
 
-![Per-mode probe poles. Left, Burgers: inside the forced band (shaded) every model is right; above it only the WPO
-continues −ν k². The FNO variants return arbitrary poles. Beyond the resolution cut (dashed) the estimates are
-biased for every model, the solver included. Right, Cahn–Hilliard: all three models, including the stable
-control, reproduce the growing modes.](fig_probe.png){#fig-probe width=100%}
+![Per-mode probe poles on forced Burgers, seed 0. Inside the forced band (shaded) every model is right; above it
+only the WPO continues −ν k². The FNO variants return arbitrary poles. Beyond the resolution cut (dashed) the
+estimates are biased for every model, the solver included.](fig_probe.png){#fig-probe width=60%}
 
 - **Burgers.** Every model's linearization is right to 1–2 % inside the forced band (@fig-probe). Outside it, only
   the WPO continues the dispersion relation (k = 9 within 1–4 %), and only its small-amplitude response is
@@ -274,9 +276,6 @@ control, reproduce the growing modes.](fig_probe.png){#fig-probe width=100%}
 - **A bias that was not physics.** An earlier probe bias (ν̂ 11–14 % high, a10) was the polynomial summary
   absorbing over-damping at the weakly forced top of the band. It vanished with longer training (a11). A
   polynomial summary needs its residual reported.
-- **Cahn–Hilliard** (M = 0.1, κ = 0.04; λ(k) = M k²(1 − κ k²), $k_c$ = 5). With Re μ > 0 allowed, the WPO's probe
-  gives $k_c$ = 4.99–5.03 and every sign right (a16), against 5.107 from the solver's own probe. The TFNO's in-band
-  poles are right in one seed, but out-of-band poles spoil its fit in all three.
 
 ### Is it the physical-wavenumber form? (a36) {#sec-form}
 
@@ -355,112 +354,6 @@ input. Three variants at the WPO's real budget separate the two:
 - On forced Burgers the FNO block gains nothing (0.024 against 0.024; a41). In one seed of three it loses the
   probe outside the band (3× off at k = 16), so we do not adopt it as the default block.
 
-### An identifiability limit: growth emulated by stable layers
-
-A stable control, with every layer pole at Re μ ≤ 0, fits Cahn–Hilliard as well as the WPO. Its probe reproduces
-the growing modes to three digits. Its layer poles sit just below zero: a cascade of near-integrators produces
-$t^n$ growth, indistinguishable from $e^{0.58t}$ on [0, 5]. A longer probe window does not separate the two either,
-because the linearization leaves the linear regime (growth ×300 over T = 10).
-
-Within a finite window, then, the probe of the whole operator does not identify an unstable pole. We claim one
-only when probe and layer structure agree: Re μ > 0 allowed, used, and located in the band. This is the same rule
-as (C)'s trust rule for poles.
-
-### Spinodal decomposition across compositions (application 2, stage 1) {#sec-spinodal}
-
-Around a uniform composition φ₀ the linearization is λ(k; φ₀) = Mk²(1 − 3φ₀²) − Mκk⁴, unstable for
-k < k_c(φ₀) inside the spinodal |φ₀| < 1/√3. We trained the initial-condition path of project D alone,
-û(k, t) = γ(k) û₀(k) e^{μ(k, φ₀)t}, with φ₀ read from the mean of the initial field and μ a law in k² and φ₀² (6 reals).
-Training used early-time, unforced data at eight compositions (0 to 0.7); evaluation used five held-out ones.
-
-| model | test / oracle, held-out φ₀ | φ̂_s (0.57735) | k̂_c(0), k̂_c(0.3), k̂_c(0.5) |
-|---|---|---|---|
-| law in k² and φ₀² | **0.995–1.006** | **0.57733–0.57736** | **5.0000, 4.2719, 2.500** |
-| same, Re μ ≤ 0 (LNO constraint) | 130–1710 | 0.78 | 4.65, 4.31, 3.60 |
-| no φ₀ dependence | 106–1118 | – | – |
-
-: 1D Cahn–Hilliard, linear regime, 5 data seeds; the oracle floor is the nonlinear residual (≤ 3.6e-3). {#tbl-spinodal}
-
-- The layer recovers the stability diagram of the linear regime: k_c(φ₀) to 1e-4 and the spinodal to 3e-5. It
-  extrapolates to φ₀ = 0.8, beyond the training range and outside the spinodal.
-- The model class contains the truth, so this shows identifiability from early-time data, not discovery of the form.
-- The stability constraint is not a small bias. It distorts the stable modes as well and is off by up to 1700×.
-
-**Mobility and gradient energy as inputs** (stage 3, linear regime). With M and κ varied on a 2 × 2 grid and fed to
-the layer, the law in the form of the linearization, μ = M(ak² + bk²φ₀²) + Mκ·dk⁴ (3 reals), reaches the oracle
-(≤ 1.01×) at M twice and κ half the grid's range, with k_c within 1.5e-4. A 16-term law that contains the truth but
-not its form is 1–17× the oracle off the grid, depending on the seed; an MLP law is 10⁴× off even between grid
-points. The response is e^{μt}, so in the unstable band an error in the law becomes exponential in the output.
-
-## 2D deep operator {#sec-2d}
-
-The 2D layer and operator carry the same structure: Re μ is isotropic in |k|², with an advection vector and the
-half-plane sign. On forced 2D Cahn–Hilliard (32², $k_c$ = 5) we compare WPO-2D (18.7 k parameters) with a 3D
-Tucker FNO (15.0 k, the closest rank) over 3 seeds and 6000 steps (a17).
-
-| model | params | test | probe $k_c$ (solver 5.003) | median in-band per-mode error |
-|---|---|---|---|---|
-| WPO-2D | 18.7 k | **0.030–0.036** | **4.98–5.09** | **0.2–0.6 %** |
-| TFNO, tuned (a18) | 20.4 k | 0.071–0.089 | 3.76–5.06 | 3.9–8.3 % |
-| TFNO, untuned (a17) | 15.0 k | 0.100–0.125 | 4.49–4.96 | 3–16 % |
-
-: Forced 2D Cahn–Hilliard, 3 seeds. {#tbl-ch2d}
-
-- The probe of WPO-2D is right mode by mode, along both (k, 0) and (k, k), so the learned dispersion relation is
-  isotropic as the truth is.
-- A budget-matched TFNO with a learning-rate sweep (a18) closes about a third of the gap. The WPO-2D keeps a 2.6×
-  lower test error and a per-mode linearization an order of magnitude more accurate.
-- One pre-registered prediction failed: that the untuned TFNO's $k_c$ would miss by more than 10 % in most seeds.
-  2 of 3 seeds landed within 10 %.
-
-### Rollout into coarsening (application 2, stage 2) {#sec-coarsening}
-
-Unforced 2D Cahn–Hilliard after a critical quench (128² truth, 64² models): from the true state at t = 1, 20
-chained windows of one time unit, in which L(t) grows from 1.5 to 3.5 (exponent 0.271 on this range; 0.261 on a
-4π box, so the 2π box is not size-limited).
-
-| setting | model | one window | window 20 | L(21) / truth | n |
-|---|---|---|---|---|---|
-| 2π (a31) | WPO-2D | 0.033–0.035 | 0.67–0.74 | 0.975–0.991 | 0.261–0.268 |
-| | TFNO | **0.015–0.022** | **0.34–0.39** | 0.967–0.974 | 0.255–0.257 |
-| | FNO-2D (AR) | 0.035–0.043 | 0.81–0.91 | 0.968–1.015 | 0.247–0.267 |
-| 2π, scaled starts (a33) | WPO-2D | 0.035–0.039 | 0.70–0.89 | 0.961–0.990 | 0.244–0.262 |
-| | TFNO | **0.018–0.020** | **0.39–0.43** | 0.974–0.976 | 0.255–0.257 |
-| 4π, trained on 2π (a34) | WPO-2D | **0.035–0.041** | **0.85** | 1.04–1.08 | 0.272–0.286 |
-| | TFNO | 0.66–0.71 | 1.41 | 2.15–2.19 | 0.31–0.35 |
-| 4π, trained on 4π (a35) | TFNO | 0.031–0.038 | 0.83 | 1.03–1.04 | 0.270–0.274 |
-| | TFNO, modes × 2 | **0.019–0.023** | **0.63** | 1.02–1.03 | 0.265–0.273 |
-
-: 2D coarsening, 3 seeds per row (ranges; window 20 is the mean when one number is given). In a31 one WPO-2D seed
-diverged; its row shows the two stable seeds. No other run diverged. The 2π truth has n = 0.271 and the 4π truth
-n = 0.261. {#tbl-coarsening}
-
-- **The statistics are a weak test.** Every stable run reproduces the coarsening law (L within 8 %, n within
-  0.03). A field frozen at t = 1 gives L(21) / truth = 0.43. Per-window errors separate the models more.
-- **On the training box the TFNO is the better surrogate**, 2× more accurate per window and in rollout, with or
-  without scaled starts.
-- **The WPO-2D divergence is a gap in data coverage, not a pole problem.**
-  - In a31 one WPO-2D seed diverges, with its poles at the growth cap. Changing the cap does not help: with
-    stable poles, a cap of 0.3, or a cap of 1 without the leak, 2, 3 and 2 of 3 seeds diverge (a32).
-  - The window map lacks a restoring force (a32b, post hoc). Scale a true state by a = 2, and the truth returns
-    max |u| at 0.50 × the scaled maximum. The TFNO returns 0.76; every WPO-2D run returns 1.5–4.8, stable poles
-    included. An overshoot past ±1 then persists.
-  - The training starts never leave |u| < 1.05. One amplitude-scaled copy per training window
-    (a ~ U[0.7, 1.6], target from the solver) gives a gain of 0.58–0.66 at a = 2 and no divergence in any seed
-    (a33). Pointwise rollout does not improve.
-- **The pole operator transfers across box sizes; the TFNO does not.**
-  - A WPO-2D trained on 2π runs on a 4π box at the same spacing with no data and no retraining: each layer gets
-    the new length and twice the mode count. The poles are functions of the physical wavenumber, so the
-    one-window error is unchanged (1.02–1.03×) and the 4π rollouts keep the law (a34). Tiled inputs transfer exactly (@sec-consistency);
-    the 4π states are not tiled, so this is the off-grid case.
-  - The TFNO's spectral weights belong to mode indices, which on 4π are other physical wavenumbers: 35× the
-    error, domains growing 2.2× too fast (@fig-transfer).
-  - A TFNO trained on 4π with its mode count doubled is 1.8× more accurate than the transferred WPO-2D (a35). With
-    the original mode count it is at 0.034, close to the WPO-2D's 0.038, which never saw the 4π box.
-
-![Rollout on the 4π box from the true state at t = 1. Left: length scale L(t); the WPO-2D trained on 2π follows the
-truth, the TFNO trained on 2π coarsens 2.2× too fast. Right: per-window rollout error; the TFNO trained on the 4π
-box itself is the accuracy reference (a34, a35).](fig_transfer.png){#fig-transfer width=100%}
 
 ## Polynomial or MLP pole functions (RQ4) {#sec-rq4}
 
@@ -520,6 +413,7 @@ sample time (a20).
   - The pole readout is physical for translation-invariant problems; open-boundary convective systems need the
     boundary handling of project (D).
 
+
 ## Discussion
 
 - **What is identifiable.**
@@ -532,18 +426,15 @@ sample time (a20).
     the physical-wavenumber form, not from having poles.
 - **Where the accuracy gain comes from.** Data efficiency (2× at 50 samples) and time extrapolation (7×). The
   in-window error at 400 samples is close to parity (9 %).
-- **Where the structure pays, and where it does not.** It pays in four places:
-  - identification: dispersion relations and the spinodal band, from data;
-  - continuation outside the forced band;
-  - extrapolation in physical parameters, when the law has the right form (@sec-spinodal);
-  - transfer across domain sizes without retraining (@sec-coarsening).
+- **Where the structure pays, and where it does not.** It pays in identification (dispersion relations, delays),
+  in continuation outside the forced band, and, when the law has the right form, in extrapolation of the pole law
+  (@sec-rq4). Consistency across domain sizes is exact for tiled inputs (@sec-consistency); the companion paper
+  tests it on 2D coarsening.
 
-  It does not pay in pointwise accuracy in the strongly nonlinear regime on the training domain. There the TFNO
-  is 2× better (2D coarsening, also at an equal real budget; also project D's Cahn–Hilliard with initial
-  fields, 1.8× at an equal budget) and 1.8× better on PDEBench Burgers at an equal real budget. Odd residue powers or local mixing do not close this gap (a39); the FNO's block closes half of it on PDEBench but not on forced Burgers, and the rest is consistent with whole-window temporal mixing (a40, a41).
-- **Rollout stability is a data question.** The WPO-2D coarsening divergence was cured by amplitude-scaled
-  training starts, not by any pole constraint.
-- **Training details decide the outcome**, as in (C):
+  It does not pay in pointwise accuracy on PDEBench Burgers, where the Tucker FNO is 1.8× better at an equal real
+  budget. Odd residue powers or local mixing do not close this gap (a39); the FNO's block closes half of it on
+  PDEBench but not on forced Burgers, and the rest is consistent with whole-window temporal mixing (a40, a41).
+- **Training details decide the outcome**, as in the companion audit (project C):
   - scaling the polynomials;
   - a pole learning rate in deep models;
   - a leaky rather than hard cap on Re μ;
@@ -551,10 +442,8 @@ sample time (a20).
 
 ## Limitations {.unnumbered}
 
-- Two 2D deep experiments: forced (@sec-2d, an untuned, slightly smaller baseline) and coarsening
-  (@sec-coarsening). Domain transfer was tested for one factor (2π to 4π), one time range (to t = 21), and a
-  WPO-2D trained on 2π only; a WPO-2D trained on 4π was not run.
-- Two nonlinear systems, both with a known linearization at rest.
+- One nonlinear system family (viscous Burgers, forced and PDEBench's unforced set), with a known linearization at
+  rest. The Cahn–Hilliard results, including the 2D experiments, are in the companion paper.
 - Cost: in float64 the WPO takes 4.4–5× the TFNO's (float32) time per training step and 1.6–1.7× its memory
   (a43). The factor is precision: in float32 (poles, FOH coefficients and pole parameters kept in float64) its
   step is 1.0–1.05× the TFNO's on forced Burgers and 1.3× on PDEBench, with less memory than the TFNO, and the
@@ -562,12 +451,52 @@ sample time (a20).
   post hoc rerun after a GPU FFT defect was fixed). Per-index poles cost the same as poles in k.
 - One parameter budget (59 k); FNO-type baselines from neuraloperator with a learning-rate sweep but no
   architecture search. Up to a35 the baselines were matched by `numel` (1.5–1.9× the WPO's real parameters);
-  the key comparisons were rerun at equal real budgets (a36, a38; D: d2m) with the same conclusions.
+  the key comparison was rerun at equal real budgets (a36) with the same conclusion.
 - One public benchmark (PDEBench 1D Burgers), unforced; the SSM and spectral-generator operators of the related
   work were represented by per-index poles inside the WPO, not run from their own code.
-- The probe is a small-amplitude linearization at u = 0. Linearizations about other uniform states were learned
-  only in the linear regime of one system (@sec-spinodal), not probed from a deep model. Extrapolation in M and κ
-  was shown for a law with the right form; no form was discovered.
+- The probe is a small-amplitude linearization at u = 0.
+- The process part is a first step: first- and second-order plus dead time, one dispersion reactor, one CSTR and
+  one closed loop, each from one data generator.
+- Appendix A compares time axes on linear single layers only.
 - The oracle floor of the data (steps and PRBS between samples) limits every test error to about 1 %.
 
 ## References {.unnumbered}
+
+::: {#refs}
+:::
+
+## Appendix A: the time axis for non-periodic inputs {.unnumbered}
+
+The Fourier time axis of Laplace neural operators computes the response to the trigonometric interpolant of the
+input samples, which assumes that the input repeats at the window ends. Steps, ramps and PRBS do not.
+
+**Representation alone.** Without any training, we computed the response of known pole–residue systems (two to six
+poles, including lightly damped complex pairs and fast real poles) to 100 inputs per family with each time-axis
+representation. The inputs are defined on a 32× finer grid and seen only at the samples.
+
+| input family | Fourier (LNO) | Fourier, pad 2× | FOH | Chebyshev 64 |
+|---|---|---|---|---|
+| step | 1.7–2.8e-3 | 1.6–2.7e-3 | 1.6–2.7e-3 | 7.3e-3–1.1e-2 |
+| ramp | 0.7–1.8e-3 | 1.8–2.9e-4 | **1.2–2.8e-6** | 1.0–1.6e-4 |
+| PRBS | 0.9–1.0e-2 | 0.9–1.0e-2 | 0.9–1.0e-2 | 2.9–4.5e-2 |
+| smooth, mismatched ends | 4.1–6.7e-4 | 3.0–4.9e-4 | 5.9–7.5e-6 | **1.7–2.2e-8** |
+| periodic (control) | 2.9–4.5e-6 | 2.9–4.4e-4 | 1.8–4.0e-5 | **0.5–1.2e-7** |
+
+: Median relative L2 error of the representation alone (three systems; ranges over systems). {#tbl-app-time}
+
+- The Fourier path's error on non-periodic inputs is 10–100× its error on the periodic control. It is spread over
+  the whole window rather than concentrated at the ends, and it falls only as $n^{-1}$.
+- On steps and PRBS every path is limited by the sampling: a jump between samples cannot be located.
+- A global Chebyshev fit is the best representation on smooth inputs. It is numerically unusable at high degree
+  (errors up to 1e7 at degree 256) and poor at discontinuities.
+
+**Trained layers.** The difference matters only once training reaches the representation floor. Under the
+published LNO training protocol the training error (3e-3 to 4e-2) is 10–1000× the representation error of either
+path. Trained to convergence on the same data, with fine-grid truth, single Fourier and FOH layers reach the same
+test error, the sampling floor (3.7e-3 against 3.4e-3). A large FOH advantage seen on data generated with a
+first-order hold was a model-class match, not a property of the time axis.
+
+**Choice.** The FOH recursion is the default time axis, with piecewise Chebyshev as an option for smooth inputs.
+It is never worse than the Fourier path except on periodic inputs, and it is causal, O(n), and independent of the
+window length. The time extrapolation and the Δt transfer of the main text rest on that independence; the accuracy
+gain on non-periodic inputs is a property of the representation, not of trained models.

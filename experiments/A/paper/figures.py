@@ -1,4 +1,4 @@
-"""Figures for the (A) working paper (`a_paper.qmd`), from the committed result files only.
+"""Figures for the (A) working papers (`a1_paper.qmd`, `a2_paper.qmd`), from the committed result files only.
 
     python experiments/A/paper/figures.py      # writes experiments/A/paper/fig_*.png
 """
@@ -79,8 +79,8 @@ def fig_data_eff():
 
 def fig_probe():
     a13 = load(DEEP / "a13_baselines.json")
-    a16 = load(DEEP / "a16_cahn_hilliard.json")["runs"]
-    fig, ax = plt.subplots(1, 2, figsize=(7.2, 2.6))
+    fig, ax = plt.subplots(figsize=(4.3, 2.6))
+    ax = [ax]
     k = np.linspace(0, 16, 200)
     ax[0].axvspan(0.5, 8.5, color="#f2f2f2", lw=0)
     ax[0].plot(k, -0.1 * k ** 2, color=C["truth"], lw=1, label="−ν k²")
@@ -93,6 +93,14 @@ def fig_probe():
     ax[0].text(10.2, -27, "resolution cut", fontsize=7, color="#666666")
     ax[0].set(title="Burgers probe, seed 0 (shaded: forced band)", xlabel="k", ylabel="Re μ̂(k)", ylim=(-30, 2))
     ax[0].legend(fontsize=7, loc="lower left")
+    fig.tight_layout()
+    fig.savefig(HERE / "fig_probe.png", dpi=200)
+
+
+def fig_probe_ch():
+    a16 = load(DEEP / "a16_cahn_hilliard.json")["runs"]
+    fig, ax = plt.subplots(figsize=(3.9, 2.6))
+    ax = [None, ax]
     lam = lambda k: 0.1 * k ** 2 * (1 - 0.04 * k ** 2)
     k = np.linspace(0, 8, 200)
     ax[1].axhline(0, color="#bbbbbb", lw=0.8)
@@ -106,7 +114,7 @@ def fig_probe():
     ax[1].set(title="Cahn–Hilliard probe, seed 0 (offset in k)", xlabel="k", ylabel="Re μ̂(k)", ylim=(-6, 1.2))
     ax[1].legend(fontsize=7, loc="lower left")
     fig.tight_layout()
-    fig.savefig(HERE / "fig_probe.png", dpi=200)
+    fig.savefig(HERE / "fig_probe_ch.png", dpi=200)
 
 
 def fig_transfer():
@@ -141,4 +149,5 @@ if __name__ == "__main__":
     fig_linear()
     fig_data_eff()
     fig_probe()
+    fig_probe_ch()
     fig_transfer()

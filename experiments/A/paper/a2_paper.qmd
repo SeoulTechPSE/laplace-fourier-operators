@@ -1,0 +1,251 @@
+---
+title: "Pole Operators for Phase Separation: Unstable Bands, Stability Diagrams and Domain Transfer in Cahn–Hilliard Dynamics"
+author: "Kee-Youn Yoo"
+date: 2026-11-23
+format:
+  pdf:
+    papersize: a4
+    geometry: margin=22mm
+    mainfont: DejaVu Serif
+    fontsize: 10pt
+    number-sections: true
+    tbl-colwidths: false
+  html:
+    embed-resources: true
+    number-sections: true
+bibliography: ../../C/paper/references.bib
+csl: ../../C/paper/ieee.csl
+---
+
+<!-- Project A, paper 2 (Cahn–Hilliard application), working paper, 2026-11-23. Not for submission yet: the plan's
+month-20 gate (k_c and k_max recovered in the nonlinear and 2D regimes) is still open. The method is the companion
+paper `a1_paper.qmd`. Every number comes from experiments/A/deep/README.md (a16–a18, a31–a35, a38, spinodal and
+M, κ stages), whose predictions were committed before each run (hashes there), and D: d2m. Figures:
+experiments/A/paper/figures.py. -->
+
+## Abstract {.unnumbered}
+
+The wavenumber pole operator (WPO; companion paper) writes the temporal kernel of every spatial Fourier mode k as
+poles μₙ(k) and residues that are polynomials in the physical wavenumber. We apply it to Cahn–Hilliard phase
+separation, whose linearization has a band of growing modes k < k_c, and ask what a pole operator identifies there
+and what it buys.
+
+- **Stability diagram.** Trained on early-time data at eight compositions, a law in k² and φ₀² recovers
+  k_c(φ₀) to 1e-4 and the spinodal composition to 3e-5 at held-out compositions, and extrapolates to φ₀ = 0.8,
+  outside the spinodal. With the stability constraint of Laplace neural operators (Re μ ≤ 0) the error is up to
+  1700× the oracle. With mobility and gradient energy as inputs, only a law in the physical form extrapolates off
+  the training grid.
+- **Deep operators.** A small-amplitude probe of a deep WPO recovers the unstable band of forced Cahn–Hilliard:
+  k_c within 1 % in 1D and 2 % in 2D, mode by mode and isotropic. A tuned, budget-matched Tucker FNO has 2.6× the
+  test error in 2D.
+- **An identifiability limit.** A control whose layer poles are all stable reproduces the growing modes over the
+  training window through cascades of near-integrators. An unstable pole is therefore claimed only when the probe
+  and the layer structure agree.
+- **Coarsening.** Over 20 chained windows every stable model reproduces the coarsening law L(t) ~ tⁿ, and the
+  Tucker FNO is 2× more accurate pointwise. A WPO that diverged needed amplitude-scaled training starts, not a pole
+  constraint.
+- **Domain transfer.** Trained on one box, the WPO runs on a box twice as large with an unchanged one-window error
+  (1.02–1.03×) and the right coarsening law, without data or retraining. The FNO's mode-indexed weights do not
+  transfer (35× the error).
+
+## Introduction
+
+The Cahn–Hilliard equation describes phase separation: from a near-uniform composition φ₀ inside the spinodal,
+modes below a critical wavenumber grow (spinodal decomposition), and the domains then coarsen with a length scale
+L(t) ~ tⁿ. Its linearization about φ₀,
+
+$$\lambda(k;\varphi_0) = Mk^2(1-3\varphi_0^2) - M\kappa k^4,$$
+
+is unstable for $k < k_c(\varphi_0)$, with mobility M and gradient energy κ. Laplace-type neural operators
+[@cao2024lno; @ha2026lfno] keep their poles stable, and Fourier neural operators [@li2021fno] index their weights
+by mode number. The wavenumber pole operator of the companion paper has neither restriction: its poles are
+functions of the physical wavenumber, and Re μ > 0 is allowed. This paper asks:
+
+1. Can the layer identify the unstable band and its dependence on composition and on M and κ?
+2. Does a deep operator's linearization reproduce that band, and when can an unstable pole be claimed?
+3. What does the structure buy in the nonlinear coarsening regime: pointwise accuracy, rollout stability, or
+   transfer across domain sizes?
+
+**Parameter budgets.** All budgets are counted in real degrees of freedom. The FNO-type baselines up to a35 were
+matched by `numel`, which counts a complex weight once; their real budgets were 1.5–1.9× the WPO's. Reruns at
+equal real budgets change no conclusion: in 2D coarsening the TFNO keeps its lead (window-end 0.020 against 0.019
+at 1.46×; a38), and on project D's Cahn–Hilliard with initial fields it is 0.014 against 0.013 (d2m). The tables
+below give the original runs; the reruns are in the experiment records.
+
+Every experiment below was pre-registered: predictions were committed before the runs, and every failed
+prediction is reported.
+
+## The layer {#sec-layer}
+
+The companion paper defines the layer and its identification recipes; we recall what is used here.
+
+- **Poles and residues.** For mode k, $K(k,s)=\sum_n \beta_n(k)/(s-\mu_n(k))$, with Re μ a polynomial in k²
+  (in 2D, in |k|²) and β a polynomial in k². Re μ > 0 is allowed up to a smooth cap with a leak above it; a
+  hard cap traps starts.
+- **Time axis.** The exact first-order-hold recursion, causal and independent of the window length.
+- **Initial fields.** The free response $\hat u_0(k)\sum_n\gamma_n(k)e^{\mu_n(k)t}$ shares the poles with the
+  forced response (project D).
+- **Deep operator.** lift → [$K_l + W_l$, GELU] × L → projection, with a separate, larger learning rate for the
+  poles. The 2D layer adds an advection vector and the half-plane sign that a real field needs.
+- **Probe.** Single-mode inputs at small amplitude; the odd part of the response; one pole per mode; the
+  resolution and observability cuts.
+
+### Consistency across domain sizes {#sec-consistency}
+
+Let $P_s$ read an L-periodic field as an sL-periodic one at the same grid spacing (tiling s times), and let
+$\Phi_L$ be a deep WPO on a box of length L whose mode count is rescaled with L, so that the physical band stays
+the same. Then $\Phi_{sL}\circ P_s = P_s\circ\Phi_L$ exactly (companion paper, with proof), as for the solution
+map of any autonomous, translation-invariant evolution equation. A spectral layer with a weight per mode index has
+this property only if its weights are the same at index sm as at m: on the larger box it applies the weight
+learned for mode m to a different physical wavenumber. A general state on the larger box is not tiled and excites
+wavenumbers between the training ones, so the transfer of @sec-coarsening is an empirical result.
+
+## The stability diagram in the linear regime {#sec-spinodal}
+
+Around a uniform composition φ₀ the linearization is λ(k; φ₀) = Mk²(1 − 3φ₀²) − Mκk⁴, unstable for
+k < k_c(φ₀) inside the spinodal |φ₀| < 1/√3. We trained the initial-condition path of project D alone,
+û(k, t) = γ(k) û₀(k) e^{μ(k, φ₀)t}, with φ₀ read from the mean of the initial field and μ a law in k² and φ₀² (6 reals).
+Training used early-time, unforced data at eight compositions (0 to 0.7); evaluation used five held-out ones.
+
+| model | test / oracle, held-out φ₀ | φ̂_s (0.57735) | k̂_c(0), k̂_c(0.3), k̂_c(0.5) |
+|---|---|---|---|
+| law in k² and φ₀² | **0.995–1.006** | **0.57733–0.57736** | **5.0000, 4.2719, 2.500** |
+| same, Re μ ≤ 0 (LNO constraint) | 130–1710 | 0.78 | 4.65, 4.31, 3.60 |
+| no φ₀ dependence | 106–1118 | – | – |
+
+: 1D Cahn–Hilliard, linear regime, 5 data seeds; the oracle floor is the nonlinear residual (≤ 3.6e-3). {#tbl-spinodal}
+
+- The layer recovers the stability diagram of the linear regime: k_c(φ₀) to 1e-4 and the spinodal to 3e-5. It
+  extrapolates to φ₀ = 0.8, beyond the training range and outside the spinodal.
+- The model class contains the truth, so this shows identifiability from early-time data, not discovery of the form.
+- The stability constraint is not a small bias. It distorts the stable modes as well and is off by up to 1700×.
+
+**Mobility and gradient energy as inputs** (linear regime). With M and κ varied on a 2 × 2 grid and fed to
+the layer, the law in the form of the linearization, μ = M(ak² + bk²φ₀²) + Mκ·dk⁴ (3 reals), reaches the oracle
+(≤ 1.01×) at M twice and κ half the grid's range, with k_c within 1.5e-4. A 16-term law that contains the truth but
+not its form is 1–17× the oracle off the grid, depending on the seed; an MLP law is 10⁴× off even between grid
+points. The response is e^{μt}, so in the unstable band an error in the law becomes exponential in the output.
+
+## The unstable band in a deep operator {#sec-forced}
+
+**Forced 1D Cahn–Hilliard** (M = 0.1, κ = 0.04; $k_c$ = 5; 64 points, T = 5). With Re μ > 0 allowed, the WPO's
+probe gives $k_c$ = 4.99–5.03 and every sign right (a16), against 5.107 from the solver's own probe. The TFNO's
+in-band poles are right in one seed, but out-of-band poles spoil its fit in all three.
+
+![Per-mode probe poles on forced 1D Cahn–Hilliard, seed 0 (offset in k). All three models, including the stable
+control, reproduce the growing modes.](fig_probe_ch.png){#fig-probe-ch width=55%}
+
+### An identifiability limit: growth emulated by stable layers
+
+A stable control, with every layer pole at Re μ ≤ 0, fits forced Cahn–Hilliard as well as the WPO (@fig-probe-ch). Its probe reproduces
+the growing modes to three digits. Its layer poles sit just below zero: a cascade of near-integrators produces
+$t^n$ growth, indistinguishable from $e^{0.58t}$ on [0, 5]. A longer probe window does not separate the two either,
+because the linearization leaves the linear regime (growth ×300 over T = 10).
+
+Within a finite window, then, the probe of the whole operator does not identify an unstable pole. We claim one
+only when probe and layer structure agree: Re μ > 0 allowed, used, and located in the band. This is the same rule
+as the trust rule for poles of the companion audit (project C).
+
+## Forced 2D dynamics {#sec-2d}
+
+The 2D layer and operator carry the same structure: Re μ is isotropic in |k|², with an advection vector and the
+half-plane sign. On forced 2D Cahn–Hilliard (32², $k_c$ = 5) we compare WPO-2D (18.7 k parameters) with a 3D
+Tucker FNO (15.0 k, the closest rank) over 3 seeds and 6000 steps (a17).
+
+| model | params | test | probe $k_c$ (solver 5.003) | median in-band per-mode error |
+|---|---|---|---|---|
+| WPO-2D | 18.7 k | **0.030–0.036** | **4.98–5.09** | **0.2–0.6 %** |
+| TFNO, tuned (a18) | 20.4 k | 0.071–0.089 | 3.76–5.06 | 3.9–8.3 % |
+| TFNO, untuned (a17) | 15.0 k | 0.100–0.125 | 4.49–4.96 | 3–16 % |
+
+: Forced 2D Cahn–Hilliard, 3 seeds. {#tbl-ch2d}
+
+- The probe of WPO-2D is right mode by mode, along both (k, 0) and (k, k), so the learned dispersion relation is
+  isotropic as the truth is.
+- A budget-matched TFNO with a learning-rate sweep (a18) closes about a third of the gap. The WPO-2D keeps a 2.6×
+  lower test error and a per-mode linearization an order of magnitude more accurate.
+- One pre-registered prediction failed: that the untuned TFNO's $k_c$ would miss by more than 10 % in most seeds.
+  2 of 3 seeds landed within 10 %.
+
+## Rollout into coarsening {#sec-coarsening}
+
+Unforced 2D Cahn–Hilliard after a critical quench (128² truth, 64² models): from the true state at t = 1, 20
+chained windows of one time unit, in which L(t) grows from 1.5 to 3.5 (exponent 0.271 on this range; 0.261 on a
+4π box, so the 2π box is not size-limited).
+
+| setting | model | one window | window 20 | L(21) / truth | n |
+|---|---|---|---|---|---|
+| 2π (a31) | WPO-2D | 0.033–0.035 | 0.67–0.74 | 0.975–0.991 | 0.261–0.268 |
+| | TFNO | **0.015–0.022** | **0.34–0.39** | 0.967–0.974 | 0.255–0.257 |
+| | FNO-2D (AR) | 0.035–0.043 | 0.81–0.91 | 0.968–1.015 | 0.247–0.267 |
+| 2π, scaled starts (a33) | WPO-2D | 0.035–0.039 | 0.70–0.89 | 0.961–0.990 | 0.244–0.262 |
+| | TFNO | **0.018–0.020** | **0.39–0.43** | 0.974–0.976 | 0.255–0.257 |
+| 4π, trained on 2π (a34) | WPO-2D | **0.035–0.041** | **0.85** | 1.04–1.08 | 0.272–0.286 |
+| | TFNO | 0.66–0.71 | 1.41 | 2.15–2.19 | 0.31–0.35 |
+| 4π, trained on 4π (a35) | TFNO | 0.031–0.038 | 0.83 | 1.03–1.04 | 0.270–0.274 |
+| | TFNO, modes × 2 | **0.019–0.023** | **0.63** | 1.02–1.03 | 0.265–0.273 |
+
+: 2D coarsening, 3 seeds per row (ranges; window 20 is the mean when one number is given). In a31 one WPO-2D seed
+diverged; its row shows the two stable seeds. No other run diverged. The 2π truth has n = 0.271 and the 4π truth
+n = 0.261. {#tbl-coarsening}
+
+- **The statistics are a weak test.** Every stable run reproduces the coarsening law (L within 8 %, n within
+  0.03). A field frozen at t = 1 gives L(21) / truth = 0.43. Per-window errors separate the models more.
+- **On the training box the TFNO is the better surrogate**, 2× more accurate per window and in rollout, with or
+  without scaled starts.
+- **The WPO-2D divergence is a gap in data coverage, not a pole problem.**
+  - In a31 one WPO-2D seed diverges, with its poles at the growth cap. Changing the cap does not help: with
+    stable poles, a cap of 0.3, or a cap of 1 without the leak, 2, 3 and 2 of 3 seeds diverge (a32).
+  - The window map lacks a restoring force (a32b, post hoc). Scale a true state by a = 2, and the truth returns
+    max |u| at 0.50 × the scaled maximum. The TFNO returns 0.76; every WPO-2D run returns 1.5–4.8, stable poles
+    included. An overshoot past ±1 then persists.
+  - The training starts never leave |u| < 1.05. One amplitude-scaled copy per training window
+    (a ~ U[0.7, 1.6], target from the solver) gives a gain of 0.58–0.66 at a = 2 and no divergence in any seed
+    (a33). Pointwise rollout does not improve.
+- **The pole operator transfers across box sizes; the TFNO does not.**
+  - A WPO-2D trained on 2π runs on a 4π box at the same spacing with no data and no retraining: each layer gets
+    the new length and twice the mode count. The poles are functions of the physical wavenumber, so the
+    one-window error is unchanged (1.02–1.03×) and the 4π rollouts keep the law (a34). Tiled inputs transfer exactly (@sec-consistency);
+    the 4π states are not tiled, so this is the off-grid case.
+  - The TFNO's spectral weights belong to mode indices, which on 4π are other physical wavenumbers: 35× the
+    error, domains growing 2.2× too fast (@fig-transfer).
+  - A TFNO trained on 4π with its mode count doubled is 1.8× more accurate than the transferred WPO-2D (a35). With
+    the original mode count it is at 0.034, close to the WPO-2D's 0.038, which never saw the 4π box.
+
+![Rollout on the 4π box from the true state at t = 1. Left: length scale L(t); the WPO-2D trained on 2π follows the
+truth, the TFNO trained on 2π coarsens 2.2× too fast. Right: per-window rollout error; the TFNO trained on the 4π
+box itself is the accuracy reference (a34, a35).](fig_transfer.png){#fig-transfer width=100%}
+
+## Discussion
+
+- **What is identifiable.**
+  - In the linear regime, the stability diagram (k_c(φ₀) and the spinodal) from early-time data, when the law's
+    form contains the truth. A stability constraint is not a small bias: it distorts the stable modes as well.
+  - In deep models, the linearization at rest through a probe, including the unstable band, in 1D and 2D.
+  - Within a finite window, growth in the probe does not identify an unstable pole; a stable cascade emulates it.
+    An unstable pole needs the layer structure to agree.
+- **Where the structure pays.**
+  - Identification of the unstable band and its dependence on composition, M and κ.
+  - Extrapolation in physical parameters, when the law has the physical form (@sec-spinodal).
+  - Forced 2D accuracy and per-mode linearization against a tuned, budget-matched TFNO (@sec-2d).
+  - Transfer across box sizes without data or retraining (@sec-coarsening).
+- **Where it does not.** Pointwise rollout accuracy in the strongly nonlinear regime on the training box: the
+  TFNO is 2× better in 2D coarsening, also at an equal real budget (a38), and 1.8× on project D's Cahn–Hilliard
+  with initial fields (d2m). The companion paper traces a similar gap on PDEBench Burgers to whole-window temporal
+  mixing, which a causal time axis gives up.
+- **Rollout stability is a data question.** The WPO-2D coarsening divergence was cured by amplitude-scaled
+  training starts, not by any pole constraint.
+
+## Limitations {.unnumbered}
+
+- Two 2D deep experiments: forced (@sec-2d, an untuned, slightly smaller baseline in a17) and coarsening
+  (@sec-coarsening). Domain transfer was tested for one factor (2π to 4π), one time range (to t = 21), and a
+  WPO-2D trained on 2π only; a WPO-2D trained on 4π was not run.
+- Three seeds per row in the deep experiments.
+- The probe is a small-amplitude linearization at u = 0. Linearizations about other uniform states were learned
+  only in the linear regime (@sec-spinodal), not probed from a deep model; k_c and k_max have not yet been
+  recovered from nonlinear-regime data.
+- Extrapolation in M and κ was shown for a law with the right form; no form was discovered.
+- Cost was measured in 1D (companion paper); the 2D layer was run in float64.
+
+## References {.unnumbered}
