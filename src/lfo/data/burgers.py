@@ -8,6 +8,9 @@ linear between its samples (so midpoints use the average of neighboring samples)
 
 Linearized at u = 0 the equation is diffusion: each mode has the pole lambda(k) = -nu k^2. For small forcing the
 solution tends to the linear response (tested).
+
+With `delta` != 0 the solver integrates the forced KdV-Burgers equation u_t + u u_x = nu u_xx - delta u_xxx + f,
+whose linearization is dispersive: lambda(k) = -nu k^2 + i delta k^3 (exact in the integrating factor).
 """
 from __future__ import annotations
 
@@ -16,13 +19,15 @@ import numpy as np
 __all__ = ["solve"]
 
 
-def solve(fk: np.ndarray, dt: float, nu: float, n_x: int, stride: int = 1, u0k: np.ndarray | None = None) -> np.ndarray:
+def solve(fk: np.ndarray, dt: float, nu: float, n_x: int, stride: int = 1, u0k: np.ndarray | None = None,
+          delta: float = 0.0) -> np.ndarray:
     """Spectral solution of the forced Burgers equation from rest.
 
     fk     (B, K, n) complex: rfft (over n_x points, numpy normalization) of the forcing at t_j = j dt, K = n_x // 2 + 1
     dt     solver step = forcing sample spacing
     stride return every `stride`-th time sample
     u0k    optional (B, K) rfft of the initial field (default: rest)
+    delta  dispersion coefficient of -delta u_xxx (default 0: Burgers)
 
     Returns uk (B, K, ceil(n / stride)) complex, the rfft of u at t_0, t_stride, ...
     """
@@ -30,7 +35,7 @@ def solve(fk: np.ndarray, dt: float, nu: float, n_x: int, stride: int = 1, u0k: 
     if K != n_x // 2 + 1:
         raise ValueError("fk must hold the rfft of an n_x-point grid")
     k = np.arange(K, dtype=float)
-    L = -nu * k ** 2
+    L = -nu * k ** 2 + 1j * delta * k ** 3
     E, E2 = np.exp(L * dt / 2), np.exp(L * dt)
     keep = k <= n_x / 3                                   # 2/3 rule for the quadratic term
     ik2 = -0.5j * k * keep
