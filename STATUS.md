@@ -192,6 +192,26 @@ Things to know:
 
 ## Log
 
+### 2026-11-24 — (A) a47: a second nonlinear system, forced KdV–Burgers (paper 1, step 2)
+
+- Done: `lfo.data.burgers.solve(..., delta=)` (35493e4; tests: mode rotation, energy conservation) and
+  `experiments/A/deep/a47_kdv_burgers.py` (checks and predictions c8bd6de).
+  - System: λ(k) = −νk² + iδk³, complex poles.
+  - Models: WPO, per-index WPO, real-budget TFNO, S4D-type; 5 seeds each.
+- Results:
+  - Test error: WPO 0.0245, per index 0.0227, TFNO 0.0338, S4D 0.0404.
+  - Unseen / test: WPO 2.1 (per seed 1.4–3.3), others 15–946 per seed.
+  - The WPO recovers δ within 4 % and ν within 1.2 % in every seed.
+  - Out-of-band pole error: WPO 0.21 (0.10 on Burgers), others ≥ 0.87.
+- Predictions: four of six hold. Failed:
+  - (3) the per-index unseen-mode t-interval reaches below zero (heavy tail), so it does not separate, although
+    per seed it does;
+  - (4) the WPO's out-of-band error is 0.208 against ≤ 0.2 (k³ overshoot at k ≥ 14).
+- Post hoc: the in-band dispersion error is restricted to k = 2..8; the pre-set cut admits spurious slow fits here.
+- Paper 1: new section `#sec-kdv` with table, abstract bullet, scope, discussion, limitations (two systems; the
+  TFNO's lr is at its sweep's edge on KdV).
+- Next: optional, extend the TFNO's lr sweep on KdV (edge); then step 3 (the hybrid) and step 4 (identifiability).
+
 ### 2026-11-23 — (A) a46: the lr sweep beyond a45's edges
 
 - Done: `experiments/A/deep/a46_lr_edges.py` (predictions 8d0a23c).

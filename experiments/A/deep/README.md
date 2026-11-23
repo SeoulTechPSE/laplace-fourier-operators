@@ -980,3 +980,47 @@ No selection changed, so no final run was repeated; a46's tables equal a45's. 0.
 
 **Reading.** The a45 baselines sit at a validation minimum of the extended grid, not at a truncated edge; the
 comparison in a45 stands as reported.
+
+## A dispersive system: forced KdV–Burgers (2026-11-24, a47)
+
+`a47_kdv_burgers.py` → `results/a47_kdv_burgers.md` (checks and predictions c8bd6de; solver term 35493e4).
+u_t + u u_x = ν u_xx − δ u_xxx + f, ν = 0.1, δ = 0.01: λ(k) = −νk² + iδk³, complex poles. a36's forced protocol
+unchanged otherwise; WPO, per-index WPO, real-budget TFNO and a45's S4D-type operator, 5 seeds each.
+GPU time 11 h (WPO-type runs in float64, two processes sharing the GPU).
+
+Checks before training:
+- nonlinear part 0.8 / 8.5 / 49 % (p10 / p50 / p90), up to 174 %;
+- solver probe ν̂ 0.5 %, δ̂ 0.85 %, out-of-band error 0.024.
+
+| model | selected | test | (5, 10] / test | unseen / test | probe outside the band | ν̂ | δ̂ | ν̂ 5 % / δ̂ 10 % |
+|---|---|---|---|---|---|---|---|---|
+| WPO | 3e-3, ×30 | 0.0245 [0.0241, 0.0250] | **1.83** [1.73, 1.93] | **2.10** [1.08, 3.12] | **0.208** [0.041, 0.376] | 0.1004 | 0.01030 | 5 / 5 |
+| per index | 3e-3, ×30 | **0.0227** [0.0222, 0.0232] | **1.80** [1.68, 1.93] | 364 [−48, 776] | 0.988 [0.970, 1.005] | 0.1011 | 0.01012 | 5 / 5 |
+| TFNO, real | 1e-2 | 0.0338 [0.0283, 0.0393] | 8.81 [7.45, 10.18] | 19.6 [14.2, 25.1] | 0.870 [0.808, 0.931] | 0.0985 | 0.00839 | 4 / 3 |
+| S4D-type | 1e-3 | 0.0404 [0.0384, 0.0424] | 2.88 [2.54, 3.22] | 37.6 [21.6, 53.6] | ≥ 0.99 (2 seeds fail) | 0.0976 | 0.00795 | 4 / 2 |
+
+Per seed, unseen / test: WPO 1.4–3.3; per index 168–946; TFNO 15–27; S4D 27–59. Out-of-band error per seed for the
+WPO: 0.09, 0.12, 0.14, 0.26, 0.42 (median 0.14).
+
+**Predictions against results: four of six hold.**
+1. Held. The WPO's test (0.0245) is below the TFNO's (0.0338) and the S4D operator's (0.0404).
+2. Held. The per-index test is −7 % from the WPO's (within ±15 %).
+3. Failed. Unseen / test: the WPO's interval [1.08, 3.12] lies below the TFNO's and the S4D operator's, but the
+   per-index interval reaches below zero (one seed at 946). Per seed every other model is above every WPO seed.
+4. Failed. The WPO's mean out-of-band error is 0.208 (predicted ≤ 0.2); the others' ≥ 0.35 held. Seed 0 (0.42)
+   overshoots Im λ at k ≥ 14 (fitted 36i and 72i against 27i and 34i at k = 14, 15).
+5. Held. The WPO's ν̂ within 5 % and δ̂ within 10 % in 5 of 5 seeds (δ̂ within 1.9–3.8 %).
+6. Held. (5, 10] / test: WPO 1.83 ≤ 2.5; TFNO 8.8 > 5.
+
+**Post hoc.** The pre-set in-band dispersion error (`disp_err`) is ≈ 0.9–1.0 for most runs because the kept-mode cut
+(|μ| dt ≤ 0.25, |μ| T ≥ 2) admits slow spurious fits at unexcited modes k ≥ 9; on Burgers those fits were fast and
+cut. Restricted to k = 2..8 it is 0.015 / 0.018 / 0.016 / 0.018 (WPO / per index / TFNO / S4D). ν̂ and δ̂ are
+residual-weighted and not affected. The TFNO selected the upper edge of its lr grid (1e-2).
+
+**Reading.**
+- The form claim carries over to complex poles: in band every model's linearization is right; only poles in k
+  keep unseen modes near the test error, and the WPO recovers the dispersion coefficient in every seed.
+- The continuation outside the band is shorter than on Burgers (0.21 against 0.10): a cubic Im μ fitted on
+  k ≤ 8 drifts by k = 14–16.
+- t-intervals are a poor separation test for ratios with heavy upper tails (this and a45's ALNO); per-seed ranges
+  are reported alongside.

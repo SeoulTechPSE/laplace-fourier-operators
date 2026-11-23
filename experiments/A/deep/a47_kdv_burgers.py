@@ -127,6 +127,16 @@ def oob(pr):
     return float(np.mean(e))
 
 
+def disp_band(pr):
+    """Post hoc (added after the runs): in-band dispersion error over k = 2..8 only. The kept-mode cut lets slow
+    spurious fits at unexcited modes k >= 9 through (|mu| dt <= 0.25 does not exclude them, as it did on Burgers),
+    which inflates `disp_err`; nu_hat and delta_hat are residual-weighted and unaffected."""
+    ms = [m for m in pr["modes"] if 2 <= m["k"] <= 8]
+    mu = np.array([complex(*m["mu"]) for m in ms])
+    lk = lam([m["k"] for m in ms])
+    return float(np.linalg.norm(mu - lk) / np.linalg.norm(lk))
+
+
 def model_probe(model, fk, device):
     def G(spec):
         f = torch.tensor(np.fft.irfft(spec[..., ::M.FINE], n=M.NX, axis=1))
@@ -260,7 +270,7 @@ def summarize():
              "", f"Budgets (real): {out['budget']}",
              f"Diverged runs: {[(r['model'], r['seed']) for r in out['runs'] if r.get('diverged')] or 'none'}", "",
              "| model | n | cfg | test | (5, 10] / test | unseen / test | probe outside the band | ν̂ | δ̂ | "
-             "in-band dispersion error |", "|---|---|---|---|---|---|---|---|---|---|"]
+             "dispersion error k = 2..8 (post hoc) |", "|---|---|---|---|---|---|---|---|---|---|"]
     for k in KINDS:
         rs = [r for r in out["runs"] if r["model"] == k and not r.get("diverged")]
         if not rs:
@@ -269,7 +279,11 @@ def summarize():
         lines.append(f"| {k} | {len(rs)} | {rs[0]['cfg']} | {fmt([r['test'] for r in rs], '.4f')} | "
                      f"{fmt([r['ext_late'] / r['test'] for r in rs], '.2f')} | "
                      f"{fmt([r['high'] / r['test'] for r in rs], '.2f')} | {fmt([r['oob'] for r in rs], '.3f')} | "
-                     f"{fmt(p('nu_hat'), '.4f')} | {fmt(p('delta_hat'), '.5f')} | {fmt(p('disp_err'), '.3f')} |")
+                     f"{fmt(p('nu_hat'), '.4f')} | {fmt(p('delta_hat'), '.5f')} | {fmt([disp_band(r['probe']) for r in rs], '.3f')} |")
+    lines += ["", "Within 5 % (ν̂) and 10 % (δ̂), seeds: " + ", ".join(
+        f"{k} {sum(abs(r['probe']['nu_hat'] / NU - 1) <= 0.05 for r in out['runs'] if r['model'] == k)} / "
+        f"{sum(abs(r['probe']['delta_hat'] / DELTA - 1) <= 0.10 for r in out['runs'] if r['model'] == k)}"
+        for k in KINDS)]
     lines += ["", "Sweep (seed 0, 4000 steps, validation):", ""]
     lines += [f"- {r['model']} {r['cfg']}: {r['vali']:.4f}" for r in out["sweep"]]
     OUT.with_suffix(".md").write_text("\n".join(lines) + "\n")

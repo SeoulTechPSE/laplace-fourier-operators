@@ -42,7 +42,7 @@ details decide success:
 - a leaky cap on Re μ, because a hard cap traps starts.
 
 **Nonlinear systems.** A deep version (lifting, channel-mixing pole layers, pointwise nonlinearities) is tested on
-forced viscous Burgers and on PDEBench 1D Burgers.
+forced viscous Burgers, on PDEBench 1D Burgers and on forced KdV–Burgers (dispersive, complex poles).
 
 - It trains only with a separate, larger learning rate for its poles.
 - At a matched budget it beats a band-covering Tucker FNO by 2× with 50 training samples, by 9 % with 400, and
@@ -54,6 +54,9 @@ forced viscous Burgers and on PDEBench 1D Burgers.
   error on unseen forcing modes is 181× its test error (95 % interval 106–255, 5 seeds), against 1.3× (0.9–1.6)
   with poles in k. An S4D-type SSM operator, ALNO, LFNO and the original LNO, run at the same budget, have
   unseen-mode errors 3.6–114× their test errors and are 1.6–14× less accurate than the WPO (5 seeds each).
+- With complex poles (forced KdV–Burgers) the same holds: the WPO recovers the dispersion coefficient within 4 %
+  in every seed, and its unseen-mode error is 2.1× its test error against 20–364× for the per-index form, the TFNO
+  and an SSM operator.
 - On PDEBench 1D Burgers the Tucker FNO is 1.8× more accurate at an equal real-parameter budget. The FNO block
   closes half of that gap; the rest is consistent with whole-window temporal mixing, which a causal time axis
   gives up.
@@ -88,8 +91,8 @@ matched by `numel`, which counts a complex weight once; their real budgets were 
 equal real budgets change no conclusion: on forced Burgers the smaller TFNO is slightly better (a36). The tables
 below give the original runs; the reruns are in the experiment records.
 
-**Scope.** This paper covers the layer, its identification on linear systems, deep operators on Burgers and the
-choice of pole law. Process dynamics (delays, reactors, closed loops) and the Cahn–Hilliard application (the spinodal band, 2D
+**Scope.** This paper covers the layer, its identification on linear systems, deep operators on Burgers and
+KdV–Burgers and the choice of pole law. Process dynamics (delays, reactors, closed loops) and the Cahn–Hilliard application (the spinodal band, 2D
 forced and coarsening dynamics, transfer across domain sizes) are separate papers.
 
 Every experiment below was pre-registered: predictions were committed before the runs, and every failed
@@ -327,6 +330,34 @@ benchmark to 3e-4 through an exact rescaling, so the linearization is known: λ_
 - The pre-registered WPO runs ended in nan from an overflow in a masked branch of the time kernel for very fast
   poles; the reported runs repeat them unchanged after the fix (post hoc).
 
+### A dispersive system: forced KdV–Burgers (a47) {#sec-kdv}
+
+Burgers' linearization has real poles only. Forced KdV–Burgers, u_t + u u_x = ν u_xx − δ u_xxx + f (ν = 0.1,
+δ = 0.01), linearizes to λ(k) = −νk² + iδk³: at k = 8 a forced mode turns by about a radian while it decays. The
+protocol is the forced-Burgers one of @sec-form unchanged; the data are more nonlinear (median nonlinear part 8.5 %,
+90th percentile 49 %). The WPO's default pole form (Re in k², Im in k and k³) contains λ; the solver's own probe
+recovers ν to 0.5 % and δ to 0.85 %.
+
+| model | test | (5, 10] / test | unseen modes / test | probe outside the band | δ̂ / δ |
+|---|---|---|---|---|---|
+| WPO, poles in k | 0.0245 | **1.83** [1.73, 1.93] | **2.1** [1.1, 3.1] | **0.21** [0.04, 0.38] | 1.03 |
+| WPO, poles per index | **0.0227** | **1.80** [1.68, 1.93] | 364 (168–946) | 0.99 [0.97, 1.01] | 1.01 |
+| TFNO, real budget | 0.0338 | 8.8 [7.5, 10.2] | 20 [14, 25] | 0.87 [0.81, 0.93] | 0.84 |
+| S4D-type SSM | 0.0404 | 2.9 [2.5, 3.2] | 38 [22, 54] | ≥ 0.99 | 0.80 |
+
+: Forced KdV–Burgers; 5 seeds each, mean [95 % t-interval] (per-index unseen ratio: seed range, its interval reaches below zero); probe outside the band: mean of |μ̂ − λ| / |λ| over k = 9–16. {#tbl-kdv}
+
+- The Burgers picture holds with complex poles. In band every model's probe is right (dispersion error over
+  k = 2–8: 0.015–0.018; post hoc, since the pre-set kept-mode cut admits spurious slow fits at unexcited modes
+  here). The WPO recovers δ within 4 % and ν within 1.2 % in every seed; the TFNO and the SSM recover δ within 10 % in
+  3 and 2 of 5.
+- On unseen forcing modes the WPO's worst seed (3.3×) is 4.6× below the best seed of any other model (15×).
+- The continuation is weaker than on Burgers: the out-of-band pole error is 0.21 (0.10 on Burgers), from k ≥ 14,
+  where the fitted k³ term overshoots Im λ.
+- Predictions: four of six held. The out-of-band error was predicted ≤ 0.2 (0.208). The unseen-mode interval was
+  predicted to separate from every other model's; it separates per seed but not by the pre-set 95 % interval for
+  the per-index form, whose ratio spans 168–946.
+
 ### Is the gap the missing odd symbol? (a39)
 
 Even residues and pointwise channel mixes leave no part of the WPO that applies the derivative symbol i k, which
@@ -396,7 +427,8 @@ extrapolation can be trusted. If not, use the MLP and do not extrapolate.
     FNO-type models as well.
   - What the pole structure adds: a dispersion relation that continues outside the forced band, and an
     LTI-consistent linear response. Free poles per mode index do not give this (@sec-form): the gain comes from
-    the physical-wavenumber form, not from having poles.
+    the physical-wavenumber form, not from having poles. This holds for complex, dispersive poles (@sec-kdv),
+    where the continuation is shorter: a cubic imaginary part fitted in band overshoots at k ≥ 14.
 - **Where the accuracy gain comes from.** Data efficiency (2× at 50 samples) and time extrapolation (7×). The
   in-window error at 400 samples is close to parity (9 %).
 - **Where the structure pays, and where it does not.** It pays in identification of dispersion relations,
@@ -415,8 +447,9 @@ extrapolation can be trusted. If not, use the MLP and do not extrapolate.
 
 ## Limitations {.unnumbered}
 
-- One nonlinear system family (viscous Burgers, forced and PDEBench's unforced set), with a known linearization at
-  rest. The Cahn–Hilliard results, including the 2D experiments, are in the companion paper.
+- Two 1D nonlinear systems (viscous Burgers, forced and PDEBench's unforced set; forced KdV–Burgers), each with a
+  known linearization at rest. The Cahn–Hilliard results, including the 2D experiments, are in the companion
+  paper. On KdV–Burgers the TFNO's selected learning rate is the upper edge of its sweep.
 - Cost: in float64 the WPO takes 4.4–5× the TFNO's (float32) time per training step and 1.6–1.7× its memory
   (a43). The factor is precision: in float32 (poles, FOH coefficients and pole parameters kept in float64) its
   step is 1.0–1.05× the TFNO's on forced Burgers and 1.3× on PDEBench, with less memory than the TFNO, and the
