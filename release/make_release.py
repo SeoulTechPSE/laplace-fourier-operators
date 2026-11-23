@@ -9,8 +9,8 @@ and `experiments/C/theory/` (a follow-up study, unpublished).
 The follow-up study stays out of the release: of the `C/theory` modules that released scripts import, only the
 top-level code those scripts use (transitively) is kept (`shake_late`), added in the release commit only (no history,
 no comments or inner docstrings, module docstring replaced by a neutral line); file references to the
-follow-up are replaced by "a follow-up study" in every version (REPLACE_TEXT), as is the C paper's summary of the
-follow-up's results (one neutral sentence; the sentences that relied on it are reworded), and commit messages that mention the
+follow-up are replaced by "a follow-up study" in every version (REPLACE_TEXT), as are the C paper's and the E1 audit README's
+summaries of the follow-up's results (one neutral sentence each; the sentences that relied on them are reworded), and commit messages that mention the
 follow-up (E2–E4, H1–H3, propositions, CRB, certificates, EIV) are replaced by a neutral message.
 
     pip install git-filter-repo
@@ -38,7 +38,15 @@ LATE = "experiments/C/theory/"     # imported modules from here enter in the rel
 STUB = ('"""Helper module of a follow-up identification study (not part of this release); included because released '
         'scripts import it."""')
 # cross-references to the follow-up in released files, replaced in every historical version
-REPLACE_TEXT = """experiments/C/theory/README.md (E2 paragraph)==>a follow-up study
+REPLACE_TEXT = """regex:\\*Revised by E2 \\([^)]*\\):\\* "not an optimi[sz]ation art[ei]fact" holds\\n[^\\n]*\\n[^\\n]*\\n[^\\n]*\\n[^\\n]*\\nin 8/10 \\(p4\\) and 7/10 \\(p6\\) independent groups\\.\\n==>*A follow-up study (to appear) revisits this reading.*\\n
+regex:Which input/window changes restore it \\(fast-content inputs, more samples\\nnear t = 0, finer grid\\) is the E2 question\\.==>Which input or window changes restore it is left to\\na follow-up study.
+regex: \\*E2 correction:\\*[^|]*\\|==> |
+practical-identifiability side of H2 — unique in principle==>practical-identifiability side — unique in principle
+layer identifies the truth (consistent with H2), the untied==>layer identifies the truth, the untied
+(Fisher information / profile likelihood; plan Section 4.3, E2).==>(Fisher information / profile likelihood; plan Section 4.3).
+(for the band-limited layer only; the E1 data identify them, see `E1_report.md` finding 3)==>(for the band-limited layer)
+(both optional, used by the E2 remedies; E1 runs use neither)==>(both optional, used by a follow-up study; E1 runs use neither)
+experiments/C/theory/README.md (E2 paragraph)==>a follow-up study
 A follow-up study (to appear) shows that the E1 data do identify these poles:==>A follow-up study (to appear) addresses whether the E1 data identify these poles.
 regex:\\n- A training recipe without prior knowledge of the poles recovers[^\\n]*==>
 regex:\\n- A truth-free certificate built on a first-order-hold refit[^\\n]*==>
