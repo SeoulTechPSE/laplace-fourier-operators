@@ -2,7 +2,9 @@
 
 Draft: `c_paper.qmd` (15 pages in the working format, 20 references, 3 + 2 figures, appendix grid).
 
-## Venue options (decision open, see `STATUS.md`)
+## Venue: TMLR (user decision, 2026-11-23)
+
+Options that were considered:
 
 | option | fit | format work |
 |---|---|---|
@@ -18,10 +20,21 @@ Draft: `c_paper.qmd` (15 pages in the working format, 20 references, 3 + 2 figur
 - Code public: github.com/SeoulTechPSE/laplace-fourier-operators-release (for a double-blind venue use an
   anonymous mirror at submission and the public link after acceptance).
 
-## To do before submission
+## TMLR submission build
 
-- Venue template and length cut.
-- Anonymization (author, SeoulTech, repository link, "our earlier" phrasing).
-- A short reproducibility statement (seeds, runs, compute: `experiments/INDEX.md`).
-- Figures at the venue's column width; check fonts embedded.
-- One more read of the abstract for the venue's audience.
+- `python experiments/C/paper/tmlr/make_tmlr.py` → `c_paper_tmlr.qmd` / `.pdf` (generated; edit `c_paper.qmd`).
+  TMLR style (anonymous), pdflatex, natbib author-year, one-paragraph abstract (`tmlr/abstract.md`),
+  references before the lettered appendix. Main body 10.5 pages (TMLR: more than 12 pages lengthens review).
+- TMLR submissions, reviews and supplements are public on OpenReview, so the submission carries the release's
+  neutral sentence instead of the follow-up summary (same rules as `release/make_release.py`).
+- Code: `python experiments/C/paper/tmlr/make_supplement.py RELEASE_DIR c_tmlr_supplement.zip` (anonymous:
+  shared package, tests, the (C) experiments and the modules they import; no A / D experiments or drafts; fails
+  if an identifying string remains). Upload as supplementary material; do not link the public repository.
+
+## To do before submission (user)
+
+- Read the PDF once, in particular the one-paragraph abstract (condensed from the working paper's).
+- OpenReview: TMLR console, submit the PDF and the supplement zip; authors and conflicts entered in OpenReview
+  only.
+- After acceptance: `\usepackage[accepted]{tmlr}`, month / year / OpenReview link, de-anonymize, link the
+  public repository.

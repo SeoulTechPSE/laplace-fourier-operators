@@ -47,7 +47,7 @@ layer identifies the truth (consistent with H2), the untied==>layer identifies t
 (for the band-limited layer only; the E1 data identify them, see `E1_report.md` finding 3)==>(for the band-limited layer)
 (both optional, used by the E2 remedies; E1 runs use neither)==>(both optional, used by a follow-up study; E1 runs use neither)
 experiments/C/theory/README.md (E2 paragraph)==>a follow-up study
-A follow-up study (to appear) shows that the E1 data do identify these poles:==>A follow-up study (to appear) addresses whether the E1 data identify these poles.
+A follow-up study (to appear) shows that the E1 data do identify these poles:==>A follow-up study (to appear) addresses whether the audit data identify these poles.
 regex:\\n- A training recipe without prior knowledge of the poles recovers[^\\n]*==>
 regex:\\n- A truth-free certificate built on a first-order-hold refit[^\\n]*==>
 regex:\\n- Under relative output noise the limit is the Cramér–Rao bound[^\\n]*==>
