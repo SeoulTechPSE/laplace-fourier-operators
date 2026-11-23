@@ -201,11 +201,13 @@ Things to know:
   - README a44 section; A paper cost bullet rewritten.
 - Decisions: none (float64 stays the default; float32 is an option).
 - Release rebuilt with a44 (scratchpad `lfo_release3`: 227 commits, 2,066 files; release pytest 66 passed,
-  9 skipped; no follow-up code, file names or commit messages). The C paper's E2 paragraph ("a follow-up study
-  (to appear)") still summarizes the follow-up's headline results; it was in every earlier build. Left for the
-  user to decide.
-- Next: force-push of `lfo_release3` (user); Zenodo; open user decisions (C venue, D1 placement, A paper split,
-  the C paper's E2 paragraph in the release).
+  9 skipped; no follow-up code, file names or commit messages).
+- Decision (user, 2026-11-23): in the release only, the summaries of the follow-up's results are replaced by one
+  neutral sentence, in every historical version (`REPLACE_TEXT`): the C paper's E2 paragraph (and the sentences
+  that relied on it: section title, contribution 3, a limitation) and the E1 audit README ("Revised by E2" block,
+  E2 / H2 labels, the E1_report pointer). Label-level mentions elsewhere ("(C) E2 recipe" in A / D READMEs, D1
+  third pass, D paper) stay. Rebuilt: `lfo_release3`, 227 commits, release pytest 66 / 9 skipped.
+- Next: force-push of `lfo_release3` (user); Zenodo; open user decisions (C venue, D1 placement, A paper split).
 
 ### 2026-11-22 — Release rebuild: follow-up code removed from the late modules
 
