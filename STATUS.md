@@ -23,11 +23,13 @@ Each session appends one entry using the template at the bottom.
   (2026-11-22). Found while preparing a36: every TFNO / FNO budget in (A) and (D) was matched by `numel`, which
   counts a complex weight once, so those baselines had about 1.9x the WPO's real parameters (a13's TFNO 110,569
   real against 59,529). Earlier comparisons stand as run but must be read with that; key ones to be rerun.
-- [ ] D1 placement: its gate (month 8) is effectively not met (with the E2 recipe the Fourier and FOH time axes
-  reach the same error; the FOH gain was a hold match). The plan's fallback folds D1 into an (A) appendix and keeps
-  D2 standalone; the D paper still carries D1 (plan review 2026-11-22)
-- [ ] (A) paper split: the plan has two papers ("method + process", month 16; "Cahn–Hilliard", month 24); the draft
-  is one paper
+- [x] D1 placement (user, 2026-11-23): the month-8 gate is effectively not met (trained Fourier and FOH layers reach
+  the same error), so D1 moves to Appendix A of the (A) method paper, as the plan prescribes; the D paper keeps D2
+  and the boundaries
+- [x] (A) paper split (user, 2026-11-23): two papers as planned. Paper 1 (`a1_paper.qmd`): layer, linear systems,
+  deep Burgers (form, PDEBench, gap), pole laws, delay / process, Appendix A. Paper 2 (`a2_paper.qmd`):
+  Cahn–Hilliard (spinodal, M / κ, forced 1D / 2D, identifiability limit, coarsening, domain transfer); submitted
+  after the month-20 gate (k_c, k_max in the nonlinear / 2D regime)
 - [ ] (C) paper: TMLR (user decision, 2026-11-23). Submission build and anonymous code supplement ready
   (`experiments/C/paper/SUBMISSION.md`); user to read the PDF and submit on OpenReview
 - [ ] Staffing (affects schedule adjustments in `docs/integrated_schedule_ACD.qmd`, Section 4)
@@ -184,6 +186,27 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-23 — Papers: D1 moved to an (A) appendix; (A) split into two papers
+
+- Decisions (user): D1 moves to the (A) method paper's appendix (the plan's month-8 fallback); the (A) draft is
+  split into the two planned papers.
+- Done:
+  - `experiments/A/paper/a_paper.qmd` → `a1_paper.qmd` (method, 11 pages): layer and consistency, linear systems,
+    deep Burgers (accuracy, probe, form a36, PDEBench a37, gap a39–a41), pole laws (RQ4), delay / process.
+    Appendix A: the time axis for non-periodic inputs (D1's oracle table; trained layers reach the same error; the
+    FOH choice rests on causality and window independence, not on trained accuracy).
+  - New `a2_paper.qmd` (Cahn–Hilliard, 6 pages): stability diagram (spinodal, M / κ), the unstable band in deep
+    operators (forced 1D probe, identifiability limit), forced 2D, coarsening and domain transfer. Not for
+    submission before the month-20 gate.
+  - `d_paper.qmd`: D1 section removed; retitled "Initial Conditions and Boundaries for Pole-Based Neural
+    Operators"; the FOH time axis is introduced in one paragraph with a pointer to (A).
+  - `figures.py`: the probe figure split into Burgers (`fig_probe.png`, paper 1) and Cahn–Hilliard
+    (`fig_probe_ch.png`, paper 2). READMEs, release README and index updated.
+  - Appendix A states the trained-layer result without the (C) follow-up's recipe or pole-recovery numbers.
+- No numbers changed; every number is copied from the experiment READMEs as before.
+- Next: (A) paper 1 is the next submission candidate (venue to choose; length 11 pages in this format); paper 2
+  waits for the k_c / k_max gate and the hybrid (plan review item 4).
 
 ### 2026-11-23 — (C) TMLR submission build
 

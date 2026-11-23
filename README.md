@@ -36,9 +36,10 @@ Working papers (Quarto; render with `quarto render <file>.qmd`):
 
 | project | paper | experiments |
 |---|---|---|
-| (A) | `experiments/A/paper/a_paper.qmd` | `experiments/A/{layer,deep,process}/` |
+| (A) 1 | `experiments/A/paper/a1_paper.qmd` (method; Appendix A: time axis, from D1) | `experiments/A/{layer,deep,process}/`, `experiments/D/d1_inputs/` |
+| (A) 2 | `experiments/A/paper/a2_paper.qmd` (Cahn–Hilliard) | `experiments/A/deep/` |
 | (C) | `experiments/C/paper/c_paper.qmd` | `experiments/C/` |
-| (D) | `experiments/D/paper/d_paper.qmd` | `experiments/D/{d1_inputs,d2_initial_conditions,d3_boundary}/` |
+| (D) | `experiments/D/paper/d_paper.qmd` | `experiments/D/{d2_initial_conditions,d3_boundary}/` |
 
 Every experiment script was committed with its predictions before it ran, and every failed prediction is reported
 in its folder's README. [`experiments/INDEX.md`](experiments/INDEX.md) lists each script with its

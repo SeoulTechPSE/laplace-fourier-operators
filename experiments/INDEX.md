@@ -33,6 +33,7 @@ JSON results where recorded (GPU wall time, often with another job on the GPU).
 | `a41_block_forced.py` | 0362d7a 2026-11-22 | `a41_block_forced.json`, `a41_block_forced.md` | 4.7 h | (A) Next-level step 4c: does the FNO block keep the physical-wavenumber form's benefits (forced Burgers)? |
 | `a42_five_seeds.py` | cf1822b 2026-11-22 | `a42_five_seeds.json`, `a42_five_seeds.md` | 8.8 h | (A) Plan-review item: five seeds with intervals for the headline (A) claims. |
 | `a43_cost.py` | 34352ab 2026-11-22 | `a43_cost.json`, `a43_cost.md` | — | (A) Plan-review item: computational cost across models, at the budgets of the headline comparisons. |
+| `a44_float32.py` | a0edd34 2026-11-23 | `a44_float32.json`, `a44_float32.md` | 2.3 h | (A) Plan-review follow-up to a43: how much of the WPO's cost is precision, and does float32 keep its results? |
 | `a9_burgers.py` | eac2be5 2026-11-18 | `a9_burgers.json`, `a9_burgers.md` | 0.9 h | (A) First deep validation: the deep wavenumber pole operator on forced viscous Burgers, against FNO, with a linear |
 
 ## A/layer
@@ -56,7 +57,7 @@ JSON results where recorded (GPU wall time, often with another job on the GPU).
 
 | script | added (pre-registration) | results | compute | title |
 |---|---|---|---|---|
-| `figures.py` | 39a3099 2026-11-19 | — | — | Figures for the (A) working paper (`a_paper.qmd`), from the committed result files only. |
+| `figures.py` | 39a3099 2026-11-19 | — | — | Figures for the (A) working papers (`a1_paper.qmd`, `a2_paper.qmd`), from the committed result files only. |
 
 ## A/process
 

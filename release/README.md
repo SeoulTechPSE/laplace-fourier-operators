@@ -9,11 +9,12 @@ Kee-Youn Yoo, Department of Chemical and Biomolecular Engineering, SeoulTech. MI
 
 | | paper | experiments |
 |---|---|---|
-| (A) | `experiments/A/paper/a_paper.qmd`: a neural operator with wavenumber-dependent poles μₙ(k) | `experiments/A/{layer,deep,process}/` |
+| (A) | `experiments/A/paper/a1_paper.qmd`: a neural operator with wavenumber-dependent poles μₙ(k) (method; appendix: time axis) | `experiments/A/{layer,deep,process}/`, `experiments/D/d1_inputs/` |
+| (A) | `experiments/A/paper/a2_paper.qmd`: the same operator on Cahn–Hilliard phase separation | `experiments/A/deep/` |
 | (C) | `experiments/C/paper/c_paper.qmd`: do Laplace neural operators learn physical poles? | `experiments/C/{e1_audit,e5_probe}/` |
-| (D) | `experiments/D/paper/d_paper.qmd`: non-periodic inputs, initial conditions, boundaries | `experiments/D/{d1_inputs,d2_initial_conditions,d3_boundary}/` |
+| (D) | `experiments/D/paper/d_paper.qmd`: initial conditions and boundaries | `experiments/D/{d2_initial_conditions,d3_boundary}/` |
 
-Render a paper with [Quarto](https://quarto.org): `quarto render experiments/A/paper/a_paper.qmd`. Every number in a
+Render a paper with [Quarto](https://quarto.org): `quarto render experiments/A/paper/a1_paper.qmd`. Every number in a
 paper comes from the README and result files of its experiment folders.
 
 ## Pre-registration
