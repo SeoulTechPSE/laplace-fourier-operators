@@ -986,7 +986,7 @@ comparison in a45 stands as reported.
 `a47_kdv_burgers.py` → `results/a47_kdv_burgers.md` (checks and predictions c8bd6de; solver term 35493e4).
 u_t + u u_x = ν u_xx − δ u_xxx + f, ν = 0.1, δ = 0.01: λ(k) = −νk² + iδk³, complex poles. a36's forced protocol
 unchanged otherwise; WPO, per-index WPO, real-budget TFNO and a45's S4D-type operator, 5 seeds each.
-GPU time 11 h (WPO-type runs in float64, two processes sharing the GPU).
+Run time 13 h summed over runs (WPO-type runs in float64; two processes shared the GPU, about 8 h wall time).
 
 Checks before training:
 - nonlinear part 0.8 / 8.5 / 49 % (p10 / p50 / p90), up to 174 %;
