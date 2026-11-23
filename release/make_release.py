@@ -38,7 +38,8 @@ LATE = "experiments/C/theory/"     # imported modules from here enter in the rel
 STUB = ('"""Helper module of a follow-up identification study (not part of this release); included because released '
         'scripts import it."""')
 # cross-references to the follow-up in released files, replaced in every historical version
-REPLACE_TEXT = """regex:\\*Revised by E2 \\([^)]*\\):\\* "not an optimi[sz]ation art[ei]fact" holds\\n[^\\n]*\\n[^\\n]*\\n[^\\n]*\\n[^\\n]*\\nin 8/10 \\(p4\\) and 7/10 \\(p6\\) independent groups\\.\\n==>*A follow-up study (to appear) revisits this reading.*\\n
+REPLACE_TEXT = """"github.com", "follow-up recipe", "95 / 70", "Cramér")==>"github.com")
+regex:\\*Revised by E2 \\([^)]*\\):\\* "not an optimi[sz]ation art[ei]fact" holds\\n[^\\n]*\\n[^\\n]*\\n[^\\n]*\\n[^\\n]*\\nin 8/10 \\(p4\\) and 7/10 \\(p6\\) independent groups\\.\\n==>*A follow-up study (to appear) revisits this reading.*\\n
 regex:Which input/window changes restore it \\(fast-content inputs, more samples\\nnear t = 0, finer grid\\) is the E2 question\\.==>Which input or window changes restore it is left to\\na follow-up study.
 regex: \\*E2 correction:\\*[^|]*\\|==> |
 practical-identifiability side of H2 — unique in principle==>practical-identifiability side — unique in principle

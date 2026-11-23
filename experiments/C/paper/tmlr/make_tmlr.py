@@ -64,8 +64,10 @@ def main():
     caption = "Pass numbers refer to `experiments/C/e5_probe/README.md`."
     assert caption in body, caption
     body = body.replace(caption, "Pass numbers refer to the probe experiments' README in the code release.")
-    for bad in ("Kee-Youn", "Yoo", "SeoulTech", "github.com", "follow-up recipe", "95 / 70", "Cramér"):
+    for bad in ("Kee-Youn", "Yoo", "SeoulTech", "github.com"):
         assert bad not in body, bad
+    for old, _ in release_rules():                 # every neutralized passage is gone
+        assert not (old.search(body) if isinstance(old, re.Pattern) else old in body), old
     abstract = (HERE / "abstract.md").read_text().strip()
     assert "\n\n" not in abstract, "TMLR: one-paragraph abstract"
     yaml = f'''---
