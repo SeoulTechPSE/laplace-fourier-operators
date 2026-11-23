@@ -12,4 +12,5 @@ Input families (step, ramp, PRBS, non-periodic smooth signals) are in
 `lfo.data.lti`. Hand-offs: D1 decides the time-axis computation for (A) by month 6;
 D2 delivers the initial-condition encoder to (A) application 2 by month 17.
 
-Working paper: `paper/d_paper.qmd` (D1, D2 first pass, boundaries; 2026-11-19).
+Working paper: `paper/d_paper.qmd` (D2, boundaries). D1 moved to Appendix A of the (A) method paper
+(`experiments/A/paper/a1_paper.qmd`) as the month-8 gate prescribes (decision 2026-11-23).

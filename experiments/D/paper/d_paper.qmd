@@ -1,7 +1,7 @@
 ---
-title: "Non-Periodic Inputs, Initial Conditions and Boundaries for Pole-Based Neural Operators"
+title: "Initial Conditions and Boundaries for Pole-Based Neural Operators"
 author: "Kee-Youn Yoo"
-date: 2026-11-21
+date: 2026-11-23
 format:
   pdf:
     papersize: a4
@@ -17,20 +17,18 @@ bibliography: ../../C/paper/references.bib
 csl: ../../C/paper/ieee.csl
 ---
 
-<!-- Project D working paper, 2026-11-21. Not for submission. Every number comes from
-experiments/D/d1_inputs/README.md (D1), experiments/D/d2_initial_conditions/README.md (D2) and
-experiments/D/d3_boundary/README.md (boundaries); every prediction was committed before its run (hashes there). -->
+<!-- Project D working paper, 2026-11-23. Not for submission. Every number comes from
+experiments/D/d2_initial_conditions/README.md (D2) and experiments/D/d3_boundary/README.md (boundaries); every
+prediction was committed before its run (hashes there). D1 (the time axis for non-periodic inputs) moved to
+Appendix A of the (A) method paper, as the plan's month-8 gate prescribes (decision 2026-11-23). -->
 
 ## Abstract {.unnumbered}
 
-Laplace-type neural operators compute the time axis with a Fourier series, which assumes periodic inputs. They
-handle initial conditions only implicitly, and they cannot represent spatial boundaries. We address all three
-within one pole-based layer.
+Laplace-type neural operators handle initial conditions only implicitly, and they cannot represent spatial
+boundaries. We address both within one pole-based layer, whose exact first-order-hold time axis does not assume
+periodic inputs (project A).
 
-1. **Time axis (D1).** On non-periodic inputs the Fourier path costs 1e-4 to 1e-3 relative error from periodicity
-   alone, about 100× more than an exact first-order-hold (FOH) recursion on ramps and smooth signals. The FOH
-   recursion is causal, O(n) and window-independent, and became the default time axis of project A.
-2. **Initial conditions (D2).**
+1. **Initial conditions (D2).**
    - Linear systems: a free-response term that shares the poles with the forced response adds one coefficient
      function γ(k). It is recovered to 1e-5, and chained windows reproduce the oracle's rollout exactly.
    - Second-order modes with two initial fields: the free-response coefficients are fixed by the poles. A damped
@@ -46,7 +44,7 @@ within one pole-based layer.
        one-window accuracy carried forward: carried errors contract alike for both models. At a matched budget
        the gap is not closed by changing how the initial field enters, the number of poles, or the depth (3 to 6
        layers).
-3. **Boundaries (D3).**
+2. **Boundaries (D3).**
    - Boundary values and fluxes enter the modes as forcing channels whose coefficients are laws in k (∝ k for a
      value, constant for a flux). These are recovered at the oracle floor for Dirichlet, Neumann, mixed and
      advective cases.
@@ -65,39 +63,11 @@ outside that setup:
 - non-zero initial states;
 - boundaries in space.
 
-Project D asks how to handle each without losing the pole structure that projects A and C rely on. Every
+The first is handled by an exact first-order-hold (FOH) recursion for the time axis: causal, O(n), independent of
+the window length, and exact for inputs that are linear between samples. Project A adopted it and compares it with
+the Fourier time axis in its method paper (Appendix A there). Every layer below uses it. This paper asks how to
+handle the other two without losing the pole structure that projects A and C rely on. Every
 experiment below was pre-registered, and failed predictions are reported as such.
-
-## The time axis (D1) {#sec-d1}
-
-**Oracle comparison.** We computed, without any training, the response of the true pole–residue systems to 100
-inputs per family with each time-axis representation. The inputs are defined on a 32× finer grid and seen only at
-the samples.
-
-| input family | Fourier (LNO) | Fourier, pad 2× | FOH | Chebyshev 64 |
-|---|---|---|---|---|
-| step | 1.7–2.8e-3 | 1.6–2.7e-3 | 1.6–2.7e-3 | 7.3e-3–1.1e-2 |
-| ramp | 0.7–1.8e-3 | 1.8–2.9e-4 | **1.2–2.8e-6** | 1.0–1.6e-4 |
-| PRBS | 0.9–1.0e-2 | 0.9–1.0e-2 | 0.9–1.0e-2 | 2.9–4.5e-2 |
-| smooth, mismatched ends | 4.1–6.7e-4 | 3.0–4.9e-4 | 5.9–7.5e-6 | **1.7–2.2e-8** |
-| periodic (control) | 2.9–4.5e-6 | 2.9–4.4e-4 | 1.8–4.0e-5 | **0.5–1.2e-7** |
-
-: Median relative L2 error of the representation alone (systems p2, p4, p6 of project C). {#tbl-d1}
-
-- The Fourier path's error on non-periodic inputs is 10–100× its error on the periodic control. It is spread over
-  the whole window rather than concentrated at the ends, and it falls only as $n^{-1}$.
-- On steps and PRBS every path is limited by the sampling: a jump between samples cannot be located.
-- A global Chebyshev fit is the best representation on smooth inputs. It is numerically unusable at high degree
-  (errors up to 1e7 at degree 256) and poor at discontinuities.
-- **Trained layers** (E2 recipe, fine-grid truth): the Fourier and FOH layers reach the same test error, the
-  sampling floor (3.7e-3 against 3.4e-3). They recover the complex poles in every run and the fast real pole −2 in
-  6 of 8 and 4 of 8 runs. The FOH layer's large advantage in (C) E4 came from a model-class match with data that
-  had a first-order hold.
-
-**Decision** (user, 2026-11-18): the FOH exponential-integrator recursion is the default time axis, with piecewise
-Chebyshev as an option for smooth inputs. It is never worse than Fourier except on periodic inputs, and it is causal,
-O(n), and independent of the window length. Project A's time extrapolation and Δt transfer rest on that
-independence.
 
 ## Initial conditions and rollout (D2) {#sec-d2}
 
@@ -267,7 +237,8 @@ data best. Boundaries work as a channel when the basis diagonalizes the operator
 
 The coefficients are either low-order laws in k, identified where the data excite them, or determined by the poles
 and a few physical parameters. In every linear case the layer reached the oracle floor once the right structure was
-in place. What makes this possible is an exact, causal time axis that does not assume periodicity (D1).
+in place. What makes this possible is an exact, causal time axis that does not assume periodicity (the FOH
+recursion of project A).
 
 **What the structure does not buy.** For deep nonlinear rollout the pole structure gives a modest gain on Burgers
 (about 10 % over 4 windows with fresh-start training, 4 % with developed-start training) and none over 10 windows.
