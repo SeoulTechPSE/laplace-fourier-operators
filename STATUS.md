@@ -30,6 +30,11 @@ Each session appends one entry using the template at the bottom.
   deep Burgers (form, PDEBench, gap), pole laws, delay / process, Appendix A. Paper 2 (`a2_paper.qmd`):
   Cahn–Hilliard (spinodal, M / κ, forced 1D / 2D, identifiability limit, coarsening, domain transfer); submitted
   after the month-20 gate (k_c, k_max in the nonlinear / 2D regime)
+- [x] (A) paper 1 target and process part (user, 2026-11-23): paper 1 is reinforced for a computational-physics
+  journal (JCP / CMAME / SISC) in the order (1) missing baselines (S4D-type SSM operator, LNO / ALNO / LFNO in the
+  deep comparison) and 5 seeds for the headline rows, (2) a second nonlinear system, (3) the hybrid, (4) an
+  identifiability theorem. Process dynamics (delay layer, reactors, closed loop) leave paper 1 for a separate
+  process paper
 - [ ] (C) paper: TMLR (user decision, 2026-11-23). Submission build and anonymous code supplement ready
   (`experiments/C/paper/SUBMISSION.md`); user to read the PDF and submit on OpenReview
 - [ ] Staffing (affects schedule adjustments in `docs/integrated_schedule_ACD.qmd`, Section 4)

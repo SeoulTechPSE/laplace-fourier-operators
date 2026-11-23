@@ -36,7 +36,7 @@ Working papers (Quarto; render with `quarto render <file>.qmd`):
 
 | project | paper | experiments |
 |---|---|---|
-| (A) 1 | `experiments/A/paper/a1_paper.qmd` (method; Appendix A: time axis, from D1) | `experiments/A/{layer,deep,process}/`, `experiments/D/d1_inputs/` |
+| (A) 1 | `experiments/A/paper/a1_paper.qmd` (method; Appendix A: time axis, from D1) | `experiments/A/{layer,deep}/`, `experiments/D/d1_inputs/` |
 | (A) 2 | `experiments/A/paper/a2_paper.qmd` (Cahn–Hilliard) | `experiments/A/deep/` |
 | (C) | `experiments/C/paper/c_paper.qmd` | `experiments/C/` |
 | (D) | `experiments/D/paper/d_paper.qmd` | `experiments/D/{d2_initial_conditions,d3_boundary}/` |

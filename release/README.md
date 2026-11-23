@@ -9,7 +9,7 @@ Kee-Youn Yoo, Department of Chemical and Biomolecular Engineering, SeoulTech. MI
 
 | | paper | experiments |
 |---|---|---|
-| (A) | `experiments/A/paper/a1_paper.qmd`: a neural operator with wavenumber-dependent poles μₙ(k) (method; appendix: time axis) | `experiments/A/{layer,deep,process}/`, `experiments/D/d1_inputs/` |
+| (A) | `experiments/A/paper/a1_paper.qmd`: a neural operator with wavenumber-dependent poles μₙ(k) (method; appendix: time axis) | `experiments/A/{layer,deep}/`, `experiments/D/d1_inputs/` |
 | (A) | `experiments/A/paper/a2_paper.qmd`: the same operator on Cahn–Hilliard phase separation | `experiments/A/deep/` |
 | (C) | `experiments/C/paper/c_paper.qmd`: do Laplace neural operators learn physical poles? | `experiments/C/{e1_audit,e5_probe}/` |
 | (D) | `experiments/D/paper/d_paper.qmd`: initial conditions and boundaries | `experiments/D/{d2_initial_conditions,d3_boundary}/` |

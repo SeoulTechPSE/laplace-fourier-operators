@@ -18,9 +18,10 @@ csl: ../../C/paper/ieee.csl
 ---
 
 <!-- Project A, paper 1 (method), working paper, 2026-11-23. Not for submission yet. The Cahn–Hilliard
-application is the companion paper `a2_paper.qmd` (the draft was split as planned; decision 2026-11-23). Every
+application is the companion paper `a2_paper.qmd` (the draft was split as planned; decision 2026-11-23). Process dynamics (delay layer,
+reactors, closed loop; experiments/A/process/) moved out to a separate process paper (decision 2026-11-23). Every
 number comes from experiments/A/layer/README.md (layer experiments), experiments/A/deep/README.md (deep experiments,
-to a44) and experiments/A/process/README.md; Appendix A from experiments/D/d1_inputs/README.md. Predictions were
+to a44); Appendix A from experiments/D/d1_inputs/README.md. Predictions were
 committed before each run (hashes there). Figures: experiments/A/paper/figures.py. -->
 
 ## Abstract {.unnumbered}
@@ -56,10 +57,8 @@ forced viscous Burgers and on PDEBench 1D Burgers.
   closes half of that gap; the rest is consistent with whole-window temporal mixing, which a causal time axis
   gives up.
 
-**Pole laws and delay.** A polynomial pole law extrapolates outside the forced band when its form is right; an MLP
-law wins in band when it is not, and fitting both is a check. A pole–residue–delay layer recovers dead times that
-are not multiples of the sample time to 1e-4, and on a dispersion reactor the wavenumber layer separates transport
-from delay.
+**Pole laws.** A polynomial pole law extrapolates outside the forced band when its form is right; an MLP law wins
+in band when it is not, and fitting both is a check.
 
 A companion paper applies the layer to Cahn–Hilliard phase separation.
 
@@ -88,9 +87,9 @@ matched by `numel`, which counts a complex weight once; their real budgets were 
 equal real budgets change no conclusion: on forced Burgers the smaller TFNO is slightly better (a36). The tables
 below give the original runs; the reruns are in the experiment records.
 
-**Scope.** This paper covers the layer, its identification on linear systems, deep operators on Burgers, the
-choice of pole law, and a first process-dynamics step. The Cahn–Hilliard application (the spinodal band, 2D
-forced and coarsening dynamics, transfer across domain sizes) is the companion paper.
+**Scope.** This paper covers the layer, its identification on linear systems, deep operators on Burgers and the
+choice of pole law. Process dynamics (delays, reactors, closed loops) and the Cahn–Hilliard application (the spinodal band, 2D
+forced and coarsening dynamics, transfer across domain sizes) are separate papers.
 
 Every experiment below was pre-registered: predictions were committed before the runs, and every failed
 prediction is reported.
@@ -375,45 +374,6 @@ With a dispersion relation that is not polynomial, fractional diffusion λ = −
 This gives a practical check: fit both. If the polynomial matches the MLP in band, its form is supported and its
 extrapolation can be trusted. If not, use the MLP and do not extrapolate.
 
-## Delay: a first process-dynamics step {#sec-delay}
-
-Delay is not rational, so pole-only kernels must approximate it. A pole–residue–delay layer, K(s) = Σ β e^{−θs}/(s − μ),
-with an exact delayed first-order hold, is evaluated on FOPDT and SOPDT data whose delays are not multiples of the
-sample time (a20).
-
-- **FOPDT:** θ, K and τ recovered to 1e-4.
-- **SOPDT:** θ within 1.1 %, K and τ within 0.08 %.
-- **Pole-only layer (4 complex poles):** fits to 1.06–1.95× the oracle, but has no delay to read.
-- **ARX:** resolves θ only to the sample.
-- **Under 5 % output noise (a21):** the delay layer, fitted by output error, keeps FOPDT exact to 0.2 % and SOPDT's
-  θ within 3.3 %. Equation-error ARX is biased by the noise, with τ off by 52–86 %.
-
-### Delay against dispersion, and a nonlinear CSTR
-
-- **Dispersion reactor** (a24). Sensors at distances L = 1–3 downstream of a source.
-  - Lumped FOPDT / SOPDT fits give a dead time θ below L/v, growing faster than L, and leave 5–17 % of the signal
-    unexplained.
-  - The wavenumber layer on the field reads v = 0.50001, D = 0.01999, k_r = 0.10000.
-  - Transport inside the domain is the −ivk of λ(k), not a dead time.
-- **Delay and dispersion together** (a25). ADR with an input delay of 0.73. The wavenumber layer with one shared delay
-  recovers θ and λ(k) within 0.04 %. Without it, the error is 14–44× the oracle.
-- **CSTR** (a23). Exothermic CSTR at its upper steady state, Jacobian pair −0.769 ± 0.960i.
-  - The time-only WPO's probe is within 0.1–0.6 % of the pair, at 2.2× lower test error than an FNO of the same
-    size.
-  - The FNO's probe and the best linear fit are also within 1 %. At a stable focus, every reading of the
-    linearization agrees.
-- **Closed loop with measurement noise** (a26, a28).
-  - With a PI loop and 2 % noise, the output-error fits (WPO probe, linear pair) stay within 1.1 % of the Jacobian
-    pair.
-  - Equation-error ARX fails in every regime. An amplitude gate reduces its error from 88 % to 7 % noise-free, but
-    the noise then destroys it.
-- **Open boundaries** (a27). A Danckwerts reactor, inlet → outlet, Péclet 20.
-  - A delay plus two lags fits best: mean delay 0.97 against a residence time of 1.0.
-  - Modal or free poles do not recover the eigenvalues: they spend themselves approximating the transport delay.
-  - The pole readout is physical for translation-invariant problems; open-boundary convective systems need the
-    boundary handling of project (D).
-
-
 ## Discussion
 
 - **What is identifiable.**
@@ -426,7 +386,7 @@ sample time (a20).
     the physical-wavenumber form, not from having poles.
 - **Where the accuracy gain comes from.** Data efficiency (2× at 50 samples) and time extrapolation (7×). The
   in-window error at 400 samples is close to parity (9 %).
-- **Where the structure pays, and where it does not.** It pays in identification (dispersion relations, delays),
+- **Where the structure pays, and where it does not.** It pays in identification of dispersion relations,
   in continuation outside the forced band, and, when the law has the right form, in extrapolation of the pole law
   (@sec-rq4). Consistency across domain sizes is exact for tiled inputs (@sec-consistency); the companion paper
   tests it on 2D coarsening.
@@ -455,8 +415,6 @@ sample time (a20).
 - One public benchmark (PDEBench 1D Burgers), unforced; the SSM and spectral-generator operators of the related
   work were represented by per-index poles inside the WPO, not run from their own code.
 - The probe is a small-amplitude linearization at u = 0.
-- The process part is a first step: first- and second-order plus dead time, one dispersion reactor, one CSTR and
-  one closed loop, each from one data generator.
 - Appendix A compares time axes on linear single layers only.
 - The oracle floor of the data (steps and PRBS between samples) limits every test error to about 1 %.
 
