@@ -28,8 +28,8 @@ Each session appends one entry using the template at the bottom.
   D2 standalone; the D paper still carries D1 (plan review 2026-11-22)
 - [ ] (A) paper split: the plan has two papers ("method + process", month 16; "Cahn–Hilliard", month 24); the draft
   is one paper
-- [ ] (C) paper venue and submission (E1 + E5 working paper; the planned month-5 workshop output is not submitted).
-  Options and checklist in `experiments/C/paper/SUBMISSION.md` (recommended: TMLR)
+- [ ] (C) paper: TMLR (user decision, 2026-11-23). Submission build and anonymous code supplement ready
+  (`experiments/C/paper/SUBMISSION.md`); user to read the PDF and submit on OpenReview
 - [ ] Staffing (affects schedule adjustments in `docs/integrated_schedule_ACD.qmd`, Section 4)
 - [x] Whether ALNO / LFNO code is public: **not public** (2026-11-12); both re-implemented in `lfo.models.hybrid`
 - [x] E1 paper: **decided** (2026-11-18): selected table in the main text, full grid in an appendix; deep "closest pooled pole" in the main text as an optimistic upper bound; budget rule waived for the layer setting only; workshop paper = E1 + an E2 paragraph, main (C) paper = E2–E5 + H1–H3 (`experiments/C/e1_audit/E1_report.md`, "Decisions for the paper")
@@ -184,6 +184,29 @@ Things to know:
 - Commits as Kee-Youn Yoo, no Co-Authored-By trailers (CLAUDE.md).
 
 ## Log
+
+### 2026-11-23 — (C) TMLR submission build
+
+- Decision (user): (C) paper to TMLR.
+- Done:
+  - `experiments/C/paper/tmlr/make_tmlr.py` → `c_paper_tmlr.qmd` / `.pdf` (14 pages, main body 10.5):
+    - official TMLR style (JmlrOrg 7bf90ef, Apache-2.0), anonymous, pdflatex;
+    - natbib author-year citations;
+    - one-paragraph abstract (`tmlr/abstract.md`, condensed from the working paper's);
+    - references before the lettered appendix;
+    - the repository path in Table 3's caption replaced.
+  - TMLR submissions and supplements are public on OpenReview, so the submission carries the release's neutral
+    sentence instead of the follow-up summary. Same rules as the release; the sentence now says "audit data",
+    not "E1 data".
+  - `tmlr/make_supplement.py`: anonymous code zip from a release build:
+    - shared package, tests, (C) experiments, and the modules they import (`foundation/reproduce_lno.py`);
+    - no A / D experiments or drafts;
+    - 1,770 files, 2.4 MB;
+    - pytest 66 passed / 9 skipped from the unzipped copy;
+    - no identifying strings, checked in the text, the PDF metadata and the decompressed PDF streams.
+  - Release rebuilt (`lfo_release3`, 227 commits).
+- Next: user reads the PDF (abstract) and submits on OpenReview with the supplement; force-push of the release;
+  Zenodo; open decisions (D1 placement, A paper split).
 
 ### 2026-11-23 — The WPO in float32 (a44): the cost factor is precision; a GPU irfft defect fixed
 
