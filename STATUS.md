@@ -192,6 +192,14 @@ Things to know:
 
 ## Log
 
+### 2026-11-24 — (A) a48: the TFNO's lr beyond a47's edge
+
+- Done: `experiments/A/deep/a48_kdv_tfno_edge.py` (predictions f7185f8). On KdV–Burgers the TFNO gets lr 3e-2
+  (validation 0.0333) and 1e-1 (1.000) beyond a47's selected 1e-2 (0.0292).
+- Result: the selection is unchanged and a47 stands. Three of three predictions held.
+- Paper 1: the edge caveat is removed from the limitations.
+- Next: step 3 (the hybrid), step 4 (identifiability theorem).
+
 ### 2026-11-24 — (A) a47: a second nonlinear system, forced KdV–Burgers (paper 1, step 2)
 
 - Done: `lfo.data.burgers.solve(..., delta=)` (35493e4; tests: mode rotation, energy conservation) and

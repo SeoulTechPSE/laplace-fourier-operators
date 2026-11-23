@@ -1024,3 +1024,14 @@ residual-weighted and not affected. The TFNO selected the upper edge of its lr g
   k ≤ 8 drifts by k = 14–16.
 - t-intervals are a poor separation test for ratios with heavy upper tails (this and a45's ALNO); per-seed ranges
   are reported alongside.
+
+## The TFNO's lr beyond a47's edge (2026-11-24, a48)
+
+`a48_kdv_tfno_edge.py` → `results/a48_kdv_tfno_edge.md` (predictions f7185f8). a47's TFNO selected the upper
+edge of its grid (1e-2, validation 0.0292). Added at the sweep protocol: lr 3e-2 → 0.0333, 1e-1 → 1.000 (no
+training). The selection stays 1e-2, so a47's TFNO runs stand; a48's tables equal a47's. Four minutes.
+
+**Predictions against results: three of three hold.**
+1. Held. The selection does not change.
+2. Held. The TFNO's test (0.0338) stays above the WPO's (0.0245).
+3. Held. Unseen / test 19.6 > 5; probe outside the band 0.87 ≥ 0.35.
