@@ -4,6 +4,7 @@
              ported from github.com/qianyingcao/Laplace-Neural-Operator
   hybrid.py  ALNO (arXiv:2602.12706) and LFNO (arXiv:2606.07601), 1D and 2D (x, t),
              re-implemented from the papers (no public code)
+  s4d.py     S4D layer, vendored from github.com/state-spaces/s4 (Apache-2.0, LICENSE.state-spaces-s4)
   delay.py   pole-residue-delay layer (project A, process dynamics), exact delayed first-order hold
   wavenumber.py  wavenumber-dependent pole layer (project A), 1D and 2D, FOH time axis (D1 decision)
 
