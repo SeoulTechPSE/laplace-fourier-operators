@@ -1035,3 +1035,46 @@ training). The selection stays 1e-2, so a47's TFNO runs stand; a48's tables equa
 1. Held. The selection does not change.
 2. Held. The TFNO's test (0.0338) stays above the WPO's (0.0245).
 3. Held. Unseen / test 19.6 > 5; probe outside the band 0.87 ≥ 0.35.
+
+## A hybrid against the PDEBench gap: WPO + even FNO (2026-11-24, a49)
+
+`a49_hybrid.py` → `results/a49_hybrid.md` (predictions 832d8bf). H = W + E with E(f) = (T(f) + T(−f))/2 − T(0),
+the even part of a Tucker FNO T, so H's odd part (what the probe reads) is exactly the WPO W's; ablation
+`hyb_sum` = W + T. Each at the WPO's real budget, split about evenly (F 60,236; P 60,826), W in float32, TF32 off.
+Sweep lr 1e-3 / 3e-3 / 1e-2 (pole lr ×30), final 12000 steps, seeds 0–4. Run time about five hours (two jobs in
+parallel).
+
+| | test / nRMSE | unseen / test | probe outside the band | dispersion error (P) | probe ν′ (P, truth 0.1257) |
+|---|---|---|---|---|---|
+| F WPO (a42; float32 a44) | 0.0239 (0.0238) | 1.26 (1.33) | 0.098 (0.121) | | |
+| F TFNO (a42) | 0.0287 | 30.5 | 0.874 | | |
+| F hyb_even | 0.0358 [0.0320, 0.0397] | 3.48 [1.92, 5.05] | 0.404 [0.164, 0.644] | | |
+| F hyb_sum | 0.0287 [0.0262, 0.0312] | 8.08 [1.83, 14.3] | median 0.51 (one seed 8e12) | | |
+| P WPO (a42; float32) | 0.0450 (0.0459) | | | 0.25 (0.30) | |
+| P TFNO (a42) | 0.0254 | | | 0.69 | |
+| P hyb_even | 0.0473 [0.0441, 0.0506] | | | 0.162 [0.033, 0.291] | 0.111 [0.094, 0.128] |
+| P hyb_sum | 0.0279 [0.0235, 0.0322] | | | 0.683 [0.616, 0.750] | 0.043 [0.035, 0.051] |
+
+**Predictions against results: two of six hold.**
+1. Failed. P `hyb_even` 0.0473, not below 0.040: it does not close any of the gap (the WPO's 0.0450).
+2. Held. P `hyb_sum` 0.0279 < 0.035 and below `hyb_even`.
+3. Held. P dispersion error: `hyb_even` 0.162 ≤ 0.35; `hyb_sum` 0.683 > 0.5.
+4. Failed. F `hyb_even`: unseen / test 3.48 ≤ 5 holds, but the probe outside the band is 0.40 > 0.2 (per seed
+   0.23–0.71).
+5. Failed. F `hyb_sum`: the probe outside the band holds (mean dominated by one divergent seed; median 0.51 ≥ 0.35),
+   but unseen / test is 8.1, not > 10.
+6. Failed. F test: `hyb_even` 0.0358 (+50 %) and `hyb_sum` 0.0287 (+20.6 %) against the WPO's 0.0239.
+
+**Reading.**
+- The even nonlinear branch with whole-window mixing buys nothing on PDEBench (0.0473 against 0.0450), although
+  it improves the probe (dispersion error 0.16 against 0.25, as the FNO block did in a40).
+- The plain sum reaches the TFNO's accuracy (0.0279 against 0.0254) and the TFNO's probe (0.68 against 0.69,
+  ν′ 0.043 against the truth 0.126): the FNO branch takes over the linear response.
+- Post hoc: so the gap is carried by the FNO's odd part (its linear response and odd-order terms) with
+  whole-window temporal mixing, which is what the pole form with a causal time axis excludes. Together with a40
+  the PDEBench gap is a cost of the form, not of a missing nonlinear term.
+- On forced Burgers the even branch costs accuracy (+50 %) and the out-of-band probe (0.40 against 0.12), though
+  the probe reads only W. Post hoc: W is trained at half the budget and jointly with E, which absorbs part of the
+  in-band fit and leaves W's poles less constrained outside the band.
+- Caveat: P `hyb_even`, P `hyb_sum` and F `hyb_even` selected the upper edge of the lr grid (1e-2). P `hyb_even`'s
+  validation was flattening (0.151, 0.098, 0.082); an extension beyond the edge has not been run.

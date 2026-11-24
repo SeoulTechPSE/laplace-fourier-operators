@@ -59,7 +59,7 @@ forced viscous Burgers, on PDEBench 1D Burgers and on forced KdV–Burgers (disp
   and an SSM operator.
 - On PDEBench 1D Burgers the Tucker FNO is 1.8× more accurate at an equal real-parameter budget. The FNO block
   closes half of that gap; the rest is consistent with whole-window temporal mixing, which a causal time axis
-  gives up.
+  gives up. A hybrid that keeps the WPO's linearization does not close it.
 
 **Pole laws.** A polynomial pole law extrapolates outside the forced band when its form is right; an MLP law wins
 in band when it is not, and fitting both is a check.
@@ -397,6 +397,33 @@ input. Three variants at the WPO's real budget separate the two:
 - On forced Burgers the FNO block gains nothing (0.024 against 0.024; a41). In one seed of three it loses the
   probe outside the band (3× off at k = 16), so we do not adopt it as the default block.
 
+### A hybrid that keeps the linearization (a49)
+
+If the missing accuracy were nonlinear, a hybrid could add it without touching the form. H = W + E adds to a WPO W
+the even part of a Tucker FNO T, E(f) = (T(f) + T(−f))/2 − T(0). E has no linear term, so H's linearization at rest
+is exactly W's, while E supplies the even-order terms with whole-window temporal mixing. The plain sum W + T is the
+ablation. Both are at the WPO's real budget, 5 seeds.
+
+| model | PDEBench nRMSE | dispersion error | forced Burgers test | probe outside the band |
+|---|---|---|---|---|
+| WPO | 0.045 | 0.25 | **0.024** | **0.10** |
+| W + even part of T | 0.047 | **0.16** | 0.036 | 0.40 |
+| W + T | 0.028 | 0.68 | 0.029 | 0.51 (median) |
+| FNO | **0.025** | 0.69 | 0.029 | 0.87 |
+
+: The hybrid (a49), 5 seeds (means). {#tbl-hybrid}
+
+- The even hybrid does not close the gap (0.047 against 0.045), although its probe improves, as with the FNO block
+  in a40.
+- The plain sum reaches the FNO's accuracy and, with it, the FNO's probe: its FNO branch takes over the linear
+  response, and the probe ν′ falls to 0.043 against the truth 0.126.
+- So the remaining gap is carried by the odd, whole-window part of the FNO, the part the pole form with a causal
+  time axis excludes. It is a cost of the form (this reading is post hoc).
+- On forced Burgers the even branch costs accuracy and the out-of-band probe (0.40), though the probe reads W
+  alone: at half the budget and fitted jointly with E, W's poles are less constrained outside the band.
+- Two of six predictions held; both predicted gains of the even hybrid failed. Three of four selections are at
+  the upper edge of the learning-rate grid.
+
 
 ## Polynomial or MLP pole functions (RQ4) {#sec-rq4}
 
@@ -439,6 +466,8 @@ extrapolation can be trusted. If not, use the MLP and do not extrapolate.
   It does not pay in pointwise accuracy on PDEBench Burgers, where the Tucker FNO is 1.8× better at an equal real
   budget. Odd residue powers or local mixing do not close this gap (a39); the FNO's block closes half of it on
   PDEBench but not on forced Burgers, and the rest is consistent with whole-window temporal mixing (a40, a41).
+  A hybrid that adds only even-order FNO terms, and so keeps the WPO's linearization, does not close it; a plain
+  sum does, at the cost of the FNO's linear response (a49).
 - **Training details decide the outcome**, as in the companion audit (project C):
   - scaling the polynomials;
   - a pole learning rate in deep models;

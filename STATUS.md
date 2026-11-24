@@ -192,6 +192,19 @@ Things to know:
 
 ## Log
 
+### 2026-11-24 — (A) a49: a WPO + even-FNO hybrid against the PDEBench gap
+
+- Done: `experiments/A/deep/a49_hybrid.py` (predictions 832d8bf). H = W + E, E the even part of a Tucker FNO, so
+  H's linearization is the WPO's by construction; ablation W + T. WPO budget, F and P, 5 seeds.
+- Result: two of six predictions held. The even hybrid does not close the gap (P 0.0473 against the WPO's 0.0450
+  and the TFNO's 0.0254) but improves the probe (dispersion error 0.16). The plain sum reaches the TFNO's
+  accuracy (0.0279) and its probe (0.68). On F the even hybrid costs accuracy (0.036) and the out-of-band
+  probe (0.40).
+- Reading (post hoc): the gap sits in the FNO's odd, whole-window part, which the pole form excludes; it is a
+  cost of the form. Paper 1 section added.
+- Open: three of four selections are at the lr edge (1e-2); an extension (a46-style) is not run.
+- Next: step 4, the identifiability theorem.
+
 ### 2026-11-24 — (A) a48: the TFNO's lr beyond a47's edge
 
 - Done: `experiments/A/deep/a48_kdv_tfno_edge.py` (predictions f7185f8). On KdV–Burgers the TFNO gets lr 3e-2
